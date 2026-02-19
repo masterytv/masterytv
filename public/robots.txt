@@ -1,0 +1,6 @@
+# MasteryTV.com
+# Robots file — allow all crawlers to index the coming soon page
+User-agent: *
+Allow: /
+
+Sitemap: https://masterytv.com/sitemap.xml
