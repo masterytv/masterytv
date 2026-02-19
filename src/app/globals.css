@@ -249,6 +249,105 @@ body {
   opacity: 0.4;
 }
 
+/* ── Email Capture Form ────────────────────────────────── */
+.form-container {
+  margin-top: 2.5rem;
+  z-index: 10;
+  position: relative;
+  animation: fade-up 2.4s ease-out 1.6s both;
+}
+
+.form-label {
+  font-family: var(--font-josefin), sans-serif;
+  font-size: 0.75rem;
+  letter-spacing: var(--letter-wide);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 0.8rem;
+  text-align: center;
+}
+
+.form-row {
+  display: flex;
+  gap: 0;
+  max-width: 420px;
+  margin: 0 auto;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid rgba(79, 110, 247, 0.2);
+  background: rgba(10, 14, 39, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: border-color var(--transition-smooth);
+}
+
+.form-row:focus-within {
+  border-color: rgba(79, 110, 247, 0.5);
+}
+
+.form-input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-family: var(--font-josefin), sans-serif;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+  outline: none;
+}
+
+.form-input::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.5;
+}
+
+.form-input:disabled {
+  opacity: 0.5;
+}
+
+.form-button {
+  padding: 0.75rem 1.4rem;
+  background: var(--accent-blue);
+  border: none;
+  color: white;
+  font-family: var(--font-josefin), sans-serif;
+  font-weight: 400;
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background var(--transition-smooth), opacity var(--transition-smooth);
+  white-space: nowrap;
+}
+
+.form-button:hover:not(:disabled) {
+  background: var(--accent-glow);
+}
+
+.form-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.form-success {
+  font-family: var(--font-josefin), sans-serif;
+  font-size: 0.85rem;
+  letter-spacing: var(--letter-wide);
+  color: var(--accent-glow);
+  text-align: center;
+  animation: fade-up 0.6s ease-out both;
+}
+
+.form-error {
+  font-family: var(--font-josefin), sans-serif;
+  font-size: 0.75rem;
+  color: #ff6b6b;
+  text-align: center;
+  margin-top: 0.6rem;
+  animation: fade-up 0.3s ease-out both;
+}
+
 /* ── Accessibility: Reduced Motion ─────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   .orb-glow {
@@ -262,7 +361,8 @@ body {
   }
 
   .heading,
-  .brand {
+  .brand,
+  .form-container {
     animation: none;
     opacity: 1;
     transform: none;
@@ -278,6 +378,10 @@ body {
   .heading {
     letter-spacing: 0.3em;
     padding: 0 1rem;
+  }
+
+  .form-row {
+    max-width: 320px;
   }
 }
 

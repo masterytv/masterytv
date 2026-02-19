@@ -35,17 +35,36 @@ Vercel auto-deploys on every push to `main`. Custom domain `masterytv.com` confi
 ## Project Structure
 
 ```
-src/app/
-├── layout.tsx      # Root layout: fonts, SEO meta, JSON-LD
-├── page.tsx        # Main page: text above orb, star field, footer
-└── globals.css     # Design tokens, animations, responsive
+src/
+├── app/
+│   ├── api/subscribe/route.ts  # POST endpoint: email → Supabase + Resend
+│   ├── layout.tsx              # Root layout: fonts, SEO meta, JSON-LD
+│   ├── page.tsx                # Main page: text, email form, orb, stars
+│   └── globals.css             # Design tokens, animations, form styles
+├── components/
+│   └── EmailForm.tsx           # Client component: email capture form
 public/
-├── robots.txt      # Crawl directives
-├── sitemap.xml     # Single-page sitemap
-└── manifest.json   # PWA manifest
+├── robots.txt
+├── sitemap.xml
+└── manifest.json
 directives/
-└── doc-maintenance.md  # Code→doc mapping rules
+└── doc-maintenance.md
 ```
+
+## Email Capture (Mini CRM)
+
+- **Database:** Supabase (free tier) — `contacts` table with RLS, email uniqueness, JSONB metadata
+- **Email:** Resend (free tier, 3K/month) — welcome email on signup
+- **API:** `/api/subscribe` — validates email, upserts to Supabase, fires Resend welcome email
+- **Form:** Glass-morphic input + "Notify Me" button with loading/success/error states
+
+### Environment Variables
+
+| Variable | Purpose |
+|----------|---------|
+| `SUPABASE_URL` | Supabase project API URL |
+| `SUPABASE_SERVICE_ROLE_KEY` | Secret key for server-side DB access |
+| `RESEND_API_KEY` | Resend transactional email key |
 
 ## Page Design
 

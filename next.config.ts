@@ -1,8 +1,7 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-    // Static export for maximum portability — switch to 'standalone' if adding API routes later
-    output: 'export',
+    // Removed output: 'export' to support API routes (email capture)
 };
 
 export default nextConfig;

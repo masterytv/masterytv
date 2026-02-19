@@ -1,3 +1,5 @@
+import EmailForm from '@/components/EmailForm';
+
 // Deterministic star positions — avoids hydration mismatch vs Math.random()
 const STARS = [
     { top: '8%', left: '15%', size: 1.5, duration: '5s', delay: '0s' },
@@ -49,6 +51,7 @@ export default function Home() {
                 <p className="brand">
                     <span className="brand-accent">MasteryTV</span>
                 </p>
+                <EmailForm />
             </div>
 
             {/* Glowing orb — the centrepiece */}
