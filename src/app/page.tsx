@@ -43,20 +43,20 @@ export default function Home() {
                 ))}
             </div>
 
+            {/* Main message — above the planet */}
+            <div className="content">
+                <h1 className="heading">Something Big is Coming</h1>
+                <p className="brand">
+                    <span className="brand-accent">MasteryTV</span>
+                </p>
+            </div>
+
             {/* Glowing orb — the centrepiece */}
             <div className="orb-container" aria-hidden="true">
                 <div className="orb-haze" />
                 <div className="orb-glow" />
                 <div className="orb" />
                 <div className="orb-horizon" />
-            </div>
-
-            {/* Main message */}
-            <div className="content">
-                <h1 className="heading">Something Big is Coming</h1>
-                <p className="brand">
-                    <span className="brand-accent">MasteryTV</span>
-                </p>
             </div>
 
             {/* Footer */}
