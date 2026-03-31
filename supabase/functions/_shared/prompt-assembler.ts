@@ -12,6 +12,7 @@
  */
 
 import { createSupabaseClient } from "./supabase.ts";
+import { generateEmbedding, searchMemoryFacts } from "./embeddings.ts";
 
 // ─── TYPES ──────────────────────────────────────────────────────────────
 
@@ -336,7 +337,7 @@ function buildSafetyGuardrails(): string {
  */
 export async function assemblePrompt(
   userId: string,
-  _userMessage: string
+  userMessage: string
 ): Promise<{
   system: string;
   conversationHistory: { role: "user" | "assistant"; content: string }[];
@@ -375,13 +376,15 @@ export async function assemblePrompt(
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(20),
-    // Memory facts (top importance, most recent)
+    // Memory facts — hybrid approach:
+    // 1. Top facts by importance (always relevant)
+    // 2. Semantically similar facts (contextually relevant to this message)
     supabase
       .from("memory_facts")
       .select("category, subject, content, importance")
       .eq("user_id", userId)
       .order("importance", { ascending: false })
-      .limit(15),
+      .limit(10),
     // Coaching agenda (latest)
     supabase
       .from("coaching_agenda")
@@ -396,8 +399,49 @@ export async function assemblePrompt(
   const profile = profileResult.data as CoachProfile | null;
   const challenges = (challengesResult.data ?? []) as ActiveChallenge[];
   const messages = (messagesResult.data ?? []) as Message[];
-  const facts = (factsResult.data ?? []) as MemoryFact[];
+  const importantFacts = (factsResult.data ?? []) as MemoryFact[];
   const agenda = agendaResult.data as CoachingAgenda | null;
+
+  // Semantic memory retrieval — embed user message and search for relevant facts
+  let semanticFacts: MemoryFact[] = [];
+  try {
+    const queryEmbedding = await generateEmbedding(userMessage);
+    const results = await searchMemoryFacts(userId, queryEmbedding, 8);
+    semanticFacts = results.map((r) => ({
+      category: r.category,
+      subject: r.subject,
+      content: r.content,
+      importance: r.importance,
+    }));
+  } catch (e) {
+    // Semantic search failure shouldn't break the coach
+    console.warn("[prompt-assembler] Semantic search failed, using importance-only:", (e as Error).message);
+  }
+
+  // Merge: deduplicate by subject+content, prefer semantic matches
+  const factKey = (f: MemoryFact) => `${f.subject}::${f.content}`;
+  const seenFacts = new Set<string>();
+  const mergedFacts: MemoryFact[] = [];
+
+  // Semantic facts first (most contextually relevant)
+  for (const f of semanticFacts) {
+    const key = factKey(f);
+    if (!seenFacts.has(key)) {
+      seenFacts.add(key);
+      mergedFacts.push(f);
+    }
+  }
+  // Then high-importance facts
+  for (const f of importantFacts) {
+    const key = factKey(f);
+    if (!seenFacts.has(key)) {
+      seenFacts.add(key);
+      mergedFacts.push(f);
+    }
+  }
+
+  // Cap at 15 to avoid prompt bloat
+  const facts = mergedFacts.slice(0, 15);
 
   // Enrich challenges with framework phase info
   if (challenges.length > 0) {
