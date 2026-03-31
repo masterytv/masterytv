@@ -1,115 +1,41 @@
-import type { Metadata } from 'next';
-import { Cinzel, Josefin_Sans } from 'next/font/google';
-import './globals.css';
+import type { Metadata } from "next";
+import "./globals.css";
 
-// Typography: Elegant serif for headings, clean sans for body
-const cinzel = Cinzel({
-    subsets: ['latin'],
-    weight: ['400', '600'],
-    variable: '--font-cinzel',
-    display: 'swap',
-});
-
-const josefin = Josefin_Sans({
-    subsets: ['latin'],
-    weight: ['300', '400'],
-    variable: '--font-josefin',
-    display: 'swap',
-});
-
-// Comprehensive SEO metadata for a 20-year authority brand returning
 export const metadata: Metadata = {
-    metadataBase: new URL('https://masterytv.com'),
-    title: 'MasteryTV — Something Big is Coming',
-    description:
-        'MasteryTV is back. After 20 years of empowering entrepreneurs and personal development leaders, something transformative is on the way. Stay tuned.',
-    keywords: [
-        'MasteryTV',
-        'personal development',
-        'entrepreneurship',
-        'self improvement',
-        'mastery',
-        'digital learning',
-        'coming soon',
-    ],
-    authors: [{ name: 'MasteryTV' }],
-    creator: 'MasteryTV',
-    publisher: 'MasteryTV',
-    robots: {
-        index: true,
-        follow: true,
-        googleBot: {
-            index: true,
-            follow: true,
-        },
-    },
-    openGraph: {
-        type: 'website',
-        locale: 'en_US',
-        url: 'https://masterytv.com',
-        siteName: 'MasteryTV',
-        title: 'MasteryTV — Something Big is Coming',
-        description:
-            'After 20 years of empowering entrepreneurs, MasteryTV is returning with something transformative. Stay tuned.',
-        images: [
-            {
-                url: '/og-image.png',
-                width: 1200,
-                height: 630,
-                alt: 'MasteryTV — Something Big is Coming',
-            },
-        ],
-    },
-    twitter: {
-        card: 'summary_large_image',
-        title: 'MasteryTV — Something Big is Coming',
-        description:
-            'After 20 years of empowering entrepreneurs, MasteryTV is returning with something transformative.',
-        images: ['/og-image.png'],
-    },
-    other: {
-        'theme-color': '#000000',
-    },
-};
-
-// JSON-LD Structured Data — Organization + WebSite schema for rich snippets
-const jsonLd = {
-    '@context': 'https://schema.org',
-    '@graph': [
-        {
-            '@type': 'Organization',
-            name: 'MasteryTV',
-            url: 'https://masterytv.com',
-            description:
-                'MasteryTV has 20 years of authority in personal development and entrepreneurship education.',
-            foundingDate: '2006',
-        },
-        {
-            '@type': 'WebSite',
-            name: 'MasteryTV',
-            url: 'https://masterytv.com',
-            description: 'Something big is coming to MasteryTV.',
-        },
-    ],
+  title: "Mastery Coach — AI Coaching for High-Performers",
+  description:
+    "Your AI coaching partner that learns how you think, adapts to your style, and proactively drives your agenda forward. Built for founders, leaders, and ambitious professionals.",
+  keywords: ["AI coaching", "executive coaching", "business coaching", "personal development"],
+  openGraph: {
+    title: "Mastery Coach",
+    description: "AI coaching that adapts to you.",
+    type: "website",
+    siteName: "MasteryTV",
+  },
 };
 
 export default function RootLayout({
-    children,
+  children,
 }: Readonly<{
-    children: React.ReactNode;
+  children: React.ReactNode;
 }>) {
-    return (
-        <html lang="en" className={`${cinzel.variable} ${josefin.variable}`}>
-            <head>
-                <link rel="icon" href="/favicon.ico" sizes="any" />
-                <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-                <link rel="manifest" href="/manifest.json" />
-                <script
-                    type="application/ld+json"
-                    dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-                />
-            </head>
-            <body>{children}</body>
-        </html>
-    );
+  return (
+    <html lang="en" className="dark">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body className="min-h-screen bg-surface-0 text-text-primary antialiased">
+        {children}
+      </body>
+    </html>
+  );
 }

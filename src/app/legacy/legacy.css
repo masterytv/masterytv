@@ -1,0 +1,874 @@
+/* =============================================================
+   Legacy Letter — Digital Archival / New Skeuomorphism
+   Aesthetic: Brutalist layouts + physical office metaphors
+   Fonts: Cormorant Garamond (titles), EB Garamond (body),
+          JetBrains Mono (metadata/UI)
+   ============================================================= */
+
+/* ── Fonts ─────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=EB+Garamond:ital@0;1&family=JetBrains+Mono:wght@300;400&display=swap');
+
+/* ── Design Tokens ─────────────────────────────────── */
+:root {
+    --bg-dark: #0d0d0d;
+    --folder-blue: #1a56ff;
+    --folder-blue-deep: #0d41cc;
+    --tab-red: #c72c2c;
+    --paper-white: #f4f4f4;
+    --paper-pink: #e89b9b;
+    --paper-yellow: #f0db4f;
+    --text-dark: #1a1a1a;
+    --text-light: #ffffff;
+    --ui-grey: #888888;
+    --border-grey: #222222;
+
+    --font-display: 'Cormorant Garamond', 'Times New Roman', serif;
+    --font-body: 'EB Garamond', 'Georgia', serif;
+    --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+
+    /* Accessibility: readable sizing */
+    --body-size: 1.125rem;
+    --body-line-height: 1.65;
+}
+
+/* ── Page Shell ────────────────────────────────────── */
+.legacy-page {
+    min-height: 100vh;
+    width: 100%;
+    background-color: var(--bg-dark);
+    color: var(--text-light);
+    font-family: var(--font-body);
+    font-size: var(--body-size);
+    line-height: var(--body-line-height);
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Background elements */
+.legacy-bg {
+    display: none;
+}
+
+/* ── Archive Header ────────────────────────────────── */
+.archive-header {
+    padding: 50px 40px 30px;
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    align-items: end;
+    gap: 2rem;
+}
+
+.archive-breadcrumb {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--ui-grey);
+    letter-spacing: 0.02em;
+    margin-bottom: 10px;
+}
+
+.archive-title {
+    font-family: var(--font-display);
+    font-size: clamp(4rem, 10vw, 7.5rem);
+    font-weight: 300;
+    letter-spacing: -2px;
+    line-height: 0.9;
+    color: var(--text-light);
+}
+
+.archive-meta {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ui-grey);
+    line-height: 1.7;
+    max-width: 260px;
+    text-align: right;
+}
+
+/* ── The Folder Workspace ──────────────────────────── */
+.workspace {
+    position: relative;
+    background-color: var(--folder-blue);
+    min-height: 520px;
+    margin: 0 40px 60px;
+    padding: 50px 60px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+/* Right Folder Tabs */
+.folder-tabs {
+    position: absolute;
+    right: -40px;
+    top: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.folder-tab {
+    writing-mode: vertical-rl;
+    padding: 24px 10px;
+    color: white;
+    font-family: var(--font-body);
+    font-size: 16px;
+    font-weight: 400;
+    border-radius: 0 8px 8px 0;
+    margin-bottom: 2px;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+    transition: filter 0.2s ease;
+}
+
+.folder-tab:hover {
+    filter: brightness(1.15);
+}
+
+.folder-tab:focus-visible {
+    outline: 2px solid white;
+    outline-offset: 2px;
+}
+
+.folder-tab-red {
+    background-color: var(--tab-red);
+    height: 200px;
+}
+
+.folder-tab-blue {
+    background-color: var(--folder-blue-deep);
+    height: 240px;
+    margin-top: -8px;
+}
+
+/* ── Paper Document ────────────────────────────────── */
+.paper {
+    background-color: var(--paper-white);
+    color: var(--text-dark);
+    padding: 50px 50px 50px 65px;
+    width: 100%;
+    max-width: 640px;
+    box-shadow: 10px 10px 30px rgba(0, 0, 0, 0.3);
+    position: relative;
+    z-index: 2;
+}
+
+/* Punched holes */
+.punched-holes {
+    position: absolute;
+    left: 22px;
+    top: 50px;
+    display: flex;
+    flex-direction: column;
+    gap: 130px;
+}
+
+.hole {
+    width: 12px;
+    height: 12px;
+    background: var(--folder-blue);
+    border-radius: 50%;
+}
+
+/* Document label */
+.doc-label {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    border: 1px solid #ccc;
+    padding: 2px 8px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--folder-blue);
+    background: transparent;
+}
+
+.doc-title {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 300;
+    margin-bottom: 1.25rem;
+    color: var(--text-dark);
+}
+
+.doc-body {
+    font-family: var(--font-body);
+    font-size: var(--body-size);
+    line-height: var(--body-line-height);
+    color: var(--text-dark);
+}
+
+/* ── Pink Excerpt (floating paper scrap) ───────────── */
+.paper-excerpt {
+    background-color: var(--paper-pink);
+    color: var(--text-dark);
+    width: 320px;
+    padding: 30px;
+    position: absolute;
+    left: -70px;
+    bottom: -35px;
+    transform: rotate(-2deg);
+    z-index: 3;
+    box-shadow: 5px 5px 20px rgba(0, 0, 0, 0.2);
+}
+
+.paper-excerpt .doc-label {
+    color: #a04040;
+}
+
+.paper-excerpt .doc-title {
+    font-size: 1.6rem;
+    margin-bottom: 0.75rem;
+}
+
+.paper-excerpt .doc-body {
+    font-size: 0.85rem;
+    line-height: 1.55;
+}
+
+/* ── Yellow Receipt ────────────────────────────────── */
+.receipt {
+    background-color: var(--paper-yellow);
+    width: 180px;
+    padding: 14px;
+    position: absolute;
+    bottom: -60px;
+    right: 50px;
+    transform: rotate(5deg);
+    z-index: 4;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-dark);
+    box-shadow: 4px 4px 16px rgba(0, 0, 0, 0.15);
+    clip-path: polygon(0% 0%, 100% 0%, 100% 90%, 95% 100%, 5% 100%, 0% 90%);
+}
+
+/* ── Form on Paper ─────────────────────────────────── */
+.legacy-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* Progress dots */
+.legacy-progress {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 0.5rem;
+}
+
+.legacy-progress-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #ddd;
+    border: 1.5px solid #bbb;
+    transition: all 0.15s ease;
+}
+
+.legacy-progress-dot.active {
+    background: var(--folder-blue);
+    border-color: var(--folder-blue);
+}
+
+/* Question */
+.legacy-question {
+    animation: none;
+}
+
+.legacy-label {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 1.4rem;
+    font-weight: 300;
+    color: var(--text-dark);
+    margin-bottom: 1rem;
+    display: block;
+    line-height: 1.4;
+}
+
+.legacy-label-small {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: var(--ui-grey);
+    margin-top: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.legacy-input,
+.legacy-textarea {
+    width: 100%;
+    padding: 0.85rem 1rem;
+    background: #fff;
+    border: 1.5px solid #ccc;
+    border-radius: 0;
+    color: var(--text-dark);
+    font-family: var(--font-body);
+    font-size: var(--body-size);
+    line-height: 1.5;
+    outline: none;
+    transition: border-color 0.15s ease;
+}
+
+.legacy-input:focus,
+.legacy-textarea:focus {
+    border-color: var(--folder-blue);
+    box-shadow: 0 0 0 2px rgba(26, 86, 255, 0.15);
+}
+
+.legacy-input::placeholder,
+.legacy-textarea::placeholder {
+    color: #aaa;
+    font-style: italic;
+}
+
+.legacy-textarea {
+    resize: vertical;
+    min-height: 90px;
+}
+
+.legacy-bonus-q {
+    border-top: 1px solid #ddd;
+    padding-top: 1rem;
+}
+
+/* Navigation buttons */
+.legacy-nav {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    margin-top: 0.25rem;
+}
+
+.legacy-btn {
+    padding: 0.75rem 1.75rem;
+    border: none;
+    border-radius: 0;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    font-weight: 400;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    min-height: 44px;
+}
+
+.legacy-btn-back {
+    background: transparent;
+    color: var(--ui-grey);
+    border: 1.5px solid #ccc;
+}
+
+.legacy-btn-back:hover {
+    border-color: var(--text-dark);
+    color: var(--text-dark);
+}
+
+.legacy-btn-back:focus-visible {
+    outline: 2px solid var(--folder-blue);
+    outline-offset: 2px;
+}
+
+.legacy-btn-next {
+    background: var(--folder-blue);
+    color: white;
+}
+
+.legacy-btn-next:hover:not(:disabled) {
+    background: var(--folder-blue-deep);
+}
+
+.legacy-btn-next:focus-visible {
+    outline: 2px solid var(--folder-blue);
+    outline-offset: 2px;
+}
+
+.legacy-btn-next:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.legacy-error {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--tab-red);
+    text-align: center;
+}
+
+.legacy-link {
+    color: var(--folder-blue);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.legacy-link:hover {
+    color: var(--folder-blue-deep);
+}
+
+/* ── Preview Page ──────────────────────────────────── */
+.preview-section {
+    padding: 50px 40px 30px;
+    text-align: center;
+    max-width: 620px;
+    margin: 0 auto;
+}
+
+.preview-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ui-grey);
+    margin-bottom: 1.5rem;
+}
+
+.preview-card {
+    background: var(--paper-white);
+    color: var(--text-dark);
+    padding: 3rem 2.5rem;
+    box-shadow: 8px 8px 24px rgba(0, 0, 0, 0.3);
+    position: relative;
+    text-align: left;
+}
+
+.preview-text {
+    font-family: var(--font-display);
+    font-size: clamp(1.2rem, 2.5vw, 1.5rem);
+    line-height: 1.8;
+    font-style: italic;
+    font-weight: 300;
+    color: var(--text-dark);
+}
+
+.preview-loading,
+.preview-fallback {
+    color: var(--ui-grey);
+    font-style: normal;
+}
+
+.preview-signature {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--ui-grey);
+    margin-top: 1.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.preview-lock {
+    text-align: center;
+    padding: 0 2rem 2rem;
+    max-width: 540px;
+    margin: 0 auto;
+}
+
+.preview-lock-text {
+    font-family: var(--font-body);
+    font-size: var(--body-size);
+    color: var(--ui-grey);
+    line-height: 1.7;
+}
+
+/* ── Pricing Cards ─────────────────────────────────── */
+.pricing-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    width: 100%;
+    max-width: 640px;
+    margin: 0 auto;
+}
+
+.pricing-card {
+    background: var(--paper-white);
+    color: var(--text-dark);
+    padding: 2rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    border: 1px solid #ddd;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.pricing-card:hover {
+    background: #ececec;
+}
+
+.pricing-card-featured {
+    background: #e8e8e8;
+    border-color: var(--folder-blue);
+}
+
+.pricing-badge {
+    position: absolute;
+    top: -1px;
+    right: -1px;
+    background: var(--tab-red);
+    color: white;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+}
+
+.pricing-tier {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    font-weight: 300;
+    font-style: italic;
+    color: var(--text-dark);
+    margin-bottom: 0.4rem;
+}
+
+.pricing-price {
+    font-family: var(--font-display);
+    font-size: 2.5rem;
+    font-weight: 300;
+    color: var(--text-dark);
+    margin-bottom: 1rem;
+}
+
+.pricing-features {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1.5rem;
+    flex: 1;
+}
+
+.pricing-features li {
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    color: #555;
+    line-height: 1.5;
+    padding: 0.3rem 0;
+    padding-left: 1rem;
+    position: relative;
+}
+
+.pricing-features li::before {
+    content: '—';
+    position: absolute;
+    left: 0;
+    color: var(--folder-blue);
+    font-weight: 700;
+}
+
+.pricing-btn {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1.5px solid var(--text-dark);
+    border-radius: 0;
+    background: transparent;
+    color: var(--text-dark);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 400;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    min-height: 44px;
+}
+
+.pricing-btn:hover:not(:disabled) {
+    background: var(--text-dark);
+    color: var(--paper-white);
+}
+
+.pricing-btn:focus-visible {
+    outline: 2px solid var(--folder-blue);
+    outline-offset: 2px;
+}
+
+.pricing-btn-featured {
+    background: var(--folder-blue);
+    color: white;
+    border-color: var(--folder-blue);
+}
+
+.pricing-btn-featured:hover:not(:disabled) {
+    background: var(--folder-blue-deep);
+    border-color: var(--folder-blue-deep);
+}
+
+.pricing-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.pricing-error {
+    grid-column: 1 / -1;
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--tab-red);
+}
+
+/* ── Thank You Page ────────────────────────────────── */
+.thankyou-section {
+    text-align: center;
+    padding: 60px 40px 30px;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.thankyou-icon {
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+    display: block;
+}
+
+.thankyou-headline {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 300;
+    color: var(--text-light);
+    margin-bottom: 1rem;
+}
+
+.thankyou-subline {
+    font-family: var(--font-body);
+    font-size: var(--body-size);
+    color: var(--ui-grey);
+    line-height: 1.7;
+    margin-bottom: 2.5rem;
+}
+
+.thankyou-download {
+    margin-bottom: 2rem;
+}
+
+.thankyou-generating {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    color: var(--ui-grey);
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+}
+
+.thankyou-spinner {
+    width: 32px;
+    height: 32px;
+    border: 2px solid #333;
+    border-top-color: var(--folder-blue);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.thankyou-btn {
+    display: inline-block;
+    padding: 0.9rem 2.5rem;
+    background: var(--folder-blue);
+    color: white;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    font-weight: 400;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-decoration: none;
+    border-radius: 0;
+    transition: background 0.15s ease;
+    min-height: 48px;
+}
+
+.thankyou-btn:hover {
+    background: var(--folder-blue-deep);
+}
+
+.thankyou-btn:focus-visible {
+    outline: 2px solid white;
+    outline-offset: 3px;
+}
+
+.thankyou-fallback p {
+    font-family: var(--font-body);
+    font-size: var(--body-size);
+    color: var(--ui-grey);
+    line-height: 1.7;
+}
+
+/* Snippet card */
+.snippet-card {
+    background: var(--paper-pink);
+    color: var(--text-dark);
+    padding: 2rem 1.75rem;
+    margin: 2rem auto 0;
+    max-width: 420px;
+    transform: rotate(-1deg);
+    box-shadow: 5px 5px 16px rgba(0, 0, 0, 0.2);
+}
+
+.snippet-text {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    line-height: 1.7;
+    font-style: italic;
+    font-weight: 300;
+}
+
+.snippet-brand {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: #a04040;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-top: 1rem;
+}
+
+/* ── Share Section ─────────────────────────────────── */
+.share-section {
+    text-align: center;
+    padding: 2.5rem 2rem 5rem;
+    max-width: 500px;
+    margin: 0 auto;
+    border-top: 1px solid var(--border-grey);
+}
+
+.share-headline {
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    font-weight: 300;
+    font-style: italic;
+    color: var(--text-light);
+    margin-bottom: 0.75rem;
+}
+
+.share-text {
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    color: var(--ui-grey);
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+}
+
+.share-actions {
+    display: flex;
+    gap: 0;
+    justify-content: center;
+}
+
+.share-btn {
+    padding: 0.6rem 1.25rem;
+    border: 1.5px solid var(--border-grey);
+    background: transparent;
+    color: var(--ui-grey);
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 400;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s ease;
+    min-height: 44px;
+}
+
+.share-btn+.share-btn {
+    border-left: none;
+}
+
+.share-btn:hover {
+    background: var(--folder-blue);
+    color: white;
+    border-color: var(--folder-blue);
+}
+
+.share-btn:focus-visible {
+    outline: 2px solid var(--folder-blue);
+    outline-offset: 2px;
+}
+
+/* ── Footer ────────────────────────────────────────── */
+.legacy-footer {
+    text-align: center;
+    padding: 2rem 2rem 2.5rem;
+    border-top: 1px solid var(--border-grey);
+}
+
+.legacy-footer p {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: #444;
+    letter-spacing: 0.06em;
+}
+
+/* ── Responsive ────────────────────────────────────── */
+@media (max-width: 768px) {
+    .archive-header {
+        grid-template-columns: 1fr;
+        padding: 30px 20px 20px;
+    }
+
+    .archive-meta {
+        text-align: left;
+        max-width: 100%;
+        margin-top: 1rem;
+    }
+
+    .archive-title {
+        font-size: clamp(3rem, 12vw, 5rem);
+    }
+
+    .workspace {
+        margin: 0 0 60px;
+        padding: 30px 20px;
+    }
+
+    .folder-tabs {
+        display: none;
+    }
+
+    .paper {
+        padding: 30px 30px 30px 45px;
+    }
+
+    .paper-excerpt,
+    .receipt {
+        display: none;
+    }
+
+    .pricing-container {
+        grid-template-columns: 1fr;
+    }
+
+    .punched-holes {
+        gap: 100px;
+        left: 16px;
+        top: 30px;
+    }
+}
+
+@media (max-width: 480px) {
+    .archive-title {
+        font-size: clamp(2.5rem, 14vw, 3.5rem);
+    }
+
+    .paper {
+        padding: 24px 20px 24px 38px;
+    }
+
+    .punched-holes {
+        left: 12px;
+    }
+}
+
+/* ── Reduced Motion ────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    .thankyou-spinner {
+        animation-duration: 2s;
+    }
+}

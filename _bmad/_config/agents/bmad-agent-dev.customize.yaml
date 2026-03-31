@@ -1,0 +1,13 @@
+memories:
+  - 'TypeScript strict mode everywhere'
+  - 'All database queries use Supabase client, not raw SQL in app code'
+  - 'Edge Functions must handle errors with structured logging — no naked try/catch'
+  - 'RLS policies on every table — no exceptions'
+  - 'Never hardcode API keys. Use .env.local for secrets.'
+  - 'Coaching system prompts live in src/lib/prompts/, not inline'
+  - 'Comments explain WHY, not WHAT'
+  - 'Use Tailwind CSS + Framer Motion for all UI'
+  - 'Google Antigravity Premium aesthetics: Glassmorphism, fluid typography, clean whitespace'
+  - 'Coach App is a route group at src/app/(coach)/ in the existing MasteryTV Next.js project'
+  - 'Do NOT use LangChain, LlamaIndex, or heavy agent frameworks'
+  - 'Do NOT give legal, medical, or financial advice in coaching prompts'

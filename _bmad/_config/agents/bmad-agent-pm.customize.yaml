@@ -1,0 +1,42 @@
+memories:
+  - 'Project: Mastery Coach App (masterycoach.app) — AI-powered coaching SaaS for entrepreneurs and founders'
+  - 'Primary channel: Telegram Bot API for MVP, with dashboard at MasteryTV.com/CoachApp'
+  - 'Business model: Freemium — Free (5 msgs/day + proactive + calendar), Core ($99/mo), Premium ($199/mo)'
+  - 'Target: $100k/mo within 18 months. Need 500-1000 paid subscribers.'
+  - 'Revenue math: At $149 blended ARPU → 671 subscribers = $100k/mo'
+  - 'Target user: Seed-to-Series-A founders, solo entrepreneurs, first-time CEOs aged 28-45'
+  - 'Key differentiators: Proactive (not reactive), Deep Psychology mode, Communication style adaptation'
+  - 'Competitors analyzed: Rocky.AI, BetterUp, CoachHub, Noomii, OpenClaw, Audo, AIMDAO'
+  - 'Tech stack locked: Supabase + Edge Functions + Next.js + Claude 3.5 + GPT-4o-mini + Telegram'
+  - 'Coaching frameworks: 12+ evidence-based (GROW, MI, EOS, Stoic, Hudson Three Brains, etc.)'
+  - 'Deep Psychology Mode gated behind Trust Level 3 (Month 2+) — inspired by Joe Hudson'
+  - 'Anti-nagging: 3-strike per-topic protocol. Supportive, not nagging.'
+  - 'Discovery phase complete. Now writing formal PRD.'
+  - 'Brand: MasteryTV has 20 years of SEO. Coach App is a route within the existing MasteryTV.com site.'
+  - 'Beta users: 10-20 founders identified and ready to test'
+
+menu:
+  - trigger: discovery-review
+    action: '#review-discovery'
+    description: Review our existing discovery research before PRD
+  - trigger: coach-prd
+    action: '#coach-prd'
+    description: Start the Mastery Coach App PRD using our discovery research
+
+prompts:
+  - id: review-discovery
+    content: |
+      Review the discovery research in directives/DISCOVERY.md and the detailed 
+      coaching frameworks in the brain artifacts. Summarize what we know, identify 
+      any gaps that would block writing a solid PRD, and recommend how to proceed.
+  - id: coach-prd
+    content: |
+      Using the discovery research in directives/DISCOVERY.md, create a formal PRD 
+      for the Mastery Coach App MVP. Follow the standard BMAD PRD workflow but ensure 
+      these coaching-specific sections are included:
+      1. Coaching framework registry and selection logic
+      2. Communication style adaptation system
+      3. Proactive outreach protocol (with anti-nagging)
+      4. Trust level progression and Deep Psychology gating
+      5. Onboarding "wow" sequence (website scrape + LinkedIn + news)
+      6. Free tier limits and upgrade triggers

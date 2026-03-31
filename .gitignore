@@ -31,6 +31,16 @@ yarn-error.log*
 # vercel
 .vercel
 
+# BMAD Method - track _bmad/ (has our customizations), ignore output
+_bmad-output/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local artifacts
+.npm-cache/
+logs/
+design-system/
+{output_folder}/
+test-coach.mjs
