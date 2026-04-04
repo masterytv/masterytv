@@ -1,23 +1,37 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
 
-/**
- * Custom email verification handoff page.
- * 
- * Why this exists: Resend's click tracking pre-fetches links in auth emails,
- * which consumes the one-time token before the user's browser reaches it.
- * By routing through our own domain with token_hash + type params,
- * the click tracker hits THIS page (which does nothing on pre-fetch),
- * and only the actual browser with JS enabled exchanges the token.
- * 
- * Email template links should point here instead of Supabase's /auth/v1/verify:
- *   https://masterytv.com/coachapp/auth/verify?token_hash={{.TokenHash}}&type=magiclink
- */
 export default function VerifyPage() {
+  return (
+    <Suspense fallback={<VerifyLoading />}>
+      <VerifyContent />
+    </Suspense>
+  );
+}
+
+function VerifyLoading() {
+  return (
+    <div className="flex min-h-screen items-center justify-center px-4">
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <div className="absolute -top-1/2 left-1/2 h-[800px] w-[800px] -translate-x-1/2 rounded-full bg-brand-500/5 blur-[120px]" />
+        <div className="absolute bottom-0 right-0 h-[600px] w-[600px] rounded-full bg-accent-500/5 blur-[100px]" />
+      </div>
+      <div className="glass relative w-full max-w-md rounded-2xl p-8 text-center">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-brand-500/10 ring-1 ring-brand-500/20">
+          <Loader2 className="h-8 w-8 text-brand-400 animate-spin" />
+        </div>
+        <h1 className="text-xl font-semibold text-text-primary">Verifying your email...</h1>
+        <p className="mt-2 text-sm text-text-secondary">Please wait while we sign you in.</p>
+      </div>
+    </div>
+  );
+}
+
+function VerifyContent() {
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState<string>("");
   const searchParams = useSearchParams();
