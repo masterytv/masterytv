@@ -47,9 +47,10 @@ export async function updateSession(request: NextRequest) {
   const isAdminRoute = request.nextUrl.pathname.startsWith("/coachapp/admin");
   const isOnboardingRoute = request.nextUrl.pathname.startsWith("/coachapp/onboarding");
   const isCallbackRoute = request.nextUrl.pathname.startsWith("/coachapp/auth/callback");
+  const isVerifyRoute = request.nextUrl.pathname.startsWith("/coachapp/auth/verify");
 
-  // Allow callback route always
-  if (isCallbackRoute) {
+  // Allow callback and verify routes always (verify handles email magic link handoff)
+  if (isCallbackRoute || isVerifyRoute) {
     return supabaseResponse;
   }
 
