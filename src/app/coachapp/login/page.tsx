@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/client";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Mail, Loader2, ArrowRight, Sparkles } from "lucide-react";
+import { Mail, Loader2, ArrowRight, UserStar } from "lucide-react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -69,7 +69,7 @@ export default function LoginPage() {
             transition={{ delay: 0.1, duration: 0.4 }}
             className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-brand-500/15 ring-1 ring-brand-500/20"
           >
-            <Sparkles className="h-7 w-7 text-brand-400" />
+            <UserStar className="h-7 w-7 text-brand-400" strokeWidth={1.5} />
           </motion.div>
           <h1 className="text-2xl font-semibold tracking-tight text-text-primary">
             Mastery Coach

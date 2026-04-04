@@ -15,13 +15,29 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { UserStar } from "lucide-react";
 import type { ChatMessage } from "@/lib/chat";
 
 // ─── MARKDOWN RENDERER ─────────────────────────────────────────────────
 // Lightweight markdown → HTML for coach messages (bold, italic, bullets, emoji)
 
-function renderMarkdown(text: string): string {
+/**
+ * Sanitize raw text by escaping HTML entities.
+ * Must run BEFORE markdown transforms to prevent XSS via dangerouslySetInnerHTML.
+ * Without this, a compromised LLM response could inject <script> tags.
+ */
+function sanitizeHtml(text: string): string {
   return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function renderMarkdown(text: string): string {
+  // Sanitize first — escape all HTML, THEN apply known-safe transforms
+  return sanitizeHtml(text)
     // Code blocks (```...```)
     .replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre class="chat-code-block"><code>$2</code></pre>')
     // Inline code (`...`)
@@ -116,7 +132,7 @@ function EmptyState() {
         transition={{ duration: 0.5 }}
         className="chat-empty-content"
       >
-        <div className="chat-empty-icon">🧠</div>
+        <div className="chat-empty-icon"><UserStar size={44} strokeWidth={1.5} /></div>
         <h3>Welcome to Mastery Coach</h3>
         <p>
           I&apos;m your AI executive coach. Tell me about a challenge you&apos;re

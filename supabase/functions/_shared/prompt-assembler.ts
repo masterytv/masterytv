@@ -61,6 +61,15 @@ interface Message {
   created_at: string;
 }
 
+interface ConversationSummary {
+  summary: string;
+  key_topics: string[];
+  framework_used: string | null;
+  message_count: number;
+  first_message_at: string;
+  last_message_at: string;
+}
+
 interface CoachingAgenda {
   priority_topic: string | null;
   coaching_questions: string[];
@@ -238,9 +247,27 @@ ${dims.join("\n")}`;
 
 function buildMemoryLayer(
   recentMessages: Message[],
-  relevantFacts: MemoryFact[]
+  relevantFacts: MemoryFact[],
+  sessionSummaries: ConversationSummary[] = []
 ): string {
   const parts: string[] = [];
+
+  // Session summaries — medium-term memory (S6.12)
+  if (sessionSummaries.length > 0) {
+    parts.push("PREVIOUS SESSION SUMMARIES (most recent first):");
+    for (const s of sessionSummaries) {
+      const date = new Date(s.last_message_at).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      });
+      const topics = s.key_topics?.length > 0
+        ? ` Topics: ${s.key_topics.join(", ")}.`
+        : "";
+      const fw = s.framework_used ? ` Framework: ${s.framework_used}.` : "";
+      parts.push(`- [${date}]${topics}${fw} ${s.summary}`);
+    }
+    parts.push("");
+  }
 
   if (relevantFacts.length > 0) {
     parts.push("RELEVANT FACTS FROM MEMORY:");
@@ -283,33 +310,133 @@ function buildAgendaLayer(agenda: CoachingAgenda | null): string {
 }
 
 // ─── LAYER 9: AI TOOL CONTEXT ───────────────────────────────────────────
-// (Implemented in Sprint 5/E13 — stub for now)
 
-function buildAIToolContext(): string {
-  return "";
+interface AIToolRecord {
+  name: string;
+  category: string[];
+  cost_model: string;
+  description: string | null;
+  strengths: string[] | null;
+  when_to_recommend: string | null;
+}
+
+interface UserAITool {
+  name: string;
+  proficiency?: "beginner" | "intermediate" | "advanced";
+  categories?: string[];
+}
+
+function buildAIToolContext(
+  userTools: UserAITool[],
+  availableTools: AIToolRecord[]
+): string {
+  if (availableTools.length === 0) return "";
+
+  const parts: string[] = [];
+  parts.push("AI TOOL INTEGRATION:");
+
+  // User's known tools
+  if (userTools.length > 0) {
+    parts.push("\nUser's AI tools:");
+    for (const t of userTools) {
+      const level = t.proficiency ? ` (${t.proficiency})` : "";
+      parts.push(`- ${t.name}${level}`);
+    }
+    parts.push(
+      "\nWhen recommending an action item that could benefit from AI assistance:"
+    );
+    parts.push(
+      "1. Check if the user has a tool that fits the task (use the list above)."
+    );
+    parts.push(
+      '2. If yes, generate a SPECIFIC prompt or workflow suggestion for that tool. Example: "Since you use Claude, try this prompt: [concrete prompt tailored to their task]"'
+    );
+    parts.push(
+      "3. If no matching tool, briefly suggest one from the knowledge base below and ask if they'd like to try it."
+    );
+  } else {
+    parts.push(
+      "\nThe user hasn't shared which AI tools they use yet."
+    );
+    parts.push(
+      "When an action item could benefit from AI assistance, ask what tools they currently use before recommending. Example: \"Do you use any AI tools for writing? If so, I can suggest a specific approach.\""
+    );
+  }
+
+  // Build a compact reference of available tools by category
+  const byCategory = new Map<string, string[]>();
+  for (const tool of availableTools) {
+    for (const cat of tool.category ?? []) {
+      const list = byCategory.get(cat) ?? [];
+      list.push(tool.name);
+      byCategory.set(cat, list);
+    }
+  }
+
+  parts.push("\nAI tools knowledge base (for recommendations):");
+  for (const [cat, tools] of byCategory) {
+    parts.push(`- ${cat}: ${tools.join(", ")}`);
+  }
+
+  parts.push(
+    "\nRULES: Don't force AI tool talk. Only mention tools when the user has an action item where AI could genuinely save time or improve quality. Keep tool mentions brief — the coaching relationship comes first."
+  );
+
+  return parts.join("\n");
 }
 
 // ─── LAYER 10: AUTHORITATIVE GUARDRAILS ─────────────────────────────────
 
 function buildGuardrails(): string {
   return `PRESCRIPTIVE INTERVENTION RULES:
-- You are a coaching professional, NOT a lawyer, accountant, therapist, doctor, or financial advisor.
-- NEVER give advice that requires professional licensure.
-- PROHIBITED DOMAINS: legal advice, tax/accounting, medical/mental health, financial planning, HR/employment law, regulatory compliance.
-- When topics require licensed expertise, redirect: help the user prepare questions for the right professional.
-- When giving suggestions in your coaching domain, always:
-  1. Ask permission first ("I have a thought — want to hear it?")
-  2. Frame as options, not directives ("One approach is..." not "You should...")
-  3. Return ownership ("What would you adjust given your context?")
-  4. Never use "you must", "you need to", or "you should"
+You are a coaching professional, NOT a lawyer, accountant, therapist, doctor, or financial advisor.
+NEVER give advice that requires professional licensure.
+
+PROHIBITED DOMAINS — always redirect to qualified professionals:
+1. LEGAL: Never advise on business structure (LLC/S-Corp), contracts, IP, liability.
+   → "This sounds like a question for a business attorney. Want me to help you prepare the right questions to ask them?"
+2. TAX/ACCOUNTING: Never advise on deductions, tax planning, entity structuring.
+   → "A CPA could map this out for your specific situation. What I can help with is how you think about financial decisions."
+3. MEDICAL/MENTAL HEALTH: Never advise on medication, diagnoses, treatment, supplements.
+   → "I'm noticing you're carrying a lot. Have you considered talking to someone who specializes in this?"
+4. FINANCIAL/INVESTMENT: Never advise on investments, valuations, fundraising terms.
+   → "A financial advisor could model this. What I can help with is clarifying what you want the money to accomplish."
+5. HR/EMPLOYMENT LAW: Never advise on firing procedures, employment law compliance.
+   → "Employment decisions have legal implications. What I can help with is the performance conversation itself."
+6. REGULATORY/COMPLIANCE: Never advise on FDA, GDPR, licensing, permits.
+   → "That's a compliance question for a specialist. What I can help with is your decision-making process."
+
+When redirecting, ALWAYS offer to help prepare questions for the professional.
+
+PRESCRIPTIVE DELIVERY RULES (for permitted coaching domains):
+- Ask permission before advising: "I have a thought — want to hear it?"
+- Frame as options, not directives: "One approach is..." NOT "You should..."
+- Return ownership: "What would you adjust given your context?"
+- NEVER use "you must", "you need to", or "you should"
+- Acknowledge limits: "Based on what you've told me..." not omniscient advice
+- One option, not the only option: "One approach that works..." NOT "The right answer is..."
 - You CAN be direct about patterns and behaviors (coaching confrontation is permitted).
 - You can NOT be direct about professional decisions outside your domain.
 
 INFORMATIVE INTERVENTION RULES:
-- For coaching methodology and general business concepts: state confidently.
-- For statistics, market data, pricing, tool capabilities, or time-sensitive info: acknowledge uncertainty unless you have a reliable source. Say "I'd suggest checking [resource] for the latest data."
+You have access to a search_facts tool for factual grounding.
+
+Category A — COACHING-SAFE (state directly, no grounding needed):
+- Coaching methodology (GROW, OSKAR, etc.), general business concepts, communication techniques, common heuristics (80/20 rule, etc.)
+
+Category B — VERIFIABLE (use search_facts tool before stating):
+- Statistics, market data, pricing, tool capabilities, company facts, current events, benchmarks
+- If you would include a specific number, percentage, or date — use the search_facts tool first.
+- If the tool returns a grounded answer with sources, cite it: "According to [source], [fact]."
+- If the tool returns low confidence or is unavailable, say: "I don't have reliable current data on that. I'd suggest checking [specific resource]."
 - NEVER fabricate statistics or cite sources you haven't verified.
-- Always pivot back to coaching after providing information.`;
+
+Category C — PROHIBITED (never state, redirect to professional):
+- Specific tax codes, legal statutes, medical dosages, financial regulations
+- These overlap with the Prescriptive prohibited domains above.
+
+After providing any factual information, always pivot back to coaching:
+"Now that we know [fact], how does your situation compare?"`;
 }
 
 // ─── LAYER 11: SAFETY GUARDRAILS ────────────────────────────────────────
@@ -357,6 +484,8 @@ export async function assemblePrompt(
     messagesResult,
     factsResult,
     agendaResult,
+    summariesResult,
+    aiToolsResult,
   ] = await Promise.all([
     // User profile
     supabase.from("users").select("*").eq("id", userId).single(),
@@ -393,6 +522,18 @@ export async function assemblePrompt(
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
+    // Session summaries — medium-term memory (S6.12)
+    supabase
+      .from("conversation_summaries")
+      .select("summary, key_topics, framework_used, message_count, first_message_at, last_message_at")
+      .eq("user_id", userId)
+      .order("last_message_at", { ascending: false })
+      .limit(5),
+    // AI tools knowledge base (S6.6 — non-flagged, active tools)
+    supabase
+      .from("ai_tools")
+      .select("name, category, cost_model, description, strengths, when_to_recommend")
+      .eq("auto_flagged", false),
   ]);
 
   const user = userResult.data as UserProfile | null;
@@ -401,6 +542,9 @@ export async function assemblePrompt(
   const messages = (messagesResult.data ?? []) as Message[];
   const importantFacts = (factsResult.data ?? []) as MemoryFact[];
   const agenda = agendaResult.data as CoachingAgenda | null;
+  const sessionSummaries = (summariesResult.data ?? []) as ConversationSummary[];
+  const availableAITools = (aiToolsResult.data ?? []) as AIToolRecord[];
+  const userTools: UserAITool[] = Array.isArray(user?.ai_tools) ? user.ai_tools as UserAITool[] : [];
 
   // Semantic memory retrieval — embed user message and search for relevant facts
   let semanticFacts: MemoryFact[] = [];
@@ -467,9 +611,9 @@ export async function assemblePrompt(
     user ? buildUserProfile(user) : "",                      // Layer 4
     buildEntitiesLayer(),                                    // Layer 5 (stub)
     buildDeliveryStyle(profile),                             // Layer 6
-    buildMemoryLayer(messages, facts),                       // Layer 7
+    buildMemoryLayer(messages, facts, sessionSummaries),      // Layer 7
     buildAgendaLayer(agenda),                                // Layer 8
-    buildAIToolContext(),                                    // Layer 9 (stub)
+    buildAIToolContext(userTools, availableAITools),          // Layer 9
     buildGuardrails(),                                      // Layer 10
     buildSafetyGuardrails(),                                // Layer 11
   ].filter(Boolean);

@@ -1,13 +1,21 @@
 @import "tailwindcss";
 @import "./coachapp/dashboard/chat/chat.css";
+@import "./coachapp/dashboard/dashboard.css";
+@import "./coachapp/admin/admin.css";
+@import "./landing.css";
 
 /* =============================================================
    MASTERY COACH — Design System Tokens (Tailwind v4 CSS-first)
-   Premium dark-mode-first aesthetic per GEMINI.md §3B
+   Brand: "The Kinetic Curator" — per directives/BRAND.md
    ============================================================= */
 
 @theme {
-  /* ── Brand Colors ── */
+  /* ── Typography ── */
+  --font-display: "Manrope", "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-sans: "Inter", "system-ui", sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", monospace;
+
+  /* ── Brand Colors (OKLCH) ── */
   --color-brand-50: oklch(0.97 0.01 250);
   --color-brand-100: oklch(0.93 0.03 250);
   --color-brand-200: oklch(0.86 0.06 250);
@@ -20,19 +28,28 @@
   --color-brand-900: oklch(0.26 0.08 250);
   --color-brand-950: oklch(0.18 0.06 250);
 
-  /* ── Accent (warm gold for CTAs, highlights) ── */
+  /* ── Primary Blues (BRAND.md §2.1) ── */
+  --color-primary: #b4c5ff;
+  --color-primary-container: #4278ff;
+  --color-primary-deep: #003ec7;
+  --color-primary-darker: #0038b6;
+
+  /* ── Accent (BRAND.md §2.1 — The Spark) ── */
+  --color-accent-gold: #fabd00;
+  --color-accent-teal: #4edea3;
+  /* accent-400/500/600 kept for legacy Tailwind class compatibility */
   --color-accent-400: oklch(0.82 0.14 85);
   --color-accent-500: oklch(0.75 0.16 85);
   --color-accent-600: oklch(0.65 0.15 85);
 
-  /* ── Surface (dark mode layers) ── */
+  /* ── Surface (dark mode layers — BRAND.md §2.1) ── */
   --color-surface-0: oklch(0.13 0.01 250);     /* deepest background */
   --color-surface-50: oklch(0.16 0.01 250);    /* card background */
   --color-surface-100: oklch(0.20 0.015 250);  /* elevated surface */
   --color-surface-200: oklch(0.25 0.02 250);   /* hover / active */
   --color-surface-300: oklch(0.30 0.02 250);   /* borders, dividers */
 
-  /* ── Text ── */
+  /* ── Text (BRAND.md §2.1) ── */
   --color-text-primary: oklch(0.95 0.005 250);
   --color-text-secondary: oklch(0.70 0.01 250);
   --color-text-muted: oklch(0.50 0.01 250);
@@ -44,19 +61,15 @@
   --color-danger: oklch(0.65 0.20 25);
   --color-info: oklch(0.70 0.14 235);
 
-  /* ── Typography ── */
-  --font-sans: "Inter", "system-ui", sans-serif;
-  --font-mono: "JetBrains Mono", "Fira Code", monospace;
-
   /* ── Spacing scale ── */
   --spacing-18: 4.5rem;
   --spacing-22: 5.5rem;
 
-  /* ── Border radius ── */
+  /* ── Border radius (BRAND.md §7) ── */
   --radius-sm: 0.375rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-xl: 1rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
   --radius-2xl: 1.25rem;
 
   /* ── Shadows ── */
@@ -69,25 +82,215 @@
   --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ── Base reset + dark mode defaults ── */
+/* ===========================================================
+   Semantic CSS Custom Properties (non-@theme)
+   These use rgba() values that Tailwind v4 @theme doesn't inline
+   =========================================================== */
+
+:root {
+  /* ── Text semantics ── */
+  --text-heading: #f1f5f9;
+  --text-body: rgba(255, 255, 255, 0.75);
+  --text-label: rgba(255, 255, 255, 0.7);
+  --text-hint: rgba(255, 255, 255, 0.3);
+  --text-placeholder: rgba(255, 255, 255, 0.25);
+  --text-disabled: rgba(255, 255, 255, 0.35);
+
+  /* ── Structural colors ── */
+  --ghost-border: rgba(255, 255, 255, 0.06);
+  --ghost-border-hover: rgba(255, 255, 255, 0.12);
+  --input-bg: rgba(255, 255, 255, 0.04);
+  --input-border: rgba(255, 255, 255, 0.1);
+  --glass-bg: rgba(255, 255, 255, 0.025);
+
+  /* ── Primary with alpha ── */
+  --primary-glow: rgba(66, 120, 255, 0.4);
+  --primary-glow-soft: rgba(66, 120, 255, 0.15);
+  --primary-glow-ring: rgba(66, 120, 255, 0.1);
+  --primary-tint-10: rgba(66, 120, 255, 0.1);
+  --primary-tint-20: rgba(66, 120, 255, 0.2);
+
+  /* ── Legacy color mappings (for gradual migration) ── */
+  --primary-light: #8ab4ff;     /* light primary on dark bg */
+  --primary-lighter: #b4c5ff;   /* lighter primary accent */
+
+  /* ── Semantic with alpha ── */
+  --success-hex: #34d399;
+  --danger-hex: #f87171;
+  --success-tint: rgba(52, 211, 153, 0.1);
+  --success-border: rgba(52, 211, 153, 0.2);
+  --danger-tint: rgba(239, 68, 68, 0.08);
+  --danger-border: rgba(239, 68, 68, 0.15);
+}
+
+/* ===========================================================
+   LIGHT MODE OVERRIDES (BRAND.md §2.2)
+   Activated via data-theme="light" on <html>
+   =========================================================== */
+
+[data-theme="light"] {
+  /* ── @theme token overrides (OKLCH → light-friendly values) ── */
+  --color-text-primary: #181c1e;
+  --color-text-secondary: #44474a;
+  --color-text-muted: #6b7280;
+  --color-text-inverse: #f7fafd;
+  --color-surface-0: #f7fafd;
+  --color-surface-50: #f1f4f7;
+  --color-surface-100: #e8ebee;
+  --color-surface-200: #e0e3e6;
+  --color-surface-300: rgba(0, 0, 0, 0.1);
+
+  /* ── Text semantics ── */
+  --text-heading: #181c1e;
+  --text-body: rgba(0, 0, 0, 0.7);
+  --text-label: rgba(0, 0, 0, 0.6);
+  --text-hint: rgba(0, 0, 0, 0.35);
+  --text-placeholder: rgba(0, 0, 0, 0.3);
+  --text-disabled: rgba(0, 0, 0, 0.3);
+
+  /* ── Structural colors ── */
+  --ghost-border: rgba(0, 0, 0, 0.08);
+  --ghost-border-hover: rgba(0, 0, 0, 0.15);
+  --input-bg: rgba(0, 0, 0, 0.03);
+  --input-border: rgba(0, 0, 0, 0.12);
+  --glass-bg: rgba(255, 255, 255, 0.7);
+
+  /* ── Primary with alpha ── */
+  --primary-glow: rgba(0, 82, 255, 0.2);
+  --primary-glow-soft: rgba(0, 82, 255, 0.08);
+  --primary-glow-ring: rgba(0, 82, 255, 0.08);
+  --primary-tint-10: rgba(0, 82, 255, 0.08);
+  --primary-tint-20: rgba(0, 82, 255, 0.15);
+
+  /* ── Legacy color mappings ── */
+  --primary-light: #003ec7;
+  --primary-lighter: #0052ff;
+
+  /* ── Semantic with alpha ── */
+  --success-hex: #059669;
+  --danger-hex: #dc2626;
+  --success-tint: rgba(5, 150, 105, 0.08);
+  --success-border: rgba(5, 150, 105, 0.2);
+  --danger-tint: rgba(220, 38, 38, 0.06);
+  --danger-border: rgba(220, 38, 38, 0.12);
+}
+
+/* ── Base reset — dark mode defaults ── */
 body {
   background-color: var(--color-surface-0);
   color: var(--color-text-primary);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* ── Glassmorphism utility ── */
+/* ── Light mode surface + text overrides (Tailwind tokens) ── */
+[data-theme="light"] body {
+  background-color: #f7fafd;
+  color: #181c1e;
+}
+
+/* Override Tailwind surface utilities in light mode */
+[data-theme="light"] .bg-surface-0 {
+  background-color: #f7fafd;
+}
+
+[data-theme="light"] .bg-surface-50 {
+  background-color: #f1f4f7;
+}
+
+[data-theme="light"] .bg-surface-50\/80 {
+  background-color: rgba(241, 244, 247, 0.8);
+}
+
+[data-theme="light"] .bg-surface-100 {
+  background-color: #e8ebee;
+}
+
+[data-theme="light"] .bg-surface-200 {
+  background-color: #e0e3e6;
+}
+
+[data-theme="light"] .border-surface-300 {
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .text-text-primary {
+  color: #181c1e;
+}
+
+[data-theme="light"] .text-text-secondary {
+  color: #44474a;
+}
+
+[data-theme="light"] .text-text-muted {
+  color: #6b7280;
+}
+
+[data-theme="light"] .text-brand-400 {
+  color: #003ec7;
+}
+
+[data-theme="light"] .bg-brand-500\/15 {
+  background-color: rgba(0, 62, 199, 0.1);
+}
+
+[data-theme="light"] .ring-brand-500\/20 {
+  --tw-ring-color: rgba(0, 62, 199, 0.15);
+}
+
+[data-theme="light"] .hover\:bg-surface-200:hover {
+  background-color: #e0e3e6;
+}
+
+/* ── Display Typography (Manrope — BRAND.md §3) ── */
+.font-display {
+  font-family: var(--font-display);
+}
+
+.text-display-lg {
+  font-family: var(--font-display);
+  font-size: 3.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.text-display-sm {
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.15;
+}
+
+.text-headline-lg {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.text-headline-md {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  line-height: 1.25;
+}
+
+/* ── Glassmorphism utility (BRAND.md §4.3) ── */
 .glass {
   background: oklch(0.16 0.01 250 / 0.6);
   backdrop-filter: blur(16px) saturate(1.2);
-  border: 1px solid oklch(1 0 0 / 0.06);
+  border: 1px solid var(--ghost-border);
 }
 
 .glass-hover:hover {
   background: oklch(0.20 0.015 250 / 0.7);
-  border-color: oklch(1 0 0 / 0.1);
+  border-color: var(--ghost-border-hover);
 }
 
 /* ── Scrollbar styling ── */
@@ -117,4 +320,94 @@ body {
 :focus-visible {
   outline: 2px solid var(--color-brand-500);
   outline-offset: 2px;
+}
+
+/* ===========================================================
+   Light mode glass / scrollbar / selection overrides
+   =========================================================== */
+
+[data-theme="light"] .glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .glass-hover:hover {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+[data-theme="light"] ::selection {
+  background: rgba(0, 82, 255, 0.2);
+}
+
+/* ===========================================================
+   Theme Toggle Component Styles
+   UI/UX: 44×44px touch targets, cursor-pointer, no emojis,
+          smooth transitions, focus-visible ring
+   =========================================================== */
+
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--radius-md);
+  background: var(--input-bg);
+  border: 1px solid var(--ghost-border);
+}
+
+.theme-toggle__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: calc(var(--radius-md) - 4px);
+  border: none;
+  background: transparent;
+  color: var(--text-hint);
+  cursor: pointer;
+  transition: all 0.2s var(--ease-smooth);
+  font-family: inherit;
+}
+
+.theme-toggle__btn:hover {
+  color: var(--text-body);
+  background: var(--ghost-border-hover);
+}
+
+.theme-toggle__btn--active {
+  background: var(--color-primary-container);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(66, 120, 255, 0.3);
+}
+
+.theme-toggle__btn--active:hover {
+  background: var(--color-primary-container);
+  color: #fff;
+}
+
+.theme-toggle__btn:focus-visible {
+  outline: 2px solid var(--color-brand-500);
+  outline-offset: 1px;
+}
+
+/* Reduced motion — disable theme transition animation */
+@media (prefers-reduced-motion: reduce) {
+  body {
+    transition: none;
+  }
+
+  .theme-toggle__btn {
+    transition: none;
+  }
 }

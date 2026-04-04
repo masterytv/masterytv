@@ -11,9 +11,13 @@ export interface UserProfile {
   preferred_channel: "email" | "telegram" | "web";
   morning_briefing_time: string;
   subscription_tier: "free" | "core" | "premium";
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+  daily_message_count: number;
   telegram_chat_id: string | null;
   linkedin_url: string | null;
   website_url: string | null;
+  is_admin: boolean;
 }
 
 /**
@@ -39,7 +43,7 @@ export function useUser() {
       const { data, error } = await supabase
         .from("users")
         .select(
-          "id, email, name, timezone, preferred_channel, morning_briefing_time, subscription_tier, telegram_chat_id, linkedin_url, website_url"
+          "id, email, name, timezone, preferred_channel, morning_briefing_time, subscription_tier, stripe_customer_id, stripe_subscription_id, daily_message_count, telegram_chat_id, linkedin_url, website_url, is_admin"
         )
         .eq("id", authUser.id)
         .single();

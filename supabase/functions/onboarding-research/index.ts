@@ -151,6 +151,7 @@ Synthesize this into a structured research summary. Return ONLY valid JSON with 
 Rules:
 - Use available data. If both sources are null, still generate what you can from the user's input.
 - challenges_detected: infer 2-4 potential coaching topics based on their role, stage, and stated starting point.
+- IMPORTANT: In "user_background", write in second person ("You are an entrepreneur...") not third person ("The user is..."). This text will be shown directly to the person.
 - Be concise. This data feeds into a coaching letter.
 - Return ONLY valid JSON.`;
 

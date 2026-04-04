@@ -148,6 +148,28 @@ Deno.serve(async (req: Request) => {
       await supabase.from("user_entities").insert(entities);
     }
 
+    // ── Set psychological orientation from starting point choice ──
+    const startingPointType = body.starting_point_type;
+    if (startingPointType && userId) {
+      // Map choice to Regulatory Focus Theory dimensions
+      const focusMap: Record<string, { promotion: number; prevention: number }> = {
+        challenge: { promotion: 0.3, prevention: 0.7 },  // Pain avoidance orientation
+        goal:      { promotion: 0.8, prevention: 0.2 },  // Goal pursuit orientation
+        systematic:{ promotion: 0.5, prevention: 0.5 },  // Balanced/systems orientation
+      };
+      const focus = focusMap[startingPointType] || focusMap.systematic;
+
+      await supabase
+        .from("coach_profiles")
+        .upsert({
+          user_id: userId,
+          promotion_focus: focus.promotion,
+          prevention_focus: focus.prevention,
+          source: "self_reported",
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "user_id" });
+    }
+
     // Update onboarding state
     await supabase
       .from("onboarding_state")

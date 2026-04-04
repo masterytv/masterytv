@@ -53,6 +53,17 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
+  // Catch auth codes landing on wrong routes (e.g. /?code=...)
+  // Redirect them to the proper callback handler
+  const code = request.nextUrl.searchParams.get("code");
+  if (code && !isCallbackRoute) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/coachapp/auth/callback";
+    // Preserve the code param, strip others
+    url.search = `?code=${code}`;
+    return NextResponse.redirect(url);
+  }
+
   // Redirect unauthenticated users from protected routes to /coachapp/login
   if (!user && (isDashboardRoute || isAdminRoute || isOnboardingRoute)) {
     const url = request.nextUrl.clone();

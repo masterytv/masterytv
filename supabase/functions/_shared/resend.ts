@@ -1,0 +1,313 @@
+/**
+ * Resend Email Client — Outbound coaching emails.
+ *
+ * S4.1: Shared utilities for sending branded coaching emails via Resend API.
+ * Uses direct fetch (no SDK) to avoid Deno compatibility issues.
+ *
+ * Architecture: ARCHITECTURE.md §5.6
+ */
+
+const RESEND_API_URL = "https://api.resend.com";
+const FROM_ADDRESS = "Mastery Coach <coach@mail.masterytv.com>";
+
+// ─── SEND EMAIL ─────────────────────────────────────────────────────────
+
+interface SendEmailParams {
+  to: string;
+  subject: string;
+  html: string;
+  text?: string;
+  replyTo?: string;
+  headers?: Record<string, string>;
+}
+
+interface SendEmailResult {
+  id: string;
+}
+
+/**
+ * Send an email via Resend API.
+ * Returns the Resend email ID for tracking.
+ */
+export async function sendEmail(
+  params: SendEmailParams
+): Promise<SendEmailResult> {
+  const apiKey = Deno.env.get("RESEND_API_KEY");
+  if (!apiKey) throw new Error("RESEND_API_KEY not set");
+
+  const body: Record<string, unknown> = {
+    from: FROM_ADDRESS,
+    to: [params.to],
+    subject: params.subject,
+    html: params.html,
+  };
+
+  if (params.text) body.text = params.text;
+  if (params.replyTo) body.reply_to = params.replyTo;
+  if (params.headers) body.headers = params.headers;
+
+  const response = await fetch(`${RESEND_API_URL}/emails`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`Resend API error (${response.status}): ${err}`);
+  }
+
+  return await response.json();
+}
+
+// ─── RETRIEVE RECEIVED EMAIL ────────────────────────────────────────────
+
+interface ReceivedEmail {
+  id: string;
+  from: string;
+  to: string[];
+  subject: string;
+  text: string;
+  html: string;
+  created_at: string;
+}
+
+/**
+ * Retrieve the full content of a received email by ID.
+ * Resend webhooks only send metadata — this fetches the body.
+ */
+export async function getReceivedEmail(
+  emailId: string
+): Promise<ReceivedEmail> {
+  const apiKey = Deno.env.get("RESEND_API_KEY");
+  if (!apiKey) throw new Error("RESEND_API_KEY not set");
+
+  const response = await fetch(
+    `${RESEND_API_URL}/emails/receiving/${emailId}`,
+    {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(
+      `Resend API error fetching received email (${response.status}): ${err}`
+    );
+  }
+
+  return await response.json();
+}
+
+// ─── EMAIL THREADING ────────────────────────────────────────────────────
+
+/**
+ * Build email headers for conversation threading.
+ * Uses standard In-Reply-To + References headers so replies chain correctly
+ * in Gmail, Outlook, Apple Mail, etc.
+ */
+export function buildThreadHeaders(
+  conversationId: string,
+  previousMessageId?: string
+): Record<string, string> {
+  // Generate a stable Message-ID based on conversation
+  const messageId = `<coach-${conversationId}-${Date.now()}@mail.masterytv.com>`;
+  const headers: Record<string, string> = {
+    "Message-ID": messageId,
+  };
+
+  if (previousMessageId) {
+    headers["In-Reply-To"] = previousMessageId;
+    headers["References"] = previousMessageId;
+  }
+
+  return headers;
+}
+
+// ─── STRIP EMAIL NOISE ──────────────────────────────────────────────────
+
+/**
+ * Strip email reply noise from inbound messages:
+ * - Quoted text ("On Jan 1, 2026, user wrote:")
+ * - Email signatures (lines starting with "-- " or "—")
+ * - Forwarded content
+ * - Excessive whitespace
+ *
+ * Goal: extract ONLY the user's new reply, discarding everything else.
+ */
+export function stripEmailNoise(text: string): string {
+  const lines = text.split("\n");
+  const cleaned: string[] = [];
+
+  for (const line of lines) {
+    // Stop at quoted reply markers
+    if (/^>/.test(line)) break;
+    if (/^On .+ wrote:$/i.test(line.trim())) break;
+    if (/^-{3,}/.test(line.trim())) break;
+
+    // Stop at signature markers
+    if (/^-- ?$/.test(line.trim())) break;
+    if (/^—$/.test(line.trim())) break;
+    if (/^Sent from my (iPhone|iPad|Galaxy|Android)/i.test(line.trim())) break;
+    if (/^Get Outlook for/i.test(line.trim())) break;
+
+    // Stop at forwarded content
+    if (/^-+ ?Forwarded message/i.test(line.trim())) break;
+    if (/^Begin forwarded message/i.test(line.trim())) break;
+
+    cleaned.push(line);
+  }
+
+  return cleaned
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n") // Collapse excessive newlines
+    .trim();
+}
+
+// ─── HTML EMAIL TEMPLATE ────────────────────────────────────────────────
+
+/**
+ * Build a premium HTML email template for a coaching response.
+ * Mobile-responsive, dark-mode aware, branded.
+ */
+export function buildCoachingEmailHtml(
+  coachResponse: string,
+  userName: string,
+  conversationId: string
+): string {
+  // Convert markdown-like formatting to HTML
+  const htmlBody = coachResponse
+    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") // Bold
+    .replace(/\*(.*?)\*/g, "<em>$1</em>") // Italic
+    .replace(/^- (.+)$/gm, "<li>$1</li>") // List items
+    .replace(/(<li>.*<\/li>\n?)+/g, (match) => `<ul>${match}</ul>`) // Wrap in <ul>
+    .replace(/\n\n/g, "</p><p>") // Paragraphs
+    .replace(/\n/g, "<br>") // Line breaks
+    .replace(/🆘|💬|🌍|📞|💛|🎯|✅|🔥|💡|🚀/g, (emoji) => `<span style="font-size:1.2em">${emoji}</span>`); // Enlarge emoji
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
+  <title>Mastery Coach</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
+    :root { color-scheme: light dark; }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background-color: #f8f9fa;
+      color: #1a1a2e;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      body { background-color: #0d0d1a; color: #e8e8f0; }
+      .email-container { background-color: #16162a !important; }
+      .header-bar { background: linear-gradient(135deg, #1a1a3e, #2d1b69) !important; }
+      .footer { color: #666 !important; }
+    }
+
+    .email-wrapper {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .email-container {
+      background-color: #ffffff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+
+    .header-bar {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      padding: 24px 32px;
+      text-align: center;
+    }
+
+    .header-bar h1 {
+      color: #ffffff;
+      font-size: 20px;
+      font-weight: 600;
+      margin: 0;
+      letter-spacing: 0.5px;
+    }
+
+    .body-content {
+      padding: 32px;
+      line-height: 1.7;
+      font-size: 15px;
+    }
+
+    .body-content p { margin: 0 0 16px 0; }
+    .body-content ul { padding-left: 20px; margin: 0 0 16px 0; }
+    .body-content li { margin-bottom: 8px; }
+    .body-content strong { color: #764ba2; }
+
+    .reply-cta {
+      text-align: center;
+      padding: 16px 32px 32px;
+    }
+
+    .reply-cta p {
+      font-size: 13px;
+      color: #888;
+      margin: 0;
+    }
+
+    .footer {
+      text-align: center;
+      padding: 16px 32px;
+      font-size: 11px;
+      color: #aaa;
+      border-top: 1px solid #eee;
+    }
+
+    .footer a { color: #667eea; text-decoration: none; }
+
+    @media only screen and (max-width: 480px) {
+      .email-wrapper { padding: 8px; }
+      .body-content { padding: 20px; font-size: 14px; }
+      .header-bar { padding: 16px 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="email-wrapper">
+    <div class="email-container">
+      <div class="header-bar">
+        <h1>✦ Mastery Coach</h1>
+      </div>
+      <div class="body-content">
+        <p>${htmlBody}</p>
+      </div>
+      <div class="reply-cta">
+        <p>💬 Just reply to this email to continue the conversation</p>
+      </div>
+      <div class="footer">
+        <p>
+          <a href="https://masterytv.com/coachapp/dashboard">Open Dashboard</a> · 
+          <a href="https://masterytv.com/coachapp/settings">Settings</a>
+        </p>
+        <p style="margin-top: 8px;">
+          Mastery Coach by MasteryTV · You're receiving this because you enabled email coaching.
+        </p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+}

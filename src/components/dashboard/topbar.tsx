@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { Menu, LogOut, User } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 interface TopbarProps {
   userName: string | null;
@@ -57,7 +58,9 @@ export function Topbar({ userName, onMenuClick }: TopbarProps) {
       {/* Page title area (can be customized per page) */}
       <div className="hidden lg:block" />
 
-      {/* User avatar + dropdown */}
+      {/* Right side: theme toggle + user avatar */}
+      <div className="flex items-center gap-3">
+        <ThemeToggle />
       <div className="relative" ref={dropdownRef}>
         <button
           onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -95,6 +98,7 @@ export function Topbar({ userName, onMenuClick }: TopbarProps) {
             </button>
           </div>
         )}
+      </div>
       </div>
     </header>
   );

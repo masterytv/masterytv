@@ -192,7 +192,8 @@ CREATE TABLE coach_profiles (
   trust_level int DEFAULT 1 CHECK (trust_level BETWEEN 1 AND 5),
   -- Framework affinity (per-user learning)
   framework_affinity jsonb DEFAULT '{}'::jsonb,
-  -- Regulatory focus
+  -- Regulatory focus (seeded during onboarding from Starting Point choice)
+  -- Challenge → prevention=0.7/promotion=0.3, Goal → promotion=0.8/prevention=0.2, Questionnaire → balanced 0.5/0.5
   promotion_focus float DEFAULT 0.5,
   prevention_focus float DEFAULT 0.5,
   created_at timestamptz DEFAULT now(),
@@ -1469,6 +1470,23 @@ Deno.serve(async (req: Request) => {
   });
 });
 ```
+
+> **⚠️ CRITICAL: Always deploy with `verify_jwt: false`**
+>
+> Supabase's relay-level JWT verification rejects ES256 tokens (new auth system)
+> and all external webhook requests (Stripe, Telegram, etc.) that have no JWT.
+> **Every Edge Function must handle auth internally:**
+>
+> | Function Type | Auth Method | Example |
+> |---|---|---|
+> | User-facing | `supabaseAuth.auth.getUser()` | `coach`, `create-checkout` |
+> | External webhook | HMAC signature verification | `stripe-webhook`, `telegram-webhook` |
+> | Cron/internal | No auth (internal only) | `cron-*` functions |
+>
+> **Deploy with:** `supabase functions deploy name --no-verify-jwt`
+> **MCP deploy:** `verify_jwt: false`
+>
+> *Lesson learned: Sprint 5 E2E (2026-04-02) — all webhook deliveries failed with 401.*
 
 ### 8.2 Naming Conventions
 

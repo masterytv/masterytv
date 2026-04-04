@@ -1,73 +1,109 @@
-import EmailForm from '@/components/EmailForm';
+import type { Metadata } from "next";
+import LandingPage from "./landing";
 
-// Deterministic star positions — avoids hydration mismatch vs Math.random()
-const STARS = [
-    { top: '8%', left: '15%', size: 1.5, duration: '5s', delay: '0s' },
-    { top: '12%', left: '72%', size: 2, duration: '4s', delay: '1.2s' },
-    { top: '22%', left: '45%', size: 1, duration: '6s', delay: '0.5s' },
-    { top: '18%', left: '88%', size: 1.5, duration: '3.5s', delay: '2s' },
-    { top: '35%', left: '8%', size: 2, duration: '5.5s', delay: '0.8s' },
-    { top: '42%', left: '52%', size: 1, duration: '4.5s', delay: '1.5s' },
-    { top: '55%', left: '30%', size: 1.5, duration: '6s', delay: '0.3s' },
-    { top: '60%', left: '78%', size: 2, duration: '4s', delay: '2.5s' },
-    { top: '68%', left: '20%', size: 1, duration: '5s', delay: '1s' },
-    { top: '75%', left: '60%', size: 1.5, duration: '3.8s', delay: '0.7s' },
-    { top: '82%', left: '42%', size: 2, duration: '5.2s', delay: '1.8s' },
-    { top: '88%', left: '85%', size: 1, duration: '4.2s', delay: '0.2s' },
-    { top: '5%', left: '35%', size: 1, duration: '6.5s', delay: '1.3s' },
-    { top: '30%', left: '92%', size: 1.5, duration: '4.8s', delay: '0.6s' },
-    { top: '48%', left: '5%', size: 2, duration: '5.8s', delay: '2.2s' },
-    { top: '90%', left: '12%', size: 1, duration: '4.3s', delay: '1.1s' },
-    { top: '15%', left: '55%', size: 1.5, duration: '5.3s', delay: '0.9s' },
-    { top: '72%', left: '38%', size: 1, duration: '6.2s', delay: '1.7s' },
-    { top: '95%', left: '65%', size: 1.5, duration: '4.6s', delay: '0.4s' },
-    { top: '38%', left: '68%', size: 2, duration: '5.7s', delay: '2.8s' },
-];
+/**
+ * Landing Page — Server Component wrapper
+ * S6.11 — Premium marketing page for Mastery Coach
+ *
+ * Handles: SEO metadata, OG tags, Twitter cards, JSON-LD structured data
+ * Renders: <LandingPage /> client component (Framer Motion animations)
+ */
 
-export default function Home() {
-    return (
-        <main className="page" role="main">
-            {/* Background star field */}
-            <div className="stars" aria-hidden="true">
-                {STARS.map((star, i) => (
-                    <span
-                        key={i}
-                        className="star"
-                        style={{
-                            top: star.top,
-                            left: star.left,
-                            width: `${star.size}px`,
-                            height: `${star.size}px`,
-                            ['--duration' as string]: star.duration,
-                            ['--delay' as string]: star.delay,
-                        }}
-                    />
-                ))}
-            </div>
+export const metadata: Metadata = {
+  title: "Mastery Coach — AI Coaching That Remembers Everything",
+  description:
+    "Not a chatbot. A coach that knows your name, your goals, and your blind spots. 20+ coaching frameworks. Adapted to how you think. Available 24/7 on web, email, and Telegram.",
+  keywords: [
+    "AI coaching",
+    "executive coaching",
+    "business coaching",
+    "personal development",
+    "AI coach",
+    "founder coaching",
+    "leadership coaching",
+    "accountability coach",
+  ],
+  openGraph: {
+    title: "Mastery Coach — AI Coaching That Remembers Everything",
+    description:
+      "Your people. Your goals. Your fears. Your wins. A coach that remembers everything and uses 20+ proven frameworks to coach you in your own style.",
+    type: "website",
+    siteName: "MasteryTV",
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Mastery Coach — AI Coaching That Remembers Everything",
+    description:
+      "Not a chatbot. A coach that knows your name, your goals, and your blind spots.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+  alternates: {
+    canonical: "https://masterytv.com",
+  },
+};
 
-            {/* Main message — above the planet */}
-            <div className="content">
-                <h1 className="heading">Something Big is Coming</h1>
-                <p className="brand">
-                    <span className="brand-accent">MasteryTV</span>
-                </p>
-                <EmailForm />
-            </div>
+/* JSON-LD Structured Data — SoftwareApplication schema for rich results */
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "Mastery Coach",
+  description:
+    "AI coaching platform that remembers your people, goals, fears, and wins. Uses 20+ proven coaching frameworks adapted to your communication style.",
+  applicationCategory: "BusinessApplication",
+  operatingSystem: "Web",
+  offers: [
+    {
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "USD",
+      name: "Free Tier",
+      description: "5 messages per day, web chat, coaching letter",
+    },
+    {
+      "@type": "Offer",
+      price: "99",
+      priceCurrency: "USD",
+      name: "Core",
+      description:
+        "Unlimited messages, web + email + Telegram, morning briefings, 20+ frameworks",
+      priceSpecification: {
+        "@type": "UnitPriceSpecification",
+        price: "99",
+        priceCurrency: "USD",
+        billingDuration: "P1M",
+      },
+    },
+  ],
+  featureList: [
+    "Persistent memory across conversations",
+    "20+ coaching framework auto-selection",
+    "8-dimension communication style adaptation",
+    "Proactive morning briefings",
+    "Accountability check-ins",
+    "Multi-channel: web, email, Telegram",
+    "Entity extraction (people, goals, patterns)",
+    "Crisis detection and safety system",
+  ],
+  creator: {
+    "@type": "Organization",
+    name: "MasteryTV",
+    url: "https://masterytv.com",
+  },
+};
 
-            {/* Glowing orb — the centrepiece */}
-            <div className="orb-container" aria-hidden="true">
-                <div className="orb-haze" />
-                <div className="orb-glow" />
-                <div className="orb" />
-                <div className="orb-horizon" />
-            </div>
-
-            {/* Footer */}
-            <footer className="footer">
-                <p className="footer-text">
-                    © {new Date().getFullYear()} MasteryTV. All rights reserved.
-                </p>
-            </footer>
-        </main>
-    );
+export default function HomePage() {
+  return (
+    <>
+      {/* JSON-LD structured data for search engines */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <LandingPage />
+    </>
+  );
 }

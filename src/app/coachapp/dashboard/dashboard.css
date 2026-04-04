@@ -1,0 +1,1081 @@
+/**
+ * Dashboard Pages — Shared + Page-Specific Styles
+ * 
+ * BEM naming: db- (shared), cm- (commitments), cl- (coaching letter),
+ *             pg- (progress), cp- (coach profile)
+ * Tokens: All values from globals.css CSS custom properties
+ * Brand: "Kinetic Editorial" per directives/BRAND.md
+ */
+
+/* ==========================================================================
+   SHARED DASHBOARD COMPONENTS
+   ========================================================================== */
+
+/* ─── Page Shell ─── */
+
+.db-page {
+  overflow-y: auto;
+  height: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+
+.db-page__inner {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+@media (min-width: 1024px) {
+  .db-page__inner {
+    padding: 2rem 2rem 4rem;
+  }
+}
+
+/* ─── Page Header ─── */
+
+.db-header {
+  margin-bottom: 2rem;
+}
+
+.db-header__row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.db-header__title {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-heading);
+  line-height: 1.2;
+}
+
+.db-header__subtitle {
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  color: var(--text-body);
+  line-height: 1.5;
+}
+
+/* ─── Data Float Chip (BRAND.md §8.4) ─── */
+
+.db-stat-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.75rem 1.25rem;
+  background: var(--color-surface-50);
+  border-radius: var(--radius-md);
+  box-shadow: 0 0 20px var(--primary-glow-ring);
+  min-width: 100px;
+}
+
+.db-stat-chip__label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-label);
+}
+
+.db-stat-chip__value {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  color: var(--text-heading);
+  line-height: 1.25;
+}
+
+.db-stat-chip__value--success {
+  color: var(--success-hex);
+}
+
+/* ─── Status Tabs ─── */
+
+.db-tabs {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  background: var(--color-surface-50);
+  border-radius: var(--radius-md);
+  margin-bottom: 1.5rem;
+}
+
+.db-tab {
+  flex: 1;
+  padding: 0.5rem 1rem;
+  border-radius: calc(var(--radius-md) - 2px);
+  border: none;
+  background: transparent;
+  color: var(--text-body);
+  font-size: 0.8rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s var(--ease-smooth);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.db-tab:hover {
+  color: var(--text-heading);
+  background: var(--color-surface-100);
+}
+
+.db-tab--active {
+  background: var(--color-surface-200);
+  color: var(--text-heading);
+  font-weight: 600;
+}
+
+.db-tab__count {
+  margin-left: 0.35rem;
+  font-size: 0.7rem;
+  opacity: 0.6;
+}
+
+/* ─── Glass Section Card ─── */
+
+.db-section {
+  background: var(--glass-bg);
+  border: 1px solid var(--ghost-border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  backdrop-filter: blur(16px) saturate(1.2);
+  transition: box-shadow 0.3s var(--ease-smooth), border-color 0.3s;
+}
+
+.db-section:hover {
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px rgba(6, 14, 32, 0.25);
+}
+
+.db-section + .db-section {
+  margin-top: 1.5rem;
+}
+
+.db-section__title {
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-heading);
+  margin-bottom: 1rem;
+  letter-spacing: -0.005em;
+}
+
+/* ─── Empty State ─── */
+
+.db-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 3rem 1.5rem;
+  min-height: 300px;
+}
+
+.db-empty__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--primary-tint-10);
+  color: var(--color-primary-container);
+  margin-bottom: 1rem;
+}
+
+.db-empty__title {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-heading);
+  margin-bottom: 0.5rem;
+}
+
+.db-empty__desc {
+  font-size: 0.875rem;
+  color: var(--text-body);
+  max-width: 380px;
+  line-height: 1.6;
+}
+
+.db-empty__cta {
+  margin-top: 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.75rem;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary-deep));
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: transform 0.15s var(--ease-smooth), box-shadow 0.25s;
+  box-shadow: 0 4px 16px rgba(66, 120, 255, 0.35);
+}
+
+.db-empty__cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(66, 120, 255, 0.5);
+}
+
+/* ─── Group heading ─── */
+
+.db-group__title {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-disabled);
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--ghost-border);
+}
+
+
+/* ==========================================================================
+   S6.1 — COMMITMENTS PAGE (cm-)
+   ========================================================================== */
+
+.cm-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.cm-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  background: var(--color-surface-50);
+  border-radius: var(--radius-md);
+  transition: background 0.2s var(--ease-smooth);
+}
+
+.cm-card:hover {
+  background: var(--color-surface-100);
+}
+
+/* Status dot */
+.cm-card__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-top: 0.35rem;
+  flex-shrink: 0;
+}
+
+.cm-card__dot--active {
+  background: var(--color-primary-container);
+  box-shadow: 0 0 8px rgba(66, 120, 255, 0.4);
+}
+
+.cm-card__dot--completed {
+  background: var(--success-hex);
+}
+
+.cm-card__dot--missed {
+  background: var(--danger-hex);
+}
+
+/* Content area */
+.cm-card__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.cm-card__desc {
+  font-size: 0.9rem;
+  color: var(--text-heading);
+  line-height: 1.5;
+  margin-bottom: 0.35rem;
+}
+
+.cm-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+  color: var(--text-hint);
+}
+
+.cm-card__meta-item {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+/* Action buttons */
+.cm-card__actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.cm-btn {
+  padding: 0.4rem 0.85rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--ghost-border);
+  background: transparent;
+  font-size: 0.75rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s var(--ease-smooth);
+  white-space: nowrap;
+}
+
+.cm-btn:hover {
+  border-color: var(--ghost-border-hover);
+  background: var(--color-surface-100);
+}
+
+.cm-btn--complete {
+  color: var(--success-hex);
+  border-color: var(--success-border);
+}
+
+.cm-btn--complete:hover {
+  background: var(--success-tint);
+}
+
+.cm-btn--reschedule {
+  color: var(--primary-light);
+  border-color: rgba(66, 120, 255, 0.2);
+}
+
+.cm-btn--reschedule:hover {
+  background: var(--primary-tint-10);
+}
+
+/* Reschedule date picker */
+.cm-date-picker {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cm-date-picker__input {
+  padding: 0.35rem 0.6rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--text-heading);
+  font-size: 0.75rem;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+
+.cm-date-picker__input:focus {
+  outline: none;
+  border-color: rgba(66, 120, 255, 0.5);
+  box-shadow: 0 0 0 3px var(--primary-glow-ring);
+}
+
+.cm-date-picker__confirm {
+  padding: 0.35rem 0.6rem;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--color-primary-container);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.cm-date-picker__confirm:hover {
+  opacity: 0.85;
+}
+
+.cm-date-picker__cancel {
+  padding: 0.35rem 0.6rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--ghost-border);
+  background: transparent;
+  color: var(--text-hint);
+  font-size: 0.7rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+
+/* ==========================================================================
+   S6.2 — COACHING LETTER PAGE (cl-)
+   ========================================================================== */
+
+/* Reuse ob-letter styles from onboarding.css for the letter itself.
+   These styles handle the facts section below the letter. */
+
+.cl-letter {
+  background: var(--glass-bg);
+  border: 1px solid var(--ghost-border);
+  border-left: 3px solid rgba(66, 120, 255, 0.4);
+  border-radius: 2px var(--radius-lg) var(--radius-lg) 2px;
+  padding: 2rem 2.5rem;
+  font-size: 0.95rem;
+  line-height: 1.8;
+  color: var(--text-body);
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+/* Headings — match ob-letter pattern */
+.cl-letter__h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-family: var(--font-display);
+  color: var(--text-heading);
+  margin: 0 0 1rem 0;
+  letter-spacing: -0.01em;
+}
+
+.cl-letter__h3 {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--primary-light);
+  margin: 1.5rem 0 0.5rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cl-letter__h4 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 1rem 0 0.4rem 0;
+}
+
+.cl-letter p {
+  margin: 0 0 1rem 0;
+}
+
+.cl-letter p:last-child {
+  margin-bottom: 0;
+}
+
+.cl-letter strong {
+  color: var(--text-heading);
+  font-weight: 600;
+}
+
+.cl-letter__list {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0 1rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.cl-letter__list li {
+  padding-left: 1.25rem;
+  position: relative;
+  line-height: 1.6;
+}
+
+.cl-letter__list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.6em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--primary-light);
+}
+
+/* Custom scrollbar */
+.cl-letter::-webkit-scrollbar {
+  width: 4px;
+}
+
+.cl-letter::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.cl-letter::-webkit-scrollbar-thumb {
+  background: var(--input-border);
+  border-radius: 2px;
+}
+
+/* ─── Research Facts ─── */
+
+.cl-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cl-fact {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--color-surface-50);
+  border-radius: var(--radius-sm);
+  transition: background 0.2s var(--ease-smooth);
+}
+
+.cl-fact:hover {
+  background: var(--color-surface-100);
+}
+
+.cl-fact__badge {
+  display: inline-flex;
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-sm);
+  background: var(--primary-tint-10);
+  color: var(--primary-light);
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+.cl-fact__content {
+  flex: 1;
+  font-size: 0.85rem;
+  color: var(--color-text-primary);
+  line-height: 1.5;
+  min-width: 0;
+}
+
+.cl-fact__subject {
+  font-weight: 600;
+  color: var(--text-heading);
+  margin-right: 0.35rem;
+}
+
+.cl-fact__edit-btn {
+  flex-shrink: 0;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-hint);
+  font-size: 0.7rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s;
+  opacity: 0;
+}
+
+.cl-fact:hover .cl-fact__edit-btn {
+  opacity: 1;
+}
+
+.cl-fact__edit-btn:hover {
+  color: var(--primary-light);
+  border-color: rgba(66, 120, 255, 0.2);
+  background: var(--primary-tint-10);
+}
+
+/* Inline editing */
+.cl-fact__input {
+  flex: 1;
+  background: var(--input-bg);
+  border: 1px solid rgba(66, 120, 255, 0.3);
+  border-radius: var(--radius-sm);
+  padding: 0.35rem 0.6rem;
+  color: var(--text-heading);
+  font-size: 0.85rem;
+  font-family: inherit;
+  line-height: 1.5;
+}
+
+.cl-fact__input:focus {
+  outline: none;
+  border-color: rgba(66, 120, 255, 0.5);
+  box-shadow: 0 0 0 3px var(--primary-glow-ring);
+}
+
+.cl-fact__save {
+  flex-shrink: 0;
+  padding: 0.3rem 0.6rem;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--color-primary-container);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+
+/* ==========================================================================
+   S6.3 — PROGRESS TIMELINE (pg-)
+   ========================================================================== */
+
+.pg-timeline {
+  position: relative;
+  padding-left: 2rem;
+}
+
+/* Vertical connector line */
+.pg-timeline::before {
+  content: "";
+  position: absolute;
+  left: 11px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(
+    180deg,
+    var(--ghost-border) 0%,
+    rgba(66, 120, 255, 0.15) 50%,
+    var(--ghost-border) 100%
+  );
+}
+
+.pg-timeline__item {
+  position: relative;
+  padding-bottom: 1.5rem;
+}
+
+.pg-timeline__item:last-child {
+  padding-bottom: 0;
+}
+
+/* Dot on the timeline */
+.pg-timeline__dot {
+  position: absolute;
+  left: -2rem;
+  top: 0.15rem;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  z-index: 1;
+  background: var(--color-surface-0);
+  border: 2px solid var(--color-surface-300);
+}
+
+.pg-timeline__dot--win {
+  border-color: var(--color-accent-teal);
+  background: rgba(78, 222, 163, 0.1);
+  color: var(--color-accent-teal);
+}
+
+.pg-timeline__dot--commitment {
+  border-color: var(--success-hex);
+  background: var(--success-tint);
+  color: var(--success-hex);
+}
+
+.pg-timeline__dot--pattern {
+  border-color: var(--color-primary-container);
+  background: var(--primary-tint-10);
+  color: var(--color-primary-container);
+}
+
+.pg-timeline__dot--milestone {
+  border-color: var(--color-accent-gold);
+  background: rgba(250, 189, 0, 0.08);
+  color: var(--color-accent-gold);
+}
+
+/* Content card */
+.pg-timeline__card {
+  background: var(--color-surface-50);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+  transition: background 0.2s var(--ease-smooth);
+}
+
+.pg-timeline__card:hover {
+  background: var(--color-surface-100);
+}
+
+.pg-timeline__type {
+  display: inline-flex;
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.6rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.35rem;
+}
+
+.pg-timeline__type--win {
+  background: rgba(78, 222, 163, 0.1);
+  color: var(--color-accent-teal);
+}
+
+.pg-timeline__type--commitment {
+  background: var(--success-tint);
+  color: var(--success-hex);
+}
+
+.pg-timeline__type--pattern {
+  background: var(--primary-tint-10);
+  color: var(--primary-light);
+}
+
+.pg-timeline__type--milestone {
+  background: rgba(250, 189, 0, 0.08);
+  color: var(--color-accent-gold);
+}
+
+.pg-timeline__name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-heading);
+  line-height: 1.4;
+  margin-bottom: 0.2rem;
+}
+
+.pg-timeline__desc {
+  font-size: 0.8rem;
+  color: var(--text-body);
+  line-height: 1.5;
+}
+
+.pg-timeline__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+}
+
+.pg-timeline__date {
+  font-size: 0.7rem;
+  color: var(--text-hint);
+}
+
+.pg-timeline__link {
+  font-size: 0.7rem;
+  color: var(--primary-light);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.pg-timeline__link:hover {
+  color: var(--color-primary);
+}
+
+
+/* ==========================================================================
+   S6.4 — COACH PROFILE (cp-)
+   ========================================================================== */
+
+.cp-group {
+  margin-bottom: 1.5rem;
+}
+
+.cp-group:last-child {
+  margin-bottom: 0;
+}
+
+.cp-group__label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-disabled);
+  margin-bottom: 0.75rem;
+}
+
+.cp-dimensions {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.cp-dimension {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.cp-dimension__name {
+  width: 110px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-body);
+  flex-shrink: 0;
+}
+
+.cp-dimension__bar-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.cp-dimension__bar {
+  height: 8px;
+  background: var(--color-surface-100);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.cp-dimension__fill {
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--color-primary-container), var(--primary-light));
+  transition: width 0.5s var(--ease-smooth);
+  min-width: 4px;
+}
+
+.cp-dimension__range {
+  display: flex;
+  justify-content: space-between;
+}
+
+.cp-dimension__range-label {
+  font-size: 0.6rem;
+  color: var(--text-hint);
+  letter-spacing: 0.02em;
+}
+
+/* Flag button */
+.cp-flag-btn {
+  flex-shrink: 0;
+  padding: 0.3rem 0.5rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--ghost-border);
+  background: transparent;
+  color: var(--text-hint);
+  font-size: 0.65rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s var(--ease-smooth);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.cp-flag-btn:hover {
+  border-color: var(--ghost-border-hover);
+  color: var(--text-body);
+  background: var(--color-surface-100);
+}
+
+.cp-flag-btn--flagged {
+  border-color: rgba(250, 189, 0, 0.3);
+  color: var(--color-accent-gold);
+  background: rgba(250, 189, 0, 0.06);
+}
+
+.cp-flag-btn--flagged:hover {
+  background: rgba(250, 189, 0, 0.1);
+}
+
+/* Confidence bar */
+.cp-confidence {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--ghost-border);
+  font-size: 0.75rem;
+  color: var(--text-hint);
+}
+
+.cp-confidence__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-primary-container);
+}
+
+
+/* ==========================================================================
+   RESPONSIVE
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  .db-header__row {
+    flex-direction: column;
+  }
+
+  .db-stat-chip {
+    align-self: flex-start;
+  }
+
+  .cm-card {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .cm-card__actions {
+    align-self: flex-start;
+    margin-top: 0.25rem;
+  }
+
+  .cp-dimension {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.35rem;
+  }
+
+  .cp-dimension__name {
+    width: auto;
+  }
+
+  .cp-flag-btn {
+    align-self: flex-start;
+  }
+
+  .cl-letter {
+    padding: 1.25rem 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .db-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .pg-timeline {
+    padding-left: 1.75rem;
+  }
+}
+
+/* ─── Reduced Motion ─── */
+
+@media (prefers-reduced-motion: reduce) {
+  .cp-dimension__fill,
+  .cm-card,
+  .pg-timeline__card,
+  .cl-fact,
+  .db-empty__cta {
+    transition: none !important;
+  }
+}
+
+
+/* ==========================================================================
+   LIGHT MODE — Dashboard Overrides
+   BRAND.md §2.2 + UI/UX skill §light-dark-mode-contrast
+   ========================================================================== */
+
+[data-theme="light"] .db-section {
+  background: rgba(255, 255, 255, 0.8);
+  border-color: rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .db-section:hover {
+  border-color: rgba(0, 0, 0, 0.12);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .db-tabs {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .db-tab:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .db-tab--active {
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .db-stat-chip {
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 82, 255, 0.08);
+}
+
+[data-theme="light"] .cm-card {
+  background: #fff;
+}
+
+[data-theme="light"] .cm-card:hover {
+  background: #f1f4f7;
+}
+
+[data-theme="light"] .cm-btn {
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .cm-btn:hover {
+  border-color: rgba(0, 0, 0, 0.2);
+  background: #f1f4f7;
+}
+
+[data-theme="light"] .cl-letter {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(0, 0, 0, 0.06);
+  border-left-color: rgba(0, 82, 255, 0.3);
+}
+
+[data-theme="light"] .cl-fact {
+  background: #fff;
+}
+
+[data-theme="light"] .cl-fact:hover {
+  background: #f1f4f7;
+}
+
+[data-theme="light"] .pg-timeline::before {
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.08) 0%,
+    rgba(0, 82, 255, 0.12) 50%,
+    rgba(0, 0, 0, 0.08) 100%
+  );
+}
+
+[data-theme="light"] .pg-timeline__dot {
+  background: #fff;
+  border-color: #e0e3e6;
+}
+
+[data-theme="light"] .pg-timeline__card {
+  background: #fff;
+}
+
+[data-theme="light"] .pg-timeline__card:hover {
+  background: #f1f4f7;
+}
+
+[data-theme="light"] .db-empty__cta {
+  box-shadow: 0 4px 16px rgba(0, 82, 255, 0.2);
+}
+
+[data-theme="light"] .db-empty__cta:hover {
+  box-shadow: 0 8px 28px rgba(0, 82, 255, 0.3);
+}
+
+/* Coach profile dimension bar in light mode */
+[data-theme="light"] .cp-bar-container {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .cp-flag-btn {
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .cp-flag-btn:hover {
+  border-color: rgba(0, 0, 0, 0.15);
+  background: #f1f4f7;
+}
