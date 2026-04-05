@@ -148,7 +148,14 @@ Rules:
 - Don't extract coaching questions or the coach's observations as facts.
 - Importance: 0.1-0.3 = minor detail, 0.4-0.6 = useful context, 0.7-0.9 = core to coaching, 1.0 = critical.
 - challenge_detected.is_new: set to true ONLY if the user described a new challenge, problem, or goal that isn't just a follow-up to an existing conversation thread.
-- ai_tools_mentioned: extract ONLY when the USER mentions using or having a specific AI tool (e.g., "I use Claude", "I've been trying Cursor"). Don't extract tools mentioned by the coach in recommendations.
+- ai_tools_mentioned: extract when the USER mentions using, having, or relying on ANY tool, platform, device, or software in their workflow. This includes:
+  • AI tools: Claude, ChatGPT, Cursor, Midjourney, Copilot
+  • Productivity: Notion, Trello, Asana, Todoist, Google Docs, Obsidian
+  • Communication: Slack, Discord, LinkedIn, Zoom, Teams, WhatsApp
+  • Business: HubSpot, Salesforce, Zapier, Stripe, QuickBooks, Mailchimp
+  • Development: GitHub, VS Code, Figma, Vercel, AWS
+  • Platforms/OS: Mac, Windows, iPhone, Android, iPad, Chrome
+  Only extract when the USER says THEY use it (e.g., "I use Notion", "I'm on a Mac", "we communicate via Slack"). Don't extract tools the coach recommends.
 - If nothing to extract, return empty arrays and is_new: false.
 
 Return ONLY valid JSON, no other text.`;
