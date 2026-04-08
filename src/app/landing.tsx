@@ -526,7 +526,7 @@ export default function LandingPage() {
       >
         <div className="landing__nav-inner">
           <div className="landing__logo">
-            <Image src="/logo.png" alt="Mastery Coach" width={28} height={28} />
+            <Image src="/logo.png" alt="Mastery Coach" width={36} height={36} />
             Mastery Coach
           </div>
           <div className="landing__nav-actions">
