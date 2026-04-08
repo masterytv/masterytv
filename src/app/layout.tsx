@@ -15,12 +15,16 @@ export const metadata: Metadata = {
     "founder coaching",
     "leadership coaching",
   ],
+  icons: {
+    icon: "/favicon.png",
+    apple: "/apple-touch-icon.png",
+  },
   openGraph: {
     title: "Mastery Coach — AI Coaching for High-Performers",
     description:
       "A coach that remembers everything that matters about you. 20+ frameworks. Adapted to how you think.",
     type: "website",
-    siteName: "MasteryTV",
+    siteName: "Mastery Coach",
     locale: "en_US",
   },
   twitter: {

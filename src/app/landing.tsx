@@ -24,7 +24,6 @@ import {
   X,
   Loader2,
   Sparkles,
-  Brain,
   MessageCircle,
   Search,
   Zap,
@@ -32,6 +31,7 @@ import {
   ChevronRight,
   Mail,
 } from "lucide-react";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 
 /* ════════════════════════════════════════════
@@ -526,7 +526,7 @@ export default function LandingPage() {
       >
         <div className="landing__nav-inner">
           <div className="landing__logo">
-            <Brain className="w-6 h-6" style={{ color: "var(--color-primary)" }} />
+            <Image src="/logo.png" alt="Mastery Coach" width={28} height={28} />
             Mastery Coach
           </div>
           <div className="landing__nav-actions">
@@ -614,7 +614,7 @@ export default function LandingPage() {
         <motion.div className="landing__section-inner" variants={stagger} {...anim}>
           <motion.div variants={fadeUp} transition={{ duration: 0.5 }}>
             <p className="landing__section-label">
-              <Brain className="w-4 h-4" />
+              <Image src="/logo.png" alt="" width={16} height={16} />
               The Memory Advantage
             </p>
             <h2 className="landing__section-title">
