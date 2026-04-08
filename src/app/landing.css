@@ -60,7 +60,8 @@
   font-size: 1.25rem;
   font-weight: 700;
   letter-spacing: -0.01em;
-  color: var(--text-heading);
+  /* Always light — landing is always on a dark background */
+  color: #dfe4fe;
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -212,20 +213,20 @@
   padding: 0.625rem 1.25rem;
   border-radius: var(--radius-md);
   background: transparent;
-  color: var(--text-heading);
+  /* Always light — landing is always on a dark background */
+  color: #dfe4fe;
   font-family: var(--font-sans);
   font-size: 0.875rem;
   font-weight: 500;
-  /* Ghost border at 15% */
-  border: 1px solid var(--ghost-border);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   cursor: pointer;
   transition: border-color 0.2s var(--ease-smooth),
     background 0.2s var(--ease-smooth);
 }
 
 .landing__cta-ghost:hover {
-  border-color: var(--ghost-border-hover);
-  background: var(--input-bg);
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 /* ── Sections ── */
