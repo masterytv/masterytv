@@ -51,8 +51,8 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center px-4">
       {/* Background gradient effects */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute -top-1/2 left-1/2 h-[800px] w-[800px] -translate-x-1/2 rounded-full bg-brand-500/5 blur-[120px]" />
-        <div className="absolute bottom-0 right-0 h-[600px] w-[600px] rounded-full bg-accent-500/5 blur-[100px]" />
+        <div className="absolute -top-1/2 left-1/2 h-[800px] w-[800px] -translate-x-1/2 rounded-full bg-[rgba(96,99,238,0.05)] blur-[120px]" />
+        <div className="absolute bottom-0 right-0 h-[600px] w-[600px] rounded-full bg-[rgba(105,246,184,0.04)] blur-[100px]" />
       </div>
 
       <motion.div
@@ -67,9 +67,9 @@ export default function LoginPage() {
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.1, duration: 0.4 }}
-            className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-brand-500/15 ring-1 ring-brand-500/20"
+            className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-[rgba(96,99,238,0.12)]"
           >
-            <UserStar className="h-7 w-7 text-brand-400" strokeWidth={1.5} />
+            <UserStar className="h-7 w-7 text-[#a3a6ff]" strokeWidth={1.5} />
           </motion.div>
           <h1 className="text-2xl font-semibold tracking-tight text-text-primary">
             Mastery Coach
@@ -103,7 +103,7 @@ export default function LoginPage() {
                 setSent(false);
                 setEmail("");
               }}
-              className="mt-6 text-sm text-brand-400 hover:text-brand-300 transition-colors"
+              className="mt-6 text-sm text-[#a3a6ff] hover:text-[#c4c6ff] transition-colors"
             >
               Use a different email
             </button>
@@ -126,7 +126,7 @@ export default function LoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@company.com"
                   required
-                  className="w-full rounded-lg border border-surface-300 bg-surface-50 px-4 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 transition-colors"
+                  className="w-full rounded-lg bg-surface-100 px-4 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:bg-surface-0 focus:outline-none focus:ring-1 focus:ring-[rgba(96,99,238,0.2)] transition-all"
                 />
               </div>
 
@@ -143,7 +143,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading || !email}
-                className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-4 py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
               >
                 {loading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -158,15 +158,15 @@ export default function LoginPage() {
 
             {/* Divider */}
             <div className="my-6 flex items-center gap-3">
-              <div className="h-px flex-1 bg-surface-300" />
+              <div className="h-px flex-1 bg-surface-200" />
               <span className="text-xs text-text-muted">or</span>
-              <div className="h-px flex-1 bg-surface-300" />
+              <div className="h-px flex-1 bg-surface-200" />
             </div>
 
             {/* Google OAuth */}
             <button
               onClick={handleGoogleLogin}
-              className="glass-hover flex w-full items-center justify-center gap-3 rounded-lg border border-surface-300 px-4 py-2.5 text-sm font-medium text-text-primary transition-all hover:border-surface-200"
+              className="glass-hover flex w-full items-center justify-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium text-text-primary transition-all hover:bg-surface-200"
             >
               <svg className="h-5 w-5" viewBox="0 0 24 24">
                 <path

@@ -46,7 +46,7 @@ export function Topbar({ userName, onMenuClick }: TopbarProps) {
     : "?";
 
   return (
-    <header className="flex h-16 items-center justify-between border-b border-surface-300 bg-surface-50/80 backdrop-blur-md px-4 lg:px-6">
+    <header className="flex h-16 items-center justify-between bg-surface-50/80 backdrop-blur-xl px-4 lg:px-6">
       {/* Mobile menu button */}
       <button
         onClick={onMenuClick}
@@ -66,8 +66,8 @@ export function Topbar({ userName, onMenuClick }: TopbarProps) {
           onClick={() => setDropdownOpen(!dropdownOpen)}
           className="flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-surface-200 transition-colors"
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-500/15 ring-1 ring-brand-500/20">
-            <span className="text-xs font-semibold text-brand-400">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[rgba(96,99,238,0.12)]">
+            <span className="text-xs font-semibold text-[#a3a6ff]">
               {initials}
             </span>
           </div>
@@ -77,7 +77,7 @@ export function Topbar({ userName, onMenuClick }: TopbarProps) {
         </button>
 
         {dropdownOpen && (
-          <div className="absolute right-0 top-full mt-2 w-48 rounded-lg border border-surface-300 bg-surface-50 py-1 shadow-elevated z-50">
+          <div className="absolute right-0 top-full mt-2 w-48 rounded-lg bg-surface-100 py-1 shadow-elevated z-50">
             <button
               onClick={() => {
                 setDropdownOpen(false);
@@ -88,7 +88,7 @@ export function Topbar({ userName, onMenuClick }: TopbarProps) {
               <User className="h-4 w-4" />
               Settings
             </button>
-            <div className="mx-3 my-1 h-px bg-surface-300" />
+            <div className="mx-3 my-1 h-px bg-surface-200" />
             <button
               onClick={handleSignOut}
               className="flex w-full items-center gap-2 px-4 py-2 text-sm text-danger hover:bg-surface-200 transition-colors"

@@ -4,7 +4,13 @@
  * BEM naming: db- (shared), cm- (commitments), cl- (coaching letter),
  *             pg- (progress), cp- (coach profile)
  * Tokens: All values from globals.css CSS custom properties
- * Brand: "Kinetic Editorial" per directives/BRAND.md
+ * Design: "Midnight Executive" (dark) / "Executive Performance" (light)
+ *
+ * Rules enforced:
+ *   - No 1px solid borders for sectioning (No-Line Rule)
+ *   - No dividers — use 1.5-2rem gap spacing
+ *   - Depth via tonal layering, not shadows
+ *   - Float up 4px on hover (micro-interaction)
  */
 
 /* ==========================================================================
@@ -61,16 +67,16 @@
   line-height: 1.5;
 }
 
-/* ─── Data Float Chip (BRAND.md §8.4) ─── */
+/* ─── Data Float Chip ─── */
 
 .db-stat-chip {
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 0.75rem 1.25rem;
-  background: var(--color-surface-50);
+  /* Tonal layering — raised surface */
+  background: var(--color-surface-100);
   border-radius: var(--radius-md);
-  box-shadow: 0 0 20px var(--primary-glow-ring);
   min-width: 100px;
 }
 
@@ -101,6 +107,7 @@
   display: flex;
   gap: 0.25rem;
   padding: 0.25rem;
+  /* Tonal shift */
   background: var(--color-surface-50);
   border-radius: var(--radius-md);
   margin-bottom: 1.5rem;
@@ -128,6 +135,7 @@
 }
 
 .db-tab--active {
+  /* Surface-container-highest for "lift" */
   background: var(--color-surface-200);
   color: var(--text-heading);
   font-weight: 600;
@@ -139,20 +147,20 @@
   opacity: 0.6;
 }
 
-/* ─── Glass Section Card ─── */
+/* ─── Glass Section Card — Tonal layering instead of borders ─── */
 
 .db-section {
-  background: var(--glass-bg);
-  border: 1px solid var(--ghost-border);
+  /* Tonal shift — raised surface */
+  background: var(--color-surface-100);
   border-radius: var(--radius-lg);
   padding: 1.5rem;
-  backdrop-filter: blur(16px) saturate(1.2);
-  transition: box-shadow 0.3s var(--ease-smooth), border-color 0.3s;
+  transition: transform 0.3s var(--ease-smooth), box-shadow 0.3s;
 }
 
 .db-section:hover {
-  border-color: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 32px rgba(6, 14, 32, 0.25);
+  /* Float up on hover — micro-interaction */
+  transform: translateY(-2px);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.2);
 }
 
 .db-section + .db-section {
@@ -188,7 +196,7 @@
   height: 64px;
   border-radius: 50%;
   background: var(--primary-tint-10);
-  color: var(--color-primary-container);
+  color: var(--color-primary);
   margin-bottom: 1rem;
 }
 
@@ -213,22 +221,23 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.65rem 1.75rem;
-  border-radius: var(--radius-md);
-  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary-deep));
+  border-radius: var(--radius-xl);
+  /* Signature gradient */
+  background: linear-gradient(135deg, #a3a6ff, #6063ee);
   color: #fff;
   font-size: 0.875rem;
   font-weight: 600;
   text-decoration: none;
   transition: transform 0.15s var(--ease-smooth), box-shadow 0.25s;
-  box-shadow: 0 4px 16px rgba(66, 120, 255, 0.35);
+  box-shadow: 0 4px 16px rgba(96, 99, 238, 0.3);
 }
 
 .db-empty__cta:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 28px rgba(66, 120, 255, 0.5);
+  box-shadow: 0 8px 28px rgba(96, 99, 238, 0.45);
 }
 
-/* ─── Group heading ─── */
+/* ─── Group heading — No border-bottom, use gap ─── */
 
 .db-group__title {
   font-size: 0.7rem;
@@ -238,7 +247,6 @@
   color: var(--text-disabled);
   margin-bottom: 0.75rem;
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--ghost-border);
 }
 
 
@@ -249,7 +257,8 @@
 .cm-list {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  /* 1.5rem gap instead of dividers */
+  gap: 1rem;
 }
 
 .cm-card {
@@ -257,13 +266,15 @@
   align-items: flex-start;
   gap: 0.75rem;
   padding: 1rem 1.25rem;
+  /* Tonal layering */
   background: var(--color-surface-50);
   border-radius: var(--radius-md);
-  transition: background 0.2s var(--ease-smooth);
+  transition: background 0.2s var(--ease-smooth), transform 0.2s;
 }
 
 .cm-card:hover {
   background: var(--color-surface-100);
+  transform: translateY(-2px);
 }
 
 /* Status dot */
@@ -276,12 +287,14 @@
 }
 
 .cm-card__dot--active {
-  background: var(--color-primary-container);
-  box-shadow: 0 0 8px rgba(66, 120, 255, 0.4);
+  background: var(--color-primary);
+  box-shadow: 0 0 8px rgba(96, 99, 238, 0.4);
 }
 
 .cm-card__dot--completed {
   background: var(--success-hex);
+  /* LED glow per "The Pulse" spec */
+  box-shadow: 0 0 8px var(--emerald-glow-strong);
 }
 
 .cm-card__dot--missed {
@@ -315,7 +328,7 @@
   gap: 0.3rem;
 }
 
-/* Action buttons */
+/* Action buttons — No borders */
 .cm-card__actions {
   display: flex;
   gap: 0.5rem;
@@ -326,8 +339,9 @@
 .cm-btn {
   padding: 0.4rem 0.85rem;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--ghost-border);
-  background: transparent;
+  border: none;
+  /* Tonal shift bg */
+  background: var(--color-surface-100);
   font-size: 0.75rem;
   font-weight: 500;
   font-family: inherit;
@@ -337,26 +351,25 @@
 }
 
 .cm-btn:hover {
-  border-color: var(--ghost-border-hover);
-  background: var(--color-surface-100);
+  background: var(--color-surface-200);
 }
 
 .cm-btn--complete {
   color: var(--success-hex);
-  border-color: var(--success-border);
+  background: var(--success-tint);
 }
 
 .cm-btn--complete:hover {
-  background: var(--success-tint);
+  background: rgba(105, 246, 184, 0.15);
 }
 
 .cm-btn--reschedule {
   color: var(--primary-light);
-  border-color: rgba(66, 120, 255, 0.2);
+  background: var(--primary-tint-10);
 }
 
 .cm-btn--reschedule:hover {
-  background: var(--primary-tint-10);
+  background: var(--primary-tint-20);
 }
 
 /* Reschedule date picker */
@@ -369,8 +382,8 @@
 .cm-date-picker__input {
   padding: 0.35rem 0.6rem;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--input-border);
-  background: var(--input-bg);
+  border: 1px solid transparent;
+  background: var(--color-surface-200);
   color: var(--text-heading);
   font-size: 0.75rem;
   font-family: inherit;
@@ -379,7 +392,7 @@
 
 .cm-date-picker__input:focus {
   outline: none;
-  border-color: rgba(66, 120, 255, 0.5);
+  border-color: rgba(96, 99, 238, 0.2);
   box-shadow: 0 0 0 3px var(--primary-glow-ring);
 }
 
@@ -403,8 +416,8 @@
 .cm-date-picker__cancel {
   padding: 0.35rem 0.6rem;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--ghost-border);
-  background: transparent;
+  border: none;
+  background: var(--color-surface-100);
   color: var(--text-hint);
   font-size: 0.7rem;
   font-family: inherit;
@@ -416,13 +429,10 @@
    S6.2 — COACHING LETTER PAGE (cl-)
    ========================================================================== */
 
-/* Reuse ob-letter styles from onboarding.css for the letter itself.
-   These styles handle the facts section below the letter. */
-
 .cl-letter {
-  background: var(--glass-bg);
-  border: 1px solid var(--ghost-border);
-  border-left: 3px solid rgba(66, 120, 255, 0.4);
+  background: var(--color-surface-100);
+  /* Left accent bar — Indigo, 4px, per Insight Card spec */
+  border-left: 4px solid var(--color-primary);
   border-radius: 2px var(--radius-lg) var(--radius-lg) 2px;
   padding: 2rem 2.5rem;
   font-size: 0.95rem;
@@ -432,7 +442,7 @@
   overflow-y: auto;
 }
 
-/* Headings — match ob-letter pattern */
+/* Headings */
 .cl-letter__h2 {
   font-size: 1.25rem;
   font-weight: 700;
@@ -507,7 +517,7 @@
 }
 
 .cl-letter::-webkit-scrollbar-thumb {
-  background: var(--input-border);
+  background: var(--color-surface-200);
   border-radius: 2px;
 }
 
@@ -516,7 +526,8 @@
 .cl-facts {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  /* Gap-based separation — no dividers */
+  gap: 0.75rem;
 }
 
 .cl-fact {
@@ -524,6 +535,7 @@
   align-items: flex-start;
   gap: 0.75rem;
   padding: 0.75rem 1rem;
+  /* Tonal layering */
   background: var(--color-surface-50);
   border-radius: var(--radius-sm);
   transition: background 0.2s var(--ease-smooth);
@@ -566,7 +578,7 @@
   flex-shrink: 0;
   padding: 0.25rem 0.5rem;
   border-radius: var(--radius-sm);
-  border: 1px solid transparent;
+  border: none;
   background: transparent;
   color: var(--text-hint);
   font-size: 0.7rem;
@@ -582,15 +594,14 @@
 
 .cl-fact__edit-btn:hover {
   color: var(--primary-light);
-  border-color: rgba(66, 120, 255, 0.2);
   background: var(--primary-tint-10);
 }
 
 /* Inline editing */
 .cl-fact__input {
   flex: 1;
-  background: var(--input-bg);
-  border: 1px solid rgba(66, 120, 255, 0.3);
+  background: var(--color-surface-200);
+  border: 1px solid transparent;
   border-radius: var(--radius-sm);
   padding: 0.35rem 0.6rem;
   color: var(--text-heading);
@@ -601,7 +612,7 @@
 
 .cl-fact__input:focus {
   outline: none;
-  border-color: rgba(66, 120, 255, 0.5);
+  border-color: rgba(96, 99, 238, 0.2);
   box-shadow: 0 0 0 3px var(--primary-glow-ring);
 }
 
@@ -638,9 +649,9 @@
   width: 2px;
   background: linear-gradient(
     180deg,
-    var(--ghost-border) 0%,
-    rgba(66, 120, 255, 0.15) 50%,
-    var(--ghost-border) 100%
+    var(--color-surface-200) 0%,
+    rgba(96, 99, 238, 0.15) 50%,
+    var(--color-surface-200) 100%
   );
 }
 
@@ -671,9 +682,9 @@
 }
 
 .pg-timeline__dot--win {
-  border-color: var(--color-accent-teal);
-  background: rgba(78, 222, 163, 0.1);
-  color: var(--color-accent-teal);
+  border-color: var(--success-hex);
+  background: var(--success-tint);
+  color: var(--success-hex);
 }
 
 .pg-timeline__dot--commitment {
@@ -683,15 +694,17 @@
 }
 
 .pg-timeline__dot--pattern {
-  border-color: var(--color-primary-container);
+  border-color: var(--color-primary);
   background: var(--primary-tint-10);
-  color: var(--color-primary-container);
+  color: var(--color-primary);
 }
 
 .pg-timeline__dot--milestone {
-  border-color: var(--color-accent-gold);
-  background: rgba(250, 189, 0, 0.08);
-  color: var(--color-accent-gold);
+  border-color: var(--success-hex);
+  background: var(--emerald-glow);
+  color: var(--success-hex);
+  /* LED glow — "The Pulse" effect */
+  box-shadow: 0 0 8px var(--emerald-glow-strong);
 }
 
 /* Content card */
@@ -699,11 +712,12 @@
   background: var(--color-surface-50);
   border-radius: var(--radius-md);
   padding: 0.85rem 1rem;
-  transition: background 0.2s var(--ease-smooth);
+  transition: background 0.2s var(--ease-smooth), transform 0.2s;
 }
 
 .pg-timeline__card:hover {
   background: var(--color-surface-100);
+  transform: translateY(-2px);
 }
 
 .pg-timeline__type {
@@ -718,8 +732,8 @@
 }
 
 .pg-timeline__type--win {
-  background: rgba(78, 222, 163, 0.1);
-  color: var(--color-accent-teal);
+  background: var(--success-tint);
+  color: var(--success-hex);
 }
 
 .pg-timeline__type--commitment {
@@ -733,8 +747,8 @@
 }
 
 .pg-timeline__type--milestone {
-  background: rgba(250, 189, 0, 0.08);
-  color: var(--color-accent-gold);
+  background: var(--emerald-glow);
+  color: var(--success-hex);
 }
 
 .pg-timeline__name {
@@ -825,7 +839,7 @@
 
 .cp-dimension__bar {
   height: 8px;
-  background: var(--color-surface-100);
+  background: var(--color-surface-200);
   border-radius: 4px;
   overflow: hidden;
   position: relative;
@@ -834,7 +848,8 @@
 .cp-dimension__fill {
   height: 100%;
   border-radius: 4px;
-  background: linear-gradient(90deg, var(--color-primary-container), var(--primary-light));
+  /* Signature gradient */
+  background: linear-gradient(90deg, #6063ee, #a3a6ff);
   transition: width 0.5s var(--ease-smooth);
   min-width: 4px;
 }
@@ -850,13 +865,13 @@
   letter-spacing: 0.02em;
 }
 
-/* Flag button */
+/* Flag button — No borders */
 .cp-flag-btn {
   flex-shrink: 0;
   padding: 0.3rem 0.5rem;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--ghost-border);
-  background: transparent;
+  border: none;
+  background: var(--color-surface-100);
   color: var(--text-hint);
   font-size: 0.65rem;
   font-family: inherit;
@@ -869,29 +884,26 @@
 }
 
 .cp-flag-btn:hover {
-  border-color: var(--ghost-border-hover);
   color: var(--text-body);
-  background: var(--color-surface-100);
+  background: var(--color-surface-200);
 }
 
 .cp-flag-btn--flagged {
-  border-color: rgba(250, 189, 0, 0.3);
-  color: var(--color-accent-gold);
-  background: rgba(250, 189, 0, 0.06);
+  color: var(--success-hex);
+  background: var(--emerald-glow);
 }
 
 .cp-flag-btn--flagged:hover {
-  background: rgba(250, 189, 0, 0.1);
+  background: rgba(105, 246, 184, 0.2);
 }
 
-/* Confidence bar */
+/* Confidence bar — gap instead of border-top */
 .cp-confidence {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--ghost-border);
+  margin-top: 1.5rem;
+  padding-top: 0;
   font-size: 0.75rem;
   color: var(--text-hint);
 }
@@ -900,7 +912,7 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--color-primary-container);
+  background: var(--color-primary);
 }
 
 
@@ -964,7 +976,8 @@
   .cm-card,
   .pg-timeline__card,
   .cl-fact,
-  .db-empty__cta {
+  .db-empty__cta,
+  .db-section {
     transition: none !important;
   }
 }
@@ -972,110 +985,109 @@
 
 /* ==========================================================================
    LIGHT MODE — Dashboard Overrides
-   BRAND.md §2.2 + UI/UX skill §light-dark-mode-contrast
+   "Executive Performance Framework" — Professional Zen
    ========================================================================== */
 
 [data-theme="light"] .db-section {
-  background: rgba(255, 255, 255, 0.8);
-  border-color: rgba(0, 0, 0, 0.08);
-  backdrop-filter: blur(12px);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(26, 28, 30, 0.06);
 }
 
 [data-theme="light"] .db-section:hover {
-  border-color: rgba(0, 0, 0, 0.12);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 20px 40px rgba(26, 28, 30, 0.08);
 }
 
 [data-theme="light"] .db-tabs {
-  background: rgba(0, 0, 0, 0.04);
+  background: #f3f3f6;
 }
 
 [data-theme="light"] .db-tab:hover {
-  background: rgba(0, 0, 0, 0.06);
+  background: #e8e8ec;
 }
 
 [data-theme="light"] .db-tab--active {
-  background: #fff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(26, 28, 30, 0.06);
 }
 
 [data-theme="light"] .db-stat-chip {
-  background: #fff;
-  box-shadow: 0 1px 4px rgba(0, 82, 255, 0.08);
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(26, 28, 30, 0.06);
 }
 
 [data-theme="light"] .cm-card {
-  background: #fff;
+  background: #ffffff;
 }
 
 [data-theme="light"] .cm-card:hover {
-  background: #f1f4f7;
+  background: #f3f3f6;
 }
 
 [data-theme="light"] .cm-btn {
-  border-color: rgba(0, 0, 0, 0.1);
+  background: #f3f3f6;
 }
 
 [data-theme="light"] .cm-btn:hover {
-  border-color: rgba(0, 0, 0, 0.2);
-  background: #f1f4f7;
+  background: #e8e8ec;
 }
 
 [data-theme="light"] .cl-letter {
-  background: rgba(255, 255, 255, 0.85);
-  border-color: rgba(0, 0, 0, 0.06);
-  border-left-color: rgba(0, 82, 255, 0.3);
+  background: #ffffff;
+  border-left-color: #000767;
 }
 
 [data-theme="light"] .cl-fact {
-  background: #fff;
+  background: #ffffff;
 }
 
 [data-theme="light"] .cl-fact:hover {
-  background: #f1f4f7;
+  background: #f3f3f6;
 }
 
 [data-theme="light"] .pg-timeline::before {
   background: linear-gradient(
     180deg,
-    rgba(0, 0, 0, 0.08) 0%,
-    rgba(0, 82, 255, 0.12) 50%,
-    rgba(0, 0, 0, 0.08) 100%
+    #e8e8ec 0%,
+    rgba(0, 7, 103, 0.12) 50%,
+    #e8e8ec 100%
   );
 }
 
 [data-theme="light"] .pg-timeline__dot {
-  background: #fff;
-  border-color: #e0e3e6;
+  background: #ffffff;
+  border-color: #dcdce0;
 }
 
 [data-theme="light"] .pg-timeline__card {
-  background: #fff;
+  background: #ffffff;
 }
 
 [data-theme="light"] .pg-timeline__card:hover {
-  background: #f1f4f7;
+  background: #f3f3f6;
 }
 
 [data-theme="light"] .db-empty__cta {
-  box-shadow: 0 4px 16px rgba(0, 82, 255, 0.2);
+  background: linear-gradient(135deg, #000000, #000767);
+  box-shadow: 0 4px 16px rgba(0, 7, 103, 0.2);
 }
 
 [data-theme="light"] .db-empty__cta:hover {
-  box-shadow: 0 8px 28px rgba(0, 82, 255, 0.3);
+  box-shadow: 0 8px 28px rgba(0, 7, 103, 0.3);
 }
 
 /* Coach profile dimension bar in light mode */
-[data-theme="light"] .cp-bar-container {
-  background: rgba(0, 0, 0, 0.06);
+[data-theme="light"] .cp-dimension__bar {
+  background: #e8e8ec;
+}
+
+[data-theme="light"] .cp-dimension__fill {
+  background: linear-gradient(90deg, #000767, #000000);
 }
 
 [data-theme="light"] .cp-flag-btn {
-  border-color: rgba(0, 0, 0, 0.08);
+  background: #f3f3f6;
 }
 
 [data-theme="light"] .cp-flag-btn:hover {
-  border-color: rgba(0, 0, 0, 0.15);
-  background: #f1f4f7;
+  background: #e8e8ec;
 }

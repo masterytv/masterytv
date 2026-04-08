@@ -48,7 +48,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       {/* Sidebar */}
       <aside
         className={`
-          fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-surface-300 bg-surface-50
+          fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-surface-50
           transition-transform duration-300 ease-smooth
           lg:relative lg:translate-x-0
           ${open ? "translate-x-0" : "-translate-x-full"}
@@ -57,8 +57,8 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         {/* Brand header */}
         <div className="flex h-16 items-center justify-between px-6">
           <Link href="/coachapp/dashboard" className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-500/15 ring-1 ring-brand-500/20">
-              <span className="text-sm font-bold text-brand-400">M</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[rgba(96,99,238,0.12)]">
+              <span className="text-sm font-bold text-[#a3a6ff]">M</span>
             </div>
             <span className="text-lg font-semibold tracking-tight text-text-primary">
               Mastery
@@ -85,7 +85,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                   group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all
                   ${
                     isActive
-                      ? "bg-brand-500/10 text-brand-400"
+                      ? "bg-[rgba(96,99,238,0.1)] text-[#a3a6ff]"
                       : "text-text-secondary hover:bg-surface-200 hover:text-text-primary"
                   }
                 `}
@@ -93,7 +93,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                 <item.icon
                   className={`h-4.5 w-4.5 ${
                     isActive
-                      ? "text-brand-400"
+                      ? "text-[#a3a6ff]"
                       : "text-text-muted group-hover:text-text-secondary"
                   }`}
                 />
@@ -101,7 +101,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                 {isActive && (
                   <motion.div
                     layoutId="sidebar-active"
-                    className="absolute left-0 h-8 w-0.5 rounded-r-full bg-brand-400"
+                    className="absolute left-0 h-8 w-0.5 rounded-r-full bg-[#a3a6ff]"
                     transition={{ type: "spring", stiffness: 350, damping: 30 }}
                   />
                 )}
@@ -111,7 +111,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         </nav>
 
         {/* Tier badge */}
-        <div className="border-t border-surface-300 p-4">
+        <div className="p-4">
           <div className="rounded-lg bg-surface-100 px-3 py-2 text-center">
             <span className="text-xs font-medium text-text-muted uppercase tracking-wider">
               Free Plan

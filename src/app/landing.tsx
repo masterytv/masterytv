@@ -110,7 +110,7 @@ const FRAMEWORK_TIERS = [
     emoji: "🏗️",
     label: "Session Structure",
     tagline: "How we coach you",
-    color: "var(--color-primary-container)",
+    color: "var(--color-primary)",
     frameworks: ["GROW", "OSKAR", "Motivational Interviewing", "Socratic Questioning"],
     example: "You're stuck on a decision → GROW walks you through Goal → Reality → Options → Will.",
   },
@@ -119,7 +119,7 @@ const FRAMEWORK_TIERS = [
     emoji: "📈",
     label: "Business & Execution",
     tagline: "What we coach you on",
-    color: "#39a276",
+    color: "var(--success-hex)",
     frameworks: ["EOS/Traction", "Lean Startup", "Hormozi Offers", "Situational Leadership", "Robbins RPM"],
     example: "Your pricing isn't converting → Hormozi Offer Optimization restructures your value stack.",
   },
@@ -128,7 +128,7 @@ const FRAMEWORK_TIERS = [
     emoji: "🧠",
     label: "Mindset & Resilience",
     tagline: "Who you're becoming",
-    color: "#b07acc",
+    color: "#b4a6ff",
     frameworks: ["Stoic Philosophy", "PERMA+", "Growth Mindset", "Mindfulness", "Stages of Change"],
     example: "You're burned out → PERMA+ identifies which life pillar is depleted and rebuilds it.",
   },
@@ -137,7 +137,7 @@ const FRAMEWORK_TIERS = [
     emoji: "🔮",
     label: "Deep Psychology",
     tagline: "Trust-unlocked (Month 2+)",
-    color: "#cc7a5e",
+    color: "#ff8fa3",
     frameworks: ["Narrative Coaching", "Shadow Work", "Inner Critic", "Psychodynamic", "Emotional Fluidity"],
     example: "You keep saying 'I'm not a real CEO' → Narrative Coaching rewrites the story you're trapped in.",
   },
@@ -447,7 +447,7 @@ function BetaModal({
                   <button
                     type="submit"
                     disabled={loading || !email}
-                    className="landing__cta-gold"
+                    className="landing__cta-primary"
                     style={{
                       width: "100%",
                       justifyContent: "center",
@@ -526,7 +526,7 @@ export default function LandingPage() {
       >
         <div className="landing__nav-inner">
           <div className="landing__logo">
-            <Brain className="w-6 h-6" style={{ color: "var(--color-primary-container)" }} />
+            <Brain className="w-6 h-6" style={{ color: "var(--color-primary)" }} />
             Mastery Coach
           </div>
           <div className="landing__nav-actions">
@@ -539,7 +539,7 @@ export default function LandingPage() {
             </button>
             <button
               onClick={openModal}
-              className="landing__cta-primary"
+              className="landing__cta-primary landing__cta-primary--sm"
               id="nav-get-started"
             >
               Get Started
@@ -574,11 +574,11 @@ export default function LandingPage() {
           <p className="landing__hero-sub">
             It knows your boss is Chuck, your Q2 rock is hiring, and you always
             procrastinate before investor calls. Because it remembers —{" "}
-            <strong style={{ color: "#ffffff" }}>everything.</strong>
+            <strong style={{ color: "#dfe4fe" }}>everything.</strong>
           </p>
           <button
             onClick={openModal}
-            className="landing__cta-gold"
+            className="landing__cta-primary"
             id="hero-cta"
           >
             Start Your First Session Free
@@ -650,7 +650,7 @@ export default function LandingPage() {
       </section>
 
       {/* ─── How It Works ─── */}
-      <section className="landing__section" style={{ background: "var(--input-bg)" }} id="how-it-works">
+      <section className="landing__section" style={{ background: "var(--color-surface-50)" }} id="how-it-works">
         <motion.div className="landing__section-inner" variants={stagger} {...anim}>
           <motion.div variants={fadeUp} transition={{ duration: 0.5 }} style={{ textAlign: "center" }}>
             <p className="landing__section-label" style={{ justifyContent: "center" }}>
@@ -802,7 +802,7 @@ export default function LandingPage() {
       {/* ─── Privacy & Trust ─── */}
       <section
         className="landing__section"
-        style={{ background: "var(--input-bg)" }}
+        style={{ background: "var(--color-surface-50)" }}
         id="privacy"
       >
         <motion.div
@@ -894,7 +894,7 @@ export default function LandingPage() {
       {/* ─── Pricing ─── */}
       <section
         className="landing__section"
-        style={{ background: "var(--input-bg)" }}
+        style={{ background: "var(--color-surface-50)" }}
         id="pricing"
       >
         <motion.div className="landing__section-inner" variants={stagger} {...anim}>
@@ -969,7 +969,7 @@ export default function LandingPage() {
               </ul>
               <button
                 onClick={openModal}
-                className="landing__cta-gold"
+                className="landing__cta-primary"
                 style={{ width: "100%", justifyContent: "center" }}
                 id="pricing-core-cta"
               >
@@ -1001,7 +1001,7 @@ export default function LandingPage() {
           </p>
           <button
             onClick={openModal}
-            className="landing__cta-gold"
+            className="landing__cta-primary"
             id="final-cta"
           >
             Start Your First Session Free

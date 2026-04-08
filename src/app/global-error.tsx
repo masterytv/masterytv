@@ -16,8 +16,8 @@ export default function GlobalError({
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          background: "#0a0a0a",
-          color: "#fafafa",
+          background: "#070d1f",
+          color: "#dfe4fe",
           fontFamily: "system-ui, sans-serif",
           padding: "2rem",
           textAlign: "center",
@@ -46,8 +46,8 @@ export default function GlobalError({
           onClick={reset}
           style={{
             padding: "0.75rem 2rem",
-            borderRadius: "0.5rem",
-            background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+            borderRadius: "0.75rem",
+            background: "linear-gradient(135deg, #a3a6ff, #6063ee)",
             color: "#fff",
             border: "none",
             cursor: "pointer",

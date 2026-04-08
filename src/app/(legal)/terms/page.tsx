@@ -269,7 +269,7 @@ export default function TermsPage() {
             Your use of the Service is also governed by our{" "}
             <a
               href="/privacy"
-              className="text-brand-400 underline underline-offset-2 hover:text-brand-300 transition-colors"
+              className="text-[#a3a6ff] underline underline-offset-2 hover:text-[#c4c6ff] transition-colors"
             >
               Privacy Policy
             </a>
@@ -336,7 +336,7 @@ export default function TermsPage() {
               immediately. Data deletion follows our{" "}
               <a
                 href="/privacy"
-                className="text-brand-400 underline underline-offset-2 hover:text-brand-300 transition-colors"
+                className="text-[#a3a6ff] underline underline-offset-2 hover:text-[#c4c6ff] transition-colors"
               >
                 Privacy Policy
               </a>{" "}
@@ -366,7 +366,7 @@ export default function TermsPage() {
           <p className="mt-3">
             Questions about these Terms? Contact us:
           </p>
-          <div className="mt-3 rounded-lg border border-surface-300 bg-surface-50 p-4">
+          <div className="mt-3 rounded-lg bg-surface-100 p-4">
             <p>
               <strong>MasteryTV LLC</strong>
             </p>

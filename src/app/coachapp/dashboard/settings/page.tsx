@@ -62,10 +62,10 @@ const TIERS = {
   core: {
     name: "Core",
     icon: Crown,
-    color: "text-amber-400",
-    bg: "bg-amber-500/5",
-    border: "border-amber-500/20",
-    badge: "bg-amber-500/10 text-amber-400",
+    color: "text-[#a3a6ff]",
+    bg: "bg-[rgba(96,99,238,0.05)]",
+    border: "border-transparent",
+    badge: "bg-[rgba(96,99,238,0.1)] text-[#a3a6ff]",
     description: "Unlimited coaching",
   },
   premium: {
@@ -437,7 +437,7 @@ function SettingsContent() {
                   ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
                   : toast.type === "error"
                     ? "bg-red-500/10 text-red-400 border border-red-500/20"
-                    : "bg-brand-500/10 text-brand-400 border border-brand-500/20"
+                    : "bg-[rgba(96,99,238,0.1)] text-[#a3a6ff]"
               }`}
             >
               <span>{toast.message}</span>
@@ -462,16 +462,16 @@ function SettingsContent() {
           {/* ─── SUBSCRIPTION SECTION ─────────────────────────────────── */}
           <section
             id="subscription-section"
-            className={`rounded-xl p-6 border ${tierConfig.border} ${tierConfig.bg} relative overflow-hidden`}
+            className={`rounded-xl p-6 ${tierConfig.bg} relative overflow-hidden`}
           >
             {/* Subtle gradient accent for paid tiers */}
             {isPaid && (
               <div className="absolute inset-0 pointer-events-none">
                 <div
-                  className={`absolute top-0 right-0 w-48 h-48 rounded-full blur-3xl opacity-10 ${
-                    tier === "premium"
-                      ? "bg-violet-500"
-                      : "bg-amber-500"
+                    className={`absolute top-0 right-0 w-48 h-48 rounded-full blur-3xl opacity-10 ${
+                      tier === "premium"
+                        ? "bg-violet-500"
+                        : "bg-[#6063ee]"
                   }`}
                 />
               </div>
@@ -507,7 +507,7 @@ function SettingsContent() {
               {/* Free tier → Upgrade CTA */}
               {!isPaid && (
                 <div className="mt-4">
-                  <div className="mb-5 rounded-lg bg-surface-50 border border-surface-200 p-5">
+                   <div className="mb-5 rounded-lg bg-surface-100 p-5">
                     <h3 className="text-sm font-semibold text-text-primary mb-3">
                       Upgrade to Core — Unlimited Coaching
                     </h3>
@@ -525,7 +525,7 @@ function SettingsContent() {
 
                     {/* Billing toggle */}
                     <div className="flex items-center gap-3 mb-5">
-                      <div className="inline-flex rounded-lg bg-surface-100 p-0.5 border border-surface-200">
+                      <div className="inline-flex rounded-lg bg-surface-100 p-0.5">
                         <button
                           onClick={() => setBillingInterval("monthly")}
                           className={`rounded-md px-4 py-1.5 text-sm font-medium transition-all ${
@@ -573,7 +573,7 @@ function SettingsContent() {
                       onClick={handleUpgrade}
                       disabled={upgrading}
                       whileTap={{ scale: 0.98 }}
-                      className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand-500 px-6 py-3 text-sm font-semibold text-white hover:bg-brand-400 disabled:opacity-50 transition-all shadow-lg shadow-brand-500/20"
+                      className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-6 py-3 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-all shadow-lg shadow-[rgba(96,99,238,0.2)]"
                     >
                       {upgrading ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -612,7 +612,7 @@ function SettingsContent() {
                   <button
                     id="manage-billing-button"
                     onClick={handleManageBilling}
-                    className="flex items-center gap-2 rounded-lg border border-surface-300 bg-surface-50 px-4 py-2.5 text-sm font-medium text-text-secondary hover:text-text-primary hover:border-surface-200 transition-all"
+                    className="flex items-center gap-2 rounded-lg bg-surface-100 px-4 py-2.5 text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-surface-200 transition-all"
                   >
                     <CreditCard className="h-4 w-4" />
                     Manage Subscription
@@ -641,7 +641,7 @@ function SettingsContent() {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full max-w-md rounded-lg border border-surface-300 bg-surface-50 px-4 py-2.5 text-sm text-text-primary focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 transition-colors"
+                  className="w-full max-w-md rounded-lg bg-surface-100 px-4 py-2.5 text-sm text-text-primary focus:bg-surface-0 focus:outline-none focus:ring-1 focus:ring-[rgba(96,99,238,0.2)] transition-all"
                 />
               </div>
               <div>
@@ -670,7 +670,7 @@ function SettingsContent() {
                   id="timezone"
                   value={timezone}
                   onChange={(e) => setTimezone(e.target.value)}
-                  className="w-full max-w-md rounded-lg border border-surface-300 bg-surface-50 px-4 py-2.5 text-sm text-text-primary focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 transition-colors"
+                  className="w-full max-w-md rounded-lg bg-surface-100 px-4 py-2.5 text-sm text-text-primary focus:bg-surface-0 focus:outline-none focus:ring-1 focus:ring-[rgba(96,99,238,0.2)] transition-all"
                 >
                   {TIMEZONES.map((tz) => (
                     <option key={tz} value={tz}>
@@ -690,11 +690,11 @@ function SettingsContent() {
                       key={ch.value}
                       onClick={() => setPreferredChannel(ch.value)}
                       className={`
-                        flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition-all
+                        flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all
                         ${
                           preferredChannel === ch.value
-                            ? "border-brand-500 bg-brand-500/10 text-brand-400"
-                            : "border-surface-300 bg-surface-50 text-text-secondary hover:border-surface-200"
+                            ? "bg-[rgba(96,99,238,0.1)] text-[#a3a6ff] ring-1 ring-[rgba(96,99,238,0.2)]"
+                            : "bg-surface-100 text-text-secondary hover:bg-surface-200"
                         }
                       `}
                     >
@@ -717,7 +717,7 @@ function SettingsContent() {
                   type="time"
                   value={briefingTime}
                   onChange={(e) => setBriefingTime(e.target.value)}
-                  className="w-full max-w-xs rounded-lg border border-surface-300 bg-surface-50 px-4 py-2.5 text-sm text-text-primary focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 transition-colors"
+                  className="w-full max-w-xs rounded-lg bg-surface-100 px-4 py-2.5 text-sm text-text-primary focus:bg-surface-0 focus:outline-none focus:ring-1 focus:ring-[rgba(96,99,238,0.2)] transition-all"
                 />
                 <p className="mt-1 text-xs text-text-muted">
                   When you&apos;d like to receive your daily coaching briefing
@@ -728,7 +728,7 @@ function SettingsContent() {
 
           {/* ─── Coach Profile (S6.4) ─── */}
           {coachProfile && (
-            <section className="rounded-xl border border-surface-300/50 bg-surface-50 p-6">
+            <section className="rounded-xl bg-surface-100 p-6">
               <h2 className="mb-1 text-lg font-semibold text-text-primary font-display">
                 Your Coach Profile
               </h2>
@@ -859,7 +859,7 @@ function SettingsContent() {
             onClick={handleSave}
             disabled={saving}
             whileTap={{ scale: 0.98 }}
-            className="flex items-center gap-2 rounded-lg bg-brand-500 px-6 py-2.5 text-sm font-medium text-white hover:bg-brand-400 disabled:opacity-50 transition-colors"
+            className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-6 py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
           >
             {saving ? (
               <Loader2 className="h-4 w-4 animate-spin" />

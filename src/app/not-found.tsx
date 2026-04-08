@@ -9,8 +9,8 @@ export default function NotFound() {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        background: "var(--bg-primary, #0a0a0a)",
-        color: "var(--text-primary, #fafafa)",
+        background: "var(--color-surface-0, #070d1f)",
+        color: "var(--color-text-primary, #dfe4fe)",
         fontFamily: "var(--font-sans, system-ui, sans-serif)",
         padding: "2rem",
         textAlign: "center",
@@ -20,7 +20,7 @@ export default function NotFound() {
         style={{
           fontSize: "6rem",
           fontWeight: 800,
-          background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+          background: "linear-gradient(135deg, #a3a6ff, #6063ee)",
           WebkitBackgroundClip: "text",
           WebkitTextFillColor: "transparent",
           margin: 0,
@@ -43,12 +43,13 @@ export default function NotFound() {
         href="/"
         style={{
           padding: "0.75rem 2rem",
-          borderRadius: "0.5rem",
-          background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+          borderRadius: "0.75rem",
+          background: "linear-gradient(135deg, #a3a6ff, #6063ee)",
           color: "#fff",
           textDecoration: "none",
           fontWeight: 600,
           fontSize: "1rem",
+          boxShadow: "0 4px 16px rgba(96, 99, 238, 0.3)",
           transition: "opacity 0.2s",
         }}
       >
