@@ -60,11 +60,17 @@
   font-size: 1.25rem;
   font-weight: 700;
   letter-spacing: -0.01em;
-  /* Always light — landing is always on a dark background */
+  /* Light by default — landing hero is always dark */
   color: #dfe4fe;
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  transition: color 0.3s var(--ease-smooth);
+}
+
+/* When scrolled in light mode, flip logo text to dark */
+[data-theme="light"] .landing__nav--scrolled .landing__logo {
+  color: #1a1c1e;
 }
 
 .landing__nav-actions {
@@ -213,20 +219,32 @@
   padding: 0.625rem 1.25rem;
   border-radius: var(--radius-md);
   background: transparent;
-  /* Always light — landing is always on a dark background */
+  /* Light by default — landing hero is always dark */
   color: #dfe4fe;
   font-family: var(--font-sans);
   font-size: 0.875rem;
   font-weight: 500;
   border: 1px solid rgba(255, 255, 255, 0.2);
   cursor: pointer;
-  transition: border-color 0.2s var(--ease-smooth),
-    background 0.2s var(--ease-smooth);
+  transition: color 0.3s var(--ease-smooth),
+    border-color 0.3s var(--ease-smooth),
+    background 0.3s var(--ease-smooth);
 }
 
 .landing__cta-ghost:hover {
   border-color: rgba(255, 255, 255, 0.4);
   background: rgba(255, 255, 255, 0.08);
+}
+
+/* When scrolled in light mode, flip ghost button to dark */
+[data-theme="light"] .landing__nav--scrolled .landing__cta-ghost {
+  color: #1a1c1e;
+  border-color: rgba(26, 28, 30, 0.2);
+}
+
+[data-theme="light"] .landing__nav--scrolled .landing__cta-ghost:hover {
+  border-color: rgba(26, 28, 30, 0.4);
+  background: rgba(26, 28, 30, 0.05);
 }
 
 /* ── Sections ── */
