@@ -5,6 +5,15 @@
 
 import { createClient } from "@/lib/supabase/client";
 
+// Debug trace types — manually synced from supabase/functions/_shared/debug-types.ts
+// We re-define the top-level type here to avoid importing Deno-specific modules
+export interface DebugSummary {
+  prompt_trace: Record<string, unknown>;
+  pipeline: Record<string, unknown>;
+  post_process: Record<string, unknown> | null;
+  coach_profile: Record<string, unknown> | null;
+}
+
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 
 export interface ChatMessage {
@@ -28,6 +37,8 @@ export interface StreamCallbacks {
     cost_usd: number;
     active_challenges: Array<{ title: string; framework: string; phase: string }>;
   }) => void;
+  /** Called when the debug summary is received (admin debug mode only) */
+  onDebugTrace?: (trace: DebugSummary) => void;
   /** Called on error */
   onError: (error: Error) => void;
 }
@@ -39,7 +50,8 @@ export interface StreamCallbacks {
 export async function sendMessageStream(
   message: string,
   conversationId: string | undefined,
-  callbacks: StreamCallbacks
+  callbacks: StreamCallbacks,
+  options?: { debug?: boolean }
 ): Promise<() => void> {
   const supabase = createClient();
   const {
@@ -65,6 +77,7 @@ export async function sendMessageStream(
       message,
       channel: "web",
       conversation_id: conversationId,
+      ...(options?.debug ? { debug: true } : {}),
     }),
     signal: abortController.signal,
   });
@@ -125,6 +138,9 @@ export async function sendMessageStream(
                   break;
                 case "done":
                   callbacks.onDone(parsed);
+                  break;
+                case "debug_summary":
+                  callbacks.onDebugTrace?.(parsed as DebugSummary);
                   break;
                 case "error":
                   callbacks.onError(new Error(parsed.message || "Stream error"));

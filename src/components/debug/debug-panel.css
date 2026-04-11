@@ -1,0 +1,466 @@
+/**
+ * Debug Panel Styles — Coach Debugger UI
+ *
+ * Dark theme with monospace fonts for data inspection,
+ * clear visual hierarchy, and collapsible sections.
+ * Follows the existing Mastery Coach design token system.
+ */
+
+/* ─── Layout ─────────────────────────────────────────────────────── */
+
+.debug-split-layout {
+  display: flex;
+  height: 100%;
+  overflow: hidden;
+}
+
+.debug-split-layout__chat {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.debug-split-layout__panel {
+  width: 440px;
+  min-width: 380px;
+  border-left: 1px solid var(--border-subtle, hsl(220 13% 20%));
+  background: hsl(220 15% 8%);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ─── Debug Toggle ───────────────────────────────────────────────── */
+
+.debug-toggle {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid hsl(220 13% 25%);
+  background: hsl(220 15% 12%);
+  color: hsl(220 10% 60%);
+  font-size: 0.75rem;
+  font-family: var(--font-mono, monospace);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.debug-toggle:hover {
+  border-color: hsl(220 60% 50%);
+  color: hsl(220 80% 70%);
+}
+
+.debug-toggle--active {
+  border-color: hsl(150 60% 40%);
+  background: hsl(150 60% 40% / 0.15);
+  color: hsl(150 60% 65%);
+}
+
+.debug-toggle__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: hsl(220 10% 40%);
+  transition: background 0.2s ease;
+}
+
+.debug-toggle--active .debug-toggle__dot {
+  background: hsl(150 60% 55%);
+  box-shadow: 0 0 6px hsl(150 60% 55% / 0.5);
+}
+
+/* ─── Panel Header ───────────────────────────────────────────────── */
+
+.debug-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid hsl(220 13% 18%);
+}
+
+.debug-panel__title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: hsl(220 10% 75%);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* ─── Tabs ───────────────────────────────────────────────────────── */
+
+.debug-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid hsl(220 13% 18%);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.debug-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.debug-tab {
+  flex-shrink: 0;
+  padding: 8px 14px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: hsl(220 10% 50%);
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.debug-tab:hover {
+  color: hsl(220 10% 70%);
+  background: hsl(220 15% 12%);
+}
+
+.debug-tab--active {
+  color: hsl(220 80% 70%);
+  border-bottom-color: hsl(220 80% 60%);
+}
+
+/* ─── Tab Content ────────────────────────────────────────────────── */
+
+.debug-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  scrollbar-width: thin;
+  scrollbar-color: hsl(220 13% 25%) transparent;
+}
+
+.debug-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.debug-content::-webkit-scrollbar-thumb {
+  background: hsl(220 13% 25%);
+  border-radius: 3px;
+}
+
+/* ─── Section ────────────────────────────────────────────────────── */
+
+.debug-section {
+  margin-bottom: 16px;
+}
+
+.debug-section__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  cursor: pointer;
+  user-select: none;
+}
+
+.debug-section__icon {
+  font-size: 0.85rem;
+}
+
+.debug-section__title {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: hsl(220 10% 65%);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.debug-section__chevron {
+  margin-left: auto;
+  color: hsl(220 10% 40%);
+  font-size: 0.7rem;
+  transition: transform 0.15s ease;
+}
+
+.debug-section__chevron--open {
+  transform: rotate(90deg);
+}
+
+.debug-section__body {
+  padding-left: 4px;
+  margin-top: 6px;
+}
+
+/* ─── Data Items ─────────────────────────────────────────────────── */
+
+.debug-kv {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 3px 0;
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+
+.debug-kv__key {
+  color: hsl(220 10% 50%);
+  font-family: var(--font-mono, monospace);
+  white-space: nowrap;
+  min-width: 100px;
+}
+
+.debug-kv__value {
+  color: hsl(220 10% 80%);
+  font-family: var(--font-mono, monospace);
+  word-break: break-word;
+}
+
+/* ─── Badges ─────────────────────────────────────────────────────── */
+
+.debug-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  font-family: var(--font-mono, monospace);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.debug-badge--green {
+  background: hsl(150 60% 40% / 0.15);
+  color: hsl(150 60% 65%);
+}
+
+.debug-badge--blue {
+  background: hsl(220 60% 40% / 0.15);
+  color: hsl(220 80% 70%);
+}
+
+.debug-badge--amber {
+  background: hsl(40 80% 50% / 0.15);
+  color: hsl(40 80% 65%);
+}
+
+.debug-badge--red {
+  background: hsl(0 60% 40% / 0.15);
+  color: hsl(0 60% 65%);
+}
+
+.debug-badge--gray {
+  background: hsl(220 10% 25%);
+  color: hsl(220 10% 60%);
+}
+
+/* ─── Challenge Cards ────────────────────────────────────────────── */
+
+.debug-challenge {
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid hsl(220 13% 22%);
+  background: hsl(220 15% 11%);
+  margin-bottom: 6px;
+}
+
+.debug-challenge__title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: hsl(220 10% 80%);
+  margin-bottom: 4px;
+}
+
+.debug-challenge__meta {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* ─── Fact Cards ─────────────────────────────────────────────────── */
+
+.debug-fact {
+  padding: 6px 10px;
+  border-radius: 4px;
+  border-left: 3px solid hsl(220 60% 50% / 0.4);
+  background: hsl(220 15% 11%);
+  margin-bottom: 4px;
+}
+
+.debug-fact__header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.debug-fact__subject {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: hsl(220 80% 70%);
+}
+
+.debug-fact__score {
+  font-size: 0.65rem;
+  color: hsl(220 10% 50%);
+  font-family: var(--font-mono, monospace);
+}
+
+.debug-fact__content {
+  font-size: 0.7rem;
+  color: hsl(220 10% 70%);
+  line-height: 1.4;
+}
+
+/* ─── Pipeline Waterfall ─────────────────────────────────────────── */
+
+.debug-waterfall {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.debug-waterfall__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 0.72rem;
+}
+
+.debug-waterfall__label {
+  color: hsl(220 10% 60%);
+  min-width: 120px;
+  white-space: nowrap;
+}
+
+.debug-waterfall__bar-bg {
+  flex: 1;
+  height: 16px;
+  background: hsl(220 13% 15%);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+
+.debug-waterfall__bar {
+  height: 100%;
+  border-radius: 3px;
+  min-width: 2px;
+  transition: width 0.3s ease;
+}
+
+.debug-waterfall__bar--crisis {
+  background: hsl(150 55% 45%);
+}
+
+.debug-waterfall__bar--prompt {
+  background: hsl(220 65% 55%);
+}
+
+.debug-waterfall__bar--claude {
+  background: hsl(280 55% 55%);
+}
+
+.debug-waterfall__bar--tool {
+  background: hsl(40 70% 55%);
+}
+
+.debug-waterfall__time {
+  color: hsl(220 10% 50%);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.68rem;
+  min-width: 50px;
+  text-align: right;
+}
+
+/* ─── Profile Sliders ────────────────────────────────────────────── */
+
+.debug-slider {
+  margin-bottom: 10px;
+}
+
+.debug-slider__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.debug-slider__label {
+  font-size: 0.7rem;
+  color: hsl(220 10% 60%);
+}
+
+.debug-slider__value {
+  font-size: 0.68rem;
+  font-family: var(--font-mono, monospace);
+  color: hsl(220 80% 70%);
+}
+
+.debug-slider__track {
+  height: 6px;
+  background: hsl(220 13% 18%);
+  border-radius: 3px;
+  position: relative;
+  overflow: hidden;
+}
+
+.debug-slider__fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, hsl(220 60% 45%), hsl(220 80% 60%));
+  transition: width 0.3s ease;
+}
+
+.debug-slider__endpoints {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 2px;
+}
+
+.debug-slider__endpoint {
+  font-size: 0.6rem;
+  color: hsl(220 10% 40%);
+}
+
+/* ─── Empty State ────────────────────────────────────────────────── */
+
+.debug-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 32px 16px;
+  text-align: center;
+}
+
+.debug-empty__icon {
+  font-size: 1.5rem;
+  opacity: 0.4;
+}
+
+.debug-empty__text {
+  font-size: 0.75rem;
+  color: hsl(220 10% 45%);
+  max-width: 200px;
+  line-height: 1.5;
+}
+
+/* ─── Responsive ─────────────────────────────────────────────────── */
+
+@media (max-width: 1024px) {
+  .debug-split-layout__panel {
+    position: fixed;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 50;
+    width: 380px;
+    box-shadow: -4px 0 24px hsl(220 15% 5% / 0.6);
+  }
+}

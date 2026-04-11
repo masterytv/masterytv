@@ -26,6 +26,7 @@ import {
 } from "../_shared/channel-router.ts";
 import { runCrisisDetection } from "../_shared/crisis-detection.ts";
 import { postProcess } from "../_shared/post-processor.ts";
+import type { DebugSummary, PipelineTimeline } from "../_shared/debug-types.ts";
 
 const FUNCTION_NAME = "coach";
 const DISCLAIMER_INTERVAL_DAYS = 30;
@@ -72,6 +73,23 @@ Deno.serve(async (req: Request) => {
       return errorResponse("BAD_REQUEST", "Message too long (max 5000 chars)", 400, corsHeaders);
     }
 
+    // ── 2.3 Debug mode — admin-only, verified server-side ──
+    let debugMode = false;
+    if (body.debug === true) {
+      const { data: adminCheck } = await supabase
+        .from("users")
+        .select("is_admin")
+        .eq("id", userId)
+        .single();
+      debugMode = adminCheck?.is_admin === true;
+      if (!debugMode) {
+        console.warn(`[${FUNCTION_NAME}] Non-admin user ${userId} attempted debug mode — ignored`);
+      }
+    }
+
+    // Pipeline timing (only tracked when debug mode is on)
+    const pipelineStart = debugMode ? performance.now() : 0;
+
     // ── 2.5 Free tier message limit check (S5.9) ──
     const supabase = createSupabaseClient();
     const { limitReached, upgradeResponse } = await checkMessageLimit(supabase, userId, corsHeaders);
@@ -80,7 +98,9 @@ Deno.serve(async (req: Request) => {
     }
 
     // ── 2.6 Crisis Detection (shared module) ──
+    const crisisStart = debugMode ? performance.now() : 0;
     const crisis = await runCrisisDetection(supabase, userId, message);
+    const crisisMs = debugMode ? performance.now() - crisisStart : 0;
 
     if (crisis.isCrisis && crisis.response) {
       const encoder = new TextEncoder();
@@ -103,12 +123,14 @@ Deno.serve(async (req: Request) => {
     }
 
     // ── 3. Resolve conversation (shared module) ──
+    const convStart = debugMode ? performance.now() : 0;
     const conversationId = await resolveConversation(
       supabase,
       userId,
       channel,
       body.conversation_id
     );
+    const convMs = debugMode ? performance.now() - convStart : 0;
 
     // ── 4. Store user message ──
     const { data: userMsg, error: insertError } = await supabase
@@ -164,7 +186,9 @@ Deno.serve(async (req: Request) => {
     }
 
     // ── 5. Assemble prompt (11-layer architecture) ──
-    const { system, conversationHistory, metadata } = await assemblePrompt(userId, message);
+    const promptStart = debugMode ? performance.now() : 0;
+    const { system, conversationHistory, metadata, debugTrace } = await assemblePrompt(userId, message, debugMode);
+    const promptMs = debugMode ? performance.now() - promptStart : 0;
 
     const claudeMessages = [
       ...conversationHistory,
@@ -172,6 +196,7 @@ Deno.serve(async (req: Request) => {
     ];
 
     // ── 6. Stream Claude response to client ──
+    const claudeStart = debugMode ? performance.now() : 0;
     const anthropicResponse = await callClaudeStreaming({
       system,
       messages: claudeMessages,
@@ -194,6 +219,7 @@ Deno.serve(async (req: Request) => {
       let inputTokens = 0;
       let outputTokens = 0;
       let stopReason = "";
+      const toolCallsDebug: Array<{ name: string; query: string; result_confidence: string; cached: boolean; duration_ms: number }> = [];
 
       try {
         await writer.write(
@@ -299,10 +325,20 @@ Deno.serve(async (req: Request) => {
 
             let toolResult = "";
             try {
+              const toolCallStart = debugMode ? performance.now() : 0;
               const toolInput = JSON.parse(pendingToolUse.input || "{}");
               if (pendingToolUse.name === "search_facts") {
                 const result = await handleSearchFacts(toolInput.query ?? "");
                 toolResult = JSON.stringify(result);
+                if (debugMode) {
+                  toolCallsDebug.push({
+                    name: pendingToolUse.name,
+                    query: toolInput.query ?? "",
+                    result_confidence: result.confidence ?? "unknown",
+                    cached: result.cached ?? false,
+                    duration_ms: Math.round(performance.now() - toolCallStart),
+                  });
+                }
               } else {
                 toolResult = JSON.stringify({ error: `Unknown tool: ${pendingToolUse.name}` });
               }
@@ -342,11 +378,12 @@ Deno.serve(async (req: Request) => {
         }
 
         // ── 7. Stream complete — store, log, post-process ──
+        const claudeMs = debugMode ? performance.now() - claudeStart : 0;
         const isFallback = model.startsWith("gpt-");
         const usage = { input_tokens: inputTokens, output_tokens: outputTokens };
         const costUsd = calculateCost(usage, isFallback);
 
-        const coachMetadata = {
+        const coachMetadata: Record<string, unknown> = {
           model,
           stop_reason: stopReason,
           tokens_in: inputTokens,
@@ -357,6 +394,47 @@ Deno.serve(async (req: Request) => {
             phase: c.framework_phase,
           })),
         };
+
+        // Store debug trace in message metadata (only for admin debug mode)
+        if (debugMode && debugTrace) {
+          const totalMs = Math.round(performance.now() - pipelineStart);
+          const pipelineTimeline: PipelineTimeline = {
+            crisis_detection_ms: Math.round(crisisMs),
+            crisis_result: {
+              passed: !crisis.isCrisis,
+              severity: (crisis as { severity?: string }).severity as "high" | "moderate" | "none" ?? "none",
+              keywords_matched: [],
+            },
+            conversation_resolution_ms: Math.round(convMs),
+            conversation_id: conversationId,
+            is_new_conversation: !body.conversation_id,
+            prompt_assembly_ms: Math.round(promptMs),
+            claude_streaming_ms: Math.round(claudeMs),
+            model_used: model,
+            is_fallback: isFallback,
+            tokens_in: inputTokens,
+            tokens_out: outputTokens,
+            cost_usd: costUsd,
+            tool_calls: toolCallsDebug,
+            total_ms: totalMs,
+          };
+
+          // Fetch current coach profile for the debug summary
+          const { data: currentProfile } = await supabase
+            .from("coach_profiles")
+            .select("directness, framing, warmth, autonomy, pacing, evidence_style, accountability, challenge_level, trust_level, confidence, source")
+            .eq("user_id", streamUserId)
+            .single();
+
+          const debugSummary: DebugSummary = {
+            prompt_trace: debugTrace,
+            pipeline: pipelineTimeline,
+            post_process: null, // Populated later by post-processor (async)
+            coach_profile: currentProfile ?? null,
+          };
+
+          coachMetadata.debug_trace = debugSummary;
+        }
 
         const { data: coachMsg, error: coachInsertError } = await supabase
           .from("messages")
@@ -395,6 +473,13 @@ Deno.serve(async (req: Request) => {
             })
           )
         );
+
+        // Send debug summary as separate SSE event (admin only)
+        if (debugMode && coachMetadata.debug_trace) {
+          await writer.write(
+            encoder.encode(sseEvent("debug_summary", coachMetadata.debug_trace))
+          );
+        }
 
         // Trigger async post-processing (shared module)
         if (coachMsg?.id) {

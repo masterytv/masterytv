@@ -13,6 +13,10 @@
 
 import { createSupabaseClient } from "./supabase.ts";
 import { generateEmbedding, searchMemoryFacts } from "./embeddings.ts";
+import type { PromptDebugTrace } from "./debug-types.ts";
+
+// Re-export for consumers that need the trace type
+export type { PromptDebugTrace };
 
 // ─── TYPES ──────────────────────────────────────────────────────────────
 
@@ -203,9 +207,12 @@ function buildEntitiesLayer(): string {
 
 // ─── LAYER 6: DELIVERY STYLE ───────────────────────────────────────────
 
-function buildDeliveryStyle(profile: CoachProfile | null): string {
+function buildDeliveryStyle(profile: CoachProfile | null): { text: string; instructions: string[] } {
   if (!profile) {
-    return `DELIVERY STYLE: Use a balanced, warm, professional tone. Adapt as you learn the user's preferences.`;
+    return {
+      text: `DELIVERY STYLE: Use a balanced, warm, professional tone. Adapt as you learn the user's preferences.`,
+      instructions: ["Default balanced style — no profile data yet"],
+    };
   }
 
   // Convert 1-10 dimensions to natural language instructions
@@ -236,11 +243,16 @@ function buildDeliveryStyle(profile: CoachProfile | null): string {
   else if (profile.accountability <= 3) dims.push("Trust internal accountability: \"I trust you'll follow through.\"");
 
   if (dims.length === 0) {
-    return `DELIVERY STYLE: User's communication preferences are still being learned. Use a balanced, warm approach.`;
+    return {
+      text: `DELIVERY STYLE: User's communication preferences are still being learned. Use a balanced, warm approach.`,
+      instructions: ["Profile exists but all dimensions in neutral range"],
+    };
   }
 
-  return `DELIVERY STYLE:
-${dims.join("\n")}`;
+  return {
+    text: `DELIVERY STYLE:\n${dims.join("\n")}`,
+    instructions: dims,
+  };
 }
 
 // ─── LAYER 7: RETRIEVED MEMORY ──────────────────────────────────────────
@@ -460,11 +472,14 @@ function buildSafetyGuardrails(): string {
  * Assembles the complete system prompt from all 11 layers.
  * This is the brain of the coaching engine.
  * 
- * @returns system prompt (string) + conversation messages for Claude
+ * @param includeDebugTrace When true, captures structured metadata about each layer.
+ *        Only enable for admin debug mode — adds minor overhead.
+ * @returns system prompt (string) + conversation messages for Claude + optional debug trace
  */
 export async function assemblePrompt(
   userId: string,
-  userMessage: string
+  userMessage: string,
+  includeDebugTrace = false
 ): Promise<{
   system: string;
   conversationHistory: { role: "user" | "assistant"; content: string }[];
@@ -473,6 +488,7 @@ export async function assemblePrompt(
     factCount: number;
     messageCount: number;
   };
+  debugTrace: PromptDebugTrace | null;
 }> {
   const supabase = createSupabaseClient();
 
@@ -548,10 +564,11 @@ export async function assemblePrompt(
 
   // Semantic memory retrieval — embed user message and search for relevant facts
   let semanticFacts: MemoryFact[] = [];
+  let semanticResults: Array<{ category: string; subject: string; content: string; importance: number; similarity: number }> = [];
   try {
     const queryEmbedding = await generateEmbedding(userMessage);
-    const results = await searchMemoryFacts(userId, queryEmbedding, 8);
-    semanticFacts = results.map((r) => ({
+    semanticResults = await searchMemoryFacts(userId, queryEmbedding, 8);
+    semanticFacts = semanticResults.map((r) => ({
       category: r.category,
       subject: r.subject,
       content: r.content,
@@ -604,13 +621,15 @@ export async function assemblePrompt(
   }
 
   // ── Assemble system prompt from layers ──
+  const deliveryResult = buildDeliveryStyle(profile);
+
   const layers: string[] = [
     buildBasePersona(),                                      // Layer 1
     buildChallengesLayer(challenges),                        // Layer 2
     buildInterventionSelector(profile, challenges),          // Layer 3
     user ? buildUserProfile(user) : "",                      // Layer 4
     buildEntitiesLayer(),                                    // Layer 5 (stub)
-    buildDeliveryStyle(profile),                             // Layer 6
+    deliveryResult.text,                                     // Layer 6
     buildMemoryLayer(messages, facts, sessionSummaries),      // Layer 7
     buildAgendaLayer(agenda),                                // Layer 8
     buildAIToolContext(userTools, availableAITools),          // Layer 9
@@ -629,6 +648,88 @@ export async function assemblePrompt(
       content: m.content,
     }));
 
+  // ── Build debug trace (only when requested by admin) ──
+  let debugTrace: PromptDebugTrace | null = null;
+  if (includeDebugTrace) {
+    const autonomy = profile?.autonomy ?? 5;
+    const challengeLevel = profile?.challenge_level ?? 3;
+
+    // Build category map from AI tools
+    const catalogCategories = new Set<string>();
+    for (const tool of availableAITools) {
+      for (const cat of tool.category ?? []) {
+        catalogCategories.add(cat);
+      }
+    }
+
+    debugTrace = {
+      layers: {
+        base_persona: "static",
+        challenges: challenges.map((c) => {
+          const phaseIndex = c.phases?.indexOf(c.framework_phase) ?? 0;
+          return {
+            title: c.title,
+            framework: c.framework,
+            phase: c.framework_phase ?? "unknown",
+            progress: c.phases ? `${phaseIndex + 1}/${c.phases.length}` : "?",
+          };
+        }),
+        intervention_bias: {
+          autonomy,
+          autonomy_label: autonomy >= 7 ? "HIGH" : autonomy <= 3 ? "LOW" : "MODERATE",
+          challenge_level: challengeLevel,
+          challenge_label: challengeLevel >= 7 ? "HIGH" : challengeLevel <= 3 ? "LOW" : "MODERATE",
+          trust_level: profile?.trust_level ?? 1,
+        },
+        user_profile: user
+          ? { name: user.name || "Not set", timezone: user.timezone, tier: user.subscription_tier }
+          : null,
+        entities: "stub",
+        delivery_style: deliveryResult.instructions,
+        memory: {
+          semantic_facts: semanticResults.map((r) => ({
+            subject: r.subject,
+            content: r.content,
+            category: r.category,
+            similarity: r.similarity,
+          })),
+          importance_facts: importantFacts.map((f) => ({
+            subject: f.subject,
+            content: f.content,
+            category: f.category,
+            importance: f.importance,
+          })),
+          merged_count: facts.length,
+          session_summaries_count: sessionSummaries.length,
+          session_summaries: sessionSummaries.map((s) => ({
+            date: new Date(s.last_message_at).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+            }),
+            topics: s.key_topics ?? [],
+            framework: s.framework_used,
+            summary_preview: s.summary.slice(0, 100),
+          })),
+        },
+        agenda: agenda?.priority_topic
+          ? {
+              priority_topic: agenda.priority_topic,
+              questions: agenda.coaching_questions ?? [],
+            }
+          : null,
+        ai_tools: {
+          user_tools: userTools.map((t) => t.name),
+          catalog_categories: [...catalogCategories],
+        },
+        guardrails: "static",
+        safety: "static",
+      },
+      system_prompt_chars: system.length,
+      system_prompt_tokens_est: Math.ceil(system.length / 4),
+      conversation_history_count: conversationHistory.length,
+    };
+  }
+
   return {
     system,
     conversationHistory,
@@ -637,5 +738,6 @@ export async function assemblePrompt(
       factCount: facts.length,
       messageCount: messages.length,
     },
+    debugTrace,
   };
 }

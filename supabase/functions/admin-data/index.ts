@@ -96,6 +96,28 @@ Deno.serve(async (req: Request) => {
         result = await updateFramework(supabase, body);
         break;
       }
+      case "debug-trace": {
+        const messageId = url.searchParams.get("message_id");
+        if (!messageId) {
+          return new Response(
+            JSON.stringify({ error: "message_id query param required" }),
+            { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+          );
+        }
+        result = await getDebugTrace(supabase, messageId);
+        break;
+      }
+      case "coach-profile": {
+        const targetUserId = url.searchParams.get("user_id");
+        if (!targetUserId) {
+          return new Response(
+            JSON.stringify({ error: "user_id query param required" }),
+            { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+          );
+        }
+        result = await getCoachProfile(supabase, targetUserId);
+        break;
+      }
       default:
         return new Response(
           JSON.stringify({ error: `Unknown action: ${action}` }),
@@ -284,4 +306,59 @@ async function updateFramework(
 
   if (error) throw error;
   return { success: true };
+}
+
+
+async function getDebugTrace(supabase: SupabaseClient, messageId: string) {
+  const { data, error } = await supabase
+    .from("messages")
+    .select("id, user_id, role, metadata, created_at")
+    .eq("id", messageId)
+    .single();
+
+  if (error) throw error;
+  if (!data) throw new Error("Message not found");
+
+  // Extract debug_trace from message metadata
+  const metadata = data.metadata as Record<string, unknown> | null;
+  const debugTrace = metadata?.debug_trace ?? null;
+
+  return {
+    message_id: data.id,
+    user_id: data.user_id,
+    role: data.role,
+    created_at: data.created_at,
+    debug_trace: debugTrace,
+    has_trace: debugTrace !== null,
+  };
+}
+
+
+async function getCoachProfile(supabase: SupabaseClient, userId: string) {
+  // Fetch current profile
+  const { data: profile, error: profileError } = await supabase
+    .from("coach_profiles")
+    .select("*")
+    .eq("user_id", userId)
+    .single();
+
+  if (profileError) throw profileError;
+
+  // Fetch recent profile history (last 50 snapshots)
+  const { data: history, error: historyError } = await supabase
+    .from("coach_profile_history")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  // History table may not exist yet — don't throw
+  if (historyError) {
+    console.warn("[admin-data] Coach profile history query failed:", historyError.message);
+  }
+
+  return {
+    profile: profile ?? null,
+    history: history ?? [],
+  };
 }

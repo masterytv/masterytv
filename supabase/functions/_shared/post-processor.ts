@@ -10,6 +10,8 @@
 import { createSupabaseClient } from "./supabase.ts";
 import { generateEmbeddings, logEmbeddingCost } from "./embeddings.ts";
 import { logError } from "./errors.ts";
+import { updateCoachProfile } from "./profile-updater.ts";
+import type { ProfileSignals } from "./debug-types.ts";
 
 // ─── FRAMEWORK ASSIGNMENT ──────────────────────────────────────────────
 
@@ -160,6 +162,31 @@ Rules:
 
 Return ONLY valid JSON, no other text.`;
 
+    // ── Profile signals extraction (separate prompt, same call) ──
+    // We add profile_signals to the same extraction to avoid a second LLM call
+    const fullPrompt = extractionPrompt.replace(
+      'Return ONLY valid JSON, no other text.',
+      `Also analyze the USER's behavioral signals for coaching style adaptation:
+  "profile_signals": {
+    "directness_preference": "direct" | "diplomatic" | null,
+    "emotional_state": "positive" | "stressed" | "vulnerable" | "neutral",
+    "engagement_level": "high" | "medium" | "low",
+    "response_to_challenge": "welcomed" | "deflected" | "resisted" | null,
+    "preferred_depth": "surface" | "moderate" | "deep",
+    "action_orientation": "wants_action" | "wants_reflection" | "balanced" | null
+  }
+
+Profile signals rules:
+- directness_preference: "direct" if user writes concisely and asks for specifics. "diplomatic" if user hedges, adds qualifiers, or seems to avoid direct answers. null if unclear.
+- emotional_state: based on the user's tone and language.
+- engagement_level: "high" = long messages, follow-up questions, active engagement. "low" = short/dismissive responses. "medium" = normal.
+- response_to_challenge: how the user responds when the coach pushes them. "welcomed" = leans in. "resisted" = pushes back or shuts down. "deflected" = changes subject. null if no challenge was presented.
+- preferred_depth: "deep" = user explores underlying causes, values, emotions. "surface" = user stays practical and tactical. "moderate" = balanced.
+- action_orientation: "wants_action" = user asks for specific steps, deadlines, tools. "wants_reflection" = user wants to explore and think. "balanced" or null if unclear.
+
+Return ONLY valid JSON, no other text.`
+    );
+
     const response = await fetch(
       "https://api.openai.com/v1/chat/completions",
       {
@@ -170,7 +197,7 @@ Return ONLY valid JSON, no other text.`;
         },
         body: JSON.stringify({
           model: "gpt-4o-mini",
-          messages: [{ role: "user", content: extractionPrompt }],
+          messages: [{ role: "user", content: fullPrompt }],
           temperature: 0.1,
           response_format: { type: "json_object" },
         }),
@@ -400,6 +427,35 @@ Return ONLY valid JSON, no other text.`;
     console.log(
       `[post-process] Extracted ${extracted.facts?.length ?? 0} facts, ${extracted.commitments?.length ?? 0} commitments for user ${userId}`
     );
+
+    // ── Profile Auto-Update ──
+    // Run after all other processing to avoid blocking fact/commitment storage
+    if (extracted.profile_signals) {
+      try {
+        // Get total message count for threshold gating
+        const { count: msgCount } = await supabase
+          .from("messages")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", userId)
+          .eq("role", "user");
+
+        const profileResult = await updateCoachProfile(
+          userId,
+          extracted.profile_signals as ProfileSignals,
+          msgCount ?? 0
+        );
+
+        if (profileResult.applied) {
+          console.log(
+            `[post-process] Profile updated for user ${userId}: ${profileResult.reason}, ` +
+            `changed: ${Object.keys(profileResult.deltas).join(", ")}`
+          );
+        }
+      } catch (profileErr) {
+        // Profile update failure should never block post-processing
+        console.warn("[post-process] Profile update error:", (profileErr as Error).message);
+      }
+    }
   } catch (error) {
     // Post-processing failure should never block the user
     console.error("[post-process] Error:", (error as Error).message);
