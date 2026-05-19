@@ -9,6 +9,10 @@
  * 
  * Each layer is a pure function that returns a prompt fragment.
  * assemblePrompt() orchestrates all layers into a single system prompt.
+ * 
+ * Layer 4.5 (Decoded Profile) — Sprint 0.4: When a user has completed
+ * a Decoded personality assessment, their full profile is injected here
+ * so the coach starts with deep knowledge of the user.
  */
 
 import { createSupabaseClient } from "./supabase.ts";
@@ -502,6 +506,8 @@ export async function assemblePrompt(
     agendaResult,
     summariesResult,
     aiToolsResult,
+    decodedScoresResult,
+    decodedReportResult,
   ] = await Promise.all([
     // User profile
     supabase.from("users").select("*").eq("id", userId).single(),
@@ -550,6 +556,20 @@ export async function assemblePrompt(
       .from("ai_tools")
       .select("name, category, cost_model, description, strengths, when_to_recommend")
       .eq("auto_flagged", false),
+    // Decoded assessment scores (S0.4 — Coach Handoff)
+    supabase
+      .from("assessment_scores")
+      .select("instrument_id, total_score, subscale_scores, percentile_scores, interpretation")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false }),
+    // Decoded assessment report (archetype data)
+    supabase
+      .from("assessment_reports")
+      .select("archetype_base, archetype_sublabel, archetype_tagline, generated_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
 
   const user = userResult.data as UserProfile | null;
@@ -561,6 +581,19 @@ export async function assemblePrompt(
   const sessionSummaries = (summariesResult.data ?? []) as ConversationSummary[];
   const availableAITools = (aiToolsResult.data ?? []) as AIToolRecord[];
   const userTools: UserAITool[] = Array.isArray(user?.ai_tools) ? user.ai_tools as UserAITool[] : [];
+  const decodedScores = (decodedScoresResult.data ?? []) as Array<{
+    instrument_id: string;
+    total_score?: number;
+    subscale_scores?: Record<string, number>;
+    percentile_scores?: Record<string, number>;
+    interpretation?: Record<string, unknown>;
+  }>;
+  const decodedReport = decodedReportResult.data as {
+    archetype_base: string | null;
+    archetype_sublabel: string | null;
+    archetype_tagline: string | null;
+    generated_at: string | null;
+  } | null;
 
   // Semantic memory retrieval — embed user message and search for relevant facts
   let semanticFacts: MemoryFact[] = [];
@@ -626,11 +659,29 @@ export async function assemblePrompt(
   // ── Assemble system prompt from layers ──
   const deliveryResult = buildDeliveryStyle(profile);
 
+  // ── Build Decoded profile layer (Layer 4.5 — S0.4) ──
+  let decodedLayer = "";
+  if (decodedScores.length > 0 && decodedReport) {
+    try {
+      // Dynamic import to avoid loading Decoded code when not needed
+      // These modules are co-located in the Edge Function bundle
+      const { buildAssessmentProfile } = await import("../../src/lib/decoded/coaching/assessment-profile.ts");
+      const { buildDecodedProfileLayer } = await import("../../src/lib/decoded/coaching/prompt-layer.ts");
+      const assessmentProfile = buildAssessmentProfile(decodedScores, decodedReport);
+      decodedLayer = buildDecodedProfileLayer(assessmentProfile);
+      console.log(`[prompt-assembler] Decoded profile loaded (${decodedScores.length} instruments, archetype: ${decodedReport.archetype_base})`);
+    } catch (e) {
+      // Decoded profile failure shouldn't break the coach
+      console.error("[prompt-assembler] Decoded profile build failed:", (e as Error).message);
+    }
+  }
+
   const layers: string[] = [
     buildBasePersona(),                                      // Layer 1
     buildChallengesLayer(challenges),                        // Layer 2
     buildInterventionSelector(profile, challenges),          // Layer 3
     user ? buildUserProfile(user) : "",                      // Layer 4
+    decodedLayer,                                            // Layer 4.5 (Decoded)
     buildEntitiesLayer(),                                    // Layer 5 (stub)
     deliveryResult.text,                                     // Layer 6
     buildMemoryLayer(messages, facts, sessionSummaries),      // Layer 7

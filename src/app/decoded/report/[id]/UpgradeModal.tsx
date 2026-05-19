@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Check, Sparkles, ArrowRight, Loader2 } from 'lucide-react';
+import { X, Check, ArrowRight, Loader2 } from 'lucide-react';
 import { DECODED_TIERS, type DecodedTierInfo } from '@/lib/decoded/billing/tiers';
 import type { ReportTier } from '@/lib/decoded/report/prompts/types';
 import './upgrade-modal.css';
@@ -68,11 +68,11 @@ export default function UpgradeModal({ isOpen, onClose, currentTier }: UpgradeMo
 
             {/* Header */}
             <div className="upgrade-modal__header">
-              <Sparkles size={20} className="upgrade-modal__icon" />
-              <h2 className="upgrade-modal__title">Unlock Your Full Report</h2>
+              <h2 className="upgrade-modal__title">There&apos;s more to you than this.</h2>
               <p className="upgrade-modal__subtitle">
-                You&apos;re seeing 7 of 12 sections. Unlock deeper personality insights,
-                coaching access, and your personal growth roadmap.
+                Your free report covers the fundamentals. Unlock the rest to see how
+                your emotions, relationships, and daily habits connect — and what
+                to do about it.
               </p>
             </div>
 
