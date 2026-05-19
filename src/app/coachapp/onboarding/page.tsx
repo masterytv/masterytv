@@ -18,13 +18,14 @@
  * Architecture: SPRINT.md S3.2
  */
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createBrowserClient } from "@supabase/ssr";
 import { type ResearchResults } from "@/lib/onboarding/machine";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageSquare, Mail, Send } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { buildAssessmentProfile, generateFirstMessage } from "@/lib/decoded/coaching";
 import "./onboarding.css";
 
 // ─── TYPES ──────────────────────────────────────────────────────────────
@@ -592,6 +593,54 @@ export default function OnboardingPage() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
+  // ── Decoded Fast-Track: detect assessment users on mount ──
+  const [isDecodedUser, setIsDecodedUser] = useState(false);
+  const [decodedChecked, setDecodedChecked] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function checkDecoded() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user || cancelled) { setDecodedChecked(true); return; }
+
+        // Check if user has a completed Decoded assessment report
+        const { data: report } = await supabase
+          .from('assessment_reports')
+          .select('archetype_base, archetype_sublabel, archetype_tagline, generated_at')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (!report || cancelled) { setDecodedChecked(true); return; }
+
+        // User has a Decoded assessment — load scores and generate letter
+        const { data: scores } = await supabase
+          .from('assessment_scores')
+          .select('instrument_id, total_score, subscale_scores, percentile_scores, interpretation')
+          .eq('user_id', user.id);
+
+        if (scores && scores.length > 0 && !cancelled) {
+          const profile = buildAssessmentProfile(scores, report);
+          const userName = user.user_metadata?.full_name || user.user_metadata?.name || '';
+          const letter = generateFirstMessage(profile, userName);
+
+          setIsDecodedUser(true);
+          setCoachingLetter(letter);
+          setStep('coaching_letter'); // Skip steps 1-3 entirely
+        }
+      } catch (e) {
+        // Non-fatal — fall through to normal onboarding
+        console.error('[onboarding] Decoded check failed:', (e as Error).message);
+      } finally {
+        if (!cancelled) setDecodedChecked(true);
+      }
+    }
+    checkDecoded();
+    return () => { cancelled = true; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Step 1 → 2: Fire research in background
   const handleAboutYouNext = useCallback(async (data: { linkedinUrl: string; websiteUrl: string; moreInfo: string }) => {
     setLoading(true);
@@ -716,7 +765,8 @@ export default function OnboardingPage() {
           <h1 className="ob-brand">Mastery Coach</h1>
           <ThemeToggle />
         </div>
-        <ProgressBar currentStep={step} />
+        {/* Decoded users skip the progress bar since they only see 2 steps */}
+        {!isDecodedUser && <ProgressBar currentStep={step} />}
       </header>
 
       <main className="ob-main">

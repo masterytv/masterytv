@@ -10,7 +10,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Lock, ArrowRight, Loader2, Printer } from 'lucide-react';
+import { Lock, ArrowRight, Loader2, Printer, MessageSquare } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import BigFiveRadar from './BigFiveRadar';
 import AttachmentQuadrant from './AttachmentQuadrant';
@@ -365,6 +365,28 @@ export default function ReportViewer({ report: initialReport, scores }: ReportVi
           <Printer size={16} />
           Save as PDF
         </button>
+      )}
+
+      {/* Meet Your Coach CTA — conversion funnel from assessment to coaching */}
+      {!isGenerating && generatedCount > 0 && (
+        <div className="coach-cta no-print">
+          <div className="coach-cta__content">
+            <div className="coach-cta__icon">
+              <MessageSquare size={28} strokeWidth={1.5} />
+            </div>
+            <h3 className="coach-cta__title">Ready to put this into action?</h3>
+            <p className="coach-cta__text">
+              Your AI coach has already read your full assessment. No awkward introductions — 
+              they know your personality, patterns, and priorities from day one.
+            </p>
+            <a
+              href="/coachapp/onboarding"
+              className="coach-cta__button"
+            >
+              Meet Your Coach <ArrowRight className="h-4 w-4" />
+            </a>
+          </div>
+        </div>
       )}
 
       {/* Upgrade Modal */}
