@@ -399,3 +399,96 @@ Add to `globals.css` `@theme`:
 | No light mode theme | Add light mode CSS for marketing pages | 🔲 Sprint 6 S6.11 (Landing Page) |
 
 > **Self-Annealing Note:** This file supersedes all ad-hoc color/font decisions in individual CSS files. As Sprint 6 components are built, they must reference these tokens. Older files (onboarding, chat) have been migrated to the centralized token system.
+
+---
+
+## 14. Visual Anti-Patterns — Banned Elements
+
+> [!CAUTION]
+> This section documents design patterns that are **permanently banned** across all Mastery Coach and Decoded products. Violating these rules makes the product look like a generic AI SaaS from 2023. That is the worst possible outcome for a premium brand.
+
+### 14.1 The "AI Aesthetic" Problem
+
+The visual language of AI startups has converged into a recognizable, now-dated style. It signals "cheap product" to any design-literate user:
+
+- Colorful emoji used as section or feature icons (🧠 🎯 🔮 💡 ⚡)
+- ✨ Sparkle / magic stars as decorative elements — **absolutely prohibited, zero exceptions**
+- Purple/pink/teal gradient blobs floating behind content
+- Clipart-style 3D or illustrated icons per feature/tier
+- Generic "futuristic" illustration with circuit or particle patterns
+
+**Deep Personality uses this aesthetic throughout their report. It is the wrong direction. We reject it entirely.**
+
+### 14.1.1 Approved Icon Library
+
+> [!IMPORTANT]
+> **The only approved icon library is [Lucide React](https://lucide.dev/).** No emoji, no clipart, no icon packs, no SVG art packs. Lucide icons are monochrome, stroke-based, and match the editorial restraint of our brand.
+
+| Rule | Specification |
+|:---|:---|
+| **Library** | `lucide-react` — the sole approved source |
+| **Size** | 16–20px for inline/card headers, 24px max for standalone hero usage |
+| **Color** | Single color only: `var(--color-primary)` or `var(--text-label)` — never multi-color |
+| **Weight** | Default stroke weight (2px) — never filled/solid variants |
+| **Never** | Emoji (any Unicode emoji character), clipart, 3D icons, illustrated icons, sparkles (✨), gradient icons |
+
+**Selection principle:** Choose the most abstract, geometrically neutral Lucide icon available. Prefer `Fingerprint` over `Brain`, `Compass` over `Target`, `Waves` over `Ocean`. If no icon fits without becoming decorative, **use no icon** — let typography carry the hierarchy.
+
+### 14.2 Banned Icons & Symbols
+
+The following are **permanently prohibited** in all UI across Mastery Coach, Decoded, and MasteryTV:
+
+| Banned Element | Why Banned | Permitted Alternative |
+|:---|:---|:---|
+| ✨ Sparkle / Magic Stars | Universal "AI did this" cliché — on every low-effort AI product | No icon; let the content speak |
+| 🧠 Brain clipart | Generic "psychology/AI thinking" icon | Custom SVG line art, or data visualization |
+| 🎯 Target/Bulls-eye | Overused SaaS "goal" icon | Typographic — use a number, label, or score |
+| 🔮 Crystal ball | New-age AI cliché | Remove the concept from UI entirely |
+| 💡 Lightbulb | Overused "insight/idea" metaphor | Pull-quote styling or whitespace callout |
+| 🤖 Robot face | Implies chatbot, not coach | Never, under any circumstances |
+| ⚡ Lightning bolt (as "AI = fast") | Generic speed/AI decoration | Only when part of named content (e.g. IFS "Self-Energy" label) |
+| Colorful 3D plastic-style icons | The MasteryTV tier icons (ruler, brain, bar chart, face) | Flat monochrome SVG, or typographic numbering |
+| Gradient blob shapes | Decorative purple/pink circles behind content | Structured directional gradients only |
+| Emoji used as section headers | Deep Personality's 🎯 🔍 🔮 ✨ as report section labels | All-caps `label-md` text labels, or no label decoration at all |
+
+### 14.3 Specific Existing Violations to Fix
+
+**MasteryTV Homepage — Tier Cards:**
+The four tier cards use colorful clipart icons from an icon pack. All four are banned:
+- Tier 1 Session Structure: ruler/structure icon — **replace**
+- Tier 2 Business & Execution: bar chart icon — **replace**
+- Tier 3 Mindset & Resilience: 3D pink/purple brain — **replace**
+- Tier 4 Deep Psychology: colorful face/blob icon — **replace**
+
+**Replacement:** Typographic numbering ("01" "02" "03" "04") in `text-muted` using `label-md` style, or a single-color minimal SVG. The tier name and description carry the weight — the icon should not compete.
+
+**Do Not Copy Deep Personality's Visual Style:**
+Their content is excellent. Their design is a cautionary tale:
+- ✨ sparkle appears as decoration throughout — do not replicate
+- Emoji section headers (🎯 🔍 🔮) throughout the report — do not replicate
+- Multiple bright accent colors per screen — do not replicate
+- *Exception:* Their IFS node visualization (dark canvas, glowing data nodes) is acceptable — it serves a data purpose, not a decorative one
+
+### 14.4 What Premium Looks Like Instead
+
+Premium communicates through **restraint**. Decoration is the enemy of authority.
+
+| Instead of... | Use... |
+|:---|:---|
+| Colorful icon per feature/section | **Weight and size contrast in typography** — hierarchy through type, not color |
+| ✨ sparkles to signal intelligence | **Nothing** — intelligence speaks through content quality, not decoration |
+| 3D illustrated icons | **Data visualizations** — a radar chart, slider, or score is more credible than any icon |
+| Emoji section labels | **Numbered sections** ("01.") or **all-caps category label** in `label-md` |
+| Floating gradient blobs | **Structural gradients** — directional, purposeful, serving layout — never decorative shapes |
+
+### 14.5 The Four-Question Test
+
+Before adding any icon, illustration, or decorative element:
+
+1. **Would this look at home on a $10/month SaaS?** → If yes, remove it.
+2. **Is it a sparkle, gradient blob, or colorful emoji icon?** → Remove it.
+3. **Is it communicating data/information, or just decorating?** → If decorating, remove it.
+4. **Would it appear in the _New York Times_, _The Economist_, or a McKinsey report?** → If not, it doesn't belong here.
+
+> [!IMPORTANT]
+> **This applies retroactively.** Any existing component using banned icons or the AI aesthetic must be updated in the next sprint that touches that component. Do not leave old violations in place and do not add new ones.

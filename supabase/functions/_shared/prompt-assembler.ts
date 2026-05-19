@@ -566,8 +566,11 @@ export async function assemblePrompt(
   let semanticFacts: MemoryFact[] = [];
   let semanticResults: Array<{ category: string; subject: string; content: string; importance: number; similarity: number }> = [];
   try {
+    console.log(`[prompt-assembler] Generating embedding for query: "${userMessage.slice(0, 60)}..."`);
     const queryEmbedding = await generateEmbedding(userMessage);
+    console.log(`[prompt-assembler] Embedding generated (${queryEmbedding.length} dims), searching facts for user ${userId}...`);
     semanticResults = await searchMemoryFacts(userId, queryEmbedding, 8);
+    console.log(`[prompt-assembler] Semantic search returned ${semanticResults.length} results`);
     semanticFacts = semanticResults.map((r) => ({
       category: r.category,
       subject: r.subject,
@@ -576,7 +579,7 @@ export async function assemblePrompt(
     }));
   } catch (e) {
     // Semantic search failure shouldn't break the coach
-    console.warn("[prompt-assembler] Semantic search failed, using importance-only:", (e as Error).message);
+    console.error("[prompt-assembler] Semantic search FAILED:", (e as Error).message, (e as Error).stack);
   }
 
   // Merge: deduplicate by subject+content, prefer semantic matches

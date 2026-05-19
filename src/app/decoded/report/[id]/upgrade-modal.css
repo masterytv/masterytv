@@ -1,0 +1,245 @@
+/* ═══════════════════════════════════════════════
+   Decoded — Upgrade Modal
+   "Editorial Midnight" aesthetic — premium tier cards
+   ═══════════════════════════════════════════════ */
+
+/* ── Overlay ── */
+.upgrade-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 10, 26, 0.75);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 1rem;
+}
+
+/* ── Modal container ── */
+.upgrade-modal {
+  position: relative;
+  background: var(--color-surface-50);
+  border: 1px solid var(--ghost-border);
+  border-radius: var(--radius-xl);
+  padding: 2.5rem 2rem;
+  max-width: 56rem;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.upgrade-modal__close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: transparent;
+  border: none;
+  color: var(--text-label);
+  cursor: pointer;
+  padding: 0.375rem;
+  border-radius: var(--radius-md);
+  transition: color 0.15s ease;
+}
+
+.upgrade-modal__close:hover {
+  color: var(--text-heading);
+}
+
+/* ── Header ── */
+.upgrade-modal__header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.upgrade-modal__icon {
+  color: var(--color-primary);
+  margin-bottom: 0.5rem;
+}
+
+.upgrade-modal__title {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-heading);
+  margin-bottom: 0.5rem;
+}
+
+.upgrade-modal__subtitle {
+  font-size: 0.9375rem;
+  color: var(--text-body);
+  line-height: 1.6;
+  max-width: 32rem;
+  margin: 0 auto;
+}
+
+/* ── Tier cards grid ── */
+.upgrade-tiers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+/* ── Individual tier card ── */
+.upgrade-tier-card {
+  position: relative;
+  background: var(--color-surface-100);
+  border: 1px solid var(--ghost-border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.2s ease;
+}
+
+.upgrade-tier-card:hover {
+  border-color: rgba(96, 99, 238, 0.3);
+}
+
+.upgrade-tier-card--recommended {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary), 0 8px 24px rgba(96, 99, 238, 0.1);
+}
+
+.upgrade-tier-card__badge {
+  position: absolute;
+  top: -0.625rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.upgrade-tier-card__name {
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-heading);
+  margin-bottom: 0.125rem;
+}
+
+.upgrade-tier-card__tagline {
+  font-size: 0.75rem;
+  color: var(--text-label);
+  margin-bottom: 1rem;
+}
+
+.upgrade-tier-card__price {
+  margin-bottom: 1.25rem;
+}
+
+.upgrade-tier-card__amount {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-heading);
+}
+
+.upgrade-tier-card__interval {
+  font-size: 0.8125rem;
+  color: var(--text-label);
+  margin-left: 0.25rem;
+}
+
+/* ── Feature list ── */
+.upgrade-tier-card__features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.25rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.upgrade-tier-card__features li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--text-body);
+  line-height: 1.5;
+}
+
+.upgrade-tier-card__check {
+  color: #69f6b8;
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+/* ── CTA button ── */
+.upgrade-tier-card__cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid var(--ghost-border);
+  background: var(--color-surface-200);
+  color: var(--text-heading);
+}
+
+.upgrade-tier-card__cta:hover {
+  background: var(--color-surface-50);
+  border-color: var(--color-primary);
+}
+
+.upgrade-tier-card__cta--primary {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.upgrade-tier-card__cta--primary:hover {
+  background: var(--color-primary-hover, #5558d4);
+  border-color: var(--color-primary-hover, #5558d4);
+}
+
+.upgrade-tier-card__cta:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Footer ── */
+.upgrade-modal__footer {
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--text-label);
+  line-height: 1.5;
+}
+
+/* ── Mobile ── */
+@media (max-width: 640px) {
+  .upgrade-modal {
+    padding: 1.5rem 1rem;
+  }
+
+  .upgrade-modal__title {
+    font-size: 1.25rem;
+  }
+
+  .upgrade-tiers {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Print: hide ── */
+@media print {
+  .upgrade-overlay {
+    display: none !important;
+  }
+}

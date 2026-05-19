@@ -1,15 +1,190 @@
-# Sprint Plan — Mastery Coach App
+# Sprint Plan — Mastery Coach App + Decoded
 
 > **Author:** Thomas Wood + Antigravity Orchestrator
-> **Date:** March 30, 2026
-> **Version:** 1.4 (Updated: Sprint 3 Safety & Guardrails Complete)
-> **Status:** ✅ Gate 3 Approved (2026-03-31) | Sprint 3 COMPLETE — Ready for Sprint 4
-> **Source:** [ARCHITECTURE.md](file:///Users/thomaswood/Documents/Antigravity/MasteryTV/directives/ARCHITECTURE.md) (Gate 2 ✅)
+> **Date:** March 30, 2026 | Updated: May 18, 2026
+> **Version:** 1.6 (Sprint 0 renamed: Self Mastery Assessment → Decoded)
+> **Status:** ✅ Gate 3 Approved | Sprint 3 COMPLETE — Ready for Sprint 4 | Sprint 0 PLANNING
+> **Source:** [ARCHITECTURE.md](file:///Users/thomaswood/Documents/Antigravity/MasteryTV/directives/ARCHITECTURE.md) (Gate 2 ✅) | [DECODED.md](file:///Users/thomaswood/Documents/Antigravity/MasteryTV/directives/DECODED.md) (Gate 0 🟡)
 > **Methodology:** BMAD + Antigravity Method (Phase 3 — Sprint Planning)
 
 ---
 
-## 1. Sprint Strategy
+## 0. Sprint 0 — Decoded (Top-of-Funnel)
+
+> **Duration:** 10–12 weeks
+> **Goal:** Launch Decoded at `mastery.tv/decoded` — free 7-section report, $29/$69/$349 upgrade tiers, coach handoff integration.
+> **Tagline:** *"You, decoded."*
+> **Discovery:** [DECODED.md](file:///Users/thomaswood/Documents/Antigravity/MasteryTV/directives/DECODED.md)
+> **PRD:** [DECODED_PRD.md](file:///Users/thomaswood/Documents/Antigravity/MasteryTV/directives/DECODED_PRD.md)
+> **License Status:** ✅ All instrument licenses resolved (May 19, 2026)
+
+> [!IMPORTANT]
+> **MANDATORY for all UI stories:** Before writing any CSS, component, or inline style, read `directives/BRAND.md` §2 (Color System), §3 (Typography), and §14 (Visual Anti-Patterns). All font sizes must use the defined type scale tokens (`text-display-lg`, `text-headline-md`, `text-label-sm`, etc.). All colors must use CSS custom properties from `globals.css @theme`. No hardcoded hex values. No emoji icons — Lucide only (§14.1.1).
+
+---
+
+### Sprint 0.1 — Assessment Engine (Week 1–3)
+
+**Goal:** Users can create an account, complete the Complete Core assessment with per-question persistence, and have their responses scored and stored.
+
+#### E0 — Document Prerequisites
+
+- [x] **S0.1.0a** — (F01) Create `DECODED_SCHEMA.md` with full DDL/RLS specifications for all Decoded tables
+- [x] **S0.1.0b** — (F01) Create `DECODED_SCORING.md` with scoring keys for all 13 instruments (9 Core + 4 Optional)
+- [x] **S0.1.0c** — (F02) Create `DECODED_ARCHETYPES.md` with base archetype definitions and AI sub-label generation logic
+
+#### E0 — Assessment Infrastructure
+
+- [ ] **S0.1.1** — (F01) Create Supabase schema per `DECODED_SCHEMA.md`: `assessments`, `assessment_progress`, `assessment_responses`, `assessment_scores`, `assessment_reports`, `assessment_profiles` tables + RLS policies
+- [ ] **S0.1.2** — (F01) Build auth-first assessment flow: user creates account (Google OAuth or email magic link) BEFORE assessment begins. Persistent login via Supabase refresh token.
+- [ ] **S0.1.3** — (F01) Build multi-step assessment form in Next.js at `/decoded` — one question at a time with progress bar. Every response saved to `assessment_progress` (JSONB) on each answer.
+- [ ] **S0.1.4** — (F01) Implement Complete Core battery (~113 items): IPIP-50, RIASEC, ECR-R Short, SWLS, SCS-SF, DERS-16, WEIMS, Flourishing Scale, Decoded Wellness Check. All users take the same instruments.
+- [ ] **S0.1.4a** — (F01) After Core completion, present optional add-on screen: GAD-7 (system-recommended if Neuroticism ≥ 38), ASRS (recommended if Conscientiousness ≤ 20), CSI-4 ("Are you in a relationship?"), ACE-3 (opt-in with sensitivity framing). User decides.
+- [ ] **S0.1.5** — (F01) Implement scoring functions per `DECODED_SCORING.md` for all 13 instruments. Unit test each with floor/ceiling/known-clinical/reverse-scoring/boundary cases.
+- [ ] **S0.1.5a** — (F01) Implement response validity check: detect straight-lining (all same value across ≥10 consecutive items) and contradictory reverse-scored pairs. Flag invalid responses; warn in report generation.
+- [ ] **S0.1.6** — (F01) Store raw responses in `assessment_responses` + computed scores in `assessment_scores`; link to authenticated user
+- [ ] **S0.1.7** — (F01) Implement resume flow: on return, auto-authenticate via refresh token and load exact position (instrument, item) from `assessment_progress`
+
+**Done:** A user creates an account, completes the Complete Core assessment (~25–30 min) + optional add-ons with per-question state persistence. Scores are computed and stored. If they close the tab, nothing is lost.
+
+---
+
+### Sprint 0.2 — Report Generator (Week 3–5)
+
+**Goal:** Assessment scores → 7 free + 5 locked AI-written report sections, generated per RS-IDs.
+
+#### E0 — Report Generation
+
+- [ ] **S0.2.1** — (F02) Design report prompt architecture: scoring data → structured JSON → section-by-section GPT-4o generation (RS01–RS12, ~600–1,200 words each)
+- [ ] **S0.2.1a** — (F02) Implement async report generation pipeline: Edge Function generates sections sequentially, writes each to `assessment_reports.sections` JSONB as completed. Frontend subscribes to Realtime updates on this column. User sees sections appear one at a time. Fallback: email with report link if >2 min.
+- [ ] **S0.2.2** — (F02) Implement 7 free sections: RS01 (You, Decoded), RS02 (What the Data Shows), RS03 (Your Decoded Archetype), RS04 (How You're Wired), RS05 (Your Trait Profile), RS06 (Your Attachment Map), RS07 (Your Inner System)
+- [ ] **S0.2.3** — (F02) Implement 5 locked sections: RS08–RS12 (blur-gated with section-specific upgrade CTA copy)
+- [ ] **S0.2.4** — (F02) Build web report viewer: premium editorial aesthetic (BRAND.md §14), section-anchored, data visualizations (radar, quadrant, hexagon, **10-dimension wellness radar**)
+- [ ] **S0.2.5** — (F02) Implement `@media print` stylesheet + `window.print()` button for browser PDF export. Print styles: hide nav, remove blur gates for paid users, force page breaks between sections.
+- [ ] **S0.2.6** — (F02) Cache report in Supabase (`assessment_reports` table, JSONB keyed by RS-ID) — generate once, serve many
+- [ ] **S0.2.7** — (F02) Safety layer: clinical result framing (never raw scores; always growth-oriented language); crisis gateway for suicidal ideation items (automatic resource display)
+- [ ] **S0.2.8** — (F02) Write section-specific prompt templates for all 12 report sections; QA minimum 20 sample reports
+- [ ] **S0.2.9** — (F02) Implement archetype system per `DECODED_ARCHETYPES.md`: ~16 base types from Big Five clusters + AI-generated sub-label. Format: `BASE TYPE — Sub-Label`
+
+**Done:** Every user who completes the assessment gets a free, high-quality 7-section report. 5 locked sections visible but blurred. Every section ends with a coaching question. Browser PDF export works.
+
+---
+
+### Sprint 0.3 — Pricing, Billing & Upgrade Tiers (Week 3–4)
+
+**Goal:** Paid tiers live and working end-to-end via Stripe.
+
+#### E0 — Monetization
+
+- [ ] **S0.3.1** — (F04) Create Stripe products/prices: `insight_annual` ($29/yr), `growth_annual` ($69/yr), `mastery_monthly` ($99/mo), `mastery_annual` ($349/yr)
+- [ ] **S0.3.2** — (F04) Build upgrade modal / paywall: shown after free report with clear tier comparison ($0 → $29 → $69 → $349). Gate after RS07.
+- [ ] **S0.3.3** — (F04) Implement `insight_annual` tier: unlock RS08–RS12 + 50 coach messages/week + AI Compatibility Report
+- [ ] **S0.3.4** — (F04) Implement `growth_annual` tier: Insight + Growth Roadmap (RS12) + 300 coach messages/month + Compare AI analysis
+- [ ] **S0.3.5** — (F04) Implement `mastery_annual` / `mastery_monthly` tier: Everything + unlimited coach + full framework library + Depth Layer (RD01–RD04)
+- [ ] **S0.3.6** — (F04) Extend existing Stripe webhook to handle new Decoded price objects; update `users.subscription_tier` accordingly
+- [ ] **S0.3.7** — (F04) Implement coach message rate limiting: Free=5/day, Insight=50/week, Growth=300/month, Mastery=unlimited
+
+**Done:** All four pricing tiers are purchasable via Stripe. Locked sections unlock immediately on upgrade. Message limits enforced.
+
+---
+
+### Sprint 0.4 — Coach Handoff Integration (Week 4–5)
+
+**Goal:** Assessment profile pre-loads the coaching engine. Coach starts knowing the user.
+
+#### E0 — Assessment → Coach Integration
+
+- [ ] **S0.4.1** — Design `assessment_profile` schema: structured JSON summary of key scores, narrative labels, identified coaching priorities (output of scoring engine)
+- [ ] **S0.4.2** — Modify coaching engine prompt assembly: if `user.assessment_profile` exists, inject as a new context layer ("User Self Mastery Profile") above the general user profile
+- [ ] **S0.4.3** — Generate coach's "first message" using assessment data: personalized opening that references specific findings, suggests a starting framework, asks one sharp question
+- [ ] **S0.4.4** — Update coach onboarding flow: users arriving from Self Mastery skip the website/LinkedIn scraping onboarding — assessment profile replaces it
+- [ ] **S0.4.5** — Test coach handoff with 10 different assessment profiles: verify coaching response quality and personalization accuracy
+- [ ] **S0.4.6** — "Meet your coach" CTA in report Section 10: compelling invitation that references specific insights from their report
+
+**Done:** A user who upgrades to the coach tier from Self Mastery gets a coach that immediately demonstrates it knows them. "Wow" moment validated.
+
+---
+
+### Sprint 0.5 — Launch Preparation & Viral Features (Week 5–6)
+
+**Goal:** Decoded is publicly launched with viral sharing mechanics live.
+
+#### E0 — Go-To-Market
+
+- [ ] **S0.5.1** — Build `/decoded` landing page: hero, value prop, sample report preview, social proof, "Take the assessment" CTA
+- [ ] **S0.5.2** — Build shareable personality cards (F06/F07): Big Five visual, attachment style badge — downloadable/shareable on Instagram/X (Story 9:16, Feed 1:1, Landscape 16:9 formats). **Design mandate: premium glassmorphism — no clipart, no sparkles. BRAND.md §14.**
+- [ ] **S0.5.3** — Implement Compare / Profile Invite mechanic (F03): "Invite someone to compare profiles" → unique link generator → recipient must complete assessment to unlock comparison → AI Compatibility Report generated on both completing
+- [ ] **S0.5.4** — Implement Share Your Type callout (F07): Banner appears in report after Archetype section + at report footer. Reuses F06 modal.
+- [ ] **S0.5.5** — Implement referral mechanic (F08): Unique referral URL → friend completes → referrer unlocks 1 Insight section free; milestone rewards at 3 and 5 referrals
+- [ ] **S0.5.6** — SEO metadata: title tags, meta descriptions, Open Graph for `/decoded` and report pages
+- [ ] **S0.5.7** — Disclaimers & legal: non-clinical disclaimer on assessment start, data privacy statement, GDPR delete-anytime flow
+- [ ] **S0.5.8** — Product Hunt launch assets: product images, description, teaser, maker notes
+- [ ] **S0.5.9** — Admin visibility: add Decoded metrics to admin dashboard (assessments started, completed, conversion by tier, report views, viral loop stats)
+- [ ] **S0.5.10** — Bottom-of-report coaching CTA: pre-generated personalized coach opener + Share Card button + "Check in with me in a week" opt-in (triggers Email 7 of onboarding sequence)
+
+**Done:** Decoded is live at `mastery.tv/decoded`. Compare/Invite, Share Card, and Referral mechanics active. Product Hunt launch ready. Legal coverage in place.
+
+---
+
+### Sprint 0.6 — Email Infrastructure & Onboarding Sequence (Week 5–6, parallel)
+
+**Goal:** Every user who completes Decoded is enrolled in the 8-email coaching onboarding sequence.
+
+#### E0 — Email Infrastructure
+
+- [ ] **S0.6.0** — (F01) Abandonment recovery email: pg_cron checks `assessment_progress` for `last_active_at < NOW() - INTERVAL '24 hours'` AND `completed_at IS NULL`. Sends "Pick up where you left off" email with deep link to resume. One email per abandonment.
+- [ ] **S0.6.1** — (F10) Add email tables to schema: `email_preferences`, `email_sequence_enrollments`, `email_sends`
+- [ ] **S0.6.2** — Port `email_campaigns` table from Project Profound (admin broadcast history)
+- [ ] **S0.6.3** — Configure Resend: domain verification for `decoded@masterytv.com`, API key in Edge Function secrets
+- [ ] **S0.6.4** — Build sequence runner Edge Function: pg_cron triggers hourly → queries `email_sequence_enrollments` for due sends → dispatches → logs to `email_sends`
+- [ ] **S0.6.5** — Build Resend webhook endpoint: inbound events (opened, clicked, bounced, complained) → update `email_sends`; unsubscribe events → update `email_preferences.subscribed = false`
+- [ ] **S0.6.6** — Write 8-email onboarding sequence content (see DECODED.md §15.1 for spec): Email 1 (report open), 2 (top insight personalized), 3 (coach intro), 4 (share/invite), 5 (re-engagement — conditional), 6 (upgrade nudge — free tier only), 7 (milestone + review ask), 8 (retake prompt + growth delta)
+- [ ] **S0.6.7** — Build React Email templates: Decoded brand styling, no clipart/sparkles (BRAND.md §14), mobile-first, coach voice
+- [ ] **S0.6.8** — Auto-enroll trigger: when `assessment_reports` record is created → insert into `email_sequence_enrollments` with `sequence_slug = 'decoded_onboarding'`
+- [ ] **S0.6.9** — Unsubscribe flow: one-click unsubscribe link in every email → sets `email_preferences.subscribed = false` → confirmation page
+
+#### E0 — Admin Email Panel
+
+- [ ] **S0.6.10** — Port admin email compose UI from Project Profound: Broadcasts tab (compose/send), History tab (per-campaign stats)
+- [ ] **S0.6.11** — Add Sequences tab: enrollment counts, user positions, pause/resume controls
+- [ ] **S0.6.12** — Add Users email tab: search by user → see send history → manual unsub option
+
+**Done:** Every assessment completer is automatically enrolled in the 8-email sequence. Admin can monitor, pause, and broadcast. Resend webhook tracking live.
+
+---
+
+### Sprint 0.7 — Dating Profile Generator (Post-MVP — Phase 2)
+
+> [!NOTE]
+> F09 is explicitly Post-MVP. Build only after core report + Compare/Invite are stable and launched. Placeholder here for sprint planning continuity.
+
+**Goal:** Generate AI dating profile bios from assessment data. Target: younger users (under 35).
+
+- [ ] **S0.7.1** — Build Dating Profile Generator UI: platform selector (Hinge/Bumble/Tinder/The League), tone selector (Witty/Sincere/Adventurous/Vulnerable), length selector (Short/Medium/Long)
+- [ ] **S0.7.2** — Implement prompt template using assessment scores: attachment-aware bio language (avoidant/anxious/secure signals), Big Five strengths, RIASEC interests, self-compassion cues
+- [ ] **S0.7.3** — Generate 3 variants per config; user can regenerate
+- [ ] **S0.7.4** — Copy-to-clipboard UX; mobile-optimized
+- [ ] **S0.7.5** — Gate behind Growth tier ($69/yr)
+
+**Done:** Growth tier users can generate platform-specific dating bios from their assessment profile. Attachment-aware language ensures bios attract compatible people, not just engagement.
+
+---
+
+### Sprint 0 Summary
+
+| Sub-Sprint | Weeks | Key Deliverable |
+|:---|:---|:---|
+| **S0.1** | 1–3 | Complete Core assessment engine (~113 items); per-question persistence; optional add-ons; resume flow |
+| **S0.2** | 3–5 | 7 free + 5 locked report sections (RS01–RS12); archetype system; browser PDF |
+| **S0.3** | 5–7 | Insight/Growth/Mastery tiers live via Stripe; message rate limits |
+| **S0.4** | 7–8 | Coach pre-loaded with assessment profile; handoff validated |
+| **S0.5** | 8–10 | Public launch — landing page, viral features (F03/F06/F07/F08), PH ready |
+| **S0.6** | 8–10 (parallel) | Email infrastructure + abandonment recovery + 8-email onboarding |
+| **S0.7** | Post-MVP | Dating Profile Generator (F09) — Growth tier feature |
+
+---
+
+## 1. Sprint Strategy (Coach App — Sprints 1–6)
 
 ### 1.1 Cadence
 
@@ -44,6 +219,7 @@ This maps to PRD §5.1 and User Journeys 1, 2, 4, and 5 (basic).
 
 | # | Epic | Sprint | Dependency |
 |:--|:-----|:-------|:-----------|
+| **E0** | **Decoded (Top-of-Funnel)** | **S0** | **None — runs first** |
 | E1 | Foundation & Scaffold | S1 | None |
 | E2 | Auth & User Management | S1 | E1 |
 | E3 | Coaching Engine Core | S2 | E1 |
@@ -53,7 +229,7 @@ This maps to PRD §5.1 and User Journeys 1, 2, 4, and 5 (basic).
 | E7 | Telegram Channel | S4 | E3 |
 | E8 | Entity Extractor | S4 | E3 |
 | E9 | Proactive Outreach | S5 | E6, E7, E8 |
-| E10 | Billing & Subscriptions | S5 | E2 |
+| E10 | Billing & Subscriptions | S5 | E2, E0 |
 | E11 | Dashboard Features | S5–S6 | E2, E3 |
 | E12 | Safety, Crisis & Guardrails | S3 | E3 |
 | E13 | AI Tool Engine | S6 | E3 |

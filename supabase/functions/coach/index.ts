@@ -74,6 +74,7 @@ Deno.serve(async (req: Request) => {
     }
 
     // ── 2.3 Debug mode — admin-only, verified server-side ──
+    const supabase = createSupabaseClient();
     let debugMode = false;
     if (body.debug === true) {
       const { data: adminCheck } = await supabase
@@ -91,7 +92,6 @@ Deno.serve(async (req: Request) => {
     const pipelineStart = debugMode ? performance.now() : 0;
 
     // ── 2.5 Free tier message limit check (S5.9) ──
-    const supabase = createSupabaseClient();
     const { limitReached, upgradeResponse } = await checkMessageLimit(supabase, userId, corsHeaders);
     if (limitReached && upgradeResponse) {
       return upgradeResponse;
@@ -538,11 +538,12 @@ async function checkMessageLimit(
 ): Promise<{ limitReached: boolean; upgradeResponse?: Response }> {
   const { data: user } = await supabase
     .from("users")
-    .select("subscription_tier, daily_message_count, daily_message_reset_at")
+    .select("subscription_tier, daily_message_count, daily_message_reset_at, is_admin")
     .eq("id", userId)
     .single();
 
-  if (!user || user.subscription_tier !== "free") {
+  // Admin users bypass all message limits
+  if (!user || user.is_admin === true || user.subscription_tier !== "free") {
     return { limitReached: false };
   }
 
