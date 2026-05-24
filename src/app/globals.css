@@ -3,6 +3,7 @@
 @import "./coachapp/dashboard/dashboard.css";
 @import "./coachapp/admin/admin.css";
 @import "./landing.css";
+@import "./decoded/landing/decoded-landing.css";
 
 /* =============================================================
    MASTERY COACH — Design System Tokens (Tailwind v4 CSS-first)
