@@ -1,0 +1,589 @@
+/* =============================================================
+   DECODED NOIR 2 — Ultra-Retro Detective Landing Page CSS
+   Warm Sepia Typewriter / Manila Folder / Film Noir Aesthetic
+   ============================================================= */
+
+:root {
+  --dn2-base: #060608;
+  --dn2-wood: #110d0c;
+  --dn2-manila: #ecdcb9;
+  --dn2-manila-dark: #dfcb9e;
+  --dn2-manila-text: #201b15;
+  --dn2-polaroid-bg: #faf7f0;
+  --dn2-accent-yellow: #fabd00;
+  --dn2-accent-red: #ba1a1a;
+  --dn2-text-light: #e4e2dd;
+  --dn2-text-muted: #8d8b86;
+  --dn2-border-opacity: rgba(250, 189, 0, 0.15);
+  
+  --font-typewriter: 'Special Elite', 'Courier New', Courier, monospace;
+  --font-courier: 'Courier Prime', Courier, monospace;
+}
+
+/* ── Base ── */
+.dn2__page {
+  background: var(--dn2-base);
+  color: var(--dn2-text-light);
+  font-family: var(--font-courier);
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Scanline / Grain */
+.dn2__page::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1000;
+  background-image: radial-gradient(circle, transparent 50%, rgba(0,0,0,0.4) 100%);
+  opacity: 0.8;
+}
+
+/* ── Navigation ── */
+.dn2__nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 500;
+  background: rgba(6, 6, 8, 0.9);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(250, 189, 0, 0.1);
+}
+
+.dn2__nav-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+}
+
+.dn2__logo {
+  font-family: Georgia, serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--dn2-text-light);
+  text-decoration: none;
+  letter-spacing: 0.05em;
+}
+
+.dn2__nav-cta {
+  background: var(--dn2-accent-yellow);
+  color: #000;
+  font-family: var(--font-typewriter);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 0.5rem 1rem;
+  border-radius: 2px;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 2px 8px rgba(250, 189, 0, 0.2);
+}
+
+.dn2__nav-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(250, 189, 0, 0.4);
+}
+
+/* ── Hero ── */
+.dn2__hero {
+  position: relative;
+  min-height: 90vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8rem 1.5rem 6rem;
+  background-image: linear-gradient(to bottom, rgba(6, 6, 8, 0.2) 0%, rgba(6, 6, 8, 0.95) 90%), url('/noir-desk-hero.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  text-align: center;
+}
+
+.dn2__hero-content {
+  max-width: 850px;
+  z-index: 10;
+}
+
+.dn2__hero-eyebrow {
+  font-family: var(--font-typewriter);
+  font-size: 0.875rem;
+  color: var(--dn2-accent-yellow);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-bottom: 1.5rem;
+}
+
+.dn2__hero-title {
+  font-family: var(--font-typewriter);
+  font-size: clamp(2.25rem, 5.5vw, 4rem);
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--dn2-text-light);
+  margin-bottom: 2rem;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9);
+}
+
+.dn2__hero-sub {
+  font-size: clamp(1rem, 2vw, 1.2rem);
+  line-height: 1.7;
+  color: var(--dn2-text-muted);
+  max-width: 650px;
+  margin: 0 auto 3rem;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+
+/* Hazard Stripes CTA Button */
+.dn2__btn-tape {
+  display: inline-block;
+  position: relative;
+  background: var(--dn2-accent-yellow);
+  color: #000;
+  font-family: var(--font-typewriter);
+  font-size: 1.125rem;
+  font-weight: 700;
+  text-decoration: none;
+  padding: 1rem 2.5rem;
+  border: 3px solid #000;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  overflow: hidden;
+}
+
+/* Hazard stripe borders */
+.dn2__btn-tape::before,
+.dn2__btn-tape::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 6px;
+  background: repeating-linear-gradient(
+    -45deg,
+    #000,
+    #000 6px,
+    var(--dn2-accent-yellow) 6px,
+    var(--dn2-accent-yellow) 12px
+  );
+}
+
+.dn2__btn-tape::before {
+  top: 0;
+  border-bottom: 1px solid #000;
+}
+
+.dn2__btn-tape::after {
+  bottom: 0;
+  border-top: 1px solid #000;
+}
+
+.dn2__btn-tape:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(250, 189, 0, 0.3);
+}
+
+.dn2__btn-tape:active {
+  transform: translateY(0);
+}
+
+/* Hero Meta */
+.dn2__hero-meta {
+  margin-top: 3.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2.5rem;
+  font-family: var(--font-typewriter);
+  font-size: 0.75rem;
+  color: var(--dn2-text-muted);
+}
+
+.dn2__hero-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dn2__hero-meta-item svg {
+  color: var(--dn2-accent-yellow);
+}
+
+/* ── Sections ── */
+.dn2__section {
+  padding: 6rem 1.5rem;
+  background: var(--dn2-base);
+  position: relative;
+}
+
+.dn2__section-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.dn2__section-title {
+  font-family: var(--font-typewriter);
+  font-size: 2rem;
+  text-align: center;
+  color: var(--dn2-text-light);
+  margin-bottom: 4rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* ── Folder Card Grid ── */
+.dn2__folder-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+}
+
+@media (max-width: 968px) {
+  .dn2__folder-grid {
+    grid-template-columns: 1fr;
+    gap: 3rem;
+  }
+}
+
+/* Manila Folder Component */
+.dn2__folder-card {
+  position: relative;
+  background: var(--dn2-manila);
+  color: var(--dn2-manila-text);
+  border-radius: 0 8px 8px 8px;
+  padding: 2rem 1.5rem 1.5rem;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.3s var(--ease-spring), box-shadow 0.3s ease;
+  min-height: 380px;
+}
+
+/* Folder tab */
+.dn2__folder-tab {
+  position: absolute;
+  top: -24px;
+  left: 0;
+  background: var(--dn2-manila);
+  padding: 4px 16px 2px;
+  font-family: var(--font-typewriter);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  border-radius: 6px 12px 0 0;
+  border-top: 1px solid rgba(0,0,0,0.15);
+  border-left: 1px solid rgba(0,0,0,0.15);
+  border-right: 1px solid rgba(0,0,0,0.15);
+  clip-path: polygon(0 0, 85% 0, 100% 100%, 0 100%);
+  width: 120px;
+}
+
+.dn2__folder-card:hover {
+  transform: translateY(-6px) rotate(1deg);
+  box-shadow: 0 16px 35px rgba(0,0,0,0.5);
+}
+
+/* Polaroid Container */
+.dn2__polaroid {
+  background: var(--dn2-polaroid-bg);
+  padding: 0.75rem 0.75rem 2rem;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.25);
+  border: 1px solid rgba(0,0,0,0.06);
+  align-self: center;
+  margin-bottom: 1.5rem;
+  width: 130px;
+  height: 150px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.dn2__polaroid--rot-left {
+  transform: rotate(-3deg);
+}
+
+.dn2__polaroid--rot-right {
+  transform: rotate(3deg);
+}
+
+/* Polaroid pin/clip */
+.dn2__polaroid::before {
+  content: "";
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 8px;
+  background: #a1a1a5;
+  border-radius: 2px;
+  opacity: 0.8;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.dn2__polaroid-img {
+  width: 100%;
+  height: 105px;
+  background: #15151a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--dn2-accent-yellow);
+}
+
+.dn2__folder-title {
+  font-family: var(--font-typewriter);
+  font-size: 1.125rem;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.dn2__folder-text {
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  text-align: center;
+  color: rgba(32, 27, 21, 0.85);
+  flex-grow: 1;
+}
+
+.dn2__folder-examples {
+  margin-top: 1rem;
+  font-family: var(--font-typewriter);
+  font-size: 0.65rem;
+  text-align: center;
+  color: #ba1a1a;
+  opacity: 0.7;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* ── Confidential Case File (Pricing) ── */
+.dn2__case-file-section {
+  padding: 6rem 1.5rem;
+  background: #09090b;
+  position: relative;
+}
+
+.dn2__dossier-envelope {
+  max-width: 950px;
+  margin: 0 auto;
+  background: var(--dn2-manila-dark);
+  color: var(--dn2-manila-text);
+  border-radius: 8px;
+  padding: 3rem 2.5rem;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+  border: 1px solid rgba(0,0,0,0.2);
+  position: relative;
+}
+
+/* Envelope stamp */
+.dn2__envelope-stamp {
+  position: absolute;
+  top: 2rem;
+  right: 2.5rem;
+  border: 3px double var(--dn2-accent-red);
+  color: var(--dn2-accent-red);
+  font-family: var(--font-typewriter);
+  font-size: 0.875rem;
+  font-weight: 700;
+  padding: 0.25rem 1rem;
+  transform: rotate(6deg);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0.8;
+}
+
+.dn2__envelope-title {
+  font-family: var(--font-typewriter);
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: 2.5rem;
+  border-bottom: 2px solid rgba(32, 27, 21, 0.15);
+  padding-bottom: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dn2__envelope-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2.5rem;
+}
+
+@media (max-width: 768px) {
+  .dn2__envelope-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Inner card layouts */
+.dn2__envelope-card {
+  background: var(--dn2-manila);
+  border-radius: 4px;
+  padding: 2rem;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.05), 0 4px 10px rgba(0,0,0,0.15);
+  border: 1px solid rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+  min-height: 480px;
+}
+
+.dn2__envelope-card--featured {
+  background: #e8d7b3;
+  border: 2px solid var(--dn2-accent-yellow);
+}
+
+.dn2__envelope-tag {
+  font-family: var(--font-typewriter);
+  font-size: 0.75rem;
+  color: var(--dn2-accent-red);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.dn2__envelope-name {
+  font-family: var(--font-typewriter);
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+}
+
+.dn2__envelope-desc {
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: rgba(32, 27, 21, 0.8);
+  margin-bottom: 1.5rem;
+}
+
+.dn2__envelope-features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  flex-grow: 1;
+}
+
+.dn2__envelope-feature {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.dn2__envelope-feature svg {
+  color: var(--dn2-accent-red);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* CTA buttons inside cards */
+.dn2__env-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: #201b15;
+  color: var(--dn2-manila);
+  font-family: var(--font-typewriter);
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 0.875rem 1.5rem;
+  border-radius: 2px;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.2s ease;
+}
+
+.dn2__env-cta:hover {
+  background: #362e24;
+}
+
+.dn2__env-cta--yellow {
+  background: var(--dn2-accent-yellow);
+  color: #000;
+  border: 2px solid #000;
+  position: relative;
+  overflow: hidden;
+}
+
+.dn2__env-cta--yellow::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: repeating-linear-gradient(
+    -45deg,
+    #000,
+    #000 4px,
+    var(--dn2-accent-yellow) 4px,
+    var(--dn2-accent-yellow) 8px
+  );
+}
+
+.dn2__env-cta--yellow:hover {
+  background: #e5a800;
+}
+
+/* ── Footer ── */
+.dn2__footer {
+  padding: 4rem 1.5rem;
+  text-align: center;
+  background: #040405;
+  border-top: 1px solid rgba(250, 189, 0, 0.05);
+}
+
+.dn2__footer-brand {
+  font-family: var(--font-typewriter);
+  font-size: 0.8125rem;
+  color: var(--dn2-text-muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 1.5rem;
+}
+
+.dn2__footer-links {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.dn2__footer-link {
+  color: var(--dn2-text-muted);
+  text-decoration: none;
+  font-size: 0.8125rem;
+  transition: color 0.2s ease;
+}
+
+.dn2__footer-link:hover {
+  color: var(--dn2-text-light);
+}
+
+.dn2__footer-copy {
+  font-size: 0.75rem;
+  color: var(--dn2-text-muted);
+  opacity: 0.8;
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
