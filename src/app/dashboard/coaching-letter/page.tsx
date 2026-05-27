@@ -168,7 +168,7 @@ export default function CoachingLetterPage() {
         { onConflict: "user_id" }
       );
     }
-    router.push("/coachapp/onboarding");
+    router.push("/coachapp/onboarding?redo=1");
   }
 
   // Fetch data

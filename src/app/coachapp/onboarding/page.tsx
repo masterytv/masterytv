@@ -19,7 +19,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createBrowserClient } from "@supabase/ssr";
 import { type ResearchResults } from "@/lib/onboarding/machine";
 import { motion, AnimatePresence } from "framer-motion";
@@ -78,6 +78,15 @@ function GlobeIcon() {
       <circle cx="12" cy="12" r="10" />
       <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
       <path d="M2 12h20" />
+    </svg>
+  );
+}
+
+function PenLineIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 20h9" />
+      <path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.855z" />
     </svg>
   );
 }
@@ -273,12 +282,13 @@ function AboutYouStep({
 
         <div className="ob-field">
           <label htmlFor="more-info" className="ob-field__label">
+            <PenLineIcon />
             Tell us more
             <span className="ob-field__optional">optional</span>
           </label>
           <textarea
             id="more-info"
-            className="ob-field__textarea"
+            className="ob-field__input"
             placeholder="e.g., I'm a SaaS founder trying to scale from $10K to $50K MRR, or I just raised a Series A and need help building my leadership team..."
             rows={4}
             value={moreInfo}
@@ -380,7 +390,7 @@ function StartingPointStep({
               </label>
               <textarea
                 id="starting-details"
-                className="ob-field__textarea"
+                className="ob-field__input"
                 placeholder={cards.find((c) => c.type === selected)?.placeholder}
                 rows={3}
                 value={details}
@@ -593,11 +603,16 @@ export default function OnboardingPage() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
+  const searchParams = useSearchParams();
+  const isRedo = searchParams.get('redo') === '1';
+
   // ── Decoded Fast-Track: detect assessment users on mount ──
+  // Skip fast-track during redo — user explicitly wants the full flow
   const [isDecodedUser, setIsDecodedUser] = useState(false);
-  const [decodedChecked, setDecodedChecked] = useState(false);
+  const [decodedChecked, setDecodedChecked] = useState(isRedo);
 
   useEffect(() => {
+    if (isRedo) return; // Skip fast-track during redo
     let cancelled = false;
     async function checkDecoded() {
       try {
@@ -760,11 +775,13 @@ export default function OnboardingPage() {
 
   return (
     <div className="ob-page">
+      {/* Theme toggle — absolute top-right */}
+      <div className="ob-theme-toggle">
+        <ThemeToggle />
+      </div>
+
       <header className="ob-header">
-        <div className="ob-header__row">
-          <h1 className="ob-brand">Mastery Coach</h1>
-          <ThemeToggle />
-        </div>
+        <h1 className="ob-brand">Mastery Coach</h1>
         {/* Decoded users skip the progress bar since they only see 2 steps */}
         {!isDecodedUser && <ProgressBar currentStep={step} />}
       </header>

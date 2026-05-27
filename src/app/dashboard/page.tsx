@@ -79,13 +79,13 @@ export default async function DashboardPage() {
     reportId = report?.id ?? null;
   }
 
-  // Check onboarding completion
+  // Check onboarding state — show redo if user has started onboarding
   const { data: onboardingState } = await supabase
     .from("onboarding_state")
     .select("current_step")
     .eq("user_id", user.id)
-    .single();
-  const onboardingComplete = onboardingState?.current_step === "complete";
+    .maybeSingle();
+  const onboardingStarted = onboardingState !== null;
 
   // Determine state
   type AssessmentState = "none" | "in-progress" | "completed";
@@ -104,7 +104,7 @@ export default async function DashboardPage() {
       totalQuestions={totalQuestions}
       reportId={reportId}
       assessmentId={completedAssessment?.id ?? inProgressAssessment?.id ?? null}
-      onboardingComplete={onboardingComplete}
+      onboardingComplete={onboardingStarted}
     />
   );
 }

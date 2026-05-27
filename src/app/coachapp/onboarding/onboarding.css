@@ -35,16 +35,23 @@
   z-index: 0;
 }
 
+/* ─── Theme toggle — fixed top-right ─── */
+.ob-theme-toggle {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.5rem;
+  z-index: 10;
+}
+
 /* ─── Header / brand ─── */
 .ob-header {
-  padding: 2rem 2rem 0;
+  padding: 1.25rem 2rem 0;
   position: relative;
   z-index: 2;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 1rem;
+  gap: 0.5rem;
 }
 
 .ob-brand {
@@ -80,9 +87,49 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 1.5rem 2rem 0.5rem;
+  padding: 0.75rem 2rem 0.5rem;
   position: relative;
   z-index: 2;
+  width: 100%;
+}
+
+.ob-progress__track {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 500px;
+  position: relative;
+}
+
+.ob-progress__step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.ob-progress__line {
+  position: absolute;
+  top: 14px; /* center of the dots */
+  left: 14px;
+  right: 14px;
+  height: 2px;
+  background: var(--color-surface-200);
+  z-index: 0;
+  overflow: hidden;
+}
+
+.ob-progress__line-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--success-hex), #a3a6ff);
+  transition: width 0.5s var(--ease-smooth);
 }
 
 .ob-progress__steps {
@@ -303,15 +350,16 @@
 .ob-field__input {
   padding: 0.65rem 0.875rem;
   border-radius: var(--radius-md);
-  /* Input spec: surface-container-highest bg, ghost border on focus */
-  background: var(--color-surface-200);
-  border: 1px solid transparent;
+  /* BRAND.md §8.3: surface-100 bg (dark), ghost border at 12% */
+  background: var(--color-surface-100);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   color: var(--text-heading);
   font-size: 0.875rem;
   font-family: inherit;
   transition: background 0.2s var(--ease-smooth),
     border-color 0.2s,
     box-shadow 0.2s;
+  width: 100%;
 }
 
 .ob-field__input::placeholder {
@@ -320,9 +368,15 @@
 
 .ob-field__input:focus {
   outline: none;
-  background: var(--color-surface-300);
-  border-color: rgba(96, 99, 238, 0.2);
-  box-shadow: 0 0 0 4px var(--primary-glow-ring);
+  background: var(--color-surface-200);
+  border-color: rgba(96, 99, 238, 0.3);
+  box-shadow: 0 0 0 3px rgba(96, 99, 238, 0.15);
+}
+
+/* Textarea inherits input styles */
+.ob-field__input[rows] {
+  resize: vertical;
+  min-height: 80px;
 }
 
 /* ─── Buttons ─── */
@@ -598,15 +652,21 @@
   box-shadow: 0 0 0 2px rgba(0, 7, 103, 0.15);
 }
 
-/* Inputs */
+/* Inputs — BRAND.md §8.3: surface-container-lowest (#ffffff), ghost border 12% */
 [data-theme="light"] .ob-field__input {
-  background: #f3f3f6;
+  background: #ffffff;
+  border: 1px solid rgba(24, 28, 30, 0.12);
+  color: #181c1e;
+}
+
+[data-theme="light"] .ob-field__input::placeholder {
+  color: #6b7280;
 }
 
 [data-theme="light"] .ob-field__input:focus {
   background: #ffffff;
-  border-color: rgba(0, 7, 103, 0.15);
-  box-shadow: 0 0 0 4px rgba(0, 7, 103, 0.06);
+  border-color: #004ced;
+  box-shadow: 0 0 0 3px rgba(0, 76, 237, 0.12);
 }
 
 /* Buttons */

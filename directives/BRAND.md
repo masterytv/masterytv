@@ -292,9 +292,25 @@ border: 1px solid rgba(180, 197, 255, 0.1); /* primary at 10% */
 - **On hover:** Shift background from `surface-50` → `surface-200`. Do NOT use "lift" animations; use color "glow"
 
 ### 8.3 Input Fields
-- **Background:** `surface-100` (dark) or `surface-container-lowest` (light)
-- **Resting state:** Ghost border at 12% opacity
-- **Focus state:** Primary glow — 2px outer ring of `primary` at 30% opacity (dark) or `surface-tint` at 100% 2px (light)
+
+#### Dark Mode
+- **Background:** `var(--color-surface-100)` — tonal layer above page bg
+- **Border (resting):** `rgba(255, 255, 255, 0.12)` — ghost border, always visible
+- **Border (focus):** `rgba(96, 99, 238, 0.3)` — indigo accent
+- **Focus ring:** `0 0 0 3px rgba(96, 99, 238, 0.15)`
+- **Text:** `var(--text-heading)`
+- **Placeholder:** `var(--text-placeholder)`
+
+#### Light Mode
+- **Background:** `#ffffff` (`surface-container-lowest`) — must contrast against page bg `#f7fafd`
+- **Border (resting):** `rgba(24, 28, 30, 0.12)` — ghost border, always visible
+- **Border (focus):** `#004ced` (`surface-tint`) — solid blue
+- **Focus ring:** `0 0 0 3px rgba(0, 76, 237, 0.12)`
+- **Text:** `#181c1e` (`on-surface`)
+- **Placeholder:** `#6b7280`
+
+> [!CAUTION]
+> **Light mode inputs must NEVER use a background that matches the page canvas.** `#f3f3f6` on `#f9f9fc` is invisible. Always use `#ffffff` with a visible ghost border.
 
 ### 8.4 The "Data Float" Chip
 Used for metrics and stats:

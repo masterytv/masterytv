@@ -64,7 +64,7 @@ export default function DashboardHome({
         { onConflict: "user_id" }
       );
     }
-    router.push("/coachapp/onboarding");
+    router.push("/coachapp/onboarding?redo=1");
   }
 
   function handleCopyLink() {
@@ -233,10 +233,7 @@ export default function DashboardHome({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.15 }}
           >
-            <Link
-              href="/dashboard/chat"
-              className="group block rounded-2xl bg-surface-50 p-6 transition-all hover:bg-surface-100"
-            >
+            <div className="rounded-2xl bg-surface-50 p-6 transition-all hover:bg-surface-100">
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[rgba(96,99,238,0.1)]">
                 <MessageSquare className="h-6 w-6 text-[#a3a6ff]" strokeWidth={1.5} />
               </div>
@@ -248,11 +245,26 @@ export default function DashboardHome({
                   ? "Your coach has read your full profile. Start a conversation."
                   : "Your AI coach adapts to how you think and communicates."}
               </p>
-              <div className="mt-4 flex items-center gap-1.5 text-sm font-medium text-[#a3a6ff] group-hover:gap-2.5 transition-all">
-                Open chat
-                <ArrowRight className="h-4 w-4" />
+              <div className="mt-4 flex items-center justify-between">
+                <Link
+                  href="/dashboard/chat"
+                  className="flex items-center gap-1.5 text-sm font-medium text-[#a3a6ff] hover:gap-2.5 transition-all"
+                >
+                  Open chat
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+                {onboardingComplete && (
+                  <button
+                    onClick={handleRedoOnboarding}
+                    disabled={resetting}
+                    className="flex items-center gap-1 text-xs font-medium text-text-muted hover:text-[#a3a6ff] transition-colors disabled:opacity-50"
+                  >
+                    <RotateCcw className={`h-3 w-3 ${resetting ? 'animate-spin' : ''}`} />
+                    {resetting ? 'Redirecting…' : 'Redo setup'}
+                  </button>
+                )}
               </div>
-            </Link>
+            </div>
           </motion.div>
 
           {/* ── Share Card ── */}
@@ -289,35 +301,6 @@ export default function DashboardHome({
               </div>
             </div>
           </motion.div>
-
-          {/* ── Redo Coach Setup Card ── */}
-          {onboardingComplete && (
-            <motion.div
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.25 }}
-            >
-              <div className="rounded-2xl bg-surface-50 p-6">
-                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[rgba(96,99,238,0.1)]">
-                  <RotateCcw className="h-6 w-6 text-[#a3a6ff]" strokeWidth={1.5} />
-                </div>
-                <h2 className="text-title-lg text-text-primary font-semibold">
-                  Redo Coach Setup
-                </h2>
-                <p className="mt-1.5 text-body-md text-text-secondary">
-                  Update your goals, background info, or get a fresh coaching letter.
-                </p>
-                <button
-                  onClick={handleRedoOnboarding}
-                  disabled={resetting}
-                  className="mt-4 flex items-center gap-1.5 text-sm font-medium text-text-muted hover:text-[#a3a6ff] transition-colors disabled:opacity-50"
-                >
-                  <RotateCcw className={`h-3.5 w-3.5 ${resetting ? 'animate-spin' : ''}`} />
-                  {resetting ? 'Redirecting…' : 'Start over'}
-                </button>
-              </div>
-            </motion.div>
-          )}
         </div>
       </div>
     </div>
