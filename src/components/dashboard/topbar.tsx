@@ -33,7 +33,7 @@ export function Topbar({ userName, onMenuClick }: TopbarProps) {
 
   async function handleSignOut() {
     await supabase.auth.signOut();
-    router.push("/coachapp/login");
+    router.push("/decoded");
   }
 
   const initials = userName
@@ -81,7 +81,7 @@ export function Topbar({ userName, onMenuClick }: TopbarProps) {
             <button
               onClick={() => {
                 setDropdownOpen(false);
-                router.push("/coachapp/dashboard/settings");
+                router.push("/dashboard/settings");
               }}
               className="flex w-full items-center gap-2 px-4 py-2 text-sm text-text-secondary hover:bg-surface-200 hover:text-text-primary transition-colors"
             >

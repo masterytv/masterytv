@@ -131,8 +131,8 @@ export default function ReportViewer({ report: initialReport, scores }: ReportVi
 
   return (
     <>
-      {/* Navigation */}
-      <DecodedNav backHref="/decoded/assess" backLabel="Dashboard" />
+      {/* Navigation (includes theme toggle) */}
+      <DecodedNav backHref="/dashboard" backLabel="Dashboard" />
 
       {/* Reading progress */}
       <div className="reading-progress" style={{ width: `${readingProgress}%` }} />
@@ -380,7 +380,7 @@ export default function ReportViewer({ report: initialReport, scores }: ReportVi
               they know your personality, patterns, and priorities from day one.
             </p>
             <a
-              href="/coachapp/onboarding"
+              href="/dashboard/chat"
               className="coach-cta__button"
             >
               Meet Your Coach <ArrowRight className="h-4 w-4" />

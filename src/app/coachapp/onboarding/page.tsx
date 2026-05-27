@@ -749,7 +749,7 @@ export default function OnboardingPage() {
         { onConflict: "user_id" }
       );
     }
-    router.push("/coachapp/dashboard/chat");
+    router.push("/dashboard/chat");
   }, [supabase, router]);
 
   const slideVariants = {

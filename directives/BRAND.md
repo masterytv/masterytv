@@ -33,7 +33,16 @@
 
 ## 2. Color System
 
-We operate a **dark-mode-first** system with a light-mode variant for marketing/landing pages. Both themes share the same semantic roles.
+We operate a **dark-mode-first** system with a light-mode variant. Both themes share the same semantic roles.
+
+> [!IMPORTANT]
+> **Dual-Theme Rule (Mandatory):** Every page and component must render correctly in **both** dark mode and light mode. The user can toggle between themes at any time using the 3-state theme switcher (Light / System / Dark) in the top bar. Components that only look correct in one mode are considered **broken** and must be fixed before merging.
+>
+> Implementation pattern:
+> - Use CSS custom properties from `globals.css` (`var(--color-surface-0)`, `var(--text-heading)`, etc.) — these automatically adapt to `[data-theme="light"]`.
+> - For Tailwind classes that use `@theme` tokens (e.g., `bg-surface-50`, `text-text-primary`), matching `[data-theme="light"]` overrides exist in `globals.css`.
+> - **Never hardcode dark-mode hex colors inline** (e.g., `text-[#a3a6ff]`). Use semantic tokens or add corresponding light-mode overrides.
+> - When adding a new component with custom color, add both the dark default and `[data-theme="light"]` override.
 
 ### 2.1 Dark Mode (Primary — Dashboard & App)
 
@@ -396,7 +405,7 @@ Add to `globals.css` `@theme`:
 | Hardcoded colors in CSS | Centralized CSS custom properties | ✅ Completed — onboarding.css + chat.css tokenized |
 | `globals.css` tokens use OKLCH | Keep OKLCH, add hex fallbacks | ✅ Completed — semantic vars in :root |
 | No display font differentiation | Use Manrope for h1/h2/display text | ✅ Completed — .text-display-*, .text-headline-* |
-| No light mode theme | Add light mode CSS for marketing pages | 🔲 Sprint 6 S6.11 (Landing Page) |
+| No light mode theme | Add light mode CSS for all pages | ✅ Completed — `[data-theme="light"]` overrides in globals.css, ThemeProvider + ThemeToggle implemented |
 
 > **Self-Annealing Note:** This file supersedes all ad-hoc color/font decisions in individual CSS files. As Sprint 6 components are built, they must reference these tokens. Older files (onboarding, chat) have been migrated to the centralized token system.
 

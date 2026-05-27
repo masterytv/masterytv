@@ -24,9 +24,9 @@ export default async function DecodedPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Already authenticated → go straight to assessment
+  // Already authenticated → go to unified dashboard
   if (user) {
-    redirect("/decoded/assess");
+    redirect("/dashboard");
   }
 
   return <DecodedLanding />;

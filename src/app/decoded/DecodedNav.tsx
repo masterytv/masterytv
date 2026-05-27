@@ -2,13 +2,15 @@
 
 /**
  * Decoded Nav Bar — Lightweight header for the Decoded assessment section.
- * Shows branding, dashboard link, and logout.
+ * Shows branding, dashboard link, theme toggle, and logout.
+ * Dual-theme compliant — uses CSS custom properties that adapt to light/dark.
  */
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { LogOut, LayoutDashboard, ChevronLeft } from 'lucide-react';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 interface DecodedNavProps {
   /** Show a back link to a specific page */
@@ -26,85 +28,30 @@ export default function DecodedNav({ backHref, backLabel }: DecodedNavProps) {
   }
 
   return (
-    <nav
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0.75rem 1.5rem',
-        borderBottom: '1px solid var(--ghost-border)',
-        background: 'var(--color-surface-0)',
-        position: 'sticky',
-        top: 0,
-        zIndex: 40,
-      }}
-    >
+    <nav className="decoded-nav">
       {/* Left: Back link or brand */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+      <div className="decoded-nav__left">
         {backHref ? (
-          <Link
-            href={backHref}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '0.25rem',
-              fontSize: '0.875rem', color: 'var(--text-label)',
-              textDecoration: 'none',
-            }}
-          >
-            <ChevronLeft style={{ width: 14, height: 14 }} />
+          <Link href={backHref} className="decoded-nav__back">
+            <ChevronLeft className="decoded-nav__icon" />
             {backLabel ?? 'Back'}
           </Link>
         ) : (
-          <Link
-            href="/decoded/assess"
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: '1rem',
-              fontWeight: 700,
-              color: 'var(--text-heading)',
-              textDecoration: 'none',
-              letterSpacing: '-0.01em',
-            }}
-          >
+          <Link href="/dashboard" className="decoded-nav__brand">
             Decoded
           </Link>
         )}
       </div>
 
-      {/* Right: Dashboard + Logout */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-        <Link
-          href="/decoded/assess"
-          style={{
-            display: 'flex', alignItems: 'center', gap: '0.375rem',
-            fontSize: '0.75rem', color: 'var(--text-label)',
-            textDecoration: 'none',
-            padding: '0.375rem 0.75rem',
-            borderRadius: 'var(--radius-md)',
-            border: '1px solid var(--ghost-border)',
-            transition: 'all 0.15s ease',
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--color-primary)'; e.currentTarget.style.color = 'var(--text-body)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--ghost-border)'; e.currentTarget.style.color = 'var(--text-label)'; }}
-        >
-          <LayoutDashboard style={{ width: 14, height: 14 }} />
+      {/* Right: Theme toggle + Dashboard + Logout */}
+      <div className="decoded-nav__right">
+        <ThemeToggle />
+        <Link href="/dashboard" className="decoded-nav__btn">
+          <LayoutDashboard className="decoded-nav__icon" />
           Dashboard
         </Link>
-        <button
-          onClick={handleLogout}
-          style={{
-            display: 'flex', alignItems: 'center', gap: '0.375rem',
-            fontSize: '0.75rem', color: 'var(--text-label)',
-            padding: '0.375rem 0.75rem',
-            borderRadius: 'var(--radius-md)',
-            border: '1px solid var(--ghost-border)',
-            background: 'transparent',
-            cursor: 'pointer',
-            transition: 'all 0.15s ease',
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--color-danger)'; e.currentTarget.style.color = 'var(--color-danger)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--ghost-border)'; e.currentTarget.style.color = 'var(--text-label)'; }}
-        >
-          <LogOut style={{ width: 14, height: 14 }} />
+        <button onClick={handleLogout} className="decoded-nav__btn decoded-nav__btn--danger">
+          <LogOut className="decoded-nav__icon" />
           Logout
         </button>
       </div>

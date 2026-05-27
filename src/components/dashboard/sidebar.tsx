@@ -4,24 +4,29 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import {
+  Home,
   MessageSquare,
   Target,
   TrendingUp,
   Settings,
   FileText,
+  Share2,
   X,
+  Fingerprint,
 } from "lucide-react";
+import { useState } from "react";
 
 const navItems = [
-  { href: "/coachapp/dashboard/chat", label: "Chat", icon: MessageSquare },
-  { href: "/coachapp/dashboard/commitments", label: "Commitments", icon: Target },
-  { href: "/coachapp/dashboard/progress", label: "Progress", icon: TrendingUp },
+  { href: "/dashboard", label: "Home", icon: Home, exact: true },
+  { href: "/dashboard/chat", label: "Coach", icon: MessageSquare },
+  { href: "/dashboard/commitments", label: "Commitments", icon: Target },
+  { href: "/dashboard/progress", label: "Progress", icon: TrendingUp },
   {
-    href: "/coachapp/dashboard/coaching-letter",
+    href: "/dashboard/coaching-letter",
     label: "Coaching Letter",
     icon: FileText,
   },
-  { href: "/coachapp/dashboard/settings", label: "Settings", icon: Settings },
+  { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 
 interface SidebarProps {
@@ -31,6 +36,14 @@ interface SidebarProps {
 
 export function Sidebar({ open, onClose }: SidebarProps) {
   const pathname = usePathname();
+  const [copied, setCopied] = useState(false);
+
+  function handleShare() {
+    const shareUrl = `${window.location.origin}/decoded`;
+    navigator.clipboard.writeText(shareUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
 
   return (
     <>
@@ -56,9 +69,9 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       >
         {/* Brand header */}
         <div className="flex h-16 items-center justify-between px-6">
-          <Link href="/coachapp/dashboard" className="flex items-center gap-2.5">
+          <Link href="/dashboard" className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[rgba(96,99,238,0.12)]">
-              <span className="text-sm font-bold text-[#a3a6ff]">M</span>
+              <Fingerprint className="h-4 w-4 text-[#a3a6ff]" />
             </div>
             <span className="text-lg font-semibold tracking-tight text-text-primary">
               Mastery
@@ -75,7 +88,9 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         {/* Navigation */}
         <nav className="mt-2 flex-1 space-y-1 px-3">
           {navItems.map((item) => {
-            const isActive = pathname === item.href;
+            const isActive = item.exact
+              ? pathname === item.href
+              : pathname.startsWith(item.href);
             return (
               <Link
                 key={item.href}
@@ -108,6 +123,15 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               </Link>
             );
           })}
+
+          {/* Share — special action item */}
+          <button
+            onClick={handleShare}
+            className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-text-secondary hover:bg-surface-200 hover:text-text-primary transition-all"
+          >
+            <Share2 className="h-4.5 w-4.5 text-text-muted group-hover:text-text-secondary" />
+            {copied ? "Link copied!" : "Share Decoded"}
+          </button>
         </nav>
 
         {/* Tier badge */}

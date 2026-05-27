@@ -3,13 +3,18 @@
 import { createClient } from "@/lib/supabase/client";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, Loader2, Fingerprint, CheckCircle2, AlertTriangle } from "lucide-react";
+import {
+  Activity, AlertTriangle, ArrowRight, BookOpen, Briefcase, Check, CheckCircle2,
+  ChevronLeft, CircleDot, Clock, Compass, Fingerprint, Heart, Home,
+  Leaf, Link2, Loader2, Mail, Save, Shield, Users, X, Zap,
+} from "lucide-react";
 import {
   CORE_INSTRUMENTS,
   ADDON_INSTRUMENTS,
   WELLNESS_CHECK_SCALES,
 } from "@/lib/decoded/instruments";
 import { scoreAssessment, type ScoringResult } from "./actions";
+import { FloatingThemeToggle } from "@/components/floating-theme-toggle";
 
 interface Props {
   userId: string;
@@ -19,7 +24,25 @@ interface Props {
   resumeItemIndex: number;
 }
 
-type Phase = "core" | "addon_selection" | "addons" | "complete";
+type Phase = "welcome" | "invite" | "primer" | "core" | "addon_selection" | "addons" | "complete";
+
+const EXPLORE_DIMENSIONS = [
+  { icon: Fingerprint, label: "Personality", desc: "How you think and react" },
+  { icon: Heart, label: "Relationships", desc: "Your attachment patterns" },
+  { icon: Activity, label: "Emotional Wellbeing", desc: "How you regulate and cope" },
+  { icon: Shield, label: "Mental Health", desc: "Anxiety, mood, and sleep" },
+  { icon: Leaf, label: "Health & Habits", desc: "Lifestyle and physical health" },
+  { icon: Compass, label: "How You Think", desc: "Your cognitive style" },
+  { icon: BookOpen, label: "Life Experiences", desc: "What shaped you" },
+  { icon: Briefcase, label: "Career & Values", desc: "What drives and fulfills you" },
+];
+
+const RELATIONSHIP_TYPES = [
+  { icon: Heart, label: "Your partner" },
+  { icon: Users, label: "A close friend" },
+  { icon: Briefcase, label: "A colleague" },
+  { icon: Home, label: "A family member" },
+];
 
 export default function AssessmentEngine({
   userId,
@@ -32,7 +55,7 @@ export default function AssessmentEngine({
 
   // ── State ──
   const [assessmentId, setAssessmentId] = useState<string | null>(existingAssessmentId);
-  const [phase, setPhase] = useState<Phase>("core");
+  const [phase, setPhase] = useState<Phase>(savedProgress ? "core" : "welcome");
   const [instrumentIndex, setInstrumentIndex] = useState(0);
   const [itemIndex, setItemIndex] = useState(0);
   const [responses, setResponses] = useState<Record<string, Record<string, number>>>(
@@ -45,6 +68,13 @@ export default function AssessmentEngine({
   const [scoringResult, setScoringResult] = useState<ScoringResult | null>(null);
   const [scoring, setScoring] = useState(false);
   const itemStartTime = useRef<number>(Date.now());
+
+  // ── Pre-assessment screen state ──
+  const [showConsent, setShowConsent] = useState(false);
+  const [consentChecks, setConsentChecks] = useState([false, false, false]);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteCopied, setInviteCopied] = useState(false);
+  const [selectedRelationship, setSelectedRelationship] = useState<string | null>(null);
 
   // All instruments being presented in current phase
   const currentInstruments = phase === "addons"
@@ -99,13 +129,13 @@ export default function AssessmentEngine({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, currentInst, currentItem, itemIndex, instrumentIndex, responses]);
 
-  // ── Create assessment record on first load ──
+  // ── Create assessment record when user starts (deferred from mount) ──
   useEffect(() => {
-    if (!assessmentId) {
+    if (phase === "core" && !assessmentId) {
       createAssessment();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [phase]);
 
   async function createAssessment() {
     const { data, error } = await supabase
@@ -318,10 +348,323 @@ export default function AssessmentEngine({
   // RENDER
   // ═══════════════════════════════════════════════════════════
 
+  // ── Welcome Screen — set expectations ──
+  if (phase === "welcome") {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
+        <FloatingThemeToggle />
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+          className="glass w-full max-w-lg rounded-2xl p-8 text-center"
+        >
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-[rgba(96,99,238,0.1)] ring-1 ring-[rgba(96,99,238,0.15)]">
+            <Fingerprint className="h-8 w-8 text-[#a3a6ff]" strokeWidth={1.5} />
+          </div>
+
+          <h1 className="text-headline-lg text-text-primary mb-3">
+            Finally Understand Your Patterns
+          </h1>
+          <p className="mx-auto max-w-sm text-sm text-text-secondary leading-relaxed">
+            In 25&ndash;35 minutes, you&apos;ll understand why you react the way you do,
+            why some relationships feel harder than others, and what you actually
+            need to feel fulfilled. Save anytime and come back later.
+          </p>
+
+          <div className="mx-auto mt-6 flex items-center justify-center gap-2 text-xs text-text-muted">
+            <Clock className="h-3.5 w-3.5 flex-shrink-0" />
+            <span>Most finish in 25&ndash;35 min &middot; Save anytime &middot; Pick up where you left off</span>
+          </div>
+
+          <button
+            onClick={() => setPhase("invite")}
+            className="mt-8 w-full rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-6 py-3 text-sm font-medium text-white hover:opacity-90 transition-opacity"
+          >
+            Get Started
+          </button>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // ── Invite/Share Screen — viral mechanic ──
+  if (phase === "invite") {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
+        <FloatingThemeToggle />
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+          className="glass w-full max-w-lg rounded-2xl p-8"
+        >
+          <h2 className="text-headline-md text-text-primary text-center mb-2">
+            Invite someone to take it too
+          </h2>
+          <p className="text-sm text-text-secondary text-center mb-6">
+            The assessment is free &mdash; share it with someone you know
+          </p>
+
+          {/* Relationship chips */}
+          <div className="flex flex-wrap justify-center gap-2 mb-6">
+            {RELATIONSHIP_TYPES.map((rel) => (
+              <button
+                key={rel.label}
+                onClick={() => setSelectedRelationship(rel.label === selectedRelationship ? null : rel.label)}
+                className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm transition-all ${
+                  selectedRelationship === rel.label
+                    ? "bg-[rgba(96,99,238,0.15)] ring-1 ring-[rgba(96,99,238,0.3)] text-text-primary"
+                    : "bg-surface-100/50 text-text-secondary hover:bg-surface-200/50"
+                }`}
+              >
+                <rel.icon className="h-4 w-4" />
+                {rel.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Copy invite link */}
+          <button
+            onClick={async () => {
+              const link = `${window.location.origin}/decoded?ref=${userId}`;
+              await navigator.clipboard.writeText(link);
+              setInviteCopied(true);
+              setTimeout(() => setInviteCopied(false), 2000);
+            }}
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-4 py-3 text-sm font-medium text-white hover:opacity-90 transition-opacity"
+          >
+            {inviteCopied ? (
+              <>
+                <Check className="h-4 w-4" />
+                Link Copied!
+              </>
+            ) : (
+              <>
+                <Link2 className="h-4 w-4" />
+                Copy Invite Link
+              </>
+            )}
+          </button>
+
+          {/* Divider */}
+          <div className="my-5 flex items-center gap-3">
+            <div className="h-px flex-1 bg-surface-200" />
+            <span className="text-xs text-text-muted">or send an email</span>
+            <div className="h-px flex-1 bg-surface-200" />
+          </div>
+
+          {/* Email invite */}
+          <div className="flex gap-2">
+            <input
+              type="email"
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              placeholder="Their email address"
+              className="flex-1 rounded-lg bg-surface-100 px-4 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-[rgba(96,99,238,0.2)] transition-all"
+            />
+            <button
+              onClick={() => {
+                if (inviteEmail) {
+                  window.open(
+                    `mailto:${inviteEmail}?subject=${encodeURIComponent("Take this personality assessment")}&body=${encodeURIComponent(`I just started the Decoded personality assessment — take it too so we can compare results: ${window.location.origin}/decoded?ref=${userId}`)}`,
+                    "_blank"
+                  );
+                  setInviteEmail("");
+                }
+              }}
+              disabled={!inviteEmail}
+              className="flex items-center gap-2 rounded-lg bg-surface-200 px-4 py-2.5 text-sm font-medium text-text-primary hover:bg-surface-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            >
+              <Mail className="h-4 w-4" />
+              Send
+            </button>
+          </div>
+
+          {/* Value prop */}
+          <div className="mt-6 rounded-xl bg-[rgba(96,99,238,0.05)] p-4 ring-1 ring-[rgba(96,99,238,0.1)]">
+            <p className="text-sm font-medium text-text-primary">Unlock a Comparison Report</p>
+            <p className="mt-1 text-xs text-text-secondary">
+              When you both complete the assessment, you can compare your profiles &mdash;
+              see your compatibility, communication styles, and blind spots together.
+            </p>
+          </div>
+
+          {/* Privacy note */}
+          <div className="mt-4 flex items-start gap-2 text-xs text-text-muted">
+            <Shield className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+            <span>Your results are always private &mdash; you decide if and when to share.</span>
+          </div>
+
+          {/* Continue */}
+          <button
+            onClick={() => setPhase("primer")}
+            className="mt-6 w-full rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-6 py-3 text-sm font-medium text-white hover:opacity-90 transition-opacity"
+          >
+            Continue
+          </button>
+          <button
+            onClick={() => setPhase("primer")}
+            className="mt-2 w-full text-center text-sm text-text-muted hover:text-text-secondary transition-colors"
+          >
+            Skip for now
+          </button>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // ── Primer Screen — "What You'll Explore" + Consent Modal ──
+  if (phase === "primer") {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
+        <FloatingThemeToggle />
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+          className="glass w-full max-w-lg rounded-2xl p-8"
+        >
+          <h2 className="text-headline-md text-text-primary text-center mb-6">
+            What You&apos;ll Explore
+          </h2>
+
+          {/* Dimensions grid */}
+          <div className="grid grid-cols-2 gap-3 mb-6">
+            {EXPLORE_DIMENSIONS.map((dim) => (
+              <div
+                key={dim.label}
+                className="flex items-start gap-3 rounded-xl bg-surface-100/50 p-3"
+              >
+                <dim.icon className="h-5 w-5 text-[#a3a6ff] flex-shrink-0 mt-0.5" strokeWidth={1.5} />
+                <div>
+                  <p className="text-sm font-medium text-text-primary">{dim.label}</p>
+                  <p className="text-xs text-text-muted">{dim.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <p className="text-center text-xs text-[#a3a6ff] italic mb-6">
+            Plus personalized sections based on your answers
+          </p>
+
+          {/* Tips */}
+          <div className="space-y-3 mb-8">
+            <div className="flex items-center gap-3 text-sm text-text-secondary">
+              <Zap className="h-4 w-4 text-text-muted flex-shrink-0" />
+              <span>Answer with your gut &mdash; first instinct is best</span>
+            </div>
+            <div className="flex items-center gap-3 text-sm text-text-secondary">
+              <CircleDot className="h-4 w-4 text-text-muted flex-shrink-0" />
+              <span>No right or wrong answers</span>
+            </div>
+            <div className="flex items-center gap-3 text-sm text-text-secondary">
+              <Save className="h-4 w-4 text-text-muted flex-shrink-0" />
+              <span>Save anytime, resume on any device</span>
+            </div>
+          </div>
+
+          {/* Start button — opens consent modal */}
+          <button
+            onClick={() => setShowConsent(true)}
+            className="w-full rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-6 py-3 text-sm font-medium text-white hover:opacity-90 transition-opacity"
+          >
+            Start My Profile
+          </button>
+
+          <button
+            onClick={() => setPhase("invite")}
+            className="mt-3 w-full text-center text-sm text-text-muted hover:text-text-secondary transition-colors"
+          >
+            Back
+          </button>
+
+          <p className="mt-6 text-center text-xs text-text-muted italic">
+            No right or wrong answers &mdash; just honest reflection. Your results are private,
+            and you&apos;ll own them forever.
+          </p>
+        </motion.div>
+
+        {/* ── Consent Modal ── */}
+        {showConsent && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.2 }}
+              className="glass w-full max-w-md rounded-2xl p-6"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Before You Begin"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-text-primary">Before You Begin</h3>
+                <button
+                  onClick={() => setShowConsent(false)}
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-200 transition-all"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <p className="text-sm text-text-secondary mb-5">
+                This assessment includes psychological screening tools. Please confirm the following:
+              </p>
+
+              <div className="space-y-4">
+                {[
+                  <>I confirm I am <strong>18 years or older</strong></>,
+                  <>I understand this is a <strong>screening tool, not a clinical diagnosis</strong>. Results suggest areas to explore with qualified professionals.</>,
+                  <>I consent to complete <strong>psychological assessments</strong> including personality, mental health screening, and interpersonal patterns.</>,
+                ].map((label, i) => (
+                  <label key={i} className="flex items-start gap-3 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      checked={consentChecks[i]}
+                      onChange={() => {
+                        const next = [...consentChecks];
+                        next[i] = !next[i];
+                        setConsentChecks(next);
+                      }}
+                      className="mt-1 h-4 w-4 rounded accent-[#6063ee] flex-shrink-0"
+                    />
+                    <span className="text-sm text-text-secondary group-hover:text-text-primary transition-colors">
+                      {label}
+                    </span>
+                  </label>
+                ))}
+              </div>
+
+              <button
+                onClick={() => {
+                  setShowConsent(false);
+                  setPhase("core");
+                }}
+                disabled={!consentChecks.every(Boolean)}
+                className="mt-6 w-full rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-6 py-3 text-sm font-medium text-white hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+              >
+                Continue to Assessment
+              </button>
+
+              <p className="mt-4 text-center text-xs text-text-muted">
+                By continuing, you agree to our{" "}
+                <a href="/terms" className="text-[#a3a6ff] hover:underline">Terms of Service</a>
+                {" "}and{" "}
+                <a href="/privacy" className="text-[#a3a6ff] hover:underline">Privacy Policy</a>
+              </p>
+            </motion.div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   // ── Addon Selection Phase ──
   if (phase === "addon_selection") {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center px-4">
+        <FloatingThemeToggle />
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -392,6 +735,7 @@ export default function AssessmentEngine({
   if (phase === "complete") {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
+        <FloatingThemeToggle />
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -462,6 +806,13 @@ export default function AssessmentEngine({
               <p className="mt-6 text-xs text-text-muted">
                 Your full personalized report will be available in your dashboard.
               </p>
+              <a
+                href="/dashboard"
+                className="mt-4 inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-6 py-2.5 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+              >
+                Go to Dashboard
+                <ArrowRight className="h-4 w-4" />
+              </a>
             </>
           ) : (
             /* Error state */
@@ -498,6 +849,8 @@ export default function AssessmentEngine({
 
   return (
     <div className="flex min-h-screen flex-col">
+      {/* Theme toggle */}
+      <FloatingThemeToggle />
       {/* ── Top bar ── */}
       <div className="sticky top-0 z-10 border-b border-surface-200/50 bg-surface-0/80 backdrop-blur-lg px-4 py-3">
         <div className="mx-auto flex max-w-2xl items-center justify-between">

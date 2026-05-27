@@ -2,10 +2,16 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 /**
- * Creates a Supabase client for use in Next.js middleware.
- * Refreshes the auth session on every request and forwards updated cookies.
+ * Unified auth middleware for Mastery.
  * 
- * Coach app lives under /coachapp — all protected routes are nested there.
+ * Route structure:
+ *   /decoded          — Landing page (public, auth form)
+ *   /auth/callback    — Unified OAuth + email confirmation callback
+ *   /assess           — Distraction-free assessment (auth required)
+ *   /dashboard/*      — Unified dashboard (auth required)
+ *   /decoded/report/* — Report pages (auth required)
+ * 
+ * Legacy routes (/coachapp/*) redirect to new unified routes.
  */
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -40,66 +46,61 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Define route groups — /coachapp
-  const isAuthRoute = request.nextUrl.pathname.startsWith("/coachapp/login") ||
-    request.nextUrl.pathname.startsWith("/coachapp/signup");
-  const isDashboardRoute = request.nextUrl.pathname.startsWith("/coachapp/dashboard");
-  const isAdminRoute = request.nextUrl.pathname.startsWith("/coachapp/admin");
-  const isOnboardingRoute = request.nextUrl.pathname.startsWith("/coachapp/onboarding");
-  const isCallbackRoute = request.nextUrl.pathname.startsWith("/coachapp/auth/callback");
-  const isVerifyRoute = request.nextUrl.pathname.startsWith("/coachapp/auth/verify");
+  const pathname = request.nextUrl.pathname;
 
-  // Define route groups — /decoded
-  const isDecodedAssessment = request.nextUrl.pathname.startsWith("/decoded/assess");
-  const isDecodedLogin = request.nextUrl.pathname === "/decoded/login";
-  const isDecodedCallback = request.nextUrl.pathname.startsWith("/decoded/auth/callback");
-  const isDecodedLanding = request.nextUrl.pathname === "/decoded";
-
-  // Allow callback and verify routes always
-  if (isCallbackRoute || isVerifyRoute || isDecodedCallback) {
+  // ── Allow callback routes always ──
+  if (
+    pathname.startsWith("/auth/callback") ||
+    pathname.startsWith("/decoded/auth/callback") ||
+    pathname.startsWith("/coachapp/auth/callback")
+  ) {
     return supabaseResponse;
   }
 
-  // Catch auth codes landing on wrong routes (e.g. /?code=...)
-  const code = request.nextUrl.searchParams.get("code");
-  if (code && !isCallbackRoute && !isDecodedCallback) {
+  // ── Legacy /coachapp/* redirects ──
+  if (pathname.startsWith("/coachapp/dashboard")) {
     const url = request.nextUrl.clone();
-    // Route decoded codes to decoded callback, others to coachapp
-    if (request.nextUrl.pathname.startsWith("/decoded")) {
-      url.pathname = "/decoded/auth/callback";
-    } else {
-      url.pathname = "/coachapp/auth/callback";
-    }
+    // Map /coachapp/dashboard/chat → /dashboard/chat, etc.
+    url.pathname = pathname.replace("/coachapp/dashboard", "/dashboard");
+    return NextResponse.redirect(url);
+  }
+  if (pathname.startsWith("/coachapp/login")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/decoded";
+    return NextResponse.redirect(url);
+  }
+  if (pathname === "/coachapp" || pathname === "/coachapp/") {
+    const url = request.nextUrl.clone();
+    url.pathname = user ? "/dashboard" : "/decoded";
+    return NextResponse.redirect(url);
+  }
+
+  // ── Catch auth codes landing on wrong routes ──
+  const code = request.nextUrl.searchParams.get("code");
+  if (code && !pathname.startsWith("/auth/callback")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/auth/callback";
     url.search = `?code=${code}`;
     return NextResponse.redirect(url);
   }
 
-  // ── Decoded route protection ──
-  // Unauthenticated users trying to access /decoded/assess → redirect to /decoded (landing with auth)
-  if (!user && isDecodedAssessment) {
+  // ── Protected routes: require auth ──
+  const isProtected =
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/assess") ||
+    pathname.startsWith("/decoded/assess") ||
+    pathname.startsWith("/decoded/report");
+
+  if (!user && isProtected) {
     const url = request.nextUrl.clone();
     url.pathname = "/decoded";
     return NextResponse.redirect(url);
   }
 
-  // Authenticated users on /decoded/login → redirect to /decoded/assess
-  if (user && isDecodedLogin) {
+  // ── Authenticated user on auth pages → redirect to dashboard ──
+  if (user && pathname === "/decoded/login") {
     const url = request.nextUrl.clone();
-    url.pathname = "/decoded/assess";
-    return NextResponse.redirect(url);
-  }
-
-  // ── Coachapp route protection ──
-  if (!user && (isDashboardRoute || isAdminRoute || isOnboardingRoute)) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/coachapp/login";
-    url.searchParams.set("redirect", request.nextUrl.pathname);
-    return NextResponse.redirect(url);
-  }
-
-  if (user && isAuthRoute) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/coachapp/dashboard";
+    url.pathname = "/dashboard";
     return NextResponse.redirect(url);
   }
 
