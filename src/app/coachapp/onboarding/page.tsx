@@ -541,14 +541,27 @@ function CoachingLetterStep({ letter, onContinue }: { letter: string | null; onC
 // ─── STEP 5: CHANNEL CONNECT ────────────────────────────────────────────
 
 function ChannelConnectStep({ onComplete }: { onComplete: () => void }) {
+  const [channels, setChannels] = useState({
+    webChat: true,   // Always on — core channel
+    email: true,     // Default connected
+    telegram: false, // Coming soon
+  });
+
+  function toggleChannel(key: "email" | "telegram") {
+    // Telegram is coming soon — don't toggle
+    if (key === "telegram") return;
+    setChannels((prev) => ({ ...prev, [key]: !prev[key] }));
+  }
+
   return (
     <div className="ob-step">
       <div className="ob-step__header">
         <h2 className="ob-step__title">You&apos;re all set</h2>
-        <p className="ob-step__desc">Your coach is ready. Here&apos;s how you can connect:</p>
+        <p className="ob-step__desc">Your coach is ready. Manage your notification channels:</p>
       </div>
 
       <div className="ob-channels">
+        {/* Web Chat — always on */}
         <div className="ob-channel ob-channel--active">
           <div className="ob-channel__icon"><MessageSquare size={22} strokeWidth={1.5} /></div>
           <div className="ob-channel__info">
@@ -557,14 +570,24 @@ function ChannelConnectStep({ onComplete }: { onComplete: () => void }) {
           </div>
           <span className="ob-channel__status ob-channel__status--connected">Connected</span>
         </div>
-        <div className="ob-channel">
+
+        {/* Email — toggleable */}
+        <button
+          type="button"
+          className={`ob-channel ${channels.email ? "ob-channel--active" : ""}`}
+          onClick={() => toggleChannel("email")}
+        >
           <div className="ob-channel__icon"><Mail size={22} strokeWidth={1.5} /></div>
           <div className="ob-channel__info">
             <h3>Email</h3>
             <p>Morning briefings &amp; check-ins</p>
           </div>
-          <span className="ob-channel__status ob-channel__status--connected">Connected</span>
-        </div>
+          <div className={`ob-toggle ${channels.email ? "ob-toggle--on" : ""}`}>
+            <div className="ob-toggle__thumb" />
+          </div>
+        </button>
+
+        {/* Telegram — coming soon */}
         <div className="ob-channel ob-channel--disabled">
           <div className="ob-channel__icon"><Send size={22} strokeWidth={1.5} /></div>
           <div className="ob-channel__info">

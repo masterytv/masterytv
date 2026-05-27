@@ -547,6 +547,31 @@
   background: var(--primary-tint-20);
 }
 
+.ob-channel--disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.ob-channel--disabled:hover {
+  background: var(--color-surface-100);
+  transform: none;
+}
+
+/* Reset button styles when channel is a <button> */
+button.ob-channel {
+  border: none;
+  font: inherit;
+  text-align: left;
+  width: 100%;
+}
+
+.ob-channels {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
 .ob-channel__icon {
   flex-shrink: 0;
   width: 40px;
@@ -559,6 +584,12 @@
   color: var(--color-primary);
 }
 
+.ob-channel__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.ob-channel__info h3,
 .ob-channel__info h4 {
   font-family: var(--font-display);
   font-size: 0.9375rem;
@@ -571,6 +602,51 @@
   font-size: 0.75rem;
   color: var(--text-hint);
   line-height: 1.4;
+}
+
+.ob-channel__status {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-hint);
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.ob-channel__status--connected {
+  color: var(--success-hex, #34d399);
+}
+
+/* ─── Toggle switch ─── */
+.ob-toggle {
+  width: 44px;
+  height: 24px;
+  border-radius: 12px;
+  background: var(--color-surface-300);
+  position: relative;
+  flex-shrink: 0;
+  align-self: center;
+  transition: background 0.25s var(--ease-smooth);
+  cursor: pointer;
+}
+
+.ob-toggle--on {
+  background: linear-gradient(135deg, #a3a6ff, #6063ee);
+}
+
+.ob-toggle__thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ffffff;
+  transition: transform 0.25s var(--ease-smooth);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.ob-toggle--on .ob-toggle__thumb {
+  transform: translateX(20px);
 }
 
 /* ─── Spinner ─── */
@@ -697,6 +773,18 @@
 
 [data-theme="light"] .ob-channel__info p {
   color: #6b7280;
+}
+
+[data-theme="light"] .ob-channel--disabled {
+  background: #f3f3f6;
+}
+
+[data-theme="light"] .ob-toggle {
+  background: #d1d5db;
+}
+
+[data-theme="light"] .ob-toggle--on {
+  background: linear-gradient(135deg, #000000, #000767);
 }
 
 /* Research cards */
