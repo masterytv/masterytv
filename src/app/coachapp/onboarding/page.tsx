@@ -18,7 +18,7 @@
  * Architecture: SPRINT.md S3.2
  */
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createBrowserClient } from "@supabase/ssr";
 import { type ResearchResults } from "@/lib/onboarding/machine";
@@ -609,7 +609,7 @@ function ChannelConnectStep({ onComplete }: { onComplete: () => void }) {
 
 // ─── MAIN PAGE ──────────────────────────────────────────────────────────
 
-export default function OnboardingPage() {
+function OnboardingContent() {
   const router = useRouter();
   const [step, setStep] = useState<Step>("about_you");
   const [loading, setLoading] = useState(false);
@@ -831,5 +831,22 @@ export default function OnboardingPage() {
         </AnimatePresence>
       </main>
     </div>
+  );
+}
+
+export default function OnboardingPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="ob-page ob-step--center">
+          <div className="ob-loader">
+            <SpinnerIcon size={32} />
+          </div>
+          <h2 className="ob-step__title">Loading onboarding...</h2>
+        </div>
+      }
+    >
+      <OnboardingContent />
+    </Suspense>
   );
 }
