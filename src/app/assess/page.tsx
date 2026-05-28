@@ -20,7 +20,13 @@ export const metadata: Metadata = {
  *   2. In-progress → resume from saved position
  *   3. No assessment → start fresh
  */
-export default async function AssessPage() {
+export default async function AssessPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ retake?: string }>;
+}) {
+  const params = await searchParams;
+  const isRetake = params.retake === '1';
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -28,22 +34,7 @@ export default async function AssessPage() {
     redirect("/decoded");
   }
 
-  // Check for COMPLETED assessment (redirect to dashboard)
-  const { data: completedAssessment } = await supabase
-    .from("assessments")
-    .select("id, completed_at")
-    .eq("user_id", user.id)
-    .not("completed_at", "is", null)
-    .neq("current_layer", "superseded")
-    .order("completed_at", { ascending: false })
-    .limit(1)
-    .single();
-
-  if (completedAssessment) {
-    redirect("/dashboard");
-  }
-
-  // Check for IN-PROGRESS assessment
+  // Check for IN-PROGRESS assessment first — user may be resuming
   const { data: existingAssessment } = await supabase
     .from("assessments")
     .select("id, current_instrument, current_item_index, current_layer")
@@ -52,6 +43,24 @@ export default async function AssessPage() {
     .order("created_at", { ascending: false })
     .limit(1)
     .single();
+
+  // Check for COMPLETED assessment
+  // Skip redirect if retaking OR if there's an in-progress assessment to resume
+  if (!isRetake && !existingAssessment) {
+    const { data: completedAssessment } = await supabase
+      .from("assessments")
+      .select("id, completed_at")
+      .eq("user_id", user.id)
+      .not("completed_at", "is", null)
+      .neq("current_layer", "superseded")
+      .order("completed_at", { ascending: false })
+      .limit(1)
+      .single();
+
+    if (completedAssessment) {
+      redirect("/dashboard");
+    }
+  }
 
   // Load progress if resuming
   let savedProgress: Record<string, Record<string, number>> | null = null;

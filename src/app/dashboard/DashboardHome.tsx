@@ -27,6 +27,7 @@ interface Props {
   reportId: string | null;
   assessmentId: string | null;
   onboardingComplete: boolean;
+  hasInProgressRetake?: boolean;
 }
 
 /**
@@ -41,6 +42,7 @@ export default function DashboardHome({
   reportId,
   assessmentId,
   onboardingComplete,
+  hasInProgressRetake = false,
 }: Props) {
   const [copied, setCopied] = useState(false);
   const [resetting, setResetting] = useState(false);
@@ -159,30 +161,55 @@ export default function DashboardHome({
                   />
                 </div>
               </Link>
-            ) : (
-              /* Completed — Retake option */
-              <div className="rounded-2xl bg-surface-50 p-6">
-                <div className="mb-4 flex items-center justify-between">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-success/10">
-                    <Check className="h-6 w-6 text-success" strokeWidth={1.5} />
-                  </div>
-                  <span className="text-label-md text-success">Completed</span>
-                </div>
-                <h2 className="text-title-lg text-text-primary font-semibold">
-                  Assessment Complete
-                </h2>
-                <p className="mt-1.5 text-body-md text-text-secondary">
-                  All 13 dimensions scored. View your report or retake.
-                </p>
+            ) : hasInProgressRetake ? (
+                /* Active retake in progress — show prominent finish card */
                 <Link
                   href="/assess"
-                  className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-text-muted hover:text-text-secondary transition-colors"
+                  className="group block rounded-2xl bg-surface-50 p-6 transition-all hover:bg-surface-100"
                 >
-                  <RotateCcw className="h-3.5 w-3.5" />
-                  Retake assessment
+                  <div className="mb-4 flex items-center justify-between">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[rgba(96,99,238,0.1)]">
+                      <Clock className="h-6 w-6 text-[#a3a6ff]" strokeWidth={1.5} />
+                    </div>
+                    <span className="text-label-md text-[#a3a6ff]">
+                      Retake in progress
+                    </span>
+                  </div>
+                  <h2 className="text-title-lg text-text-primary font-semibold">
+                    Finish Assessment
+                  </h2>
+                  <p className="mt-1.5 text-body-md text-text-secondary">
+                    You started a retake. Pick up where you left off.
+                  </p>
+                  <div className="mt-4 flex items-center gap-1.5 text-sm font-medium text-[#a3a6ff] group-hover:gap-2.5 transition-all">
+                    Continue
+                    <ArrowRight className="h-4 w-4" />
+                  </div>
                 </Link>
-              </div>
-            )}
+              ) : (
+                /* Fully completed — retake option */
+                <div className="rounded-2xl bg-surface-50 p-6">
+                  <div className="mb-4 flex items-center justify-between">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-success/10">
+                      <Check className="h-6 w-6 text-success" strokeWidth={1.5} />
+                    </div>
+                    <span className="text-label-md text-success">Completed</span>
+                  </div>
+                  <h2 className="text-title-lg text-text-primary font-semibold">
+                    Assessment Complete
+                  </h2>
+                  <p className="mt-1.5 text-body-md text-text-secondary">
+                    All 13 dimensions scored. View your report or retake.
+                  </p>
+                  <Link
+                    href="/assess?retake=1"
+                    className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-text-muted hover:text-text-secondary transition-colors"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                    Retake assessment
+                  </Link>
+                </div>
+              )}
           </motion.div>
 
           {/* ── Report Card ── */}

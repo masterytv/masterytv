@@ -48,10 +48,38 @@ export const CSI4: InstrumentDef = {
   description: 'If you are currently in a romantic relationship, please answer the following:',
   estimatedMinutes: 1,
   items: [
-    { index: 1, text: 'Please indicate the degree of happiness, all things considered, of your relationship' },
-    { index: 2, text: 'I have a warm and comfortable relationship with my partner' },
-    { index: 3, text: 'How rewarding is your current relationship with your partner?' },
-    { index: 4, text: 'In general, how satisfied are you with your relationship?' },
+    {
+      index: 1,
+      text: 'Please indicate the degree of happiness, all things considered, of your relationship',
+      scaleOverride: {
+        min: 0, max: 6,
+        labels: ['Extremely\nUnhappy', 'Fairly\nUnhappy', 'A Little\nUnhappy', 'Happy', 'Very\nHappy', 'Extremely\nHappy', 'Perfect'],
+      },
+    },
+    {
+      index: 2,
+      text: 'I have a warm and comfortable relationship with my partner',
+      scaleOverride: {
+        min: 0, max: 5,
+        labels: ['Not at\nAll', 'A\nLittle', 'Somewhat', 'Mostly', 'Almost\nCompletely', 'Completely'],
+      },
+    },
+    {
+      index: 3,
+      text: 'How rewarding is your current relationship with your partner?',
+      scaleOverride: {
+        min: 0, max: 5,
+        labels: ['Not at\nAll', 'A\nLittle', 'Somewhat', 'Mostly', 'Almost\nCompletely', 'Completely'],
+      },
+    },
+    {
+      index: 4,
+      text: 'In general, how satisfied are you with your relationship?',
+      scaleOverride: {
+        min: 0, max: 5,
+        labels: ['Not at\nAll', 'A\nLittle', 'Somewhat', 'Mostly', 'Almost\nCompletely', 'Completely'],
+      },
+    },
   ],
 };
 

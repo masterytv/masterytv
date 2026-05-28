@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
                         Authorization: `Bearer ${resendKey}`,
                     },
                     body: JSON.stringify({
-                        from: 'MasteryTV <hello@masterytv.com>',
+                        from: 'MasteryTV <donotreply@mail.masterytv.com>',
                         to: [email],
                         subject: 'Welcome to MasteryTV — Something Big is Coming',
                         html: `

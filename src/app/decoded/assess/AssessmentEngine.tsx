@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Activity, AlertTriangle, ArrowRight, BookOpen, Briefcase, Check, CheckCircle2,
   ChevronLeft, CircleDot, Clock, Compass, Fingerprint, Heart, Home,
-  Leaf, Link2, Loader2, Mail, Save, Shield, Users, X, Zap,
+  Leaf, Link2, Loader2, Mail, Save, Shield, User, Users, X, Zap,
 } from "lucide-react";
 import {
   CORE_INSTRUMENTS,
@@ -14,6 +14,7 @@ import {
   WELLNESS_CHECK_SCALES,
 } from "@/lib/decoded/instruments";
 import { scoreAssessment, type ScoringResult } from "./actions";
+import { generateReport } from "@/lib/decoded/report/generate";
 import { FloatingThemeToggle } from "@/components/floating-theme-toggle";
 
 interface Props {
@@ -24,7 +25,11 @@ interface Props {
   resumeItemIndex: number;
 }
 
-type Phase = "welcome" | "invite" | "primer" | "core" | "addon_selection" | "addons" | "complete";
+type Phase = "welcome" | "invite" | "primer" | "profile" | "core" | "addon_selection" | "addons" | "complete";
+
+const GENDER_OPTIONS = ['Male', 'Female', 'Non-binary', 'Other', 'Rather not say'];
+const RELATIONSHIP_OPTIONS = ['Single', 'In a relationship', 'Married', 'Divorced', 'Widowed', 'Rather not say'];
+const CHILDREN_OPTIONS = ['Yes', 'No', 'Rather not say'];
 
 const EXPLORE_DIMENSIONS = [
   { icon: Fingerprint, label: "Personality", desc: "How you think and react" },
@@ -67,6 +72,7 @@ export default function AssessmentEngine({
   const [direction, setDirection] = useState(1); // 1 = forward, -1 = back
   const [scoringResult, setScoringResult] = useState<ScoringResult | null>(null);
   const [scoring, setScoring] = useState(false);
+  const [generatedReportId, setGeneratedReportId] = useState<string | null>(null);
   const itemStartTime = useRef<number>(Date.now());
 
   // ── Pre-assessment screen state ──
@@ -74,7 +80,53 @@ export default function AssessmentEngine({
   const [consentChecks, setConsentChecks] = useState([false, false, false]);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteCopied, setInviteCopied] = useState(false);
+  const [inviteSending, setInviteSending] = useState(false);
+  const [inviteSent, setInviteSent] = useState(false);
+  const [inviteError, setInviteError] = useState<string | null>(null);
   const [selectedRelationship, setSelectedRelationship] = useState<string | null>(null);
+
+  async function handleSendInvite() {
+    if (!inviteEmail || inviteSending) return;
+    setInviteSending(true);
+    setInviteError(null);
+    setInviteSent(false);
+
+    try {
+      const res = await fetch('/api/decoded/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: inviteEmail,
+          relationship: selectedRelationship,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setInviteError(data.error || 'Failed to send. Try again.');
+      } else {
+        setInviteSent(true);
+        setInviteEmail('');
+        // Reset success state after 3s so they can send another
+        setTimeout(() => setInviteSent(false), 3000);
+      }
+    } catch {
+      setInviteError('Network error. Please try again.');
+    } finally {
+      setInviteSending(false);
+    }
+  }
+
+  // ── Profile (Get to Know You) state ──
+  const [profileName, setProfileName] = useState('');
+  const [profileAge, setProfileAge] = useState('');
+  const [profileGender, setProfileGender] = useState('');
+  const [profileOccupation, setProfileOccupation] = useState('');
+  const [profileRelStatus, setProfileRelStatus] = useState('');
+  const [profileChildren, setProfileChildren] = useState('');
+
+  // ── Section intro state ──
+  const [showSectionIntro, setShowSectionIntro] = useState(true);
 
   // All instruments being presented in current phase
   const currentInstruments = phase === "addons"
@@ -242,6 +294,7 @@ export default function AssessmentEngine({
           const nextInstIdx = instrumentIndex + 1;
           setInstrumentIndex(nextInstIdx);
           setItemIndex(0);
+          setShowSectionIntro(true);
           itemStartTime.current = Date.now();
           saveProgress(newResponses, CORE_INSTRUMENTS[nextInstIdx].id, 0);
         } else {
@@ -260,6 +313,20 @@ export default function AssessmentEngine({
           completeAssessment(newResponses);
         }
       }
+    }
+  }
+
+  // ── Skip current addon section (e.g., user not in a relationship) ──
+  function skipCurrentAddon() {
+    const addonInsts = ADDON_INSTRUMENTS.filter(i => selectedAddons.includes(i.id));
+    if (addonInstrumentIndex < addonInsts.length - 1) {
+      setAddonInstrumentIndex(addonInstrumentIndex + 1);
+      setItemIndex(0);
+      setShowSectionIntro(true);
+      itemStartTime.current = Date.now();
+    } else {
+      // Last addon — complete the assessment
+      completeAssessment(responses);
     }
   }
 
@@ -291,12 +358,28 @@ export default function AssessmentEngine({
     setScoring(true);
 
     try {
+      // Supersede all older completed assessments for this user
+      await supabase
+        .from("assessments")
+        .update({ current_layer: "superseded" })
+        .eq("user_id", userId)
+        .not("completed_at", "is", null)
+        .neq("id", assessmentId);
+
       // Save final progress snapshot
       await saveProgress(finalResponses, "complete", 0);
 
       // Run server-side scoring
       const result = await scoreAssessment(assessmentId);
       setScoringResult(result);
+
+      // Auto-generate report if scoring succeeded
+      if (result.success) {
+        const reportResult = await generateReport(assessmentId);
+        if (reportResult.success && reportResult.reportId) {
+          setGeneratedReportId(reportResult.reportId);
+        }
+      }
     } catch (err) {
       console.error("[Decoded] Scoring failed:", err);
       setScoringResult({
@@ -324,6 +407,10 @@ export default function AssessmentEngine({
 
   // ── Get scale labels for current item ──
   function getScaleLabels(): string[] {
+    // Per-item override takes priority (e.g., CSI-4 has different scales per item)
+    if (currentItem?.scaleOverride) {
+      return currentItem.scaleOverride.labels;
+    }
     if (currentInst?.id === "wellness_check" && currentItem) {
       const override = WELLNESS_CHECK_SCALES[currentItem.index];
       if (override) return override.labels;
@@ -332,6 +419,10 @@ export default function AssessmentEngine({
   }
 
   function getScaleRange(): [number, number] {
+    // Per-item override takes priority
+    if (currentItem?.scaleOverride) {
+      return [currentItem.scaleOverride.min, currentItem.scaleOverride.max];
+    }
     if (currentInst?.id === "wellness_check" && currentItem) {
       const override = WELLNESS_CHECK_SCALES[currentItem.index];
       if (override) return [override.min, override.max];
@@ -462,24 +553,30 @@ export default function AssessmentEngine({
               onChange={(e) => setInviteEmail(e.target.value)}
               placeholder="Their email address"
               className="flex-1 rounded-lg bg-surface-100 px-4 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-[rgba(96,99,238,0.2)] transition-all"
-            />
-            <button
-              onClick={() => {
-                if (inviteEmail) {
-                  window.open(
-                    `mailto:${inviteEmail}?subject=${encodeURIComponent("Take this personality assessment")}&body=${encodeURIComponent(`I just started the Decoded personality assessment — take it too so we can compare results: ${window.location.origin}/decoded?ref=${userId}`)}`,
-                    "_blank"
-                  );
-                  setInviteEmail("");
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && inviteEmail && !inviteSending) {
+                  handleSendInvite();
                 }
               }}
-              disabled={!inviteEmail}
+            />
+            <button
+              onClick={handleSendInvite}
+              disabled={!inviteEmail || inviteSending}
               className="flex items-center gap-2 rounded-lg bg-surface-200 px-4 py-2.5 text-sm font-medium text-text-primary hover:bg-surface-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
             >
-              <Mail className="h-4 w-4" />
-              Send
+              {inviteSending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : inviteSent ? (
+                <Check className="h-4 w-4 text-success" />
+              ) : (
+                <Mail className="h-4 w-4" />
+              )}
+              {inviteSending ? 'Sending…' : inviteSent ? 'Sent!' : 'Send'}
             </button>
           </div>
+          {inviteError && (
+            <p className="mt-2 text-xs text-red-400">{inviteError}</p>
+          )}
 
           {/* Value prop */}
           <div className="mt-6 rounded-xl bg-[rgba(96,99,238,0.05)] p-4 ring-1 ring-[rgba(96,99,238,0.1)]">
@@ -639,7 +736,7 @@ export default function AssessmentEngine({
               <button
                 onClick={() => {
                   setShowConsent(false);
-                  setPhase("core");
+                  setPhase("profile");
                 }}
                 disabled={!consentChecks.every(Boolean)}
                 className="mt-6 w-full rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-6 py-3 text-sm font-medium text-white hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
@@ -656,6 +753,177 @@ export default function AssessmentEngine({
             </motion.div>
           </div>
         )}
+      </div>
+    );
+  }
+  // ── Profile Phase — "Get to Know You" ──
+  if (phase === "profile") {
+    async function saveProfile() {
+      const profileData: Record<string, string | number | null> = {};
+      if (profileName.trim()) profileData.name = profileName.trim();
+      if (profileAge.trim()) profileData.age = parseInt(profileAge, 10) || null;
+      if (profileGender) profileData.gender = profileGender.toLowerCase().replace(/ /g, '_');
+      if (profileOccupation.trim()) profileData.occupation = profileOccupation.trim();
+      if (profileRelStatus) profileData.relationship_status = profileRelStatus.toLowerCase().replace(/ /g, '_');
+      if (profileChildren) profileData.has_children = profileChildren.toLowerCase().replace(/ /g, '_');
+
+      if (Object.keys(profileData).length > 0) {
+        await supabase.from('users').update(profileData).eq('id', userId);
+      }
+      setPhase("core");
+    }
+
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-start px-4 py-12">
+        <FloatingThemeToggle />
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+          className="glass w-full max-w-lg rounded-2xl p-8"
+        >
+          <div className="flex items-center gap-3 mb-2">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[rgba(96,99,238,0.1)]">
+              <User className="h-5 w-5 text-[#a3a6ff]" />
+            </div>
+            <h2 className="text-headline-md text-text-primary">
+              Let&apos;s Get to Know You
+            </h2>
+          </div>
+          <p className="text-sm text-text-secondary mb-6">
+            A few details to personalize your journey. Only your name is required &mdash;
+            everything else helps us tailor your insights.
+          </p>
+
+          <div className="space-y-5">
+            {/* Name (required) */}
+            <div>
+              <label htmlFor="profile-name" className="text-xs font-semibold text-text-secondary mb-1.5 flex items-center gap-1.5">
+                👋 Name <span className="text-[#e74c3c]">*</span>
+              </label>
+              <input
+                id="profile-name"
+                type="text"
+                value={profileName}
+                onChange={(e) => setProfileName(e.target.value)}
+                placeholder="Whatever feels right — real name, nickname, anything"
+                className="w-full rounded-lg bg-surface-100 px-4 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-[rgba(96,99,238,0.3)] border border-white/10 transition-all"
+              />
+            </div>
+
+            {/* Age */}
+            <div>
+              <label htmlFor="profile-age" className="text-xs font-semibold text-text-secondary mb-1.5 flex items-center gap-1.5">
+                🎂 Age
+              </label>
+              <input
+                id="profile-age"
+                type="number"
+                min={18}
+                max={120}
+                value={profileAge}
+                onChange={(e) => setProfileAge(e.target.value)}
+                placeholder="25"
+                className="w-full max-w-[100px] rounded-lg bg-surface-100 px-4 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-[rgba(96,99,238,0.3)] border border-white/10 transition-all"
+              />
+            </div>
+
+            {/* Gender (chips) */}
+            <div>
+              <label className="text-xs font-semibold text-text-secondary mb-1.5 flex items-center gap-1.5">
+                ✨ Gender
+              </label>
+              <div className="flex flex-wrap gap-2 mt-1">
+                {GENDER_OPTIONS.map((g) => (
+                  <button
+                    key={g}
+                    type="button"
+                    onClick={() => setProfileGender(profileGender === g ? '' : g)}
+                    className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition-all ${
+                      profileGender === g
+                        ? 'bg-[rgba(96,99,238,0.15)] ring-1 ring-[rgba(96,99,238,0.3)] text-text-primary'
+                        : 'bg-surface-100/50 text-text-secondary hover:bg-surface-200/50'
+                    }`}
+                  >
+                    {g}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Occupation */}
+            <div>
+              <label htmlFor="profile-occupation" className="text-xs font-semibold text-text-secondary mb-1.5 flex items-center gap-1.5">
+                💼 Occupation
+              </label>
+              <input
+                id="profile-occupation"
+                type="text"
+                value={profileOccupation}
+                onChange={(e) => setProfileOccupation(e.target.value)}
+                placeholder="e.g. designer, student, nurse..."
+                className="w-full rounded-lg bg-surface-100 px-4 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-[rgba(96,99,238,0.3)] border border-white/10 transition-all"
+              />
+            </div>
+
+            {/* Relationship Status + Children */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="profile-rel" className="text-xs font-semibold text-text-secondary mb-1.5 flex items-center gap-1.5">
+                  💕 Relationship
+                </label>
+                <select
+                  id="profile-rel"
+                  value={profileRelStatus}
+                  onChange={(e) => setProfileRelStatus(e.target.value)}
+                  className="w-full rounded-lg bg-surface-100 px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-[rgba(96,99,238,0.3)] border border-white/10 transition-all appearance-none"
+                >
+                  <option value="">Select...</option>
+                  {RELATIONSHIP_OPTIONS.map((r) => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-text-secondary mb-1.5 flex items-center gap-1.5">
+                  🧒 Children
+                </label>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {CHILDREN_OPTIONS.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setProfileChildren(profileChildren === c ? '' : c)}
+                      className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+                        profileChildren === c
+                          ? 'bg-[rgba(96,99,238,0.15)] ring-1 ring-[rgba(96,99,238,0.3)] text-text-primary'
+                          : 'bg-surface-100/50 text-text-secondary hover:bg-surface-200/50'
+                      }`}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={saveProfile}
+            disabled={!profileName.trim()}
+            className="mt-8 w-full rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-6 py-3 text-sm font-medium text-white hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+          >
+            Begin Assessment →
+          </button>
+
+          <button
+            onClick={() => setPhase("primer")}
+            className="mt-3 w-full text-center text-sm text-text-muted hover:text-text-secondary transition-colors"
+          >
+            Back
+          </button>
+        </motion.div>
       </div>
     );
   }
@@ -804,13 +1072,15 @@ export default function AssessmentEngine({
               )}
 
               <p className="mt-6 text-xs text-text-muted">
-                Your full personalized report will be available in your dashboard.
+                {generatedReportId
+                  ? 'Your personalized report is ready.'
+                  : 'Your full personalized report will be available in your dashboard.'}
               </p>
               <a
-                href="/dashboard"
+                href={generatedReportId ? `/decoded/report/${generatedReportId}` : '/dashboard'}
                 className="mt-4 inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-6 py-2.5 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
               >
-                Go to Dashboard
+                {generatedReportId ? 'View Report' : 'Go to Dashboard'}
                 <ArrowRight className="h-4 w-4" />
               </a>
             </>
@@ -889,75 +1159,129 @@ export default function AssessmentEngine({
       </div>
 
       {/* ── Question area ── */}
-      <div className="flex flex-1 flex-col items-center justify-center px-4 py-12">
+      <div className="flex flex-1 flex-col items-center justify-start px-4 py-12">
         <div className="w-full max-w-xl">
-          {/* Instrument transition label */}
-          {itemIndex === 0 && (
+
+          {/* ── Section Intro Card ── */}
+          {itemIndex === 0 && showSectionIntro ? (
             <motion.div
-              initial={{ opacity: 0, y: -10 }}
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mb-8 text-center"
+              transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+              className="glass rounded-2xl p-8 text-center"
             >
-              <p className="text-label-md text-[#a3a6ff] mb-1">{currentInst.shortName}</p>
-              <p className="text-xs text-text-muted">{currentInst.description}</p>
-            </motion.div>
-          )}
-
-          {/* Question text */}
-          <AnimatePresence mode="wait" custom={direction}>
-            <motion.div
-              key={`${currentInst.id}-${currentItem.index}`}
-              custom={direction}
-              initial={{ opacity: 0, x: direction * 40 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: direction * -40 }}
-              transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-              className="mb-10"
-            >
-              <p className="text-center text-lg font-medium text-text-primary leading-relaxed">
-                {currentItem.text}
+              <p className="text-label-md text-[#a3a6ff] mb-3 tracking-wider uppercase">
+                {currentInst.shortName}
               </p>
-              <p className="mt-2 text-center text-xs text-text-muted">
-                {itemIndex + 1} of {currentInst.items.length}
+              <h2 className="text-xl font-semibold text-text-primary mb-2">
+                {currentInst.name}
+              </h2>
+              <p className="text-sm text-text-muted mb-4">
+                {currentInst.items.length} questions &middot; ~{currentInst.estimatedMinutes} min
               </p>
-            </motion.div>
-          </AnimatePresence>
 
-          {/* Scale buttons */}
-          <div className="flex flex-col items-center gap-2">
-            {scaleValues.map((value, idx) => {
-              const label = scaleLabels[idx] || String(value);
-              const isSelected = currentAnswer === value;
+              <div className="rounded-xl bg-[rgba(96,99,238,0.05)] ring-1 ring-[rgba(96,99,238,0.1)] p-4 mb-6">
+                <p className="text-label-sm text-[#a3a6ff] mb-1 uppercase tracking-wider">Instructions</p>
+                <p className="text-sm text-text-secondary italic">
+                  {currentInst.description}
+                </p>
+              </div>
 
-              return (
+              <button
+                onClick={() => setShowSectionIntro(false)}
+                className="rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-8 py-3 text-sm font-medium text-white hover:opacity-90 transition-opacity"
+              >
+                Start Section ↵
+              </button>
+
+              {phase === "addons" && (
                 <button
-                  key={value}
-                  onClick={() => handleAnswer(value)}
-                  className={`w-full max-w-md rounded-xl px-5 py-3.5 text-left text-sm transition-all ${
-                    isSelected
-                      ? "bg-[rgba(96,99,238,0.15)] ring-1 ring-[rgba(96,99,238,0.3)] text-text-primary"
-                      : "glass-hover text-text-secondary hover:text-text-primary"
-                  }`}
+                  onClick={skipCurrentAddon}
+                  className="mt-3 block mx-auto text-sm text-text-muted hover:text-text-secondary transition-colors"
                 >
-                  <span className="inline-flex items-center gap-3">
-                    <span className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold ${
-                      isSelected
-                        ? "bg-[#6063ee] text-white"
-                        : "bg-surface-200 text-text-muted"
-                    }`}>
-                      {value}
-                    </span>
-                    {label}
-                  </span>
+                  Skip this section →
                 </button>
-              );
-            })}
-          </div>
+              )}
+            </motion.div>
+          ) : (
+            <>
+              {/* Persistent instruction context */}
+              <p className="text-center text-xs text-[#a3a6ff] italic mb-6">
+                {currentInst.description}
+              </p>
 
-          {/* Skip / keyboard hint */}
-          <p className="mt-8 text-center text-xs text-text-muted">
-            Press {scaleMin}–{scaleMax} on your keyboard to answer
-          </p>
+              {/* Question text */}
+              <AnimatePresence mode="wait" custom={direction}>
+                <motion.div
+                  key={`${currentInst.id}-${currentItem.index}`}
+                  custom={direction}
+                  initial={{ opacity: 0, x: direction * 40 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: direction * -40 }}
+                  transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                  className="mb-10"
+                >
+                  <p className="text-center text-lg font-medium text-text-primary leading-relaxed">
+                    {currentItem.text}
+                  </p>
+                  <p className="mt-2 text-center text-xs text-text-muted">
+                    {itemIndex + 1} of {currentInst.items.length}
+                  </p>
+                </motion.div>
+              </AnimatePresence>
+
+              {/* Scale buttons — always one row */}
+              <div className="flex justify-center gap-1.5 sm:gap-2">
+                {scaleValues.map((value, idx) => {
+                  const label = scaleLabels[idx] || '';
+                  const isSelected = currentAnswer === value;
+
+                  return (
+                    <button
+                      key={value}
+                      onClick={() => handleAnswer(value)}
+                      className={`flex-1 min-w-0 rounded-xl py-3 text-center transition-all ${
+                        isSelected
+                          ? "bg-[rgba(96,99,238,0.15)] ring-1 ring-[rgba(96,99,238,0.3)] text-text-primary"
+                          : "glass-hover text-text-secondary hover:text-text-primary"
+                      }`}
+                    >
+                      <span className="flex flex-col items-center gap-1">
+                        <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold ${
+                          isSelected
+                            ? "bg-[#6063ee] text-white"
+                            : "bg-surface-200 text-text-muted"
+                        }`}>
+                          {value}
+                        </span>
+                        {label && (
+                          <span className="text-[10px] sm:text-xs leading-tight text-center">
+                            {label.split('\n').map((line, i) => (
+                              <span key={i} className="block">{line}</span>
+                            ))}
+                          </span>
+                        )}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Keyboard hint */}
+              <p className="mt-8 text-center text-xs text-text-muted">
+                Click or press {scaleMin}–{scaleMax} on your keyboard to answer
+              </p>
+
+              {phase === "addons" && (
+                <button
+                  onClick={skipCurrentAddon}
+                  className="mt-4 block mx-auto text-xs text-text-muted hover:text-text-secondary transition-colors"
+                >
+                  Skip this section →
+                </button>
+              )}
+            </>
+          )}
         </div>
       </div>
     </div>

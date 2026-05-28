@@ -66,7 +66,7 @@ export default async function DashboardPage() {
     }
   }
 
-  // Check for existing report
+  // Check for existing report for the latest completed assessment
   let reportId: string | null = null;
   if (completedAssessment) {
     const { data: report } = await supabase
@@ -105,6 +105,7 @@ export default async function DashboardPage() {
       reportId={reportId}
       assessmentId={completedAssessment?.id ?? inProgressAssessment?.id ?? null}
       onboardingComplete={onboardingStarted}
+      hasInProgressRetake={!!completedAssessment && !!inProgressAssessment}
     />
   );
 }

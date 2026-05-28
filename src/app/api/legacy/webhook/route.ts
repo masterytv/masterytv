@@ -140,7 +140,7 @@ async function sendDeliveryEmail(email: string, firstName: string, orderId: stri
                 Authorization: `Bearer ${resendKey}`,
             },
             body: JSON.stringify({
-                from: 'MasteryTV <hello@masterytv.com>',
+                from: 'MasteryTV <donotreply@mail.masterytv.com>',
                 to: [email],
                 subject: `Your Legacy Letter is Ready, ${firstName}`,
                 html: `

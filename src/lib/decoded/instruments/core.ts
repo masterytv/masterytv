@@ -8,6 +8,12 @@ export interface InstrumentItem {
   index: number;
   text: string;
   reversed?: boolean;
+  /** Per-item scale override — when items within the same instrument use different scales */
+  scaleOverride?: {
+    min: number;
+    max: number;
+    labels: string[];
+  };
 }
 
 export interface InstrumentDef {
@@ -27,9 +33,9 @@ export interface InstrumentDef {
 
 // ── 1. IPIP-50 (Big Five) ─────────────────────────────────────────────────
 export const IPIP50: InstrumentDef = {
-  id: 'ipip50', name: 'Personality Profile', shortName: 'Big Five',
+  id: 'ipip50', name: 'Personality Profile', shortName: 'Personality (Big Five)',
   layer: 'core', itemCount: 50, scaleMin: 1, scaleMax: 5,
-  scaleLabels: ['Very Inaccurate', 'Moderately Inaccurate', 'Neither', 'Moderately Accurate', 'Very Accurate'],
+  scaleLabels: ['Very\nInaccurate', 'Moderately\nInaccurate', 'Neither', 'Moderately\nAccurate', 'Very\nAccurate'],
   description: 'How accurately do these statements describe you?',
   estimatedMinutes: 8,
   items: [
@@ -88,9 +94,9 @@ export const IPIP50: InstrumentDef = {
 
 // ── 2. RIASEC ─────────────────────────────────────────────────────────────
 export const RIASEC: InstrumentDef = {
-  id: 'riasec', name: 'Career Interests', shortName: 'Holland Code',
+  id: 'riasec', name: 'Career Interests', shortName: 'Ideal Work (Holland Code)',
   layer: 'core', itemCount: 30, scaleMin: 1, scaleMax: 5,
-  scaleLabels: ['Strongly Dislike', 'Dislike', 'Neutral', 'Like', 'Strongly Like'],
+  scaleLabels: ['Strongly\nDislike', 'Dislike', 'Neutral', 'Like', 'Strongly\nLike'],
   description: 'How much would you enjoy doing each of these activities?',
   estimatedMinutes: 5,
   items: [
@@ -131,8 +137,8 @@ export const RIASEC: InstrumentDef = {
 export const ECR_R_SHORT: InstrumentDef = {
   id: 'ecr_r_short', name: 'Attachment Style', shortName: 'Attachment',
   layer: 'core', itemCount: 12, scaleMin: 1, scaleMax: 7,
-  scaleLabels: ['Strongly Disagree', 'Disagree', 'Slightly Disagree', 'Neutral', 'Slightly Agree', 'Agree', 'Strongly Agree'],
-  description: 'How well do these statements describe your feelings in close relationships?',
+  scaleLabels: ['Strongly\nDisagree', '', '', 'Neutral', '', '', 'Strongly\nAgree'],
+  description: 'How well do these statements describe your feelings in close relationships? If you\'re not currently in a romantic relationship, think about how you generally feel or have felt in past relationships.',
   estimatedMinutes: 2,
   items: [
     { index: 1, text: "I'm afraid that I will lose my partner's love" },
@@ -154,7 +160,7 @@ export const ECR_R_SHORT: InstrumentDef = {
 export const SWLS: InstrumentDef = {
   id: 'swls', name: 'Life Satisfaction', shortName: 'Life Satisfaction',
   layer: 'core', itemCount: 5, scaleMin: 1, scaleMax: 7,
-  scaleLabels: ['Strongly Disagree', 'Disagree', 'Slightly Disagree', 'Neither', 'Slightly Agree', 'Agree', 'Strongly Agree'],
+  scaleLabels: ['Strongly\nDisagree', '', '', 'Neutral', '', '', 'Strongly\nAgree'],
   description: 'How much do you agree with each statement about your life?',
   estimatedMinutes: 1,
   items: [
@@ -170,7 +176,7 @@ export const SWLS: InstrumentDef = {
 export const SCS_SF: InstrumentDef = {
   id: 'scs_sf', name: 'Self-Compassion', shortName: 'Self-Compassion',
   layer: 'core', itemCount: 12, scaleMin: 1, scaleMax: 5,
-  scaleLabels: ['Almost Never', 'Rarely', 'Sometimes', 'Often', 'Almost Always'],
+  scaleLabels: ['Almost\nNever', 'Rarely', 'Sometimes', 'Often', 'Almost\nAlways'],
   description: 'How often do you experience the following?',
   estimatedMinutes: 2,
   items: [
@@ -193,7 +199,7 @@ export const SCS_SF: InstrumentDef = {
 export const DERS16: InstrumentDef = {
   id: 'ders16', name: 'Emotion Regulation', shortName: 'Emotion Reg.',
   layer: 'core', itemCount: 16, scaleMin: 1, scaleMax: 5,
-  scaleLabels: ['Almost Never', 'Sometimes', 'About Half', 'Most of the Time', 'Almost Always'],
+  scaleLabels: ['Almost\nNever', 'Sometimes', 'About\nHalf', 'Most of\nthe Time', 'Almost\nAlways'],
   description: 'How often do the following apply to you?',
   estimatedMinutes: 3,
   items: [
@@ -220,7 +226,7 @@ export const DERS16: InstrumentDef = {
 export const WEIMS: InstrumentDef = {
   id: 'weims', name: 'Work Motivation', shortName: 'Motivation',
   layer: 'core', itemCount: 18, scaleMin: 1, scaleMax: 7,
-  scaleLabels: ['Does not correspond at all', '', '', 'Corresponds moderately', '', '', 'Corresponds exactly'],
+  scaleLabels: ['Not at\nAll', '', '', 'Moderate', '', '', 'Exactly'],
   description: 'Why do you do your work? Rate how well each statement corresponds to your reasons.',
   estimatedMinutes: 3,
   items: [
@@ -249,7 +255,7 @@ export const WEIMS: InstrumentDef = {
 export const FLOURISHING: InstrumentDef = {
   id: 'flourishing', name: 'Flourishing', shortName: 'Flourishing',
   layer: 'core', itemCount: 8, scaleMin: 1, scaleMax: 7,
-  scaleLabels: ['Strongly Disagree', 'Disagree', 'Slightly Disagree', 'Mixed', 'Slightly Agree', 'Agree', 'Strongly Agree'],
+  scaleLabels: ['Strongly\nDisagree', '', '', 'Mixed', '', '', 'Strongly\nAgree'],
   description: 'How much do you agree with each statement?',
   estimatedMinutes: 1,
   items: [

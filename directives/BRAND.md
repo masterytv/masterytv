@@ -324,6 +324,27 @@ Used for metrics and stats:
 - Separate items using `spacing-4` vertical gaps and subtle background shifts
 - Active state: `surface-200` pill in sidebar navigation
 
+### 8.6 Assessment Scale Buttons
+
+Assessment questions use a **horizontal 1-row layout** that must never wrap to a second line.
+
+| Rule | Value |
+|:---|:---|
+| **Layout** | `flex` row, `flex-1 min-w-0` per button — fills available width equally |
+| **Max label width** | `60px` on mobile, `80px` on desktop |
+| **Font** | `text-[10px]` on mobile, `text-xs` on desktop |
+| **Number badge** | `h-7 w-7` circle, `text-xs font-semibold` |
+| **5-point scales** | Show official wording on every point, split to two lines with `\n` (e.g., `Very\nInaccurate`) |
+| **7-point scales** | Show text anchors at positions 1, 4, 7 only — intermediate points show number only, two-line split |
+| **Gap** | `gap-1.5` mobile, `gap-2` desktop (`sm:gap-2`) |
+
+**Section Intro Card:** Each instrument begins with a glass card showing:
+- Category label (uppercase, `text-[#a3a6ff]`)
+- Instrument name (`text-xl font-semibold`)
+- Question count + estimated time
+- Instructions in a subtle callout box
+- "Start Section ↵" button
+
 ---
 
 ## 9. Motion & Interactions
