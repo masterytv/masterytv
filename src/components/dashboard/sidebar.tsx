@@ -13,18 +13,20 @@ import {
   Share2,
   X,
   Fingerprint,
+  Lock,
 } from "lucide-react";
 import { useState } from "react";
 
 const navItems = [
   { href: "/dashboard", label: "Home", icon: Home, exact: true },
-  { href: "/dashboard/chat", label: "Coach", icon: MessageSquare },
-  { href: "/dashboard/commitments", label: "Commitments", icon: Target },
-  { href: "/dashboard/progress", label: "Progress", icon: TrendingUp },
+  { href: "/dashboard/chat", label: "Coach", icon: MessageSquare, requiresAssessment: true },
+  { href: "/dashboard/commitments", label: "Commitments", icon: Target, requiresAssessment: true },
+  { href: "/dashboard/progress", label: "Progress", icon: TrendingUp, requiresAssessment: true },
   {
     href: "/dashboard/coaching-letter",
     label: "Coaching Letter",
     icon: FileText,
+    requiresAssessment: true,
   },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
@@ -32,9 +34,10 @@ const navItems = [
 interface SidebarProps {
   open: boolean;
   onClose: () => void;
+  assessmentCompleted?: boolean;
 }
 
-export function Sidebar({ open, onClose }: SidebarProps) {
+export function Sidebar({ open, onClose, assessmentCompleted = false }: SidebarProps) {
   const pathname = usePathname();
   const [copied, setCopied] = useState(false);
 
@@ -91,6 +94,22 @@ export function Sidebar({ open, onClose }: SidebarProps) {
             const isActive = item.exact
               ? pathname === item.href
               : pathname.startsWith(item.href);
+            const isLocked = item.requiresAssessment && !assessmentCompleted;
+
+            if (isLocked) {
+              return (
+                <div
+                  key={item.href}
+                  className="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-text-muted/50 cursor-not-allowed"
+                  title="Complete the assessment to unlock"
+                >
+                  <item.icon className="h-4.5 w-4.5 text-text-muted/40" />
+                  {item.label}
+                  <Lock className="ml-auto h-3 w-3 text-text-muted/40" />
+                </div>
+              );
+            }
+
             return (
               <Link
                 key={item.href}

@@ -65,8 +65,9 @@
 - [ ] **S0.2.7** — (F02) Safety layer: clinical result framing (never raw scores; always growth-oriented language); crisis gateway for suicidal ideation items (automatic resource display)
 - [ ] **S0.2.8** — (F02) Write section-specific prompt templates for all 12 report sections; QA minimum 20 sample reports
 - [ ] **S0.2.9** — (F02) Implement archetype system per `DECODED_ARCHETYPES.md`: ~16 base types from Big Five clusters + AI-generated sub-label. Format: `BASE TYPE — Sub-Label`
+- [ ] **S0.2.10** — (F02) Report polish pass: review and improve the writing style across all report sections (more engaging, editorial tone — less clinical/generic). Redesign visual layout for premium feel: better typography hierarchy, card-based section layouts, richer data visualizations, pull-quote callouts, and micro-interactions. Reference BRAND.md §14 for aesthetic guidelines.
 
-**Done:** Every user who completes the assessment gets a free, high-quality 7-section report. 5 locked sections visible but blurred. Every section ends with a coaching question. Browser PDF export works.
+**Done:** Every user who completes the assessment gets a free, high-quality 7-section report. 5 locked sections visible but blurred. Every section ends with a coaching question. Browser PDF export works. Report reads like a premium magazine feature, not a clinical printout.
 
 ---
 

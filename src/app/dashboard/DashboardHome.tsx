@@ -14,6 +14,7 @@ import {
   Sparkles,
   Copy,
   Mail,
+  Lock,
 } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -260,38 +261,53 @@ export default function DashboardHome({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.15 }}
           >
-            <div className="rounded-2xl bg-surface-50 p-6 transition-all hover:bg-surface-100">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[rgba(96,99,238,0.1)]">
-                <MessageSquare className="h-6 w-6 text-[#a3a6ff]" strokeWidth={1.5} />
-              </div>
-              <h2 className="text-title-lg text-text-primary font-semibold">
-                Talk to Your Coach
-              </h2>
-              <p className="mt-1.5 text-body-md text-text-secondary">
-                {state === "completed"
-                  ? "Your coach has read your full profile. Start a conversation."
-                  : "Your AI coach adapts to how you think and communicates."}
-              </p>
-              <div className="mt-4 flex items-center justify-between">
-                <Link
-                  href="/dashboard/chat"
-                  className="flex items-center gap-1.5 text-sm font-medium text-[#a3a6ff] hover:gap-2.5 transition-all"
-                >
-                  Open chat
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-                {onboardingComplete && (
-                  <button
-                    onClick={handleRedoOnboarding}
-                    disabled={resetting}
-                    className="flex items-center gap-1 text-xs font-medium text-text-muted hover:text-[#a3a6ff] transition-colors disabled:opacity-50"
+            {state === "completed" ? (
+              <div className="rounded-2xl bg-surface-50 p-6 transition-all hover:bg-surface-100">
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[rgba(96,99,238,0.1)]">
+                  <MessageSquare className="h-6 w-6 text-[#a3a6ff]" strokeWidth={1.5} />
+                </div>
+                <h2 className="text-title-lg text-text-primary font-semibold">
+                  Talk to Your Coach
+                </h2>
+                <p className="mt-1.5 text-body-md text-text-secondary">
+                  Your coach has read your full profile. Start a conversation.
+                </p>
+                <div className="mt-4 flex items-center justify-between">
+                  <Link
+                    href="/dashboard/chat"
+                    className="flex items-center gap-1.5 text-sm font-medium text-[#a3a6ff] hover:gap-2.5 transition-all"
                   >
-                    <RotateCcw className={`h-3 w-3 ${resetting ? 'animate-spin' : ''}`} />
-                    {resetting ? 'Redirecting…' : 'Redo setup'}
-                  </button>
-                )}
+                    Open chat
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                  {onboardingComplete && (
+                    <button
+                      onClick={handleRedoOnboarding}
+                      disabled={resetting}
+                      className="flex items-center gap-1 text-xs font-medium text-text-muted hover:text-[#a3a6ff] transition-colors disabled:opacity-50"
+                    >
+                      <RotateCcw className={`h-3 w-3 ${resetting ? 'animate-spin' : ''}`} />
+                      {resetting ? 'Redirecting…' : 'Redo setup'}
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="rounded-2xl bg-surface-50 p-6 opacity-50">
+                <div className="mb-4 flex items-center justify-between">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-surface-100">
+                    <MessageSquare className="h-6 w-6 text-text-muted" strokeWidth={1.5} />
+                  </div>
+                  <Lock className="h-4 w-4 text-text-muted" />
+                </div>
+                <h2 className="text-title-lg text-text-primary font-semibold">
+                  Talk to Your Coach
+                </h2>
+                <p className="mt-1.5 text-body-md text-text-secondary">
+                  Complete the assessment to unlock your AI coach.
+                </p>
+              </div>
+            )}
           </motion.div>
 
           {/* ── Share Card ── */}
