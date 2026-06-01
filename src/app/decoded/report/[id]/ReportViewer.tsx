@@ -13,6 +13,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Lock, ArrowRight, Loader2, Printer, MessageSquare } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import BigFiveRadar from './BigFiveRadar';
+import BigFiveContext from './BigFiveContext';
 import AttachmentQuadrant from './AttachmentQuadrant';
 import WellnessRadar from './WellnessRadar';
 import ScoreDashboard from './ScoreDashboard';
@@ -264,6 +265,9 @@ export default function ReportViewer({ report: initialReport, scores }: ReportVi
                     {isUnlocked ? (
                       <>
                         {/* Data visualization for certain sections */}
+                        {config.id === 'RS04' && (
+                          <BigFiveContext />
+                        )}
                         {(config.id === 'RS03' || config.id === 'RS04') && (
                           <BigFiveRadar values={bigFivePercentiles} />
                         )}
