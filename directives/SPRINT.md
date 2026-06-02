@@ -102,7 +102,27 @@
 - [ ] **S0.4.5** — Test coach handoff with 10 different assessment profiles: verify coaching response quality and personalization accuracy
 - [ ] **S0.4.6** — "Meet your coach" CTA in report Section 10: compelling invitation that references specific insights from their report
 
-**Done:** A user who upgrades to the coach tier from Self Mastery gets a coach that immediately demonstrates it knows them. "Wow" moment validated.
+#### E0 — Contextual Coach Deep Links (Report → Chat)
+
+> [!IMPORTANT]
+> **High-impact conversion feature.** Every "Chat with Your Coach" link in the report is a monetization touchpoint. The coach must demonstrate immediate value by referencing the exact insight the user clicked from.
+
+- [ ] **S0.4.7** — Design deep-link URL scheme: `/dashboard/chat?context={context_key}&section={section_id}` — context_key maps to a specific report insight (e.g., `growth-edge-1`, `attachment-challenge`, `inner-world-cost`, `coach-question-rs04`). Store context-key → prompt-snippet mapping in a config or DB table.
+- [ ] **S0.4.8** — Add "Chat with Your Coach About This" CTAs in strategic report locations:
+  - **Your 3 Growth Edges** box — one CTA per growth edge ("Explore this with your coach")
+  - **Personality trait challenge sections** — after each trait's challenge paragraph (e.g., "Your low Conscientiousness means...")
+  - **YOUR COACH QUESTION** boxes — convert the existing question into a clickable CTA that opens chat pre-seeded with that question
+  - **"The Cost" section** under Your Inner World — after the emotional regulation cost narrative
+  - **Attachment Map** challenge areas — after insecure attachment pattern descriptions
+  - CTA design: inline text link or subtle button, not a banner. Must feel editorial, not salesy. Follow BRAND.md §14.
+- [ ] **S0.4.9** — Implement context-aware first message: when user lands on `/dashboard/chat?context=...`, coaching engine generates a personalized opening that:
+  1. References the specific report insight they clicked from (using assessment data + context key)
+  2. Asks one sharp follow-up question about that insight
+  3. Skips generic onboarding — assessment profile IS the onboarding (see S0.4.4)
+- [ ] **S0.4.10** — Implement Decoded onboarding bypass: users arriving from Decoded report deep links skip the LinkedIn/website research onboarding entirely. Assessment profile replaces it. `onboarding_state` set to `complete` with `source: 'decoded'`.
+- [ ] **S0.4.11** — Track deep-link engagement: log which context keys users click (for optimizing CTA placement). Store in `assessment_reports` or a new `report_events` table: `{ user_id, context_key, section_id, clicked_at }`.
+
+**Done:** A user who upgrades to the coach tier from Self Mastery gets a coach that immediately demonstrates it knows them. Clicking "Chat with Your Coach" from any report section opens a coaching conversation that references that exact insight. No generic onboarding. "Wow" moment validated.
 
 ---
 
