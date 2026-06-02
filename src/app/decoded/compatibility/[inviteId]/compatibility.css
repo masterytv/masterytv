@@ -285,6 +285,67 @@
   color: var(--color-primary);
 }
 
+/* ── Tab navigation ── */
+.compat-tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid var(--ghost-border);
+  padding-bottom: 0;
+}
+
+.compat-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-label);
+  background: none;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.2s;
+}
+
+.compat-tab:hover {
+  color: var(--text-heading);
+}
+
+.compat-tab--active {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.compat-tab--active::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #a3a6ff, #6063ee);
+  border-radius: 2px 2px 0 0;
+}
+
+.compat-tab__icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+@media (max-width: 640px) {
+  .compat-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .compat-tab {
+    padding: 0.6rem 0.9rem;
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+}
+
 /* ── Loading state ── */
 .compat-loading {
   display: flex;

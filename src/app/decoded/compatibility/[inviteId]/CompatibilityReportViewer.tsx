@@ -1,13 +1,14 @@
 'use client';
 
 /**
- * CompatibilityReportViewer — Visual display of the compatibility report.
- * Punchy, editorial layout matching the main Decoded report aesthetic.
+ * CompatibilityReportViewer — Visual display with tabs for three relationship contexts.
+ * Intimate/Partnership, Family/Friendship, Working Relationship.
  */
 
-import { motion } from 'framer-motion';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Heart, Users, Briefcase } from 'lucide-react';
 import './compatibility.css';
 
 interface CompatDimension {
@@ -16,14 +17,29 @@ interface CompatDimension {
   insight: string;
 }
 
-interface CompatReport {
-  headline: string;
+interface ContextInsights {
+  label?: string;
   chemistry: string;
   friction: string;
   superpower: string;
   watch_out: string;
   advice_for_a: string;
   advice_for_b: string;
+}
+
+interface CompatReport {
+  headline: string;
+  // New 3-context format
+  intimate?: ContextInsights;
+  family_friendship?: ContextInsights;
+  work?: ContextInsights;
+  // Legacy flat format (backward compat)
+  chemistry?: string;
+  friction?: string;
+  superpower?: string;
+  watch_out?: string;
+  advice_for_a?: string;
+  advice_for_b?: string;
   compatibility_dimensions: CompatDimension[];
 }
 
@@ -33,22 +49,42 @@ interface Props {
   recipientName: string;
 }
 
+type TabId = 'intimate' | 'family_friendship' | 'work';
+
+const TABS: Array<{ id: TabId; label: string; icon: typeof Heart; emoji: string }> = [
+  { id: 'intimate', label: 'Intimate', icon: Heart, emoji: '💕' },
+  { id: 'family_friendship', label: 'Family & Friends', icon: Users, emoji: '👨‍👩‍👧' },
+  { id: 'work', label: 'Work', icon: Briefcase, emoji: '💼' },
+];
+
 const fadeIn = {
   initial: { opacity: 0, y: 12 },
   animate: { opacity: 1, y: 0 },
 };
 
 export default function CompatibilityReportViewer({ report, inviterName, recipientName }: Props) {
-  const avgScore = report.compatibility_dimensions?.length
-    ? Math.round(report.compatibility_dimensions.reduce((s, d) => s + d.score, 0) / report.compatibility_dimensions.length * 10)
-    : 0;
+  // Detect if this is the new 3-context format or legacy
+  const isMultiContext = !!report.intimate || !!report.family_friendship || !!report.work;
+  const [activeTab, setActiveTab] = useState<TabId>('intimate');
+
+  // Get context data for active tab, or fall back to legacy flat format
+  const context: ContextInsights | null = isMultiContext
+    ? (report[activeTab] ?? null)
+    : {
+        chemistry: report.chemistry || '',
+        friction: report.friction || '',
+        superpower: report.superpower || '',
+        watch_out: report.watch_out || '',
+        advice_for_a: report.advice_for_a || '',
+        advice_for_b: report.advice_for_b || '',
+      };
 
   return (
     <div className="compat-container">
       {/* Back link */}
-      <Link href="/dashboard" className="compat-back">
+      <Link href="/dashboard/compatibility" className="compat-back">
         <ArrowLeft size={16} />
-        Back to Dashboard
+        Back to Compatibility
       </Link>
 
       {/* Header */}
@@ -65,34 +101,80 @@ export default function CompatibilityReportViewer({ report, inviterName, recipie
         </p>
       </motion.div>
 
-      {/* Insight cards */}
-      <div className="compat-grid">
-        <motion.div className="compat-card" {...fadeIn} transition={{ delay: 0.1 }}>
-          <div className="compat-card__icon compat-card__icon--chemistry">💚</div>
-          <div className="compat-card__title">What Clicks</div>
-          <p className="compat-card__body">{report.chemistry}</p>
+      {/* Tabs — only show for multi-context reports */}
+      {isMultiContext && (
+        <motion.div
+          className="compat-tabs"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.1 }}
+        >
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`compat-tab ${activeTab === tab.id ? 'compat-tab--active' : ''}`}
+            >
+              <tab.icon className="compat-tab__icon" />
+              {tab.label}
+            </button>
+          ))}
         </motion.div>
+      )}
 
-        <motion.div className="compat-card" {...fadeIn} transition={{ delay: 0.15 }}>
-          <div className="compat-card__icon compat-card__icon--friction">🔥</div>
-          <div className="compat-card__title">Where You&apos;ll Clash</div>
-          <p className="compat-card__body">{report.friction}</p>
-        </motion.div>
+      {/* Context-specific content */}
+      {context && (
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2 }}
+          >
+            {/* Insight cards */}
+            <div className="compat-grid">
+              <div className="compat-card">
+                <div className="compat-card__icon compat-card__icon--chemistry">💚</div>
+                <div className="compat-card__title">What Clicks</div>
+                <p className="compat-card__body">{context.chemistry}</p>
+              </div>
 
-        <motion.div className="compat-card" {...fadeIn} transition={{ delay: 0.2 }}>
-          <div className="compat-card__icon compat-card__icon--superpower">⚡</div>
-          <div className="compat-card__title">Your Superpower Together</div>
-          <p className="compat-card__body">{report.superpower}</p>
-        </motion.div>
+              <div className="compat-card">
+                <div className="compat-card__icon compat-card__icon--friction">🔥</div>
+                <div className="compat-card__title">Where You&apos;ll Clash</div>
+                <p className="compat-card__body">{context.friction}</p>
+              </div>
 
-        <motion.div className="compat-card" {...fadeIn} transition={{ delay: 0.25 }}>
-          <div className="compat-card__icon compat-card__icon--watchout">⚠️</div>
-          <div className="compat-card__title">Watch Out For</div>
-          <p className="compat-card__body">{report.watch_out}</p>
-        </motion.div>
-      </div>
+              <div className="compat-card">
+                <div className="compat-card__icon compat-card__icon--superpower">⚡</div>
+                <div className="compat-card__title">Your Superpower Together</div>
+                <p className="compat-card__body">{context.superpower}</p>
+              </div>
 
-      {/* Dimensions */}
+              <div className="compat-card">
+                <div className="compat-card__icon compat-card__icon--watchout">⚠️</div>
+                <div className="compat-card__title">Watch Out For</div>
+                <p className="compat-card__body">{context.watch_out}</p>
+              </div>
+            </div>
+
+            {/* Advice */}
+            <div className="compat-advice">
+              <div className="compat-advice__card">
+                <div className="compat-advice__for">Advice for {inviterName}</div>
+                <p className="compat-advice__text">{context.advice_for_a}</p>
+              </div>
+              <div className="compat-advice__card">
+                <div className="compat-advice__for">Advice for {recipientName}</div>
+                <p className="compat-advice__text">{context.advice_for_b}</p>
+              </div>
+            </div>
+          </motion.div>
+        </AnimatePresence>
+      )}
+
+      {/* Dimensions — shared across all contexts */}
       {report.compatibility_dimensions?.length > 0 && (
         <motion.div
           className="compat-dimensions"
@@ -127,18 +209,6 @@ export default function CompatibilityReportViewer({ report, inviterName, recipie
           ))}
         </motion.div>
       )}
-
-      {/* Advice */}
-      <motion.div className="compat-advice" {...fadeIn} transition={{ delay: 0.5 }}>
-        <div className="compat-advice__card">
-          <div className="compat-advice__for">Advice for {inviterName}</div>
-          <p className="compat-advice__text">{report.advice_for_a}</p>
-        </div>
-        <div className="compat-advice__card">
-          <div className="compat-advice__for">Advice for {recipientName}</div>
-          <p className="compat-advice__text">{report.advice_for_b}</p>
-        </div>
-      </motion.div>
     </div>
   );
 }
