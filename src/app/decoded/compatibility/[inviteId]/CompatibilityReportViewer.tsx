@@ -1,14 +1,19 @@
 'use client';
 
 /**
- * CompatibilityReportViewer — Visual display with tabs for three relationship contexts.
- * Intimate/Partnership, Family/Friendship, Working Relationship.
+ * CompatibilityReportViewer — Visual display with tabs for three relationship contexts
+ * and a sharing transparency section showing what data was shared vs. not shared.
  */
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Heart, Users, Briefcase } from 'lucide-react';
+import {
+  ArrowLeft, Heart, Users, Briefcase, Check, Lock,
+  Send, Loader2, Eye, EyeOff,
+  Handshake, Flame, Zap, ShieldAlert,
+} from 'lucide-react';
 import './compatibility.css';
 
 interface CompatDimension {
@@ -29,11 +34,10 @@ interface ContextInsights {
 
 interface CompatReport {
   headline: string;
-  // New 3-context format
   intimate?: ContextInsights;
   family_friendship?: ContextInsights;
   work?: ContextInsights;
-  // Legacy flat format (backward compat)
+  // Legacy flat format
   chemistry?: string;
   friction?: string;
   superpower?: string;
@@ -47,27 +51,42 @@ interface Props {
   report: CompatReport;
   inviterName: string;
   recipientName: string;
+  shareWithHuman: string;
+  isInviter: boolean;
+  inviteId: string;
+  otherPersonName: string;
 }
 
 type TabId = 'intimate' | 'family_friendship' | 'work';
 
-const TABS: Array<{ id: TabId; label: string; icon: typeof Heart; emoji: string }> = [
-  { id: 'intimate', label: 'Intimate', icon: Heart, emoji: '💕' },
-  { id: 'family_friendship', label: 'Family & Friends', icon: Users, emoji: '👨‍👩‍👧' },
-  { id: 'work', label: 'Work', icon: Briefcase, emoji: '💼' },
+const TABS: Array<{ id: TabId; label: string; icon: typeof Heart }> = [
+  { id: 'intimate', label: 'Intimate', icon: Heart },
+  { id: 'family_friendship', label: 'Family & Friends', icon: Users },
+  { id: 'work', label: 'Work', icon: Briefcase },
 ];
 
-const fadeIn = {
-  initial: { opacity: 0, y: 12 },
-  animate: { opacity: 1, y: 0 },
-};
+// What each share level includes
+const SHARE_ITEMS = [
+  { key: 'compatibility', label: 'Compatibility Summary', minLevel: 'compatibility' },
+  { key: 'type', label: 'Personality Archetype', minLevel: 'type_compatibility' },
+  { key: 'full', label: 'Full Report (All 13 Dimensions)', minLevel: 'full' },
+] as const;
 
-export default function CompatibilityReportViewer({ report, inviterName, recipientName }: Props) {
-  // Detect if this is the new 3-context format or legacy
+function isShared(itemMinLevel: string, currentLevel: string): boolean {
+  const order = ['none', 'compatibility', 'type_compatibility', 'full'];
+  return order.indexOf(currentLevel) >= order.indexOf(itemMinLevel);
+}
+
+export default function CompatibilityReportViewer({
+  report, inviterName, recipientName,
+  shareWithHuman, isInviter, inviteId, otherPersonName,
+}: Props) {
   const isMultiContext = !!report.intimate || !!report.family_friendship || !!report.work;
   const [activeTab, setActiveTab] = useState<TabId>('intimate');
+  const [requestingUpgrade, setRequestingUpgrade] = useState(false);
+  const [upgradeRequested, setUpgradeRequested] = useState(false);
+  const router = useRouter();
 
-  // Get context data for active tab, or fall back to legacy flat format
   const context: ContextInsights | null = isMultiContext
     ? (report[activeTab] ?? null)
     : {
@@ -78,6 +97,24 @@ export default function CompatibilityReportViewer({ report, inviterName, recipie
         advice_for_a: report.advice_for_a || '',
         advice_for_b: report.advice_for_b || '',
       };
+
+  // Only show the sharing card for the inviter (they're the one receiving shared data)
+  const showSharingCard = isInviter && shareWithHuman !== 'none';
+
+  // Check if there are items not shared (to show Request Access)
+  const hasLockedItems = isInviter && shareWithHuman !== 'full';
+
+  async function handleRequestUpgrade() {
+    setRequestingUpgrade(true);
+    try {
+      // TODO: Send a notification to the recipient requesting full access
+      // For now, we simulate it
+      await new Promise((r) => setTimeout(r, 800));
+      setUpgradeRequested(true);
+    } finally {
+      setRequestingUpgrade(false);
+    }
+  }
 
   return (
     <div className="compat-container">
@@ -101,13 +138,65 @@ export default function CompatibilityReportViewer({ report, inviterName, recipie
         </p>
       </motion.div>
 
-      {/* Tabs — only show for multi-context reports */}
+      {/* ═══ Sharing Transparency Card ═══ */}
+      {showSharingCard && (
+        <motion.div
+          className="compat-sharing"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <div className="compat-sharing__header">
+            <Eye className="compat-sharing__icon" />
+            <span>What {otherPersonName} shared with you</span>
+          </div>
+
+          <div className="compat-sharing__items">
+            {SHARE_ITEMS.map((item) => {
+              const shared = isShared(item.minLevel, shareWithHuman);
+              return (
+                <div
+                  key={item.key}
+                  className={`compat-sharing__item ${shared ? 'compat-sharing__item--shared' : 'compat-sharing__item--locked'}`}
+                >
+                  {shared ? (
+                    <Check className="compat-sharing__item-icon compat-sharing__item-icon--check" />
+                  ) : (
+                    <Lock className="compat-sharing__item-icon compat-sharing__item-icon--lock" />
+                  )}
+                  <span className="compat-sharing__item-label">{item.label}</span>
+                  {!shared && !upgradeRequested && (
+                    <button
+                      onClick={handleRequestUpgrade}
+                      disabled={requestingUpgrade}
+                      className="compat-sharing__request-btn"
+                    >
+                      {requestingUpgrade ? (
+                        <><Loader2 className="h-3 w-3 animate-spin" /> Requesting...</>
+                      ) : (
+                        <><Send className="h-3 w-3" /> Request Access</>
+                      )}
+                    </button>
+                  )}
+                  {!shared && upgradeRequested && (
+                    <span className="compat-sharing__requested">
+                      <Check className="h-3 w-3" /> Requested
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </motion.div>
+      )}
+
+      {/* Tabs */}
       {isMultiContext && (
         <motion.div
           className="compat-tabs"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.1 }}
+          transition={{ delay: 0.15 }}
         >
           {TABS.map((tab) => (
             <button
@@ -132,34 +221,40 @@ export default function CompatibilityReportViewer({ report, inviterName, recipie
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.2 }}
           >
-            {/* Insight cards */}
             <div className="compat-grid">
               <div className="compat-card">
-                <div className="compat-card__icon compat-card__icon--chemistry">💚</div>
+                <div className="compat-card__icon compat-card__icon--chemistry">
+                  <Handshake className="compat-card__lucide" />
+                </div>
                 <div className="compat-card__title">What Clicks</div>
                 <p className="compat-card__body">{context.chemistry}</p>
               </div>
 
               <div className="compat-card">
-                <div className="compat-card__icon compat-card__icon--friction">🔥</div>
+                <div className="compat-card__icon compat-card__icon--friction">
+                  <Flame className="compat-card__lucide" />
+                </div>
                 <div className="compat-card__title">Where You&apos;ll Clash</div>
                 <p className="compat-card__body">{context.friction}</p>
               </div>
 
               <div className="compat-card">
-                <div className="compat-card__icon compat-card__icon--superpower">⚡</div>
+                <div className="compat-card__icon compat-card__icon--superpower">
+                  <Zap className="compat-card__lucide" />
+                </div>
                 <div className="compat-card__title">Your Superpower Together</div>
                 <p className="compat-card__body">{context.superpower}</p>
               </div>
 
               <div className="compat-card">
-                <div className="compat-card__icon compat-card__icon--watchout">⚠️</div>
+                <div className="compat-card__icon compat-card__icon--watchout">
+                  <ShieldAlert className="compat-card__lucide" />
+                </div>
                 <div className="compat-card__title">Watch Out For</div>
                 <p className="compat-card__body">{context.watch_out}</p>
               </div>
             </div>
 
-            {/* Advice */}
             <div className="compat-advice">
               <div className="compat-advice__card">
                 <div className="compat-advice__for">Advice for {inviterName}</div>
@@ -174,11 +269,12 @@ export default function CompatibilityReportViewer({ report, inviterName, recipie
         </AnimatePresence>
       )}
 
-      {/* Dimensions — shared across all contexts */}
+      {/* Dimensions */}
       {report.compatibility_dimensions?.length > 0 && (
         <motion.div
           className="compat-dimensions"
-          {...fadeIn}
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
           <h2 className="compat-dimensions__title">Compatibility Dimensions</h2>

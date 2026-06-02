@@ -28,10 +28,10 @@ export default async function CompatibilityReportPage({ params }: PageProps) {
     redirect('/decoded');
   }
 
-  // Load invite with compatibility report
+  // Load invite with compatibility report and sharing levels
   const { data: invite, error } = await supabase
     .from('decoded_invites')
-    .select('inviter_id, recipient_id, inviter_name, recipient_email, compatibility_report, status')
+    .select('inviter_id, recipient_id, inviter_name, recipient_email, compatibility_report, status, share_with_human, share_with_coach')
     .eq('id', inviteId)
     .single();
 
@@ -51,12 +51,17 @@ export default async function CompatibilityReportPage({ params }: PageProps) {
 
   const inviterName = invite.inviter_name || 'Person A';
   const recipientName = invite.recipient_email?.split('@')[0] || 'Person B';
+  const isInviter = invite.inviter_id === user.id;
 
   return (
     <CompatibilityReportViewer
       report={invite.compatibility_report}
       inviterName={inviterName}
       recipientName={recipientName}
+      shareWithHuman={invite.share_with_human || 'none'}
+      isInviter={isInviter}
+      inviteId={inviteId}
+      otherPersonName={isInviter ? recipientName : inviterName}
     />
   );
 }
