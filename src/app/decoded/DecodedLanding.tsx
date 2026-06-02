@@ -19,6 +19,7 @@ export default function DecodedLanding() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [accountExists, setAccountExists] = useState(false);
   const [confirmationSent, setConfirmationSent] = useState(false);
 
   const supabase = createClient();
@@ -49,13 +50,23 @@ export default function DecodedLanding() {
       });
 
       if (signUpError) {
-        // Handle "user already exists" gracefully
+        // Handle explicit "user already exists" error
         if (signUpError.message.includes("already registered")) {
-          setError("An account with this email already exists. Try signing in instead.");
-          setMode("signin");
+          setAccountExists(true);
         } else {
           setError(signUpError.message);
         }
+        setLoading(false);
+        return;
+      }
+
+      // Supabase anti-enumeration: existing confirmed users get a fake success
+      // with user object but empty identities array and no session
+      if (
+        data.user &&
+        (!data.user.identities || data.user.identities.length === 0)
+      ) {
+        setAccountExists(true);
         setLoading(false);
         return;
       }
@@ -79,6 +90,8 @@ export default function DecodedLanding() {
       if (signInError) {
         if (signInError.message.includes("Invalid login")) {
           setError("Invalid email or password. Check your credentials and try again.");
+        } else if (signInError.message.includes("Email not confirmed")) {
+          setError("Please confirm your email first. Check your inbox for the confirmation link.");
         } else {
           setError(signInError.message);
         }
@@ -88,6 +101,24 @@ export default function DecodedLanding() {
 
       // Successful login → redirect to dashboard
       window.location.href = "/dashboard";
+    }
+  }
+
+  async function handleForgotPassword() {
+    if (!email) {
+      setError("Enter your email address first, then click forgot password.");
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/callback`,
+    });
+    setLoading(false);
+    if (resetError) {
+      setError(resetError.message);
+    } else {
+      setConfirmationSent(true);
     }
   }
 
@@ -159,9 +190,9 @@ export default function DecodedLanding() {
             </div>
             <h2 className="text-lg font-medium text-text-primary">Check your email</h2>
             <p className="mt-2 text-sm text-text-secondary">
-              We sent a confirmation link to{" "}
+              We sent a link to{" "}
               <span className="font-medium text-text-primary">{email}</span>.
-              <br />Click the link to activate your account, then come back and sign in.
+              <br />Click it to continue, then come back and sign in.
             </p>
             <button
               onClick={() => {
@@ -172,6 +203,44 @@ export default function DecodedLanding() {
               className="mt-6 text-sm text-[#a3a6ff] hover:text-[#c4c6ff] transition-colors"
             >
               Back to sign in
+            </button>
+          </motion.div>
+        ) : accountExists ? (
+          /* ── Account already exists screen ── */
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-center"
+          >
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[rgba(96,99,238,0.1)] ring-1 ring-[rgba(96,99,238,0.15)]">
+              <User className="h-8 w-8 text-[#a3a6ff]" />
+            </div>
+            <h2 className="text-lg font-medium text-text-primary">Account already exists</h2>
+            <p className="mt-2 text-sm text-text-secondary">
+              An account with{" "}
+              <span className="font-medium text-text-primary">{email}</span>{" "}
+              already exists. Sign in to continue your assessment.
+            </p>
+            <button
+              onClick={() => {
+                setAccountExists(false);
+                setMode("signin");
+                setPassword("");
+                setError(null);
+              }}
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-4 py-2.5 text-sm font-medium text-white hover:opacity-90 transition-opacity"
+            >
+              Sign In
+              <ArrowRight className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => {
+                setAccountExists(false);
+                handleForgotPassword();
+              }}
+              className="mt-3 text-sm text-text-muted hover:text-text-secondary transition-colors"
+            >
+              Forgot your password?
             </button>
           </motion.div>
         ) : (
@@ -271,6 +340,15 @@ export default function DecodedLanding() {
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
+            {mode === "signin" && (
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                className="mt-1 text-xs text-text-muted hover:text-[#a3a6ff] transition-colors"
+              >
+                Forgot your password?
+              </button>
+            )}
           </div>
 
           {/* Error message */}
