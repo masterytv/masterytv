@@ -12,15 +12,32 @@ import { NextResponse } from "next/server";
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
+  const tokenHash = searchParams.get("token_hash");
+  const type = searchParams.get("type") as "recovery" | "signup" | "email" | null;
   const next = searchParams.get("next") ?? "/dashboard";
 
+  const supabase = await createClient();
+
+  // Path 1: token_hash flow (email templates using {{ .TokenHash }})
+  if (tokenHash && type) {
+    const { error } = await supabase.auth.verifyOtp({
+      token_hash: tokenHash,
+      type,
+    });
+
+    if (!error) {
+      if (type === "recovery") {
+        return NextResponse.redirect(`${origin}/auth/reset-password`);
+      }
+      return NextResponse.redirect(`${origin}${next}`);
+    }
+  }
+
+  // Path 2: code exchange flow (OAuth, magic links, PKCE)
   if (code) {
-    const supabase = await createClient();
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
-      // Check if this is a password recovery flow
-      // Supabase includes type=recovery in the session metadata
       if (data.session?.user?.recovery_sent_at) {
         return NextResponse.redirect(`${origin}/auth/reset-password`);
       }
