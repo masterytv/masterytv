@@ -148,14 +148,14 @@
 > [!IMPORTANT]
 > **This IS the growth loop.** Without it at launch, organic spread is minimal. See `DECODED_FEATURES.md` §F03 for full spec.
 
-- [ ] **S0.5.3a** — **Schema:** Create `profile_invites` table: `{ id, inviter_id, invitee_name, relationship_type (partner|friend|colleague|family), invite_code (unique), shared_sections (JSONB), invitee_user_id (nullable — set when B completes), status (pending|completed|expired), expires_at, created_at }`. RLS: inviter can CRUD own rows, invitee can read when matched.
-- [ ] **S0.5.3b** — **Invite creation UI:** "Invite Someone to Decoded" modal in report + dashboard. Fields: recipient name, relationship preset (Partner/Friend/Colleague/Family — each auto-configures shared sections per F03 spec), optional custom section toggles. Generates unique invite URL: `masterytv.com/decoded/invite/{code}`.
-- [ ] **S0.5.3c** — **Invite landing page:** `/decoded/invite/[code]` — Decoded-branded conversion page: *"[Name] has shared their Decoded profile with you."* Shows inviter's archetype name + a teaser ("See how your personalities interact"). Strong CTA: "Take the Assessment to See Their Profile." Curiosity gap is the hook.
-- [ ] **S0.5.3d** — **Invite link flow:** Recipient creates account → completes assessment → `profile_invites.invitee_user_id` linked → inviter notified (email via Resend). Both profiles now connected.
-- [ ] **S0.5.3e** — **Comparison view:** Side-by-side (or synthesized) comparison page at `/decoded/compare/[invite_id]`. Shows: Big Five overlay, attachment style interaction, communication gap analysis. Accessible to both users.
-- [ ] **S0.5.3f** — **AI Compatibility Report:** Once both profiles are linked, generate an AI-synthesized relationship analysis: attachment style overlay (anxious + avoidant dynamics), Big Five interaction map (align/clash), conflict pattern prediction, shared growth edges, coaching suggestion for the pair. Gate behind Insight tier ($29/yr).
-- [ ] **S0.5.3g** — **Invite management:** Dashboard tab showing sent invites: pending (resend link), completed (view comparison), expired. Max 5 active invites for free tier, unlimited for paid.
-- [ ] **S0.5.3h** — **Invite notifications:** Email inviter when recipient completes assessment. Email template: *"[Name] just completed their Decoded assessment. Your comparison is ready."*
+- [x] **S0.5.3a** — **Schema:** `decoded_invites` table with invite lifecycle (`pending → completed → consented → connected`), granular consent (`share_with_human`, `share_with_coach`: `compatibility | type_compatibility | full`), upgrade request fields (`upgrade_requested_level`, `upgrade_requested_by`), compatibility report storage. RLS: inviter can insert/read, recipient can read/update consent. ✅ Complete (June 2, 2026)
+- [x] **S0.5.3b** — **Invite creation UI:** ShareModal component with email invites (via Resend) + social/link sharing. Triggered from report page and Compatibility Hub "Send Invite" button. ✅ Complete (June 2, 2026)
+- [ ] **S0.5.3c** — **Invite landing page:** `/decoded/invite/[code]` — Recipient sees inviter's archetype + teaser + CTA to take assessment. *(Not yet built — invites currently go via email with direct link to `/decoded`)*
+- [x] **S0.5.3d** — **Invite link flow:** Recipient creates account → completes assessment → `recipient_id` linked → status advances to `completed`. ✅ Auto-linking via email match (June 2, 2026)
+- [x] **S0.5.3e** — **Compatibility view:** `/decoded/compatibility/[inviteId]` — AI-generated report with tabs for 3 relationship contexts (Intimate, Family/Friends, Work). Each context: chemistry, friction, superpower, watch-out, personalized advice. 5 compatibility dimensions with animated score bars. ✅ Complete (June 2, 2026)
+- [x] **S0.5.3f** — **AI Compatibility Report:** GPT-4o generates punchy, context-specific insights using both users' assessment data. Service-role client bypasses RLS for cross-user reads. Cached after first generation. **Currently free** (no paywall gate). ✅ Complete (June 2, 2026)
+- [x] **S0.5.3g** — **Invite management:** Compatibility Hub (`/dashboard/compatibility`) with sidebar link. Sections: sent invites (status tracking), received invites (consent management), invite creation. Granular sharing consent with mutual exchange model. ✅ Complete (June 2, 2026)
+- [ ] **S0.5.3h** — **Invite notifications:** Email inviter when recipient completes assessment. *(Not yet built — status updates visible in hub but no push notification)*
 
 #### E0 — Unlock "Your Relationships" via Share (Viral Section Gate)
 
