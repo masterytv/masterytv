@@ -7,10 +7,18 @@
  * This is a developer tool, not user-facing.
  */
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 export default function BackfillV2Page() {
+  return (
+    <Suspense fallback={<div style={{ padding: '4rem', textAlign: 'center', color: '#a0a3b8' }}>Loading...</div>}>
+      <BackfillV2Content />
+    </Suspense>
+  );
+}
+
+function BackfillV2Content() {
   const searchParams = useSearchParams();
   const reportId = searchParams.get('id') ?? '';
   const [status, setStatus] = useState<string>('Ready');
