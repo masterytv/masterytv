@@ -691,12 +691,96 @@ export async function assemblePrompt(
     }
   }
 
+  // ── Build Shared Relationship Profiles layer (Layer 4.6 — S0.5) ──
+  let relationshipLayer = "";
+  try {
+    // Load invites where someone shared with THIS user's coach
+    // Case 1: User is the inviter and recipient shared with inviter's coach
+    // Case 2: User is the recipient and inviter shared... (future: bidirectional)
+    const { data: sharedInvites } = await supabase
+      .from("decoded_invites")
+      .select("inviter_id, recipient_id, inviter_name, recipient_email, share_with_coach, compatibility_report")
+      .or(`inviter_id.eq.${userId},recipient_id.eq.${userId}`)
+      .neq("share_with_coach", "none")
+      .in("status", ["consented", "connected"]);
+
+    if (sharedInvites && sharedInvites.length > 0) {
+      const relationshipParts: string[] = [];
+
+      for (const inv of sharedInvites) {
+        const isInviter = inv.inviter_id === userId;
+        const partnerName = isInviter 
+          ? (inv.recipient_email?.split("@")[0] || "Partner")
+          : (inv.inviter_name || "Partner");
+        const shareLevel = inv.share_with_coach;
+
+        let partnerContext = "";
+        
+        // Load partner's report based on share level
+        const partnerId = isInviter ? inv.recipient_id : inv.inviter_id;
+        if (partnerId && (shareLevel === "type_compatibility" || shareLevel === "full")) {
+          const { data: partnerReport } = await supabase
+            .from("assessment_reports")
+            .select("archetype_base, archetype_sublabel, sections")
+            .eq("user_id", partnerId)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (partnerReport) {
+            if (shareLevel === "full") {
+              partnerContext = `Archetype: ${partnerReport.archetype_base} (${partnerReport.archetype_sublabel || ""})
+Full profile summary: ${JSON.stringify(partnerReport.sections?.S1?.content_markdown || "Not available")}`;
+            } else {
+              partnerContext = `Archetype: ${partnerReport.archetype_base} (${partnerReport.archetype_sublabel || ""})`;
+            }
+          }
+        }
+
+        // Add compatibility report if available
+        let compatContext = "";
+        if (inv.compatibility_report) {
+          const cr = inv.compatibility_report as Record<string, unknown>;
+          compatContext = `
+Compatibility Report:
+- Dynamic: ${cr.headline || ""}
+- Chemistry: ${cr.chemistry || ""}
+- Friction: ${cr.friction || ""}
+- Superpower: ${cr.superpower || ""}
+- Watch out: ${cr.watch_out || ""}`;
+        }
+
+        relationshipParts.push(`## Relationship with ${partnerName}
+${partnerName} has consented to share their profile with your coach (share level: ${shareLevel}).
+${partnerContext}
+${compatContext}
+You can discuss this relationship naturally. Ask about their dynamic, offer insights, and help them navigate their partnership.`);
+      }
+
+      if (relationshipParts.length > 0) {
+        relationshipLayer = `# LAYER 4.6 — SHARED RELATIONSHIP PROFILES
+
+The user has personality profile connections with the following people:
+
+${relationshipParts.join("\n\n---\n\n")}
+
+IMPORTANT: You have access to this data because the other person explicitly consented to share it. 
+Use it naturally in conversation — discuss their dynamic, offer relationship-specific coaching, and help the user understand how their personality interacts with their partner's.
+Do NOT volunteer this data unprompted. Wait for the user to bring up the relationship, then enrich your responses with these insights.`;
+        console.log(`[prompt-assembler] Loaded ${relationshipParts.length} shared relationship profile(s)`);
+      }
+    }
+  } catch (e) {
+    console.error("[prompt-assembler] Relationship profiles load failed:", (e as Error).message);
+  }
+
   const layers: string[] = [
     buildBasePersona(),                                      // Layer 1
     buildChallengesLayer(challenges),                        // Layer 2
     buildInterventionSelector(profile, challenges),          // Layer 3
     user ? buildUserProfile(user) : "",                      // Layer 4
     decodedLayer,                                            // Layer 4.5 (Decoded)
+    relationshipLayer,                                       // Layer 4.6 (Shared Profiles)
     buildEntitiesLayer(),                                    // Layer 5 (stub)
     deliveryResult.text,                                     // Layer 6
     buildMemoryLayer(messages, facts, sessionSummaries),      // Layer 7

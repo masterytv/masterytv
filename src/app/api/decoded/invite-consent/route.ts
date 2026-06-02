@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     // Verify this invite belongs to the current user (as recipient)
     const { data: invite } = await supabase
       .from('decoded_invites')
-      .select('id, recipient_id, status')
+      .select('id, recipient_id, status, recipient_report_id')
       .eq('id', inviteId)
       .single();
 
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to update consent' }, { status: 500 });
     }
 
-    // If consenting (not revoking), unlock S5 for recipient
+    // If consenting (not revoking), unlock S5 for recipient + trigger report
     if (!isRevoking) {
       await supabase.from('share_unlocks').insert({
         user_id: user.id,
@@ -67,6 +67,37 @@ export async function POST(req: NextRequest) {
         section_unlocked: 'S5',
       });
       // Ignore insert errors (duplicate is fine — they may have already unlocked)
+
+      // Set recipient_report_id if not already set
+      if (!invite.recipient_report_id) {
+        const { data: recipientReport } = await supabase
+          .from('assessment_reports')
+          .select('id')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (recipientReport) {
+          await supabase
+            .from('decoded_invites')
+            .update({ recipient_report_id: recipientReport.id })
+            .eq('id', inviteId);
+        }
+      }
+
+      // Fire-and-forget: generate compatibility report
+      const origin = req.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL || 'https://masterytv.com';
+      fetch(`${origin}/api/decoded/compatibility-report`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cookie': req.headers.get('cookie') || '',
+        },
+        body: JSON.stringify({ inviteId }),
+      }).catch((err) => {
+        console.error('[invite-consent] Compatibility report trigger error:', err);
+      });
     }
 
     return NextResponse.json({ 
