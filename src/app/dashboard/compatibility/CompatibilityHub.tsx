@@ -64,14 +64,9 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
   const [showShareModal, setShowShareModal] = useState(false);
   const [expandedConsent, setExpandedConsent] = useState<string | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
-  const [requestingAccess, setRequestingAccess] = useState<string | null>(null);
-  const [accessRequested, setAccessRequested] = useState<Set<string>>(new Set());
   const [shareHuman, setShareHuman] = useState<Record<string, ShareLevel>>({});
   const [shareCoach, setShareCoach] = useState<Record<string, ShareLevel>>({});
   const router = useRouter();
-
-  // Build a set of emails we've already sent invites to, for dedup
-  const sentEmails = new Set(sentInvites.map((i) => i.recipient_email.toLowerCase()));
 
   // Categorize received invites
   const pendingConsent = receivedInvites.filter((i) => i.status === 'completed');
@@ -118,24 +113,6 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
     }
   }
 
-  async function handleRequestAccess(email: string, inviteId: string) {
-    setRequestingAccess(inviteId);
-    try {
-      const res = await fetch('/api/decoded/invite', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
-      if (res.ok) {
-        setAccessRequested((prev) => new Set(prev).add(inviteId));
-        router.refresh();
-      }
-    } catch {
-      // silent
-    } finally {
-      setRequestingAccess(null);
-    }
-  }
 
   return (
     <div className="h-full overflow-y-auto">
@@ -245,30 +222,13 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
                           <ChevronDown className={`h-3 w-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                         </button>
                       ) : (
-                        <div className="flex items-center gap-2 flex-wrap justify-end">
+                        <div className="flex items-center gap-2">
                           <Link
                             href={`/decoded/compatibility/${inv.id}`}
                             className="flex items-center gap-1.5 rounded-lg bg-[rgba(96,99,238,0.1)] px-3 py-1.5 text-sm font-medium text-[#a3a6ff] hover:bg-[rgba(96,99,238,0.15)] transition-colors"
                           >
                             View Report <ArrowRight className="h-3.5 w-3.5" />
                           </Link>
-                          {inv.inviter_email && !sentEmails.has(inv.inviter_email.toLowerCase()) && !accessRequested.has(inv.id) ? (
-                            <button
-                              onClick={() => handleRequestAccess(inv.inviter_email!, inv.id)}
-                              disabled={requestingAccess === inv.id}
-                              className="flex items-center gap-1.5 rounded-lg bg-emerald-400/10 px-3 py-1.5 text-sm font-medium text-emerald-400 hover:bg-emerald-400/15 transition-colors"
-                            >
-                              {requestingAccess === inv.id ? (
-                                <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Sending...</>
-                              ) : (
-                                <><Send className="h-3.5 w-3.5" /> Request their report</>
-                              )}
-                            </button>
-                          ) : (inv.inviter_email && (sentEmails.has(inv.inviter_email.toLowerCase()) || accessRequested.has(inv.id))) ? (
-                            <span className="flex items-center gap-1.5 rounded-lg bg-emerald-400/10 px-3 py-1.5 text-xs font-medium text-emerald-400">
-                              <Check className="h-3 w-3" /> Requested
-                            </span>
-                          ) : null}
                           <button
                             onClick={() => handleRevoke(inv.id)}
                             disabled={saving === inv.id}
@@ -289,11 +249,14 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
                           exit={{ opacity: 0, height: 0 }}
                           className="mt-4 space-y-4 overflow-hidden"
                         >
-                          {/* Share with human */}
+                          {/* What you'll both share */}
                           <div>
-                            <label className="text-label-sm text-text-secondary font-medium mb-2 block">
-                              Share with {inv.inviter_name || 'them'}
+                            <label className="text-label-sm text-text-secondary font-medium mb-1 block">
+                              What you&apos;ll both share with each other
                             </label>
+                            <p className="text-body-sm text-text-muted mb-2">
+                              This is a mutual exchange — {inv.inviter_name || 'they'} will share the same level back with you.
+                            </p>
                             <div className="space-y-1.5">
                               {SHARE_OPTIONS.map((opt) => (
                                 <label
@@ -348,7 +311,7 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
                           </div>
 
                           <div className="flex items-center justify-between pt-1">
-                            <p className="text-body-sm text-text-muted">You can unshare anytime.</p>
+                            <p className="text-body-sm text-text-muted">You can unshare anytime. Mutual access is revoked together.</p>
                             <button
                               onClick={() => handleConsent(inv.id)}
                               disabled={saving === inv.id}

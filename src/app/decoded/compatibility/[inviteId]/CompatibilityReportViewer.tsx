@@ -148,7 +148,7 @@ export default function CompatibilityReportViewer({
         >
           <div className="compat-sharing__header">
             <Eye className="compat-sharing__icon" />
-            <span>What {otherPersonName} shared with you</span>
+            <span>Mutual sharing level</span>
           </div>
 
           <div className="compat-sharing__items">
