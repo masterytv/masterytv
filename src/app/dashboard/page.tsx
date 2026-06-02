@@ -96,6 +96,27 @@ export default async function DashboardPage() {
     state = "in-progress";
   }
 
+  // Load invites sent BY this user (for invite tracker)
+  const { data: sentInvites } = await supabase
+    .from("decoded_invites")
+    .select("id, recipient_email, status, created_at, completed_at, consented_at")
+    .eq("inviter_id", user.id)
+    .order("created_at", { ascending: false });
+
+  // Load invites sent TO this user that need consent (for consent banner)
+  const { data: receivedInvites } = await supabase
+    .from("decoded_invites")
+    .select("id, inviter_id, inviter_name, inviter_email, status, share_with_human, share_with_coach")
+    .eq("recipient_id", user.id)
+    .in("status", ["completed", "consented"]);
+
+  // Map to component format
+  const receivedWithNames = (receivedInvites ?? []).map((inv) => ({
+    ...inv,
+    inviterName: inv.inviter_name || "Someone",
+    inviterEmail: inv.inviter_email || "",
+  }));
+
   return (
     <DashboardHome
       userName={user.user_metadata?.display_name || user.user_metadata?.full_name || user.email?.split("@")[0] || "there"}
@@ -106,6 +127,8 @@ export default async function DashboardPage() {
       assessmentId={completedAssessment?.id ?? inProgressAssessment?.id ?? null}
       onboardingComplete={onboardingStarted}
       hasInProgressRetake={!!completedAssessment && !!inProgressAssessment}
+      sentInvites={sentInvites ?? []}
+      receivedInvites={receivedWithNames}
     />
   );
 }

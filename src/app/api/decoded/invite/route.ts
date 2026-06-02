@@ -119,6 +119,24 @@ export async function POST(req: NextRequest) {
       section_unlocked: 'S5',
     });
 
+    // Invite lifecycle tracking — upsert to avoid duplicates
+    const { data: reportData } = await supabase
+      .from('assessment_reports')
+      .select('id')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    await supabase.from('decoded_invites').upsert({
+      inviter_id: user.id,
+      recipient_email: recipientEmail,
+      inviter_report_id: reportData?.id ?? null,
+      inviter_name: senderName,
+      inviter_email: user.email ?? '',
+      status: 'pending',
+    }, { onConflict: 'inviter_id,recipient_email' });
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('[invite] Unexpected error:', error);

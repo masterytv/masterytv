@@ -14,10 +14,33 @@ import {
   Copy,
   Mail,
   Lock,
+  Users,
+  Loader2,
+  Send,
 } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import InviteConsentBanner from "@/components/decoded/InviteConsentBanner";
+
+interface SentInvite {
+  id: string;
+  recipient_email: string;
+  status: string;
+  created_at: string;
+  completed_at: string | null;
+  consented_at: string | null;
+}
+
+interface ReceivedInvite {
+  id: string;
+  inviter_id: string;
+  inviterName: string;
+  inviterEmail: string;
+  status: string;
+  share_with_human: string;
+  share_with_coach: string;
+}
 
 interface Props {
   userName: string;
@@ -28,6 +51,8 @@ interface Props {
   assessmentId: string | null;
   onboardingComplete: boolean;
   hasInProgressRetake?: boolean;
+  sentInvites?: SentInvite[];
+  receivedInvites?: ReceivedInvite[];
 }
 
 /**
@@ -43,11 +68,19 @@ export default function DashboardHome({
   assessmentId,
   onboardingComplete,
   hasInProgressRetake = false,
+  sentInvites = [],
+  receivedInvites = [],
 }: Props) {
   const [copied, setCopied] = useState(false);
   const [resetting, setResetting] = useState(false);
+  const [dismissedInvites, setDismissedInvites] = useState<Set<string>>(new Set());
   const router = useRouter();
   const supabase = createClient();
+
+  // Pending consent invites (received, status=completed, not dismissed)
+  const pendingConsent = receivedInvites.filter(
+    (inv) => inv.status === 'completed' && !dismissedInvites.has(inv.id)
+  );
   const progressPercent = totalQuestions > 0
     ? Math.round((answeredCount / totalQuestions) * 100)
     : 0;
@@ -104,6 +137,29 @@ export default function DashboardHome({
             {state === "completed" && "Your profile is ready. Explore your results."}
           </p>
         </motion.div>
+
+        {/* Consent banners for received invites */}
+        {pendingConsent.map((inv) => (
+          <motion.div
+            key={inv.id}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6"
+          >
+            <InviteConsentBanner
+              invite={{
+                id: inv.id,
+                inviterName: inv.inviterName,
+                inviterEmail: inv.inviterEmail,
+                status: inv.status,
+                shareWithHuman: inv.share_with_human as 'none' | 'compatibility' | 'type_compatibility' | 'full',
+                shareWithCoach: inv.share_with_coach as 'none' | 'compatibility' | 'type_compatibility' | 'full',
+              }}
+              onConsented={() => router.refresh()}
+              onDismissed={() => setDismissedInvites((prev) => new Set([...prev, inv.id]))}
+            />
+          </motion.div>
+        ))}
 
         {/* Card grid */}
         <div className="grid gap-5 sm:grid-cols-2">
@@ -309,38 +365,87 @@ export default function DashboardHome({
             )}
           </motion.div>
 
-          {/* ── Share Card ── */}
+          {/* ── Share / Invite Tracker Card ── */}
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.2 }}
           >
             <div className="rounded-2xl bg-surface-50 p-6">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[rgba(105,246,184,0.08)]">
-                <Share2 className="h-6 w-6 text-[#69f6b8]" strokeWidth={1.5} />
+              <div className="mb-4 flex items-center justify-between">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[rgba(105,246,184,0.08)]">
+                  {sentInvites.length > 0 ? (
+                    <Users className="h-6 w-6 text-[#69f6b8]" strokeWidth={1.5} />
+                  ) : (
+                    <Share2 className="h-6 w-6 text-[#69f6b8]" strokeWidth={1.5} />
+                  )}
+                </div>
+                {sentInvites.length > 0 && (
+                  <span className="text-label-sm text-text-muted">
+                    {sentInvites.length} invite{sentInvites.length !== 1 ? 's' : ''}
+                  </span>
+                )}
               </div>
               <h2 className="text-title-lg text-text-primary font-semibold">
-                Invite Someone
+                {sentInvites.length > 0 ? 'Your Invites' : 'Invite Someone'}
               </h2>
-              <p className="mt-1.5 text-body-md text-text-secondary">
-                Share Decoded with a friend or partner. Compare personality profiles.
-              </p>
-              <div className="mt-4 flex gap-2">
-                <button
-                  onClick={handleCopyLink}
-                  className="flex items-center gap-1.5 rounded-lg bg-surface-200 px-3 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-surface-300 transition-all"
-                >
-                  {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
-                  {copied ? "Copied" : "Copy link"}
-                </button>
-                <button
-                  onClick={handleEmailInvite}
-                  className="flex items-center gap-1.5 rounded-lg bg-surface-200 px-3 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-surface-300 transition-all"
-                >
-                  <Mail className="h-3.5 w-3.5" />
-                  Email invite
-                </button>
-              </div>
+
+              {sentInvites.length > 0 ? (
+                /* Invite tracker list */
+                <div className="mt-3 space-y-2">
+                  {sentInvites.slice(0, 4).map((inv) => (
+                    <div
+                      key={inv.id}
+                      className="flex items-center justify-between rounded-lg bg-surface-100 px-3 py-2"
+                    >
+                      <span className="text-body-sm text-text-secondary truncate max-w-[60%]">
+                        {inv.recipient_email}
+                      </span>
+                      <InviteStatusBadge status={inv.status} />
+                    </div>
+                  ))}
+                  {/* Invite more */}
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      onClick={handleCopyLink}
+                      className="flex items-center gap-1.5 rounded-lg bg-surface-200 px-3 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-surface-300 transition-all"
+                    >
+                      {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
+                      {copied ? 'Copied' : 'Copy link'}
+                    </button>
+                    <button
+                      onClick={handleEmailInvite}
+                      className="flex items-center gap-1.5 rounded-lg bg-surface-200 px-3 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-surface-300 transition-all"
+                    >
+                      <Send className="h-3.5 w-3.5" />
+                      Invite more
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* Empty state — invite CTA */
+                <>
+                  <p className="mt-1.5 text-body-md text-text-secondary">
+                    Share Decoded with a friend or partner. Compare personality profiles.
+                  </p>
+                  <div className="mt-4 flex gap-2">
+                    <button
+                      onClick={handleCopyLink}
+                      className="flex items-center gap-1.5 rounded-lg bg-surface-200 px-3 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-surface-300 transition-all"
+                    >
+                      {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
+                      {copied ? 'Copied' : 'Copy link'}
+                    </button>
+                    <button
+                      onClick={handleEmailInvite}
+                      className="flex items-center gap-1.5 rounded-lg bg-surface-200 px-3 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-surface-300 transition-all"
+                    >
+                      <Mail className="h-3.5 w-3.5" />
+                      Email invite
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </motion.div>
         </div>
@@ -354,4 +459,19 @@ function getGreeting(): string {
   if (hour < 12) return "Good morning";
   if (hour < 17) return "Good afternoon";
   return "Good evening";
+}
+
+function InviteStatusBadge({ status }: { status: string }) {
+  const config: Record<string, { label: string; color: string; bg: string }> = {
+    pending: { label: '⏳ Pending', color: 'text-amber-400', bg: 'bg-amber-400/10' },
+    completed: { label: '✅ Completed', color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
+    consented: { label: '🔗 Connected', color: 'text-[#a3a6ff]', bg: 'bg-[rgba(96,99,238,0.1)]' },
+    connected: { label: '🔗 Connected', color: 'text-[#a3a6ff]', bg: 'bg-[rgba(96,99,238,0.1)]' },
+  };
+  const c = config[status] ?? config.pending;
+  return (
+    <span className={`text-label-sm ${c.color} ${c.bg} rounded-full px-2 py-0.5`}>
+      {c.label}
+    </span>
+  );
 }
