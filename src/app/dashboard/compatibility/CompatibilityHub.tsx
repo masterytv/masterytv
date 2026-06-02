@@ -222,14 +222,12 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
                         </button>
                       ) : (
                         <div className="flex items-center gap-2">
-                          {!!inv.compatibility_report && (
-                            <Link
-                              href={`/decoded/compatibility/${inv.id}`}
-                              className="flex items-center gap-1.5 rounded-lg bg-[rgba(96,99,238,0.1)] px-3 py-1.5 text-sm font-medium text-[#a3a6ff] hover:bg-[rgba(96,99,238,0.15)] transition-colors"
-                            >
-                              View Report <ArrowRight className="h-3.5 w-3.5" />
-                            </Link>
-                          )}
+                          <Link
+                            href={`/decoded/compatibility/${inv.id}`}
+                            className="flex items-center gap-1.5 rounded-lg bg-[rgba(96,99,238,0.1)] px-3 py-1.5 text-sm font-medium text-[#a3a6ff] hover:bg-[rgba(96,99,238,0.15)] transition-colors"
+                          >
+                            View Report <ArrowRight className="h-3.5 w-3.5" />
+                          </Link>
                           <button
                             onClick={() => handleRevoke(inv.id)}
                             disabled={saving === inv.id}
@@ -360,40 +358,49 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
             </div>
           ) : (
             <div className="space-y-2">
-              {sentInvites.map((inv) => (
-                <div
-                  key={inv.id}
-                  className="flex items-center justify-between rounded-xl border border-surface-200 bg-surface-50 px-4 py-3"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                      statusConfig[inv.status]?.avatarCls || 'bg-surface-200 text-text-muted'
-                    }`}>
-                      {inv.recipient_email[0].toUpperCase()}
+              {sentInvites.map((inv) => {
+                const isConnected = inv.status === 'consented' || inv.status === 'connected';
+                const inner = (
+                  <>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                        statusConfig[inv.status]?.avatarCls || 'bg-surface-200 text-text-muted'
+                      }`}>
+                        {inv.recipient_email[0].toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-body-md text-text-primary font-medium truncate">
+                          {inv.recipient_email}
+                        </p>
+                        <p className="text-body-sm text-text-muted">
+                          Invited {new Date(inv.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        </p>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-body-md text-text-primary font-medium truncate">
-                        {inv.recipient_email}
-                      </p>
-                      <p className="text-body-sm text-text-muted">
-                        Invited {new Date(inv.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                      </p>
-                    </div>
-                  </div>
 
-                  <div className="flex items-center gap-2">
-                    {(inv.status === 'consented' || inv.status === 'connected') && !!inv.compatibility_report && (
-                      <Link
-                        href={`/decoded/compatibility/${inv.id}`}
-                        className="flex items-center gap-1.5 rounded-lg bg-[rgba(96,99,238,0.1)] px-3 py-1.5 text-sm font-medium text-[#a3a6ff] hover:bg-[rgba(96,99,238,0.15)] transition-colors"
-                      >
-                        View Report <ArrowRight className="h-3.5 w-3.5" />
-                      </Link>
-                    )}
-                    <StatusBadge status={inv.status} />
+                    <div className="flex items-center gap-2">
+                      {isConnected && (
+                        <span className="flex items-center gap-1.5 rounded-lg bg-[rgba(96,99,238,0.1)] px-3 py-1.5 text-sm font-medium text-[#a3a6ff]">
+                          View Report <ArrowRight className="h-3.5 w-3.5" />
+                        </span>
+                      )}
+                      <StatusBadge status={inv.status} />
+                    </div>
+                  </>
+                );
+                const className = `flex items-center justify-between rounded-xl border border-surface-200 bg-surface-50 px-4 py-3 ${
+                  isConnected ? 'hover:border-[rgba(96,99,238,0.3)] cursor-pointer transition-colors' : ''
+                }`;
+                return isConnected ? (
+                  <Link key={inv.id} href={`/decoded/compatibility/${inv.id}`} className={className}>
+                    {inner}
+                  </Link>
+                ) : (
+                  <div key={inv.id} className={className}>
+                    {inner}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </motion.section>
