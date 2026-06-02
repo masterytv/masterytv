@@ -111,6 +111,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // S0.5.3i: Record share for section unlock tracking
+    await supabase.from('share_unlocks').insert({
+      user_id: user.id,
+      method: 'email',
+      recipient_email: recipientEmail,
+      section_unlocked: 'S5',
+    });
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('[invite] Unexpected error:', error);

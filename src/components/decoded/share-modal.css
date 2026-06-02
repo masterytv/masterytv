@@ -1,0 +1,324 @@
+/**
+ * ShareModal — Glassmorphism share popover for S5 unlock
+ * Matches report theme tokens from report.css
+ */
+
+/* ── Overlay ── */
+.share-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+/* ── Modal ── */
+.share-modal {
+  position: relative;
+  background: var(--color-surface-100, #1a1a2e);
+  border: 1px solid var(--color-surface-200, rgba(255, 255, 255, 0.08));
+  border-radius: var(--radius-xl, 16px);
+  padding: 2rem;
+  max-width: 480px;
+  width: 100%;
+  box-shadow:
+    0 24px 48px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+}
+
+.share-modal__close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: transparent;
+  border: none;
+  color: var(--text-muted, #888);
+  cursor: pointer;
+  padding: 0.375rem;
+  border-radius: var(--radius-sm, 6px);
+  transition: color 0.15s, background 0.15s;
+}
+
+.share-modal__close:hover {
+  color: var(--text-heading, #fff);
+  background: var(--color-surface-200, rgba(255, 255, 255, 0.08));
+}
+
+/* ── Header ── */
+.share-modal__header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.share-modal__title {
+  font-family: var(--font-display, 'Inter', sans-serif);
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: var(--text-heading, #fff);
+  margin-bottom: 0.5rem;
+}
+
+.share-modal__subtitle {
+  font-size: 0.875rem;
+  color: var(--text-body, #aaa);
+  line-height: 1.6;
+  max-width: 22rem;
+  margin: 0 auto;
+}
+
+/* ── Tab switcher ── */
+.share-tabs {
+  display: flex;
+  gap: 0.25rem;
+  background: var(--color-surface-0, #12121f);
+  border-radius: var(--radius-md, 10px);
+  padding: 0.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.share-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.625rem;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm, 6px);
+  color: var(--text-muted, #888);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.share-tab:hover {
+  color: var(--text-body, #aaa);
+}
+
+.share-tab--active {
+  background: var(--color-surface-200, rgba(255, 255, 255, 0.08));
+  color: var(--text-heading, #fff);
+}
+
+/* ── Social share grid ── */
+.share-social__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.625rem;
+}
+
+.share-social__btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 0.5rem;
+  background: var(--color-surface-0, #12121f);
+  border: 1px solid var(--color-surface-200, rgba(255, 255, 255, 0.06));
+  border-radius: var(--radius-md, 10px);
+  color: var(--text-body, #aaa);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.share-social__btn:hover {
+  border-color: var(--platform-color, #6063ee);
+  color: var(--platform-color, #6063ee);
+  background: color-mix(in srgb, var(--platform-color, #6063ee) 8%, var(--color-surface-0, #12121f));
+  transform: translateY(-1px);
+}
+
+.share-social__btn svg {
+  opacity: 0.8;
+}
+
+.share-social__btn:hover svg {
+  opacity: 1;
+  color: var(--platform-color, #6063ee);
+}
+
+/* ── Email form ── */
+.share-email__form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.share-email__label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-body, #aaa);
+}
+
+.share-email__input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: var(--color-surface-0, #12121f);
+  border: 1px solid var(--color-surface-200, rgba(255, 255, 255, 0.1));
+  border-radius: var(--radius-md, 10px);
+  color: var(--text-heading, #fff);
+  font-size: 0.9375rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.share-email__input::placeholder {
+  color: var(--text-muted, #666);
+}
+
+.share-email__input:focus {
+  border-color: var(--color-primary, #6063ee);
+  box-shadow: 0 0 0 3px rgba(96, 99, 238, 0.15);
+}
+
+.share-email__input:disabled {
+  opacity: 0.6;
+}
+
+.share-email__error {
+  font-size: 0.8125rem;
+  color: #f87171;
+  margin: 0;
+}
+
+.share-email__submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: linear-gradient(135deg, #a3a6ff, #6063ee);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md, 10px);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+}
+
+.share-email__submit:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.share-email__submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.share-email__note {
+  font-size: 0.75rem;
+  color: var(--text-muted, #666);
+  text-align: center;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ── Success state ── */
+.share-email__success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 0;
+}
+
+.share-email__check {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #34d399, #10b981);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.share-email__success-text {
+  font-size: 0.9375rem;
+  color: var(--text-heading, #fff);
+  font-weight: 500;
+  text-align: center;
+  margin: 0;
+}
+
+.share-email__done-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.5rem;
+  background: linear-gradient(135deg, #a3a6ff, #6063ee);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md, 10px);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.share-email__done-btn:hover {
+  opacity: 0.9;
+}
+
+/* ── Light mode ── */
+[data-theme="light"] .share-modal {
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow:
+    0 24px 48px rgba(0, 0, 0, 0.12),
+    0 0 0 1px rgba(0, 0, 0, 0.04) inset;
+}
+
+[data-theme="light"] .share-tabs {
+  background: #f5f5f7;
+}
+
+[data-theme="light"] .share-tab--active {
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .share-social__btn {
+  background: #f8f9fa;
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .share-social__btn:hover {
+  background: color-mix(in srgb, var(--platform-color, #6063ee) 6%, #f8f9fa);
+}
+
+[data-theme="light"] .share-email__input {
+  background: #f8f9fa;
+  border-color: rgba(0, 0, 0, 0.12);
+  color: #1a1a2e;
+}
+
+[data-theme="light"] .share-email__input::placeholder {
+  color: #999;
+}
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+  .share-modal {
+    padding: 1.5rem;
+    margin: 0.5rem;
+  }
+
+  .share-social__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .share-modal__title {
+    font-size: 1.25rem;
+  }
+}

@@ -26,6 +26,7 @@ import {
   NeedToHearComponent, GrowthEdgeCardComponent,
 } from './v2-components';
 import { createClient } from '@/lib/supabase/client';
+import ShareModal from '@/components/decoded/ShareModal';
 import DecodedNav from '../../DecodedNav';
 import { getSectionConfigs, getUpgradeGateAfter, isSectionUnlocked } from '@/lib/decoded/report/sections/section-config';
 import { REPORT_DISCLAIMER, evaluateSafetyFlags, CRISIS_RESOURCES } from '@/lib/decoded/report/safety';
@@ -395,7 +396,24 @@ export default function ReportViewer({ report: initialReport, scores }: ReportVi
   const [report, setReport] = useState<ReportData>(initialReport);
   const [readingProgress, setReadingProgress] = useState(0);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareUnlocked, setShareUnlocked] = useState(false);
   const userTier: ReportTier = 'free'; // TODO: Connect to user subscription
+
+  // S0.5.3i: Check if user already earned the share unlock
+  useEffect(() => {
+    const checkShareUnlock = async () => {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from('share_unlocks')
+        .select('id')
+        .limit(1);
+      if (data && data.length > 0) {
+        setShareUnlocked(true);
+      }
+    };
+    checkShareUnlock();
+  }, []);
 
   // Version-aware section config — v1 reports use RS01-RS12, v2 uses S1-S8
   const reportVersion = (report.report_version ?? 1) as 1 | 2;
@@ -658,7 +676,8 @@ export default function ReportViewer({ report: initialReport, scores }: ReportVi
         {/* ═══════ AI NARRATIVE SECTIONS ═══════ */}
         {SECTION_CONFIGS.map((config, index) => {
           const section = sections[config.id];
-          const isUnlocked = isSectionUnlocked(config.minTier, userTier);
+          const isUnlocked = isSectionUnlocked(config.minTier, userTier)
+            || (config.id === 'S5' && shareUnlocked);
           const showUpgradeGate = config.id === UPGRADE_GATE_AFTER;
 
           return (
@@ -742,14 +761,51 @@ export default function ReportViewer({ report: initialReport, scores }: ReportVi
                             <ReactMarkdown>{section.content_markdown.substring(0, 200) + '…'}</ReactMarkdown>
                           </div>
                         </div>
-                        <div className="locked-section__overlay">
-                          <div className="locked-section__badge">
-                            {config.minTier.toUpperCase()} TIER
+                        {config.id === 'S5' ? (
+                          /* S0.5.3i: Share-to-unlock gate for Relationships */
+                          <div className="locked-section__overlay">
+                            <div className="locked-section__badge" style={{ background: 'rgba(52, 211, 153, 0.15)', color: '#34d399' }}>
+                              FREE WITH SHARE
+                            </div>
+                            <p style={{ fontSize: '0.9375rem', color: 'var(--text-heading)', fontWeight: 600, marginBottom: '0.25rem' }}>
+                              Unlock Your Relationships
+                            </p>
+                            <p style={{ fontSize: '0.8125rem', color: 'var(--text-body)', maxWidth: '22rem', lineHeight: 1.6, marginBottom: '1rem' }}>
+                              Share Decoded with a friend and unlock this section — see how your attachment style shapes love, conflict, and connection.
+                            </p>
+                            <button
+                              onClick={() => setShowShareModal(true)}
+                              style={{
+                                display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
+                                background: 'linear-gradient(135deg, #34d399, #10b981)',
+                                color: 'white', padding: '0.75rem 1.75rem',
+                                borderRadius: 'var(--radius-lg)', border: 'none',
+                                fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer',
+                              }}
+                            >
+                              Share to Unlock <ArrowRight className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => setShowUpgradeModal(true)}
+                              style={{
+                                background: 'none', border: 'none', color: 'var(--text-muted)',
+                                fontSize: '0.75rem', marginTop: '0.75rem', cursor: 'pointer',
+                                textDecoration: 'underline', textUnderlineOffset: '2px',
+                              }}
+                            >
+                              or upgrade to Insight
+                            </button>
                           </div>
-                          <p style={{ fontSize: '0.875rem', color: 'var(--text-body)', maxWidth: '24rem', lineHeight: 1.6 }}>
-                            {config.lockedTeaser}
-                          </p>
-                        </div>
+                        ) : (
+                          <div className="locked-section__overlay">
+                            <div className="locked-section__badge">
+                              {config.minTier.toUpperCase()} TIER
+                            </div>
+                            <p style={{ fontSize: '0.875rem', color: 'var(--text-body)', maxWidth: '24rem', lineHeight: 1.6 }}>
+                              {config.lockedTeaser}
+                            </p>
+                          </div>
+                        )}
                       </>
                     )}
                   </motion.div>
@@ -835,6 +891,18 @@ export default function ReportViewer({ report: initialReport, scores }: ReportVi
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
         currentTier={userTier}
+      />
+
+      {/* S0.5.3i: Share-to-unlock modal */}
+      <ShareModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        onUnlock={() => {
+          setShareUnlocked(true);
+          setShowShareModal(false);
+        }}
+        shareUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/decoded`}
+        archetype={report.archetype_base}
       />
     </>
   );
