@@ -121,6 +121,24 @@ Layer surfaces like stacked sheets of frosted glass — never use borders to def
 | `on-surface-variant` | `#44474a` | Secondary text |
 | `outline-variant` | `#c4c7ca` | Ghost borders at 15% opacity |
 
+#### Accent (Light)
+> [!IMPORTANT]
+> Dark-mode accent colors (`#4edea3` teal, `#ffb74d` amber, `#fabd00` gold) have **insufficient contrast** on white backgrounds. Light mode must use these darkened variants to meet WCAG AA (4.5:1 text contrast).
+
+| Token | Dark Hex | Light Hex | Usage |
+|:---|:---|:---|:---|
+| `accent-teal` | `#4edea3` | `#059669` | Success, strengths, gifts, growth actions |
+| `semantic-warning` | `#ffb74d` | `#c45d00` | Challenges, caution labels, screening flags |
+| `accent-gold` | `#fabd00` | `#92600a` | Priority badges, 30-day challenge titles |
+
+#### Semantic (Light)
+| Token | Dark Hex | Light Hex | Usage |
+|:---|:---|:---|:---|
+| `success` | `#69f6b8` | `#059669` | Positive states, completion |
+| `warning` | `oklch(0.78 0.15 75)` | `#c45d00` | Caution, approaching deadline |
+| `danger` | `#ff6e84` | `#dc2626` | Errors, crisis alerts |
+| `info` | `#a3a6ff` | `#003ec7` | Informational badges |
+
 ---
 
 ## 3. Typography

@@ -724,6 +724,7 @@
    LIGHT MODE OVERRIDES
    ═══════════════════════════════════════════════════════ */
 
+/* --- Surfaces & Borders --- */
 [data-theme="light"] .v2-summary-table,
 [data-theme="light"] .v2-strength-list,
 [data-theme="light"] .v2-trait-card,
@@ -762,7 +763,7 @@
   background: linear-gradient(
     180deg,
     rgba(0, 62, 199, 0.2),
-    rgba(255, 152, 0, 0.2)
+    rgba(180, 90, 0, 0.2)
   );
 }
 
@@ -779,7 +780,7 @@
 [data-theme="light"] .v2-screening-flag {
   background: var(--color-surface-50, #f5f6fa);
   border-color: rgba(0, 0, 0, 0.06);
-  border-left-color: var(--color-semantic-warning, #e65100);
+  border-left-color: #c45d00;
 }
 
 [data-theme="light"] .v2-named-pattern {
@@ -794,6 +795,74 @@
 
 [data-theme="light"] .v2-section-tldr {
   border-left-color: var(--color-primary-container, #0050d8);
+}
+
+/* --- Text Contrast Fixes --- */
+/* Summary table text was too light against white */
+[data-theme="light"] .v2-summary-table__summary {
+  color: #44474a;
+}
+
+[data-theme="light"] .v2-summary-table__dimension {
+  color: #1a1c1e;
+}
+
+/* Body text in cards — darken for WCAG contrast */
+[data-theme="light"] .v2-trait-card__column li,
+[data-theme="light"] .v2-strength-list__item,
+[data-theme="light"] .v2-protector-card__role,
+[data-theme="light"] .v2-fight-stages__desc,
+[data-theme="light"] .v2-need-to-hear__why,
+[data-theme="light"] .v2-growth-card__why,
+[data-theme="light"] .v2-growth-card__actions li,
+[data-theme="light"] .v2-named-pattern__desc,
+[data-theme="light"] .v2-challenge__text,
+[data-theme="light"] .v2-dimension-item__interp,
+[data-theme="light"] .v2-screening-flag__finding {
+  color: #44474a;
+}
+
+/* Label/hint text — slightly lighter but still readable */
+[data-theme="light"] .v2-protector-card__cost,
+[data-theme="light"] .v2-trait-card__percentile {
+  color: #6b7280;
+}
+
+/* --- Accent Color Fixes (green/orange too light on white) --- */
+/* Teal/green → forest green for light mode (WCAG AA: 4.6:1 on white) */
+[data-theme="light"] .v2-strength-list--strength .v2-strength-list__title,
+[data-theme="light"] .v2-trait-card__column--gifts .v2-trait-card__column-title,
+[data-theme="light"] .v2-dimension-item__label,
+[data-theme="light"] .v2-growth-card__actions li svg,
+[data-theme="light"] .v2-screening-flag__rec {
+  color: #059669;
+}
+
+/* Teal border → forest green */
+[data-theme="light"] .v2-strength-list--strength {
+  border-left-color: #059669;
+}
+
+/* Dimension badge bg → forest green tint */
+[data-theme="light"] .v2-dimension-item__label {
+  background: rgba(5, 150, 105, 0.1);
+}
+
+/* Orange/amber → deep amber for light mode (WCAG AA: 4.5:1 on white) */
+[data-theme="light"] .v2-trait-card__column--challenges .v2-trait-card__column-title,
+[data-theme="light"] .v2-protector-card__cost strong,
+[data-theme="light"] .v2-screening-flag__area {
+  color: #c45d00;
+}
+
+/* Gold → dark gold for light mode */
+[data-theme="light"] .v2-growth-card__priority {
+  color: #92600a;
+  background: rgba(146, 96, 10, 0.1);
+}
+
+[data-theme="light"] .v2-challenge__title {
+  color: #92600a;
 }
 
 /* ═══════════════════════════════════════════════════════
