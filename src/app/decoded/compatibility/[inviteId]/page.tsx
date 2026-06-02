@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect, notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import CompatibilityReportViewer from './CompatibilityReportViewer';
+import GenerateReport from './GenerateReport';
 
 export const metadata: Metadata = {
   title: 'Compatibility Report — Decoded by MasteryTV',
@@ -16,6 +17,7 @@ interface PageProps {
 /**
  * /decoded/compatibility/[inviteId]
  * Server component that loads the compatibility report and verifies access.
+ * If report doesn't exist yet, renders GenerateReport which auto-triggers generation.
  */
 export default async function CompatibilityReportPage({ params }: PageProps) {
   const { inviteId } = await params;
@@ -42,21 +44,9 @@ export default async function CompatibilityReportPage({ params }: PageProps) {
     notFound();
   }
 
-  // If no report yet, show generating state
+  // If no report yet, auto-trigger generation client-side
   if (!invite.compatibility_report) {
-    return (
-      <div className="compat-container">
-        <div className="compat-loading">
-          <div className="compat-loading__spinner" />
-          <p className="compat-loading__text">
-            Your compatibility report is being generated...
-          </p>
-          <p className="compat-loading__text" style={{ opacity: 0.5 }}>
-            This usually takes 15–30 seconds. Refresh to check.
-          </p>
-        </div>
-      </div>
-    );
+    return <GenerateReport inviteId={inviteId} />;
   }
 
   const inviterName = invite.inviter_name || 'Person A';
