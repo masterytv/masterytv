@@ -64,9 +64,14 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
   const [showShareModal, setShowShareModal] = useState(false);
   const [expandedConsent, setExpandedConsent] = useState<string | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
+  const [requestingAccess, setRequestingAccess] = useState<string | null>(null);
+  const [accessRequested, setAccessRequested] = useState<Set<string>>(new Set());
   const [shareHuman, setShareHuman] = useState<Record<string, ShareLevel>>({});
   const [shareCoach, setShareCoach] = useState<Record<string, ShareLevel>>({});
   const router = useRouter();
+
+  // Build a set of emails we've already sent invites to, for dedup
+  const sentEmails = new Set(sentInvites.map((i) => i.recipient_email.toLowerCase()));
 
   // Categorize received invites
   const pendingConsent = receivedInvites.filter((i) => i.status === 'completed');
@@ -110,6 +115,25 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
       // silent
     } finally {
       setSaving(null);
+    }
+  }
+
+  async function handleRequestAccess(email: string, inviteId: string) {
+    setRequestingAccess(inviteId);
+    try {
+      const res = await fetch('/api/decoded/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      if (res.ok) {
+        setAccessRequested((prev) => new Set(prev).add(inviteId));
+        router.refresh();
+      }
+    } catch {
+      // silent
+    } finally {
+      setRequestingAccess(null);
     }
   }
 
@@ -221,13 +245,30 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
                           <ChevronDown className={`h-3 w-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                         </button>
                       ) : (
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap justify-end">
                           <Link
                             href={`/decoded/compatibility/${inv.id}`}
                             className="flex items-center gap-1.5 rounded-lg bg-[rgba(96,99,238,0.1)] px-3 py-1.5 text-sm font-medium text-[#a3a6ff] hover:bg-[rgba(96,99,238,0.15)] transition-colors"
                           >
                             View Report <ArrowRight className="h-3.5 w-3.5" />
                           </Link>
+                          {inv.inviter_email && !sentEmails.has(inv.inviter_email.toLowerCase()) && !accessRequested.has(inv.id) ? (
+                            <button
+                              onClick={() => handleRequestAccess(inv.inviter_email!, inv.id)}
+                              disabled={requestingAccess === inv.id}
+                              className="flex items-center gap-1.5 rounded-lg bg-emerald-400/10 px-3 py-1.5 text-sm font-medium text-emerald-400 hover:bg-emerald-400/15 transition-colors"
+                            >
+                              {requestingAccess === inv.id ? (
+                                <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Sending...</>
+                              ) : (
+                                <><Send className="h-3.5 w-3.5" /> Request their report</>
+                              )}
+                            </button>
+                          ) : (inv.inviter_email && (sentEmails.has(inv.inviter_email.toLowerCase()) || accessRequested.has(inv.id))) ? (
+                            <span className="flex items-center gap-1.5 rounded-lg bg-emerald-400/10 px-3 py-1.5 text-xs font-medium text-emerald-400">
+                              <Check className="h-3 w-3" /> Requested
+                            </span>
+                          ) : null}
                           <button
                             onClick={() => handleRevoke(inv.id)}
                             disabled={saving === inv.id}
