@@ -358,7 +358,7 @@ export default function DecodedLanding() {
               <button
                 type="button"
                 onClick={handleForgotPassword}
-                className="mt-1 text-xs text-text-muted hover:text-[#a3a6ff] transition-colors"
+                className="mt-2 self-start text-sm text-[#a3a6ff] hover:text-[#c4c6ff] transition-colors"
               >
                 Forgot your password?
               </button>
