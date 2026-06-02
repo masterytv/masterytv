@@ -276,8 +276,8 @@ export function isSectionUnlocked(sectionTier: ReportTier, userTier: ReportTier)
 
 /** The section ID after which the upgrade gate appears */
 export function getUpgradeGateAfter(version: ReportVersion = 2): SectionId {
-  return version === 1 ? 'RS07' : 'S4';
+  return version === 1 ? 'RS07' : 'S5';
 }
 
 /** @deprecated Use getUpgradeGateAfter() instead */
-export const UPGRADE_GATE_AFTER: SectionId = 'S4';
+export const UPGRADE_GATE_AFTER: SectionId = 'S5';
