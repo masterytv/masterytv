@@ -3,11 +3,11 @@ import { NextResponse } from "next/server";
 
 /**
  * Unified auth callback — handles Google OAuth, email confirmation,
- * and magic link redirects for all products (Decoded + Coach).
+ * password recovery, and magic link redirects for all products.
  * 
  * Routes user to the correct destination based on `next` param:
  * - Default: /dashboard (unified home)
- * - Assessment: /assess (if coming from decoded flow)
+ * - Recovery: /auth/reset-password (password reset flow)
  */
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -16,8 +16,14 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = await createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+
     if (!error) {
+      // Check if this is a password recovery flow
+      // Supabase includes type=recovery in the session metadata
+      if (data.session?.user?.recovery_sent_at) {
+        return NextResponse.redirect(`${origin}/auth/reset-password`);
+      }
       return NextResponse.redirect(`${origin}${next}`);
     }
   }
