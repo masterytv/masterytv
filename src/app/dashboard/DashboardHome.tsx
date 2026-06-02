@@ -22,6 +22,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import InviteConsentBanner from "@/components/decoded/InviteConsentBanner";
+import ShareModal from "@/components/decoded/ShareModal";
 
 interface SentInvite {
   id: string;
@@ -73,6 +74,7 @@ export default function DashboardHome({
 }: Props) {
   const [copied, setCopied] = useState(false);
   const [resetting, setResetting] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [dismissedInvites, setDismissedInvites] = useState<Set<string>>(new Set());
   const router = useRouter();
   const supabase = createClient();
@@ -109,13 +111,8 @@ export default function DashboardHome({
     setTimeout(() => setCopied(false), 2000);
   }
 
-  function handleEmailInvite() {
-    const shareUrl = `${window.location.origin}/decoded`;
-    const subject = encodeURIComponent("Take this personality assessment");
-    const body = encodeURIComponent(
-      `I just took the Decoded personality assessment — it's surprisingly accurate. You should try it:\n\n${shareUrl}`
-    );
-    window.open(`mailto:?subject=${subject}&body=${body}`);
+  function handleOpenShareModal() {
+    setShowShareModal(true);
   }
 
   return (
@@ -426,7 +423,7 @@ export default function DashboardHome({
                       {copied ? 'Copied' : 'Copy link'}
                     </button>
                     <button
-                      onClick={handleEmailInvite}
+                      onClick={handleOpenShareModal}
                       className="flex items-center gap-1.5 rounded-lg bg-surface-200 px-3 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-surface-300 transition-all"
                     >
                       <Send className="h-3.5 w-3.5" />
@@ -449,7 +446,7 @@ export default function DashboardHome({
                       {copied ? 'Copied' : 'Copy link'}
                     </button>
                     <button
-                      onClick={handleEmailInvite}
+                      onClick={handleOpenShareModal}
                       className="flex items-center gap-1.5 rounded-lg bg-surface-200 px-3 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-surface-300 transition-all"
                     >
                       <Mail className="h-3.5 w-3.5" />
@@ -462,6 +459,17 @@ export default function DashboardHome({
           </motion.div>
         </div>
       </div>
+
+      {/* Share modal — same one used on the report page */}
+      <ShareModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        onUnlock={() => {
+          setShowShareModal(false);
+          router.refresh();
+        }}
+        shareUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/decoded`}
+      />
     </div>
   );
 }
