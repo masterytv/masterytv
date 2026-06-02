@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createClient as createServiceClient } from '@supabase/supabase-js';
 import OpenAI from 'openai';
 
 /**
  * POST /api/decoded/compatibility-report
  * Generate a compatibility report between two users who have consented to share.
  * 
- * Triggered after consent is given. Stores the report in decoded_invites.compatibility_report.
- * Punchy format — not a long essay. Short insights that hit hard.
+ * Uses service-role client to read BOTH users' reports (RLS restricts reads to own data).
+ * Safe because we verify the caller is part of the invite and consent was given.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -53,13 +54,19 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Load both reports
+    // Service-role client bypasses RLS to read both users' reports
+    const admin = createServiceClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    );
+
+    // Load both reports (needs service role — RLS restricts reads to own user)
     const [inviterReport, recipientReport] = await Promise.all([
       invite.inviter_report_id
-        ? supabase.from('assessment_reports').select('sections, archetype_base').eq('id', invite.inviter_report_id).single()
+        ? admin.from('assessment_reports').select('sections, archetype_base').eq('id', invite.inviter_report_id).single()
         : null,
       invite.recipient_report_id
-        ? supabase.from('assessment_reports').select('sections, archetype_base').eq('id', invite.recipient_report_id).single()
+        ? admin.from('assessment_reports').select('sections, archetype_base').eq('id', invite.recipient_report_id).single()
         : null,
     ]);
 
@@ -137,8 +144,8 @@ Profile Summary: ${JSON.stringify(recipientS1?.content_markdown || recipientS1 |
 
     const compatibilityReport = JSON.parse(reportContent);
 
-    // Store the report and update status
-    await supabase
+    // Store the report and update status (admin — either party may trigger this)
+    await admin
       .from('decoded_invites')
       .update({
         compatibility_report: compatibilityReport,
