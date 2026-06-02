@@ -134,7 +134,28 @@
 
 - [ ] **S0.5.1** — Build `/decoded` landing page: hero, value prop, sample report preview, social proof, "Take the assessment" CTA
 - [ ] **S0.5.2** — Build shareable personality cards (F06/F07): Big Five visual, attachment style badge — downloadable/shareable on Instagram/X (Story 9:16, Feed 1:1, Landscape 16:9 formats). **Design mandate: premium glassmorphism — no clipart, no sparkles. BRAND.md §14.**
-- [ ] **S0.5.3** — Implement Compare / Profile Invite mechanic (F03): "Invite someone to compare profiles" → unique link generator → recipient must complete assessment to unlock comparison → AI Compatibility Report generated on both completing
+#### E0 — Compare / Profile Invite (F03 — Viral Acquisition Engine)
+
+> [!IMPORTANT]
+> **This IS the growth loop.** Without it at launch, organic spread is minimal. See `DECODED_FEATURES.md` §F03 for full spec.
+
+- [ ] **S0.5.3a** — **Schema:** Create `profile_invites` table: `{ id, inviter_id, invitee_name, relationship_type (partner|friend|colleague|family), invite_code (unique), shared_sections (JSONB), invitee_user_id (nullable — set when B completes), status (pending|completed|expired), expires_at, created_at }`. RLS: inviter can CRUD own rows, invitee can read when matched.
+- [ ] **S0.5.3b** — **Invite creation UI:** "Invite Someone to Decoded" modal in report + dashboard. Fields: recipient name, relationship preset (Partner/Friend/Colleague/Family — each auto-configures shared sections per F03 spec), optional custom section toggles. Generates unique invite URL: `masterytv.com/decoded/invite/{code}`.
+- [ ] **S0.5.3c** — **Invite landing page:** `/decoded/invite/[code]` — Decoded-branded conversion page: *"[Name] has shared their Decoded profile with you."* Shows inviter's archetype name + a teaser ("See how your personalities interact"). Strong CTA: "Take the Assessment to See Their Profile." Curiosity gap is the hook.
+- [ ] **S0.5.3d** — **Invite link flow:** Recipient creates account → completes assessment → `profile_invites.invitee_user_id` linked → inviter notified (email via Resend). Both profiles now connected.
+- [ ] **S0.5.3e** — **Comparison view:** Side-by-side (or synthesized) comparison page at `/decoded/compare/[invite_id]`. Shows: Big Five overlay, attachment style interaction, communication gap analysis. Accessible to both users.
+- [ ] **S0.5.3f** — **AI Compatibility Report:** Once both profiles are linked, generate an AI-synthesized relationship analysis: attachment style overlay (anxious + avoidant dynamics), Big Five interaction map (align/clash), conflict pattern prediction, shared growth edges, coaching suggestion for the pair. Gate behind Insight tier ($29/yr).
+- [ ] **S0.5.3g** — **Invite management:** Dashboard tab showing sent invites: pending (resend link), completed (view comparison), expired. Max 5 active invites for free tier, unlimited for paid.
+- [ ] **S0.5.3h** — **Invite notifications:** Email inviter when recipient completes assessment. Email template: *"[Name] just completed their Decoded assessment. Your comparison is ready."*
+
+#### E0 — Unlock "Your Relationships" via Share (Viral Section Gate)
+
+> [!TIP]
+> **Viral unlock mechanic.** Instead of paying to unlock the Relationships section, users can earn it by sharing — every share is a potential new user.
+
+- [ ] **S0.5.3i** — **Share-to-unlock gate on "Your Relationships" section (RS-Relationships):** Instead of the standard blur/paywall, show a unique gate: *"Unlock Your Relationships section by inviting someone you know to Decoded."* CTA: "Send an Invite →" (opens F03 invite modal). When the invited person completes the assessment, both users unlock the Relationships section AND get the AI Compatibility Report. Track unlock source: `unlocked_via: 'invite_completion'` vs `'paid_upgrade'`.
+- [ ] **S0.5.3j** — **Fallback paid unlock:** Users who don't want to invite anyone can still unlock via Insight tier ($29/yr) — the share mechanic is an alternative, not a replacement. Gate copy: *"Unlock by sharing with someone — or upgrade to Insight."*
+- [ ] **S0.5.3k** — **Viral tracking:** Log invite → assessment_complete → section_unlock funnel. Admin dashboard metrics: invites sent, conversion rate (invite → assessment start → completion), sections unlocked via share vs paid.
 - [ ] **S0.5.4** — Implement Share Your Type callout (F07): Banner appears in report after Archetype section + at report footer. Reuses F06 modal.
 - [ ] **S0.5.5** — Implement referral mechanic (F08): Unique referral URL → friend completes → referrer unlocks 1 Insight section free; milestone rewards at 3 and 5 referrals
 - [ ] **S0.5.6** — SEO metadata: title tags, meta descriptions, Open Graph for `/decoded` and report pages
