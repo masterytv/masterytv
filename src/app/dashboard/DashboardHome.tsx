@@ -393,17 +393,29 @@ export default function DashboardHome({
               {sentInvites.length > 0 ? (
                 /* Invite tracker list */
                 <div className="mt-3 space-y-2">
-                  {sentInvites.slice(0, 4).map((inv) => (
-                    <div
-                      key={inv.id}
-                      className="flex items-center justify-between rounded-lg bg-surface-100 px-3 py-2"
-                    >
-                      <span className="text-body-sm text-text-secondary truncate max-w-[60%]">
-                        {inv.recipient_email}
-                      </span>
-                      <InviteStatusBadge status={inv.status} />
-                    </div>
-                  ))}
+                  {sentInvites.slice(0, 4).map((inv) => {
+                    const isConnected = inv.status === 'connected' || inv.status === 'consented';
+                    const inner = (
+                      <>
+                        <span className="text-body-sm text-text-secondary truncate max-w-[60%]">
+                          {inv.recipient_email}
+                        </span>
+                        <InviteStatusBadge status={inv.status} />
+                      </>
+                    );
+                    const className = `flex items-center justify-between rounded-lg bg-surface-100 px-3 py-2 ${
+                      isConnected ? 'hover:bg-surface-200 cursor-pointer transition-colors' : ''
+                    }`;
+                    return isConnected ? (
+                      <Link key={inv.id} href={`/decoded/compatibility/${inv.id}`} className={className}>
+                        {inner}
+                      </Link>
+                    ) : (
+                      <div key={inv.id} className={className}>
+                        {inner}
+                      </div>
+                    );
+                  })}
                   {/* Invite more */}
                   <div className="flex gap-2 pt-1">
                     <button
