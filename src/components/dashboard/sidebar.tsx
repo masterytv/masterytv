@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   Home,
+  ClipboardCheck,
   MessageSquare,
   Target,
   TrendingUp,
@@ -17,27 +18,35 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
-const navItems = [
-  { href: "/dashboard", label: "Home", icon: Home, exact: true },
-  { href: "/dashboard/chat", label: "Coach", icon: MessageSquare, requiresAssessment: true },
-  { href: "/dashboard/commitments", label: "Commitments", icon: Target, requiresAssessment: true },
-  { href: "/dashboard/progress", label: "Progress", icon: TrendingUp, requiresAssessment: true },
-  {
-    href: "/dashboard/coaching-letter",
-    label: "Coaching Letter",
-    icon: FileText,
-    requiresAssessment: true,
-  },
-  { href: "/dashboard/settings", label: "Settings", icon: Settings },
-];
+function getNavItems(reportId: string | null) {
+  return [
+    { href: "/dashboard", label: "Home", icon: Home, exact: true },
+    {
+      href: reportId ? `/decoded/report/${reportId}` : "/dashboard",
+      label: "Assessment Report",
+      icon: ClipboardCheck,
+      requiresAssessment: true,
+    },
+    { href: "/dashboard/chat", label: "Coach", icon: MessageSquare, requiresAssessment: true },
+    { href: "/dashboard/commitments", label: "Commitments", icon: Target, requiresAssessment: true },
+    { href: "/dashboard/progress", label: "Progress", icon: TrendingUp, requiresAssessment: true },
+    {
+      href: "/dashboard/coaching-letter",
+      label: "Coaching Letter",
+      icon: FileText,
+    },
+    { href: "/dashboard/settings", label: "Settings", icon: Settings },
+  ];
+}
 
 interface SidebarProps {
   open: boolean;
   onClose: () => void;
   assessmentCompleted?: boolean;
+  reportId?: string | null;
 }
 
-export function Sidebar({ open, onClose, assessmentCompleted = false }: SidebarProps) {
+export function Sidebar({ open, onClose, assessmentCompleted = false, reportId = null }: SidebarProps) {
   const pathname = usePathname();
   const [copied, setCopied] = useState(false);
 
@@ -90,7 +99,7 @@ export function Sidebar({ open, onClose, assessmentCompleted = false }: SidebarP
 
         {/* Navigation */}
         <nav className="mt-2 flex-1 space-y-1 px-3">
-          {navItems.map((item) => {
+          {getNavItems(reportId).map((item) => {
             const isActive = item.exact
               ? pathname === item.href
               : pathname.startsWith(item.href);
@@ -149,7 +158,7 @@ export function Sidebar({ open, onClose, assessmentCompleted = false }: SidebarP
             className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-text-secondary hover:bg-surface-200 hover:text-text-primary transition-all"
           >
             <Share2 className="h-4.5 w-4.5 text-text-muted group-hover:text-text-secondary" />
-            {copied ? "Link copied!" : "Share Decoded"}
+            {copied ? "Link copied!" : "Share"}
           </button>
         </nav>
 

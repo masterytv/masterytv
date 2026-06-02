@@ -16,8 +16,11 @@ import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams, useRouter } from "next/navigation";
 import ChatWindow from "@/components/chat/chat-window";
+import CoachVoiceSelector from "@/components/chat/CoachVoiceSelector";
 import { sendMessageStream, loadConversationHistory, type ChatMessage, type DebugSummary } from "@/lib/chat";
 import { useUser } from "@/hooks/useUser";
+import { createClient } from "@/lib/supabase/client";
+import type { CoachVoiceId } from "@/lib/coach/voice-config";
 
 // Lazy-load debug panel — only shipped to admin users who activate debug mode
 const DebugPanel = dynamic(() => import("@/components/debug/debug-panel"), {
@@ -44,6 +47,9 @@ function ChatPageInner() {
   const [debugMode, setDebugMode] = useState(false);
   const [debugData, setDebugData] = useState<DebugSummary | null>(null);
   const [traceHistory, setTraceHistory] = useState<DebugSummary[]>([]);
+
+  // ── Voice style state ──
+  const [activeVoiceId, setActiveVoiceId] = useState<CoachVoiceId | null>(null);
 
   const isAdmin = user?.is_admin === true;
 
@@ -197,6 +203,22 @@ function ChatPageInner() {
     [conversationId, debugMode, isAdmin]
   );
 
+  // ── Load active voice on mount ──
+  useEffect(() => {
+    if (!user?.id) return;
+    const supabase = createClient();
+    supabase
+      .from("coach_profiles")
+      .select("voice_id")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.voice_id) {
+          setActiveVoiceId(data.voice_id as CoachVoiceId);
+        }
+      });
+  }, [user?.id]);
+
   if (isInitialLoad) {
     return (
       <div className="chat-loading">
@@ -206,21 +228,18 @@ function ChatPageInner() {
     );
   }
 
+
   const showDebugPanel = isAdmin && debugMode;
 
   return (
     <div style={{ position: "relative", height: "100%" }}>
-      {/* Admin debug toggle */}
-      {isAdmin && (
-        <button
-          className={`debug-toggle ${debugMode ? "debug-toggle--active" : ""}`}
-          onClick={() => setDebugMode(!debugMode)}
-          title={debugMode ? "Disable debug mode" : "Enable debug mode"}
-        >
-          <span className="debug-toggle__dot" />
-          {debugMode ? "Debug ON" : "Debug"}
-        </button>
-      )}
+      {/* Chat header bar — voice selector */}
+      <div className="chat-header-bar">
+        <CoachVoiceSelector
+          activeVoiceId={activeVoiceId}
+          onVoiceChanged={(voiceId) => setActiveVoiceId(voiceId)}
+        />
+      </div>
 
       {showDebugPanel ? (
         /* Split layout: chat + debug panel */

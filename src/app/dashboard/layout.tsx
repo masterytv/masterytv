@@ -20,6 +20,7 @@ export default function DashboardLayout({
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [assessmentCompleted, setAssessmentCompleted] = useState(false);
+  const [reportId, setReportId] = useState<string | null>(null);
   const { user } = useUser();
 
   // Check if user has a completed (non-superseded) assessment
@@ -39,6 +40,18 @@ export default function DashboardLayout({
         .single();
 
       setAssessmentCompleted(!!data);
+
+      // Fetch report ID for the sidebar link
+      if (data) {
+        const { data: report } = await supabase
+          .from("assessment_reports")
+          .select("id")
+          .eq("assessment_id", data.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single();
+        if (report) setReportId(report.id);
+      }
     }
     checkAssessment();
   }, []);
@@ -50,6 +63,7 @@ export default function DashboardLayout({
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         assessmentCompleted={assessmentCompleted}
+        reportId={reportId}
       />
 
       {/* Main content area */}

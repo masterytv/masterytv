@@ -233,7 +233,7 @@ export default function CoachingLetterPage() {
     );
   }
 
-  // Empty state — no letter yet
+  // Empty state — no letter yet, prompt coaching onboarding
   if (!letter) {
     return (
       <div className="db-page">
@@ -244,12 +244,17 @@ export default function CoachingLetterPage() {
           <div className="db-section">
             <div className="db-empty">
               <div className="db-empty__icon"><Mail size={40} strokeWidth={1.5} /></div>
-              <h3 className="db-empty__title">No coaching letter yet</h3>
+              <h3 className="db-empty__title">Your Coach Has Some Questions</h3>
               <p className="db-empty__desc">
-                Complete onboarding to receive your personalized coaching letter.
+                Before your initial coaching assessment can begin, your coach
+                needs to learn a bit more about you — your goals, your challenges,
+                and what matters most right now.
+              </p>
+              <p className="db-empty__desc" style={{ marginTop: 0, fontSize: "0.8rem", color: "var(--text-hint)" }}>
+                This takes about 5 minutes.
               </p>
               <Link href="/coachapp/onboarding" className="db-empty__cta">
-                Start Onboarding →
+                Answer Coach&apos;s Questions →
               </Link>
             </div>
           </div>
