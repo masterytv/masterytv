@@ -1,0 +1,827 @@
+/**
+ * Decoded Types Page — Premium archetype gallery.
+ * 
+ * Follows BRAND.md:
+ * - Surface hierarchy via background color shifts, no borders
+ * - Manrope for display/headlines, Inter for body
+ * - Ghost borders only at <12% opacity
+ * - No emoji, no sparkles, no clipart
+ * - accent-gold reserved for single CTA
+ * - Ambient shadows, not drop shadows
+ */
+
+/* =========================================================================
+   Page Shell
+   ========================================================================= */
+
+.types-page {
+  position: relative;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background: var(--color-surface-0);
+  color: var(--text-body, #c6c6cd);
+}
+
+/* Background glow — ambient, not decorative */
+.types-page__glow {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.types-page__glow-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(140px);
+}
+
+.types-page__glow-orb--primary {
+  top: -20%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 800px;
+  height: 800px;
+  background: rgba(96, 99, 238, 0.05);
+}
+
+.types-page__glow-orb--accent {
+  bottom: -10%;
+  right: 20%;
+  width: 500px;
+  height: 500px;
+  background: rgba(105, 246, 184, 0.025);
+}
+
+/* =========================================================================
+   Hero
+   ========================================================================= */
+
+.types-hero {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 5.5rem 1.5rem 3rem; /* spacing-22 top, spacing-12 bottom */
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.types-hero__badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 4rem;
+  height: 4rem;
+  border-radius: 1rem; /* radius-lg */
+  background: rgba(96, 99, 238, 0.1);
+  margin-bottom: 1.5rem;
+}
+
+.types-hero__badge-icon {
+  width: 2rem;
+  height: 2rem;
+  color: var(--color-primary, #b4c5ff);
+}
+
+.types-hero__label {
+  font-family: var(--font-display, 'Manrope', system-ui, sans-serif);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-label, #c6c6cd);
+  margin-bottom: 0.75rem;
+}
+
+.types-hero__title {
+  font-family: var(--font-display, 'Manrope', system-ui, sans-serif);
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: var(--text-heading, #f1f5f9);
+  margin-bottom: 1.5rem;
+}
+
+.types-hero__subtitle {
+  font-family: var(--font-sans, 'Inter', system-ui, sans-serif);
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--text-body, #c6c6cd);
+  max-width: 560px;
+  margin-bottom: 2rem;
+}
+
+.types-hero__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 2rem;
+  border-radius: 0.75rem; /* radius-md */
+  background: linear-gradient(135deg, #fabd00, #e5a800);
+  color: #181c1e;
+  font-family: var(--font-sans, 'Inter', system-ui, sans-serif);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+}
+
+.types-hero__cta:hover {
+  opacity: 0.9;
+}
+
+/* =========================================================================
+   Method Section — "How You Get Your Type"
+   ========================================================================= */
+
+.types-method {
+  position: relative;
+  z-index: 1;
+  background: var(--color-surface-50, #0c1326);
+  padding: 4rem 1.5rem; /* spacing-16 */
+}
+
+.types-method__inner {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.types-method__title {
+  font-family: var(--font-display, 'Manrope', system-ui, sans-serif);
+  font-size: 1.75rem; /* headline-md */
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  color: var(--text-heading, #f1f5f9);
+  margin-bottom: 3rem;
+  text-align: center;
+}
+
+.types-method__steps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2rem; /* spacing-8 */
+}
+
+@media (max-width: 768px) {
+  .types-method__steps {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
+.types-method__step {
+  padding: 1.5rem; /* spacing-6 */
+  border-radius: 1rem; /* radius-lg */
+  background: var(--color-surface-100, #141c33);
+  transition: background-color 0.2s ease;
+}
+
+.types-method__step:hover {
+  background: var(--color-surface-200, #1c253e);
+}
+
+.types-method__step-num {
+  font-family: var(--font-display, 'Manrope', system-ui, sans-serif);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-primary, #b4c5ff);
+  opacity: 0.3;
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.types-method__step-title {
+  font-family: var(--font-sans, 'Inter', system-ui, sans-serif);
+  font-size: 1.125rem; /* title-md */
+  font-weight: 500;
+  color: var(--text-heading, #f1f5f9);
+  margin-bottom: 0.5rem;
+}
+
+.types-method__step-desc {
+  font-size: 0.875rem; /* body-md */
+  line-height: 1.6;
+  color: var(--text-body, #c6c6cd);
+}
+
+/* =========================================================================
+   Gallery Section
+   ========================================================================= */
+
+.types-gallery {
+  position: relative;
+  z-index: 1;
+  padding: 4rem 1.5rem; /* spacing-16 */
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* =========================================================================
+   Archetype Grid
+   ========================================================================= */
+
+.archetype-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem; /* spacing-6 */
+}
+
+@media (max-width: 640px) {
+  .archetype-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =========================================================================
+   Archetype Card
+   ========================================================================= */
+
+.archetype-card {
+  position: relative;
+  border-radius: 1rem; /* radius-lg */
+  background: var(--color-surface-50, #0c1326);
+  cursor: pointer;
+  overflow: hidden;
+  transition: background-color 0.2s ease;
+  outline: none;
+}
+
+.archetype-card:hover:not(.archetype-card--expanded) {
+  background: var(--color-surface-100, #141c33);
+}
+
+.archetype-card:focus-visible {
+  box-shadow: 0 0 0 3px rgba(96, 99, 238, 0.3);
+}
+
+.archetype-card--expanded {
+  cursor: default;
+  grid-column: 1 / -1;
+  background: var(--color-surface-50, #0c1326);
+}
+
+/* --- Preview --- */
+
+.archetype-card__preview {
+  display: flex;
+  flex-direction: column;
+}
+
+.archetype-card--expanded .archetype-card__preview {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 2rem;
+  padding: 1.5rem;
+}
+
+@media (max-width: 640px) {
+  .archetype-card--expanded .archetype-card__preview {
+    flex-direction: column;
+  }
+}
+
+.archetype-card__image-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 0.75rem 0.75rem 0 0;
+}
+
+.archetype-card--expanded .archetype-card__image-wrap {
+  width: 320px;
+  min-width: 320px;
+  aspect-ratio: 1;
+  border-radius: 0.75rem;
+}
+
+@media (max-width: 640px) {
+  .archetype-card--expanded .archetype-card__image-wrap {
+    width: 100%;
+    min-width: unset;
+  }
+}
+
+.archetype-card__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.archetype-card:hover:not(.archetype-card--expanded) .archetype-card__image {
+  transform: scale(1.03);
+}
+
+/* Placeholder for unreleased archetypes */
+.archetype-card__placeholder {
+  width: 100%;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface-100, #141c33);
+  border-radius: 0.75rem 0.75rem 0 0;
+}
+
+.archetype-card__placeholder-text {
+  font-family: var(--font-display, 'Manrope', system-ui, sans-serif);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-label, #c6c6cd);
+  opacity: 0.3;
+}
+
+/* --- Info --- */
+
+.archetype-card__info {
+  padding: 1.25rem 1.5rem;
+}
+
+.archetype-card--expanded .archetype-card__info {
+  padding: 0;
+  flex: 1;
+}
+
+.archetype-card__name {
+  font-family: var(--font-display, 'Manrope', system-ui, sans-serif);
+  font-size: 1.375rem; /* title-lg */
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-heading, #f1f5f9);
+  margin-bottom: 0.25rem;
+}
+
+.archetype-card--expanded .archetype-card__name {
+  font-size: 2rem; /* headline-lg */
+  margin-bottom: 0.5rem;
+}
+
+.archetype-card__sublabel {
+  font-family: var(--font-sans, 'Inter', system-ui, sans-serif);
+  font-size: 0.875rem;
+  font-style: italic;
+  color: var(--color-primary, #b4c5ff);
+  opacity: 0.8;
+}
+
+.archetype-card--expanded .archetype-card__sublabel {
+  font-size: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* --- Expand hint --- */
+
+.archetype-card__expand-hint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem 1.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-label, #c6c6cd);
+  opacity: 0.4;
+  transition: opacity 0.2s ease;
+}
+
+.archetype-card:hover .archetype-card__expand-hint {
+  opacity: 0.7;
+}
+
+.archetype-card__expand-icon {
+  width: 14px;
+  height: 14px;
+}
+
+/* --- Detail (expanded) --- */
+
+.archetype-card__detail {
+  position: relative;
+  padding: 0 1.5rem 1.5rem;
+  overflow: hidden;
+}
+
+.archetype-card__close {
+  position: absolute;
+  top: 0;
+  right: 1.5rem;
+  padding: 0.5rem;
+  border: none;
+  background: transparent;
+  color: var(--text-label, #c6c6cd);
+  cursor: pointer;
+  border-radius: 0.5rem;
+  transition: background-color 0.2s ease;
+}
+
+.archetype-card__close:hover {
+  background: var(--color-surface-200, #1c253e);
+}
+
+.archetype-card__close-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.archetype-card__description {
+  font-family: var(--font-sans, 'Inter', system-ui, sans-serif);
+  font-size: 1rem;
+  font-style: italic;
+  line-height: 1.6;
+  color: var(--text-body, #c6c6cd);
+  margin-bottom: 1.5rem;
+  max-width: 600px;
+}
+
+/* --- Powers --- */
+
+.archetype-card__powers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+.archetype-card__power {
+  font-family: var(--font-sans, 'Inter', system-ui, sans-serif);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-heading, #f1f5f9);
+  padding: 0.375rem 0.875rem;
+  border-radius: 9999px;
+  background: var(--color-surface-100, #141c33);
+}
+
+/* --- Big Five traits --- */
+
+.archetype-card__traits {
+  margin-bottom: 2rem;
+}
+
+.archetype-card__traits-title,
+.archetype-card__styles-title,
+.archetype-card__motifs-title {
+  font-family: var(--font-sans, 'Inter', system-ui, sans-serif);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-label, #c6c6cd);
+  opacity: 0.6;
+  margin-bottom: 0.75rem;
+}
+
+.archetype-card__trait-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.archetype-card__trait {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.375rem; /* radius-sm */
+  background: var(--color-surface-100, #141c33);
+}
+
+.archetype-card__trait-label {
+  font-size: 0.8125rem;
+  color: var(--text-body, #c6c6cd);
+}
+
+.archetype-card__trait-level {
+  font-family: var(--font-display, 'Manrope', system-ui, sans-serif);
+  font-size: 0.875rem;
+  font-weight: 700;
+  min-width: 1.5rem;
+  text-align: center;
+}
+
+/* High = accent teal, Low = muted, Mid = secondary */
+.archetype-card__trait-level--highhigh {
+  color: var(--color-accent-teal, #4edea3);
+}
+
+.archetype-card__trait-level--high {
+  color: var(--color-primary, #b4c5ff);
+}
+
+.archetype-card__trait-level--mid {
+  color: var(--text-label, #c6c6cd);
+  opacity: 0.4;
+}
+
+.archetype-card__trait-level--low {
+  color: var(--text-body, #c6c6cd);
+  opacity: 0.5;
+}
+
+.archetype-card__trait-level--lowlow {
+  color: var(--text-body, #c6c6cd);
+  opacity: 0.3;
+}
+
+/* --- Style switcher --- */
+
+.archetype-card__styles {
+  margin-bottom: 2rem;
+}
+
+.archetype-card__style-grid {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.archetype-card__style-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border: none;
+  border-radius: 0.75rem;
+  background: var(--color-surface-100, #141c33);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.archetype-card__style-btn:hover {
+  background: var(--color-surface-200, #1c253e);
+}
+
+.archetype-card__style-btn--active {
+  background: var(--color-surface-200, #1c253e);
+  box-shadow: inset 0 0 0 1px rgba(180, 197, 255, 0.15);
+}
+
+.archetype-card__style-thumb {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 0.5rem;
+}
+
+.archetype-card__style-label {
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-label, #c6c6cd);
+}
+
+/* --- Motifs --- */
+
+.archetype-card__motif-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.archetype-card__motif-list li {
+  font-size: 0.875rem;
+  color: var(--text-body, #c6c6cd);
+  line-height: 1.5;
+}
+
+.archetype-card__motif-list strong {
+  color: var(--text-heading, #f1f5f9);
+  font-weight: 500;
+}
+
+/* =========================================================================
+   Footer CTA
+   ========================================================================= */
+
+.types-footer {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 5.5rem 1.5rem; /* spacing-22 */
+  background: var(--color-surface-50, #0c1326);
+}
+
+.types-footer__title {
+  font-family: var(--font-display, 'Manrope', system-ui, sans-serif);
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--text-heading, #f1f5f9);
+  margin-bottom: 1rem;
+}
+
+.types-footer__desc {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--text-body, #c6c6cd);
+  margin-bottom: 2rem;
+  max-width: 480px;
+}
+
+.types-footer__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 2.5rem;
+  border-radius: 0.75rem;
+  background: linear-gradient(135deg, #fabd00, #e5a800);
+  color: #181c1e;
+  font-family: var(--font-sans, 'Inter', system-ui, sans-serif);
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+}
+
+.types-footer__cta:hover {
+  opacity: 0.9;
+}
+
+/* =========================================================================
+   Light Mode Overrides
+   ========================================================================= */
+
+[data-theme="light"] .types-page {
+  background: #f7fafd;
+  color: #44474a;
+}
+
+[data-theme="light"] .types-page__glow-orb--primary {
+  background: rgba(0, 62, 199, 0.04);
+}
+
+[data-theme="light"] .types-page__glow-orb--accent {
+  background: rgba(5, 150, 105, 0.03);
+}
+
+[data-theme="light"] .types-hero__badge {
+  background: rgba(0, 62, 199, 0.08);
+}
+
+[data-theme="light"] .types-hero__badge-icon {
+  color: #003ec7;
+}
+
+[data-theme="light"] .types-hero__label {
+  color: #44474a;
+}
+
+[data-theme="light"] .types-hero__title {
+  color: #181c1e;
+}
+
+[data-theme="light"] .types-hero__subtitle {
+  color: #44474a;
+}
+
+[data-theme="light"] .types-hero__cta {
+  background: linear-gradient(135deg, #fabd00, #e5a800);
+  color: #181c1e;
+}
+
+[data-theme="light"] .types-method {
+  background: #f1f4f7;
+}
+
+[data-theme="light"] .types-method__title {
+  color: #181c1e;
+}
+
+[data-theme="light"] .types-method__step {
+  background: #ffffff;
+}
+
+[data-theme="light"] .types-method__step:hover {
+  background: #e8ebee;
+}
+
+[data-theme="light"] .types-method__step-num {
+  color: #003ec7;
+  opacity: 0.25;
+}
+
+[data-theme="light"] .types-method__step-title {
+  color: #181c1e;
+}
+
+[data-theme="light"] .types-method__step-desc {
+  color: #44474a;
+}
+
+[data-theme="light"] .archetype-card {
+  background: #ffffff;
+}
+
+[data-theme="light"] .archetype-card:hover:not(.archetype-card--expanded) {
+  background: #f1f4f7;
+}
+
+[data-theme="light"] .archetype-card__name {
+  color: #181c1e;
+}
+
+[data-theme="light"] .archetype-card__sublabel {
+  color: #003ec7;
+}
+
+[data-theme="light"] .archetype-card__description {
+  color: #44474a;
+}
+
+[data-theme="light"] .archetype-card__power {
+  color: #181c1e;
+  background: #f1f4f7;
+}
+
+[data-theme="light"] .archetype-card__trait {
+  background: #f1f4f7;
+}
+
+[data-theme="light"] .archetype-card__trait-label {
+  color: #44474a;
+}
+
+[data-theme="light"] .archetype-card__trait-level--highhigh {
+  color: #059669;
+}
+
+[data-theme="light"] .archetype-card__trait-level--high {
+  color: #003ec7;
+}
+
+[data-theme="light"] .archetype-card__placeholder {
+  background: #f1f4f7;
+}
+
+[data-theme="light"] .archetype-card__style-btn {
+  background: #f1f4f7;
+}
+
+[data-theme="light"] .archetype-card__style-btn:hover {
+  background: #e8ebee;
+}
+
+[data-theme="light"] .archetype-card__style-btn--active {
+  background: #e8ebee;
+  box-shadow: inset 0 0 0 1px rgba(0, 62, 199, 0.2);
+}
+
+[data-theme="light"] .archetype-card__close:hover {
+  background: #e8ebee;
+}
+
+[data-theme="light"] .archetype-card__motif-list li {
+  color: #44474a;
+}
+
+[data-theme="light"] .archetype-card__motif-list strong {
+  color: #181c1e;
+}
+
+[data-theme="light"] .types-footer {
+  background: #f1f4f7;
+}
+
+[data-theme="light"] .types-footer__title {
+  color: #181c1e;
+}
+
+[data-theme="light"] .types-footer__desc {
+  color: #44474a;
+}
+
+/* =========================================================================
+   Reduced Motion
+   ========================================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .archetype-card__image {
+    transition: none;
+  }
+
+  .archetype-card,
+  .types-method__step,
+  .archetype-card__style-btn,
+  .archetype-card__close {
+    transition: none;
+  }
+}
