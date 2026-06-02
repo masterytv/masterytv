@@ -25,12 +25,12 @@ import {
   ProtectorCardComponent, FightStagesComponent,
   NeedToHearComponent, GrowthEdgeCardComponent,
 } from './v2-components';
+import { createClient } from '@/lib/supabase/client';
 import DecodedNav from '../../DecodedNav';
 import { getSectionConfigs, getUpgradeGateAfter, isSectionUnlocked } from '@/lib/decoded/report/sections/section-config';
 import { REPORT_DISCLAIMER, evaluateSafetyFlags, CRISIS_RESOURCES } from '@/lib/decoded/report/safety';
 import type { InstrumentScore } from '@/lib/decoded/scoring/types';
 import type { ReportTier } from '@/lib/decoded/report/prompts/types';
-import { createClient } from '@/lib/supabase/client';
 import './report.css';
 import './v2-components.css';
 
@@ -87,6 +87,22 @@ function buildCoachDeepLink(section: string, topic?: string): string {
   });
   if (topic) params.set('topic', topic);
   return `/dashboard/chat?${params.toString()}`;
+}
+
+/**
+ * Sprint 0.4 (S0.4.11): Fire-and-forget tracking for coach deep link clicks.
+ * Logs which report sections users click for CTA optimization.
+ */
+function trackDeepLinkClick(section: string, topic?: string) {
+  const supabase = createClient();
+  supabase.auth.getUser().then(({ data }) => {
+    if (!data.user) return;
+    supabase.from('report_events').insert({
+      user_id: data.user.id,
+      context_key: topic ?? section,
+      section_id: section,
+    }).then(() => {/* fire-and-forget */});
+  });
 }
 
 interface V2SectionContentProps {
@@ -170,6 +186,7 @@ function V2SectionContent({
             href={buildCoachDeepLink('Personality Deep Dive', pattern?.name ?? 'your personality patterns')}
             className="coach-deep-link"
             style={{ marginTop: '1.25rem' }}
+            onClick={() => trackDeepLinkClick('Personality Deep Dive', pattern?.name)}
           >
             Explore these patterns with your coach
             <ArrowUpRight size={14} className="coach-deep-link__icon" />
@@ -347,6 +364,7 @@ function V2SectionContent({
               <a
                 href={buildCoachDeepLink('Growth Roadmap', edge.title)}
                 className="coach-deep-link"
+                onClick={() => trackDeepLinkClick('Growth Roadmap', edge.title)}
               >
                 Explore this with your coach
                 <ArrowUpRight size={14} className="coach-deep-link__icon" />
@@ -705,6 +723,7 @@ export default function ReportViewer({ report: initialReport, scores }: ReportVi
                             href={buildCoachDeepLink(config.title, section.coach_question)}
                             className="coach-question coach-question--clickable"
                             style={{ display: 'block', textDecoration: 'none' }}
+                            onClick={() => trackDeepLinkClick(config.title, section.coach_question)}
                           >
                             <div className="coach-question__label">Your Coach Question</div>
                             <div className="coach-question__text">&ldquo;{section.coach_question}&rdquo;</div>
@@ -801,8 +820,9 @@ export default function ReportViewer({ report: initialReport, scores }: ReportVi
               they know your personality, patterns, and priorities from day one.
             </p>
             <a
-              href="/dashboard/chat"
+              href={buildCoachDeepLink('Your Full Report', 'my assessment results and what they mean for me')}
               className="coach-cta__button"
+              onClick={() => trackDeepLinkClick('Your Full Report', 'meet-your-coach')}
             >
               Meet Your Coach <ArrowRight className="h-4 w-4" />
             </a>

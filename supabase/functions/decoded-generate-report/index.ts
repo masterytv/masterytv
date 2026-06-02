@@ -972,7 +972,7 @@ Write the ${template.sectionId} "${template.title}" section.`;
   try {
     await runCoachHandoff(
       supabase, userId, assessmentId, scoreRows,
-      archetypeName, archetypeSublabel, archetypeTagline, sections,
+      archetypeName, archetypeSublabel, archetypeTagline, sections, voiceId,
     );
   } catch (err) {
     // Coach handoff failure is non-fatal — the report is already generated.
@@ -1009,6 +1009,7 @@ async function runCoachHandoff(
   archetypeSublabel: string | null,
   archetypeTagline: string | null,
   sections: Record<string, unknown>,
+  voiceId: VoiceId,
 ): Promise<void> {
   console.log(`[coach-handoff] Starting for user=${userId}, assessment=${assessmentId}`);
 
@@ -1078,8 +1079,8 @@ async function runCoachHandoff(
     console.log("[coach-handoff] Assessment profile stored");
   }
 
-  // ── 8. Seed coach_profiles with assessment-derived communication prefs ──
-  await seedCoachProfile(supabase, userId, bigFiveSummary, attachmentStyle, scoreRows);
+  // ── 8. Seed coach_profiles with assessment-derived communication prefs + voice ──
+  await seedCoachProfile(supabase, userId, bigFiveSummary, attachmentStyle, scoreRows, voiceId);
 
   // ── 9. Mark onboarding as complete — Decoded IS the onboarding ──
   const { error: onboardingError } = await supabase
@@ -1114,6 +1115,7 @@ async function seedCoachProfile(
   bigFive: Record<string, number> | null,
   attachmentStyle: string | null,
   scoreRows: ScoreRow[],
+  voiceId: VoiceId,
 ): Promise<void> {
   if (!bigFive) return;
 
@@ -1183,6 +1185,7 @@ async function seedCoachProfile(
     challenge_level: challengeLevel,
     source: "decoded",
     confidence: 0.8, // Assessment data is high confidence vs self-reported
+    voice_id: voiceId, // Seed coaching voice from assessment archetype
     // Preserve trust_level and framework_affinity from existing profile
     trust_level: existing?.trust_level ?? 1,
     framework_affinity: existing?.framework_affinity ?? {},

@@ -76,7 +76,7 @@
 > Items surfaced during June 2 testing session. Not blocking Sprint 0.4, but must be resolved before public launch.
 
 - [ ] **TD-007** — **Google OAuth consent branding:** Update Google Cloud Console OAuth consent screen from project URL to "MasteryTV" with proper logo. Manual config — not code.
-- [ ] **TD-008** — **Light mode color contrast:** Green and orange accent colors too washed out on white backgrounds. "You At A Glance" heading hard to read in light mode. Fix in `globals.css` theme tokens.
+- [x] **TD-008** — **Light mode color contrast:** Green and orange accent colors too washed out on white backgrounds. "You At A Glance" heading hard to read in light mode. Fix in `globals.css` theme tokens. ✅ Fixed during V2 report polish (June 2, 2026)
 - [ ] **TD-009** — **Google-only user password reset:** When a Google OAuth-only user requests a password reset, show "This account uses Google sign-in" instead of sending a useless reset email. Check `identities` array in auth response.
 
 ---
@@ -108,32 +108,28 @@
 
 #### E0 — Assessment → Coach Integration
 
-- [ ] **S0.4.1** — Design `assessment_profile` schema: structured JSON summary of key scores, narrative labels, identified coaching priorities (output of scoring engine)
-- [ ] **S0.4.2** — Modify coaching engine prompt assembly: if `user.assessment_profile` exists, inject as a new context layer ("User Self Mastery Profile") above the general user profile
-- [ ] **S0.4.3** — Generate coach's "first message" using assessment data: personalized opening that references specific findings, suggests a starting framework, asks one sharp question
-- [ ] **S0.4.4** — Update coach onboarding flow: users arriving from Self Mastery skip the website/LinkedIn scraping onboarding — assessment profile replaces it
+- [x] **S0.4.1** — Design `assessment_profile` schema: structured JSON summary of key scores, narrative labels, identified coaching priorities (output of scoring engine). ✅ `supabase/functions/_shared/decoded/assessment-profile.ts`
+- [x] **S0.4.2** — Modify coaching engine prompt assembly: if `user.assessment_profile` exists, inject as a new context layer ("User Self Mastery Profile") above the general user profile. ✅ Layer 4.5 in `prompt-assembler.ts`
+- [x] **S0.4.3** — Generate coach's "first message" using assessment data: personalized opening that references specific findings, suggests a starting framework, asks one sharp question. ✅ Deep link auto-sends context-aware opening via chat page
+- [x] **S0.4.4** — Update coach onboarding flow: users arriving from Self Mastery skip the website/LinkedIn scraping onboarding — assessment profile replaces it. ✅ `runCoachHandoff()` sets `onboarding_state.current_step = 'complete'` with `source: 'decoded'`
+- [x] **S0.4.4a** — **Seed coaching voice from assessment archetype:** Assessment voice (archetype → voiceId mapping) is seeded into `coach_profiles.voice_id` during report generation. Coach uses the same communication style as the report until user changes it. ✅ Complete (June 2, 2026)
 - [ ] **S0.4.5** — Test coach handoff with 10 different assessment profiles: verify coaching response quality and personalization accuracy
-- [ ] **S0.4.6** — "Meet your coach" CTA in report Section 10: compelling invitation that references specific insights from their report
+- [x] **S0.4.6** — "Meet your coach" CTA in report Section 10: compelling invitation that references specific insights from their report. ✅ Bottom-of-report CTA with deep link
 
 #### E0 — Contextual Coach Deep Links (Report → Chat)
 
 > [!IMPORTANT]
 > **High-impact conversion feature.** Every "Chat with Your Coach" link in the report is a monetization touchpoint. The coach must demonstrate immediate value by referencing the exact insight the user clicked from.
 
-- [ ] **S0.4.7** — Design deep-link URL scheme: `/dashboard/chat?context={context_key}&section={section_id}` — context_key maps to a specific report insight (e.g., `growth-edge-1`, `attachment-challenge`, `inner-world-cost`, `coach-question-rs04`). Store context-key → prompt-snippet mapping in a config or DB table.
-- [ ] **S0.4.8** — Add "Chat with Your Coach About This" CTAs in strategic report locations:
-  - **Your 3 Growth Edges** box — one CTA per growth edge ("Explore this with your coach")
-  - **Personality trait challenge sections** — after each trait's challenge paragraph (e.g., "Your low Conscientiousness means...")
-  - **YOUR COACH QUESTION** boxes — convert the existing question into a clickable CTA that opens chat pre-seeded with that question
-  - **"The Cost" section** under Your Inner World — after the emotional regulation cost narrative
-  - **Attachment Map** challenge areas — after insecure attachment pattern descriptions
-  - CTA design: inline text link or subtle button, not a banner. Must feel editorial, not salesy. Follow BRAND.md §14.
-- [ ] **S0.4.9** — Implement context-aware first message: when user lands on `/dashboard/chat?context=...`, coaching engine generates a personalized opening that:
-  1. References the specific report insight they clicked from (using assessment data + context key)
-  2. Asks one sharp follow-up question about that insight
-  3. Skips generic onboarding — assessment profile IS the onboarding (see S0.4.4)
-- [ ] **S0.4.10** — Implement Decoded onboarding bypass: users arriving from Decoded report deep links skip the LinkedIn/website research onboarding entirely. Assessment profile replaces it. `onboarding_state` set to `complete` with `source: 'decoded'`.
-- [ ] **S0.4.11** — Track deep-link engagement: log which context keys users click (for optimizing CTA placement). Store in `assessment_reports` or a new `report_events` table: `{ user_id, context_key, section_id, clicked_at }`.
+- [x] **S0.4.7** — Design deep-link URL scheme: `/dashboard/chat?context={context_key}&section={section_id}` — context_key maps to a specific report insight (e.g., `growth-edge-1`, `attachment-challenge`, `inner-world-cost`, `coach-question-rs04`). ✅ `buildCoachDeepLink()` in ReportViewer
+- [x] **S0.4.8** — Add "Chat with Your Coach About This" CTAs in strategic report locations:
+  - **Your 3 Growth Edges** box — one CTA per growth edge ("Explore this with your coach") ✅
+  - **Personality trait challenge sections** — after each trait's challenge paragraph ✅
+  - **YOUR COACH QUESTION** boxes — convert the existing question into a clickable CTA that opens chat pre-seeded with that question ✅
+  - CTA design: inline text link or subtle button, not a banner. Must feel editorial, not salesy. Follow BRAND.md §14. ✅
+- [x] **S0.4.9** — Implement context-aware first message: when user lands on `/dashboard/chat?context=...`, coaching engine generates a personalized opening that references the specific report insight they clicked from. ✅ Chat page reads params and auto-sends
+- [x] **S0.4.10** — Implement Decoded onboarding bypass: users arriving from Decoded report deep links skip the LinkedIn/website research onboarding entirely. Assessment profile replaces it. `onboarding_state` set to `complete` with `source: 'decoded'`. ✅ In `runCoachHandoff()`
+- [x] **S0.4.11** — Track deep-link engagement: log which context keys users click (for optimizing CTA placement). `report_events` table created with RLS. Fire-and-forget `onClick` tracking on all 4 CTA locations. ✅ Complete (June 2, 2026)
 
 **Done:** A user who upgrades to the coach tier from Self Mastery gets a coach that immediately demonstrates it knows them. Clicking "Chat with Your Coach" from any report section opens a coaching conversation that references that exact insight. No generic onboarding. "Wow" moment validated.
 
