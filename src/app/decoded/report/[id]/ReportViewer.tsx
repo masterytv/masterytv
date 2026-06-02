@@ -8,7 +8,7 @@
  * explores their data visualizations.
  */
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Lock, ArrowRight, Loader2, Printer, MessageSquare } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
@@ -376,6 +376,43 @@ export default function ReportViewer({ report: initialReport, scores }: ReportVi
     },
     [],
   );
+
+  // Auto-retrigger generation if report has 0 sections (Edge Function call was missed or report was reset)
+  const hasRetriggered = useRef(false);
+  useEffect(() => {
+    if (hasRetriggered.current) return;
+    if (generatedCount > 0) return; // Already has content, no need to retrigger
+
+    hasRetriggered.current = true;
+    console.log('[ReportViewer] 0 sections detected — re-triggering Edge Function');
+
+    const retrigger = async () => {
+      try {
+        const supabase = createClient();
+        const { data: sessionData } = await supabase.auth.getSession();
+        const accessToken = sessionData?.session?.access_token;
+        if (!accessToken) return;
+
+        const projectUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        await fetch(`${projectUrl}/functions/v1/decoded-generate-report`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({
+            assessment_id: report.assessment_id,
+            report_id: report.id,
+          }),
+        });
+      } catch (err) {
+        console.error('[ReportViewer] Retrigger failed:', err);
+      }
+    };
+
+    retrigger();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Poll for new sections while generation is in progress
   const pollForUpdates = useCallback(async () => {
