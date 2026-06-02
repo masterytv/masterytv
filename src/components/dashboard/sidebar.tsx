@@ -7,6 +7,7 @@ import {
   Home,
   ClipboardCheck,
   MessageSquare,
+  Heart,
   Target,
   TrendingUp,
   Settings,
@@ -28,6 +29,7 @@ function getNavItems(reportId: string | null) {
       requiresAssessment: true,
     },
     { href: "/dashboard/chat", label: "Coach", icon: MessageSquare, requiresAssessment: true },
+    { href: "/dashboard/compatibility", label: "Compatibility", icon: Heart, requiresAssessment: true },
     { href: "/dashboard/commitments", label: "Commitments", icon: Target, requiresAssessment: true },
     { href: "/dashboard/progress", label: "Progress", icon: TrendingUp, requiresAssessment: true },
     {
