@@ -203,6 +203,18 @@
 
 - [ ] **S0.5.23** — **Thumbs up/down feedback on narrative voice:** After reading a report (original or rewrite), show a subtle feedback prompt: "Did this voice feel right for you?" with thumbs up/down. On thumbs down, show voice alternatives. Stores to `voice_feedback` table. See Narrative Voices Sprint S17 for full component spec.
 
+#### E0 — Coach Voice Switching (Chat)
+
+- [x] **S0.5.24** — **Chat voice selector:** Popover in chat header lets users choose from 6 coaching voices (Intellectual, Adventurer, Connector, Steward, Challenger, Sensitive). Each voice maps to `coach_profiles` communication dimensions (warmth, directness, structure, challenge_level, etc.). Takes effect on next coach message. ✅ Complete (June 2, 2026)
+- [x] **S0.5.25** — **Voice API route + DB:** `POST /api/coach/voice` upserts `coach_profiles` with selected voice dimensions. Added `voice_id` column to `coach_profiles`. Added `voice_override` to `coach_profiles_source_check` constraint. Added RLS INSERT policy. ✅ Complete (June 2, 2026)
+- [x] **S0.5.26** — **Active voice indicator:** Check mark on selected voice in popover + trigger button. AudioLines icon. Voice loads from DB on mount. ✅ Complete (June 2, 2026)
+
+#### E0 — Dashboard Navigation Restructure
+
+- [x] **S0.5.27** — **Sidebar nav restructure:** Home (stays), Assessment Report (direct link to `/decoded/report/[id]`, locked behind assessment), Coach, Commitments, Progress, Coaching Letter (always accessible), Settings, Share (shortened from "Share Decoded"). ✅ Complete (June 2, 2026)
+- [x] **S0.5.28** — **Coaching Letter onboarding gate:** When user clicks Coaching Letter without completing coaching onboarding, shows coach-framed prompt: "Your Coach Has Some Questions" with CTA to onboarding flow. Replaces generic "No coaching letter yet" copy. ✅ Complete (June 2, 2026)
+- [x] **S0.5.29** — **Hide debug panel:** Coach Debugger toggle removed from chat header. Code preserved for future use. ✅ Complete (June 2, 2026)
+
 ---
 
 ### Sprint 0.6 — Email Infrastructure & Onboarding Sequence (Week 5–6, parallel)
