@@ -34,7 +34,7 @@ export const SECTION_CONFIGS_V2: SectionConfig[] = [
     subtitle: 'The snapshot of who you are',
     minTier: 'free',
     hasVisualization: false,
-    icon: 'Sparkles',
+    icon: 'Fingerprint',
     lockedTeaser: '',
   },
   {
@@ -121,7 +121,7 @@ export const SECTION_CONFIGS_V1: SectionConfig[] = [
     minTier: 'free',
     hasVisualization: true,
     vizType: 'summary_table',
-    icon: 'Sparkles',
+    icon: 'Fingerprint',
     lockedTeaser: '',
   },
   {

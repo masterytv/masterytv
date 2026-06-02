@@ -476,7 +476,7 @@ Add to `globals.css` `@theme`:
 The visual language of AI startups has converged into a recognizable, now-dated style. It signals "cheap product" to any design-literate user:
 
 - Colorful emoji used as section or feature icons (🧠 🎯 🔮 💡 ⚡)
-- ✨ Sparkle / magic stars as decorative elements — **absolutely prohibited, zero exceptions**
+- ✨ **Sparkle / magic stars — ABSOLUTE ZERO TOLERANCE.** No `Sparkles` Lucide icon, no `✨` Unicode character, no sparkle SVG, no star-burst decoration. Not as an icon, not as a label prefix, not as a loading indicator, not as a decorative accent — **never, anywhere, for any reason.** Any PR or commit introducing a sparkle in any form must be rejected on sight. This is the single most important visual rule in the entire brand guide.
 - Purple/pink/teal gradient blobs floating behind content
 - Clipart-style 3D or illustrated icons per feature/tier
 - Generic "futuristic" illustration with circuit or particle patterns
@@ -504,7 +504,7 @@ The following are **permanently prohibited** in all UI across Mastery Coach, Dec
 
 | Banned Element | Why Banned | Permitted Alternative |
 |:---|:---|:---|
-| ✨ Sparkle / Magic Stars | Universal "AI did this" cliché — on every low-effort AI product | No icon; let the content speak |
+| ✨ Sparkle / Magic Stars (`Sparkles` icon, `✨` emoji, any sparkle SVG) | **#1 most banned element.** Universal "AI did this" cliché. Signals low-effort product instantly. | **Nothing.** No replacement. Let content quality speak for itself. |
 | 🧠 Brain clipart | Generic "psychology/AI thinking" icon | Custom SVG line art, or data visualization |
 | 🎯 Target/Bulls-eye | Overused SaaS "goal" icon | Typographic — use a number, label, or score |
 | 🔮 Crystal ball | New-age AI cliché | Remove the concept from UI entirely |

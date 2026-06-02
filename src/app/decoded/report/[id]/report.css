@@ -868,9 +868,12 @@
   color: var(--color-primary);
 }
 
-.voice-pill__sparkle {
-  color: var(--color-primary);
-  opacity: 0.5;
+.voice-pill__original-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  opacity: 0.4;
 }
 
 @keyframes voice-spin {

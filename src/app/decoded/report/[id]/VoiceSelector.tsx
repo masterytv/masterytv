@@ -15,7 +15,7 @@
 
 import { useState, useCallback, useTransition } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Loader2, Check, Palette, Microscope, Compass, Heart, ShieldCheck, Zap, Waves } from 'lucide-react';
+import { Loader2, Check, Palette, Microscope, Compass, Heart, ShieldCheck, Zap, Waves } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 export type VoiceId =
@@ -262,7 +262,7 @@ export default function VoiceSelector({
                 <Check className="voice-pill__check" size={12} />
               )}
               {isOriginal && !isActive && (
-                <Sparkles className="voice-pill__sparkle" size={10} />
+                <span className="voice-pill__original-dot" aria-label="Original voice" />
               )}
             </button>
           );

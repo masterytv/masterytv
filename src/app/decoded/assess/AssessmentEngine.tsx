@@ -831,7 +831,7 @@ export default function AssessmentEngine({
             {/* Gender (chips) */}
             <div>
               <label className="text-xs font-semibold text-text-secondary mb-1.5 flex items-center gap-1.5">
-                ✨ Gender
+                Gender
               </label>
               <div className="flex flex-wrap gap-2 mt-1">
                 {GENDER_OPTIONS.map((g) => (

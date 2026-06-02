@@ -16,8 +16,8 @@
 
 import { motion } from 'framer-motion';
 import {
-  Sparkles, TrendingUp, Shield, Zap, Heart,
-  ChevronRight, Award, AlertTriangle, Target,
+  Award, TrendingUp, Shield, Zap, Heart,
+  ChevronRight, AlertTriangle, Target,
 } from 'lucide-react';
 import type {
   SummaryRow, StrengthBullet, TraitCard as TraitCardType,
@@ -62,7 +62,7 @@ interface StrengthEdgeListProps {
 }
 
 export function StrengthEdgeList({ items, variant }: StrengthEdgeListProps) {
-  const Icon = variant === 'strength' ? Sparkles : TrendingUp;
+  const Icon = variant === 'strength' ? Award : TrendingUp;
   const title = variant === 'strength' ? 'Your Top 3 Strengths' : 'Your 3 Growth Edges';
 
   return (

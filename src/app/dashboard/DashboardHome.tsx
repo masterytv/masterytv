@@ -11,7 +11,6 @@ import {
   RotateCcw,
   Check,
   Clock,
-  Sparkles,
   Copy,
   Mail,
   Lock,

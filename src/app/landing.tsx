@@ -23,7 +23,7 @@ import {
   Check,
   X,
   Loader2,
-  Sparkles,
+  Fingerprint,
   MessageCircle,
   Search,
   Zap,
@@ -406,7 +406,7 @@ function BetaModal({
             ) : (
               <>
                 <div style={{ marginBottom: "0.25rem" }}>
-                  <Sparkles
+                  <Fingerprint
                     className="w-5 h-5"
                     style={{
                       color: "var(--color-primary-container)",
@@ -564,7 +564,7 @@ export default function LandingPage() {
           transition={{ duration: 0.7, ease: [0.4, 0, 0.2, 1] }}
         >
           <div className="landing__hero-label">
-            <Sparkles className="w-3.5 h-3.5" />
+            <Compass className="w-3.5 h-3.5" />
             AI Coaching for High-Performers
           </div>
           <h1 className="landing__hero-title">
@@ -900,7 +900,7 @@ export default function LandingPage() {
         <motion.div className="landing__section-inner" variants={stagger} {...anim}>
           <motion.div variants={fadeUp} transition={{ duration: 0.5 }} style={{ textAlign: "center" }}>
             <p className="landing__section-label" style={{ justifyContent: "center" }}>
-              <Sparkles className="w-4 h-4" />
+              <Fingerprint className="w-4 h-4" />
               Simple Pricing
             </p>
             <h2 className="landing__section-title" style={{ marginLeft: "auto", marginRight: "auto" }}>
