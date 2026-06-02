@@ -123,7 +123,25 @@
 - [ ] **S0.5.9** — Admin visibility: add Decoded metrics to admin dashboard (assessments started, completed, conversion by tier, report views, viral loop stats)
 - [ ] **S0.5.10** — Bottom-of-report coaching CTA: pre-generated personalized coach opener + Share Card button + "Check in with me in a week" opt-in (triggers Email 7 of onboarding sequence)
 
-**Done:** Decoded is live at `mastery.tv/decoded`. Compare/Invite, Share Card, and Referral mechanics active. Product Hunt launch ready. Legal coverage in place.
+#### E0 — Auth Flow QA (Pre-Launch Gate)
+
+> [!IMPORTANT]
+> **MANDATORY before public launch.** Every auth path must be tested end-to-end in production. Failures here = lost users.
+
+- [ ] **S0.5.11** — **New email signup:** Fresh email → Create Account → confirmation email arrives → click link → lands on dashboard → can start assessment
+- [ ] **S0.5.12** — **Existing email signup (account exists):** Try to sign up with existing email → "Account already exists" screen → Sign In button works → Forgot Password sends email
+- [ ] **S0.5.13** — **Email sign-in (happy path):** Existing email+password user → Sign In → lands on dashboard
+- [ ] **S0.5.14** — **Email sign-in (wrong password):** Wrong password → clear error message → Forgot Password link visible and works
+- [ ] **S0.5.15** — **Forgot password (full flow):** Click "Forgot your password?" → email arrives (via Resend SMTP) → click "Reset Password" link → /auth/reset-password page loads → set new password → success → sign in with new password works
+- [ ] **S0.5.16** — **Google OAuth signup (new user):** Continue with Google → consent screen shows "MasteryTV" branding → account created → lands on dashboard
+- [ ] **S0.5.17** — **Google OAuth login (returning user):** Continue with Google → straight to dashboard (no re-consent)
+- [ ] **S0.5.18** — **Google-only user password reset:** Google OAuth user tries forgot password → should inform them to use Google sign-in (no password to reset)
+- [ ] **S0.5.19** — **Expired/invalid reset link:** Click an old reset link → "Reset link expired" page → link back to sign-in
+- [ ] **S0.5.20** — **Rate limiting:** Rapid-fire forgot password requests → friendly "Please wait" message (not raw Supabase error)
+- [ ] **S0.5.21** — **Mobile browser:** All auth flows work on iOS Safari and Android Chrome (no layout breaks, autofill works)
+- [ ] **S0.5.22** — **Email deliverability:** Confirmation + reset emails land in inbox (not spam) for Gmail, Outlook, iCloud, Yahoo
+
+**Done:** All 12 auth scenarios tested in production. Zero user-blocking bugs. Every error state has a clear recovery path.
 
 ---
 
