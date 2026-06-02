@@ -98,11 +98,11 @@ export default function CompatibilityReportViewer({
         advice_for_b: report.advice_for_b || '',
       };
 
-  // Only show the sharing card for the inviter (they're the one receiving shared data)
-  const showSharingCard = isInviter && shareWithHuman !== 'none';
+  // Show the sharing card to both users so they see the mutual level
+  const showSharingCard = shareWithHuman !== 'none';
 
   // Check if there are items not shared (to show Request Access)
-  const hasLockedItems = isInviter && shareWithHuman !== 'full';
+  const hasLockedItems = shareWithHuman !== 'full';
 
   async function handleRequestUpgrade() {
     setRequestingUpgrade(true);
