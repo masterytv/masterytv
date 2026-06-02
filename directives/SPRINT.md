@@ -65,13 +65,23 @@
 - [ ] **S0.2.7** — (F02) Safety layer: clinical result framing (never raw scores; always growth-oriented language); crisis gateway for suicidal ideation items (automatic resource display)
 - [ ] **S0.2.8** — (F02) Write section-specific prompt templates for all 12 report sections; QA minimum 20 sample reports
 - [ ] **S0.2.9** — (F02) Implement archetype system per `DECODED_ARCHETYPES.md`: ~16 base types from Big Five clusters + AI-generated sub-label. Format: `BASE TYPE — Sub-Label`
-- [ ] **S0.2.10** — (F02) Report polish pass: review and improve the writing style across all report sections (more engaging, editorial tone — less clinical/generic). Redesign visual layout for premium feel: better typography hierarchy, card-based section layouts, richer data visualizations, pull-quote callouts, and micro-interactions. Reference BRAND.md §14 for aesthetic guidelines.
+- [x] **S0.2.10** — (F02) Report polish pass: review and improve the writing style across all report sections (more engaging, editorial tone — less clinical/generic). Redesign visual layout for premium feel: better typography hierarchy, card-based section layouts, richer data visualizations, pull-quote callouts, and micro-interactions. Reference BRAND.md §14 for aesthetic guidelines. ✅ Complete (June 2, 2026)
 
 **Done:** Every user who completes the assessment gets a free, high-quality 7-section report. 5 locked sections visible but blurred. Every section ends with a coaching question. Browser PDF export works. Report reads like a premium magazine feature, not a clinical printout.
 
 ---
 
-### Sprint 0.3 — Pricing, Billing & Upgrade Tiers (Week 3–4)
+### Technical Debt — Auth & UI (Pre-Launch)
+
+> Items surfaced during June 2 testing session. Not blocking Sprint 0.4, but must be resolved before public launch.
+
+- [ ] **TD-007** — **Google OAuth consent branding:** Update Google Cloud Console OAuth consent screen from project URL to "MasteryTV" with proper logo. Manual config — not code.
+- [ ] **TD-008** — **Light mode color contrast:** Green and orange accent colors too washed out on white backgrounds. "You At A Glance" heading hard to read in light mode. Fix in `globals.css` theme tokens.
+- [ ] **TD-009** — **Google-only user password reset:** When a Google OAuth-only user requests a password reset, show "This account uses Google sign-in" instead of sending a useless reset email. Check `identities` array in auth response.
+
+---
+
+### Sprint 0.3 — Pricing, Billing & Upgrade Tiers (Week 3–4) — ⏸️ DEFERRED
 
 **Goal:** Paid tiers live and working end-to-end via Stripe.
 
@@ -86,6 +96,9 @@
 - [ ] **S0.3.7** — (F04) Implement coach message rate limiting: Free=5/day, Insight=50/week, Growth=300/month, Mastery=unlimited
 
 **Done:** All four pricing tiers are purchasable via Stripe. Locked sections unlock immediately on upgrade. Message limits enforced.
+
+> [!NOTE]
+> **Sprint 0.3 is deferred.** Stripe integration will be built after Coach Handoff (S0.4) is complete. The free tier + report are sufficient for launch testing.
 
 ---
 
@@ -183,6 +196,12 @@
 - [ ] **S0.5.22** — **Email deliverability:** Confirmation + reset emails land in inbox (not spam) for Gmail, Outlook, iCloud, Yahoo
 
 **Done:** All 12 auth scenarios tested in production. Zero user-blocking bugs. Every error state has a clear recovery path.
+
+#### E0 — Voice Feedback (Narrative Voices)
+
+> Cross-reference: Full spec in [DECODED_NARRATIVE_VOICES_SPRINT.md](file:///Users/thomaswood/Documents/Antigravity/MasteryTV/directives/DECODED_NARRATIVE_VOICES_SPRINT.md) S17.
+
+- [ ] **S0.5.23** — **Thumbs up/down feedback on narrative voice:** After reading a report (original or rewrite), show a subtle feedback prompt: "Did this voice feel right for you?" with thumbs up/down. On thumbs down, show voice alternatives. Stores to `voice_feedback` table. See Narrative Voices Sprint S17 for full component spec.
 
 ---
 
