@@ -18,13 +18,21 @@ import AttachmentQuadrant from './AttachmentQuadrant';
 import WellnessRadar from './WellnessRadar';
 import ScoreDashboard from './ScoreDashboard';
 import UpgradeModal from './UpgradeModal';
+import VoiceSelector from './VoiceSelector';
+import type { VoiceId } from './VoiceSelector';
+import {
+  SummaryTable, StrengthEdgeList, TraitCard,
+  ProtectorCardComponent, FightStagesComponent,
+  NeedToHearComponent, GrowthEdgeCardComponent,
+} from './v2-components';
 import DecodedNav from '../../DecodedNav';
-import { SECTION_CONFIGS, UPGRADE_GATE_AFTER, isSectionUnlocked } from '@/lib/decoded/report/sections/section-config';
+import { getSectionConfigs, getUpgradeGateAfter, isSectionUnlocked } from '@/lib/decoded/report/sections/section-config';
 import { REPORT_DISCLAIMER, evaluateSafetyFlags, CRISIS_RESOURCES } from '@/lib/decoded/report/safety';
 import type { InstrumentScore } from '@/lib/decoded/scoring/types';
 import type { ReportTier } from '@/lib/decoded/report/prompts/types';
 import { createClient } from '@/lib/supabase/client';
 import './report.css';
+import './v2-components.css';
 
 interface ScoreRow {
   instrument_id: string;
@@ -52,6 +60,8 @@ interface ReportData {
   archetype_sublabel?: string;
   archetype_tagline?: string;
   decoded_score?: number;
+  voice_profile?: { voiceId: string; modifiers?: string[] } | null;
+  report_version?: number;
   created_at: string;
   updated_at: string;
 }
@@ -61,16 +71,311 @@ interface ReportViewerProps {
   scores: ScoreRow[];
 }
 
+// ─────────────────────────────────────────────────────
+// V2 Structured Section Renderer
+// ─────────────────────────────────────────────────────
+
+interface V2SectionContentProps {
+  sectionId: string;
+  data: SectionData;
+  scores: ScoreRow[];
+  bigFivePercentiles: number[];
+  attachmentAnxiety: number;
+  attachmentAvoidance: number;
+  attachmentStyle: string;
+}
+
+/**
+ * Renders v2 structured sections.
+ * v2 sections store typed JSON in content_markdown (parsed here),
+ * unlike v1 which stores raw markdown.
+ */
+function V2SectionContent({
+  sectionId, data, scores,
+  bigFivePercentiles, attachmentAnxiety, attachmentAvoidance, attachmentStyle,
+}: V2SectionContentProps) {
+  // Parse structured content from v2 sections
+  // v2 stores JSON in content_markdown instead of raw markdown
+  let parsed: Record<string, unknown> = {};
+  try {
+    parsed = JSON.parse(data.content_markdown);
+  } catch {
+    // Fallback: if content isn't valid JSON, render as markdown (hybrid mode)
+    return (
+      <div className="report-prose">
+        <ReactMarkdown>{data.content_markdown}</ReactMarkdown>
+      </div>
+    );
+  }
+
+  const tldr = parsed.tldr as string | undefined;
+
+  switch (sectionId) {
+    case 'S1': {
+      const summaryTable = (parsed.summary_table ?? []) as Array<{ dimension: string; summary: string }>;
+      const topStrengths = (parsed.top_strengths ?? []) as Array<{ label: string; description: string }>;
+      const growthEdges = (parsed.growth_edges ?? []) as Array<{ label: string; description: string }>;
+      return (
+        <div className="v2-section-content">
+          {tldr && <p className="v2-section-tldr">{tldr}</p>}
+          <SummaryTable rows={summaryTable} />
+          <div className="v2-section-columns" style={{ marginTop: '1.5rem' }}>
+            <StrengthEdgeList items={topStrengths} variant="strength" />
+            <StrengthEdgeList items={growthEdges} variant="edge" />
+          </div>
+        </div>
+      );
+    }
+
+    case 'S2': {
+      const narrative = parsed.narrative as string | undefined;
+      const traitCards = (parsed.trait_cards ?? []) as Array<{
+        trait_name: string; percentile: number; label: string;
+        gifts: string[]; challenges: string[];
+      }>;
+      const pattern = parsed.signature_pattern as { name: string; description: string } | undefined;
+      return (
+        <div className="v2-section-content">
+          {tldr && <p className="v2-section-tldr">{tldr}</p>}
+          <BigFiveRadar values={bigFivePercentiles} />
+          {narrative && (
+            <div className="report-prose" style={{ marginBottom: '1.5rem' }}>
+              <ReactMarkdown>{narrative}</ReactMarkdown>
+            </div>
+          )}
+          {traitCards.map((card) => (
+            <TraitCard key={card.trait_name} card={card} />
+          ))}
+          {pattern && (
+            <div className="v2-named-pattern">
+              <h4 className="v2-named-pattern__name">{pattern.name}</h4>
+              <p className="v2-named-pattern__desc">{pattern.description}</p>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    case 'S3': {
+      const protectors = (parsed.protectors ?? []) as Array<{
+        name: string; role: string; cost: string; score?: number;
+      }>;
+      const vulnThemes = parsed.vulnerability_themes as string | undefined;
+      const copingStyle = parsed.coping_style as string | undefined;
+      return (
+        <div className="v2-section-content">
+          {tldr && <p className="v2-section-tldr">{tldr}</p>}
+          {protectors.map((p, i) => (
+            <ProtectorCardComponent key={p.name} protector={p} index={i} />
+          ))}
+          {vulnThemes && (
+            <div className="report-prose" style={{ marginTop: '1.25rem' }}>
+              <ReactMarkdown>{vulnThemes}</ReactMarkdown>
+            </div>
+          )}
+          {copingStyle && (
+            <div className="report-prose">
+              <ReactMarkdown>{copingStyle}</ReactMarkdown>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    case 'S4': {
+      const dimensions = (parsed.dimensions ?? []) as Array<{
+        name: string; score_label: string; interpretation: string;
+      }>;
+      const triggers = (parsed.emotional_triggers ?? []) as Array<{ label: string; description: string }>;
+      const selfComp = parsed.self_compassion as string | undefined;
+      return (
+        <div className="v2-section-content">
+          {tldr && <p className="v2-section-tldr">{tldr}</p>}
+          <div className="v2-dimension-grid">
+            {dimensions.map((dim) => (
+              <div key={dim.name} className="v2-dimension-item">
+                <div className="v2-dimension-item__header">
+                  <span className="v2-dimension-item__name">{dim.name}</span>
+                  <span className="v2-dimension-item__label">{dim.score_label}</span>
+                </div>
+                <p className="v2-dimension-item__interp">{dim.interpretation}</p>
+              </div>
+            ))}
+          </div>
+          {triggers.length > 0 && (
+            <StrengthEdgeList items={triggers} variant="edge" />
+          )}
+          {selfComp && (
+            <div className="report-prose" style={{ marginTop: '1rem' }}>
+              <ReactMarkdown>{selfComp}</ReactMarkdown>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    case 'S5': {
+      const attachTldr = parsed.attachment_tldr as string | undefined;
+      const howYouLove = parsed.how_you_love as string | undefined;
+      const fightStages = (parsed.how_you_fight ?? []) as Array<{
+        stage_number: number; title: string; description: string;
+      }>;
+      const needToHear = (parsed.what_you_need_to_hear ?? []) as Array<{
+        phrase: string; why: string;
+      }>;
+      return (
+        <div className="v2-section-content">
+          {tldr && <p className="v2-section-tldr">{tldr}</p>}
+          <AttachmentQuadrant
+            anxiety={attachmentAnxiety}
+            avoidance={attachmentAvoidance}
+            style={attachmentStyle}
+          />
+          {attachTldr && (
+            <p className="v2-attachment-tldr">{attachTldr}</p>
+          )}
+          {howYouLove && (
+            <>
+              <h4 className="v2-subsection-title">How You Love</h4>
+              <div className="report-prose">
+                <ReactMarkdown>{howYouLove}</ReactMarkdown>
+              </div>
+            </>
+          )}
+          <FightStagesComponent stages={fightStages} />
+          <NeedToHearComponent phrases={needToHear} />
+        </div>
+      );
+    }
+
+    case 'S6': {
+      const topValues = (parsed.top_values ?? []) as Array<{ label: string; description: string }>;
+      const bottomValues = (parsed.bottom_values ?? []) as Array<{ label: string; description: string }>;
+      const motivationType = parsed.motivation_type as string | undefined;
+      const careerEnvs = (parsed.career_environments ?? []) as string[];
+      return (
+        <div className="v2-section-content">
+          {tldr && <p className="v2-section-tldr">{tldr}</p>}
+          <div className="v2-section-columns">
+            <StrengthEdgeList items={topValues} variant="strength" />
+            <StrengthEdgeList items={bottomValues} variant="edge" />
+          </div>
+          {motivationType && (
+            <div className="report-prose" style={{ marginTop: '1.25rem' }}>
+              <ReactMarkdown>{motivationType}</ReactMarkdown>
+            </div>
+          )}
+          {careerEnvs.length > 0 && (
+            <div className="v2-career-envs">
+              <h4 className="v2-subsection-title">Environments That Fit Your Wiring</h4>
+              <ul className="v2-career-envs__list">
+                {careerEnvs.map((env, i) => (
+                  <li key={i}>{env}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    case 'S7': {
+      const lifeSat = parsed.life_satisfaction as string | undefined;
+      const flags = (parsed.screening_flags ?? []) as Array<{
+        area: string; finding: string; recommendation: string;
+      }>;
+      const wellness = scores.find(s => s.instrument_id === 'wellness_check');
+      return (
+        <div className="v2-section-content">
+          {tldr && <p className="v2-section-tldr">{tldr}</p>}
+          {wellness?.subscale_scores && (
+            <WellnessRadar dimensions={wellness.subscale_scores as Record<string, number>} />
+          )}
+          {lifeSat && (
+            <div className="report-prose">
+              <ReactMarkdown>{lifeSat}</ReactMarkdown>
+            </div>
+          )}
+          {flags.length > 0 && (
+            <div className="v2-screening-flags">
+              {flags.map((flag, i) => (
+                <div key={i} className="v2-screening-flag">
+                  <h5 className="v2-screening-flag__area">{flag.area}</h5>
+                  <p className="v2-screening-flag__finding">{flag.finding}</p>
+                  <p className="v2-screening-flag__rec">{flag.recommendation}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    case 'S8': {
+      const edges = (parsed.growth_edges ?? []) as Array<{
+        priority: number; title: string; why: string; actions: string[];
+      }>;
+      const challenge = parsed.thirty_day_challenge as string | undefined;
+      return (
+        <div className="v2-section-content">
+          {tldr && <p className="v2-section-tldr">{tldr}</p>}
+          {edges.map((edge) => (
+            <GrowthEdgeCardComponent key={edge.priority} edge={edge} />
+          ))}
+          {challenge && (
+            <div className="v2-challenge">
+              <h4 className="v2-challenge__title">Your 30-Day Challenge</h4>
+              <p className="v2-challenge__text">{challenge}</p>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    default:
+      // Unknown section, fall back to markdown
+      return (
+        <div className="report-prose">
+          <ReactMarkdown>{data.content_markdown}</ReactMarkdown>
+        </div>
+      );
+  }
+}
+
 export default function ReportViewer({ report: initialReport, scores }: ReportViewerProps) {
   const [report, setReport] = useState<ReportData>(initialReport);
   const [readingProgress, setReadingProgress] = useState(0);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const userTier: ReportTier = 'free'; // TODO: Connect to user subscription
 
-  const sections = report.sections ?? {};
+  // Version-aware section config — v1 reports use RS01-RS12, v2 uses S1-S8
+  const reportVersion = (report.report_version ?? 1) as 1 | 2;
+  const SECTION_CONFIGS = getSectionConfigs(reportVersion);
+  const UPGRADE_GATE_AFTER = getUpgradeGateAfter(reportVersion);
+
+  // Voice system state
+  const originalVoiceId = (report.voice_profile?.voiceId ?? 'connector') as VoiceId;
+  const [activeVoiceId, setActiveVoiceId] = useState<VoiceId>(originalVoiceId);
+  const [voiceSections, setVoiceSections] = useState<Record<string, SectionData> | null>(null);
+
+  // Use voice-specific sections if a rewrite is active, otherwise original
+  const displaySections = (activeVoiceId !== originalVoiceId && voiceSections)
+    ? voiceSections as Record<string, SectionData>
+    : (report.sections ?? {});
+
+  const sections = displaySections;
   const totalSections = SECTION_CONFIGS.length;
   const generatedCount = Object.keys(sections).length;
   const isGenerating = generatedCount < totalSections;
+
+  // Voice change handler
+  const handleVoiceChange = useCallback(
+    (voiceId: VoiceId, newSections: Record<string, unknown> | null) => {
+      setActiveVoiceId(voiceId);
+      setVoiceSections(newSections as Record<string, SectionData> | null);
+    },
+    [],
+  );
 
   // Poll for new sections while generation is in progress
   const pollForUpdates = useCallback(async () => {
@@ -159,20 +464,14 @@ export default function ReportViewer({ report: initialReport, scores }: ReportVi
           {report.archetype_tagline && (
             <p className="report-header__tagline">{report.archetype_tagline}</p>
           )}
-          {report.decoded_score !== undefined && report.decoded_score !== null && (
-            <div style={{ marginTop: '1.5rem' }}>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--text-label)', letterSpacing: '0.08em', textTransform: 'uppercase' as const }}>
-                Decoded Score
-              </span>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: '3rem', fontWeight: 700, color: 'var(--color-primary)', lineHeight: 1 }}>
-                {report.decoded_score}
-              </div>
-            </div>
-          )}
+
         </motion.div>
 
         {/* Disclaimer */}
-        <div className="report-disclaimer">{REPORT_DISCLAIMER}</div>
+        <div className="report-disclaimer">
+          <strong>This report is for personal insight and growth — not a clinical diagnosis.</strong>{' '}
+          The assessments used are validated research instruments, but their application here is for self-understanding, not medical evaluation. If you&rsquo;re experiencing significant distress, please consult a licensed mental health professional.
+        </div>
 
         {/* Crisis resources — safety layer */}
         {(() => {
@@ -214,27 +513,61 @@ export default function ReportViewer({ report: initialReport, scores }: ReportVi
           archetypeBase={report.archetype_base}
           archetypeSublabel={report.archetype_sublabel}
           archetypeTagline={report.archetype_tagline}
-          decodedScore={report.decoded_score}
         />
 
         {/* ═══════ NARRATIVE TRANSITION ═══════ */}
         <div className="narrative-divider">
           <div className="narrative-divider__label">Part II</div>
-          <div className="narrative-divider__title">Your Personalized Narrative</div>
+          <div className="narrative-divider__title">
+            {isGenerating ? 'Your Report is Generating' : 'Your Full Report'}
+          </div>
           <div className="narrative-divider__subtitle">
             {isGenerating
-              ? `Writing your story… ${generatedCount} of ${totalSections} sections complete`
-              : 'AI-generated insights based on your unique data'}
+              ? generatedCount === 0
+                ? 'Analyzing your data and preparing your personalized narrative…'
+                : `Writing your story… ${generatedCount} of ${totalSections} sections complete`
+              : 'Insights based on your unique data'}
           </div>
           {isGenerating && (
-            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', background: 'rgba(96, 99, 238, 0.06)', borderRadius: 'var(--radius-md)', fontSize: '0.75rem', color: 'var(--text-label)' }}>
-                <Loader2 className="h-3.5 w-3.5 animate-spin" style={{ color: 'var(--color-primary)' }} />
-                Generating ({generatedCount}/{totalSections})
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', marginTop: '1.25rem' }}>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '0.625rem',
+                padding: '0.625rem 1.25rem',
+                background: 'rgba(96, 99, 238, 0.08)',
+                borderRadius: 'var(--radius-md)',
+                fontSize: '0.8125rem',
+                color: 'var(--color-primary)',
+                fontWeight: 500,
+              }}>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                {generatedCount === 0
+                  ? 'Preparing your report…'
+                  : `Generating section ${generatedCount + 1} of ${totalSections}…`}
               </div>
+              {generatedCount === 0 && (
+                <div style={{
+                  fontSize: '0.75rem',
+                  color: 'var(--color-text-tertiary)',
+                  textAlign: 'center',
+                  maxWidth: '28rem',
+                }}>
+                  This usually takes 1–2 minutes. Your report will appear section by section as it&apos;s written.
+                </div>
+              )}
             </div>
           )}
         </div>
+
+        {/* ═══════ VOICE SELECTOR — Below divider ═══════ */}
+        {!isGenerating && generatedCount > 0 && (
+          <VoiceSelector
+            currentVoiceId={originalVoiceId}
+            activeVoiceId={activeVoiceId}
+            reportId={report.id}
+            onVoiceChange={handleVoiceChange}
+            canRewrite={true}
+          />
+        )}
 
         {/* ═══════ AI NARRATIVE SECTIONS ═══════ */}
         {SECTION_CONFIGS.map((config, index) => {
@@ -264,33 +597,41 @@ export default function ReportViewer({ report: initialReport, scores }: ReportVi
 
                     {isUnlocked ? (
                       <>
-                        {/* Data visualization for certain sections */}
-                        {config.id === 'RS04' && (
-                          <BigFiveContext />
-                        )}
-                        {(config.id === 'RS03' || config.id === 'RS04') && (
-                          <BigFiveRadar values={bigFivePercentiles} />
-                        )}
-                        {config.id === 'RS06' && (
-                          <AttachmentQuadrant
-                            anxiety={attachmentAnxiety}
-                            avoidance={attachmentAvoidance}
-                            style={attachmentStyle}
+                        {/* ═══ V2 STRUCTURED RENDERING ═══ */}
+                        {reportVersion === 2 ? (
+                          <V2SectionContent sectionId={config.id} data={section} scores={scores}
+                            bigFivePercentiles={bigFivePercentiles}
+                            attachmentAnxiety={attachmentAnxiety}
+                            attachmentAvoidance={attachmentAvoidance}
+                            attachmentStyle={attachmentStyle}
                           />
+                        ) : (
+                          /* ═══ V1 MARKDOWN RENDERING (backward compat) ═══ */
+                          <>
+                            {config.id === 'RS04' && <BigFiveContext />}
+                            {(config.id === 'RS03' || config.id === 'RS04') && (
+                              <BigFiveRadar values={bigFivePercentiles} />
+                            )}
+                            {config.id === 'RS06' && (
+                              <AttachmentQuadrant
+                                anxiety={attachmentAnxiety}
+                                avoidance={attachmentAvoidance}
+                                style={attachmentStyle}
+                              />
+                            )}
+                            {config.id === 'RS11' && (() => {
+                              const wellness = scores.find(s => s.instrument_id === 'wellness_check');
+                              return wellness?.subscale_scores ? (
+                                <WellnessRadar dimensions={wellness.subscale_scores as Record<string, number>} />
+                              ) : null;
+                            })()}
+                            <div className="report-prose">
+                              <ReactMarkdown>{section.content_markdown}</ReactMarkdown>
+                            </div>
+                          </>
                         )}
-                        {config.id === 'RS11' && (() => {
-                          const wellness = scores.find(s => s.instrument_id === 'wellness_check');
-                          return wellness?.subscale_scores ? (
-                            <WellnessRadar dimensions={wellness.subscale_scores as Record<string, number>} />
-                          ) : null;
-                        })()}
 
-                        {/* Rendered markdown content */}
-                        <div className="report-prose">
-                          <ReactMarkdown>{section.content_markdown}</ReactMarkdown>
-                        </div>
-
-                        {/* Coach question callout */}
+                        {/* Coach question callout (both versions) */}
                         {section.coach_question && (
                           <div className="coach-question">
                             <div className="coach-question__label">Your Coach Question</div>
@@ -333,12 +674,12 @@ export default function ReportViewer({ report: initialReport, scores }: ReportVi
                 )}
               </AnimatePresence>
 
-              {/* Upgrade gate after RS07 */}
+              {/* Upgrade gate */}
               {showUpgradeGate && !isSectionUnlocked('insight', userTier) && (
                 <div className="upgrade-gate">
                   <div className="upgrade-gate__title">Keep Reading?</div>
                   <p className="upgrade-gate__subtitle">
-                    You&apos;ve seen the foundation. The next 5 sections go deeper — emotional regulation, motivation mapping, relationship dynamics, wellness analysis, and your personalized growth roadmap.
+                    You&apos;ve seen the foundation. The next sections go deeper into your relationships, career fit, wellbeing, and a personalized growth roadmap.
                   </p>
                   <button
                     onClick={() => setShowUpgradeModal(true)}
