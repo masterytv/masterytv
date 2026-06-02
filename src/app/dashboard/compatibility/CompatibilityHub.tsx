@@ -30,6 +30,8 @@ interface SentInvite {
   created_at: string;
   completed_at: string | null;
   consented_at: string | null;
+  upgrade_requested_level: string | null;
+  upgrade_requested_by: string | null;
 }
 
 interface ReceivedInvite {
@@ -43,6 +45,8 @@ interface ReceivedInvite {
   compatibility_report: unknown | null;
   created_at: string;
   consented_at: string | null;
+  upgrade_requested_level: string | null;
+  upgrade_requested_by: string | null;
 }
 
 interface Props {
@@ -104,6 +108,22 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ inviteId, shareWithHuman: 'none', shareWithCoach: 'none' }),
+      });
+      router.refresh();
+    } catch {
+      // silent
+    } finally {
+      setSaving(null);
+    }
+  }
+
+  async function handleUpgradeResponse(inviteId: string, action: 'approve' | 'deny') {
+    setSaving(inviteId);
+    try {
+      await fetch('/api/decoded/invite-upgrade', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inviteId, action }),
       });
       router.refresh();
     } catch {
@@ -364,44 +384,91 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
             <div className="space-y-2">
               {sentInvites.map((inv) => {
                 const isConnected = inv.status === 'consented' || inv.status === 'connected';
-                const inner = (
-                  <>
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                        statusConfig[inv.status]?.avatarCls || 'bg-surface-200 text-text-muted'
-                      }`}>
-                        {inv.recipient_email[0].toUpperCase()}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-body-md text-text-primary font-medium truncate">
-                          {inv.recipient_email}
-                        </p>
-                        <p className="text-body-sm text-text-muted">
-                          Invited {new Date(inv.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                        </p>
-                      </div>
-                    </div>
+                const hasUpgradeRequest = inv.upgrade_requested_level && inv.upgrade_requested_by && inv.upgrade_requested_by !== userId;
+                const upgradeLevelLabel = inv.upgrade_requested_level === 'full' ? 'Full Report' : inv.upgrade_requested_level === 'type_compatibility' ? 'Personality Archetype + Compatibility' : inv.upgrade_requested_level;
+                const recipientName = inv.recipient_email.split('@')[0];
 
-                    <div className="flex items-center gap-2">
-                      {isConnected && (
-                        <span className="flex items-center gap-1.5 rounded-lg bg-[rgba(96,99,238,0.1)] px-3 py-1.5 text-sm font-medium text-[#a3a6ff]">
-                          View Report <ArrowRight className="h-3.5 w-3.5" />
-                        </span>
-                      )}
-                      <StatusBadge status={inv.status} />
-                    </div>
-                  </>
-                );
-                const className = `flex items-center justify-between rounded-xl border border-surface-200 bg-surface-50 px-4 py-3 ${
-                  isConnected ? 'hover:border-[rgba(96,99,238,0.3)] cursor-pointer transition-colors' : ''
-                }`;
-                return isConnected ? (
-                  <Link key={inv.id} href={`/decoded/compatibility/${inv.id}`} className={className}>
-                    {inner}
-                  </Link>
-                ) : (
-                  <div key={inv.id} className={className}>
-                    {inner}
+                return (
+                  <div key={inv.id}>
+                    {isConnected ? (
+                      <Link
+                        href={`/decoded/compatibility/${inv.id}`}
+                        className={`flex items-center justify-between rounded-xl border border-surface-200 bg-surface-50 px-4 py-3 hover:border-[rgba(96,99,238,0.3)] cursor-pointer transition-colors`}
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                            statusConfig[inv.status]?.avatarCls || 'bg-surface-200 text-text-muted'
+                          }`}>
+                            {inv.recipient_email[0].toUpperCase()}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-body-md text-text-primary font-medium truncate">
+                              {inv.recipient_email}
+                            </p>
+                            <p className="text-body-sm text-text-muted">
+                              Invited {new Date(inv.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="flex items-center gap-1.5 rounded-lg bg-[rgba(96,99,238,0.1)] px-3 py-1.5 text-sm font-medium text-[#a3a6ff]">
+                            View Report <ArrowRight className="h-3.5 w-3.5" />
+                          </span>
+                          <StatusBadge status={inv.status} />
+                        </div>
+                      </Link>
+                    ) : (
+                      <div className={`flex items-center justify-between rounded-xl border border-surface-200 bg-surface-50 px-4 py-3`}>
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                            statusConfig[inv.status]?.avatarCls || 'bg-surface-200 text-text-muted'
+                          }`}>
+                            {inv.recipient_email[0].toUpperCase()}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-body-md text-text-primary font-medium truncate">
+                              {inv.recipient_email}
+                            </p>
+                            <p className="text-body-sm text-text-muted">
+                              Invited {new Date(inv.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            </p>
+                          </div>
+                        </div>
+                        <StatusBadge status={inv.status} />
+                      </div>
+                    )}
+
+                    {/* Upgrade request banner */}
+                    {hasUpgradeRequest && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        className="ml-11 mt-1 flex items-center justify-between rounded-lg border border-amber-400/20 bg-amber-400/5 px-4 py-2.5"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Shield className="h-4 w-4 text-amber-400" />
+                          <span className="text-sm text-text-primary">
+                            <strong>{recipientName}</strong> requested <strong>{upgradeLevelLabel}</strong> access
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleUpgradeResponse(inv.id, 'approve')}
+                            disabled={saving === inv.id}
+                            className="flex items-center gap-1 rounded-lg bg-emerald-400/10 px-3 py-1.5 text-xs font-semibold text-emerald-400 hover:bg-emerald-400/15 transition-colors"
+                          >
+                            <Check className="h-3 w-3" /> Approve
+                          </button>
+                          <button
+                            onClick={() => handleUpgradeResponse(inv.id, 'deny')}
+                            disabled={saving === inv.id}
+                            className="rounded-lg px-3 py-1.5 text-xs font-semibold text-text-muted hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
                   </div>
                 );
               })}

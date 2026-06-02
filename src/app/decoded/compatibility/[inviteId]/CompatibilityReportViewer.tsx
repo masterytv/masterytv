@@ -55,6 +55,7 @@ interface Props {
   isInviter: boolean;
   inviteId: string;
   otherPersonName: string;
+  upgradeAlreadyRequested?: boolean;
 }
 
 type TabId = 'intimate' | 'family_friendship' | 'work';
@@ -80,11 +81,12 @@ function isShared(itemMinLevel: string, currentLevel: string): boolean {
 export default function CompatibilityReportViewer({
   report, inviterName, recipientName,
   shareWithHuman, isInviter, inviteId, otherPersonName,
+  upgradeAlreadyRequested = false,
 }: Props) {
   const isMultiContext = !!report.intimate || !!report.family_friendship || !!report.work;
   const [activeTab, setActiveTab] = useState<TabId>('intimate');
   const [requestingUpgrade, setRequestingUpgrade] = useState(false);
-  const [upgradeRequested, setUpgradeRequested] = useState(false);
+  const [upgradeRequested, setUpgradeRequested] = useState(upgradeAlreadyRequested);
   const router = useRouter();
 
   const context: ContextInsights | null = isMultiContext
@@ -107,10 +109,14 @@ export default function CompatibilityReportViewer({
   async function handleRequestUpgrade() {
     setRequestingUpgrade(true);
     try {
-      // TODO: Send a notification to the recipient requesting full access
-      // For now, we simulate it
-      await new Promise((r) => setTimeout(r, 800));
-      setUpgradeRequested(true);
+      const res = await fetch('/api/decoded/invite-upgrade', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inviteId, action: 'request', level: 'full' }),
+      });
+      if (res.ok) {
+        setUpgradeRequested(true);
+      }
     } finally {
       setRequestingUpgrade(false);
     }

@@ -31,7 +31,7 @@ export default async function CompatibilityReportPage({ params }: PageProps) {
   // Load invite with compatibility report and sharing levels
   const { data: invite, error } = await supabase
     .from('decoded_invites')
-    .select('inviter_id, recipient_id, inviter_name, recipient_email, compatibility_report, status, share_with_human, share_with_coach')
+    .select('inviter_id, recipient_id, inviter_name, recipient_email, compatibility_report, status, share_with_human, share_with_coach, upgrade_requested_level, upgrade_requested_by')
     .eq('id', inviteId)
     .single();
 
@@ -62,6 +62,7 @@ export default async function CompatibilityReportPage({ params }: PageProps) {
       isInviter={isInviter}
       inviteId={inviteId}
       otherPersonName={isInviter ? recipientName : inviterName}
+      upgradeAlreadyRequested={!!invite.upgrade_requested_level}
     />
   );
 }

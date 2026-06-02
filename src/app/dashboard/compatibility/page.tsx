@@ -28,14 +28,14 @@ export default async function CompatibilityPage() {
   // Load invites sent BY this user
   const { data: sentInvites } = await supabase
     .from("decoded_invites")
-    .select("id, recipient_email, recipient_id, status, share_with_human, share_with_coach, compatibility_report, created_at, completed_at, consented_at")
+    .select("id, recipient_email, recipient_id, status, share_with_human, share_with_coach, compatibility_report, created_at, completed_at, consented_at, upgrade_requested_level, upgrade_requested_by")
     .eq("inviter_id", user.id)
     .order("created_at", { ascending: false });
 
   // Load invites sent TO this user (requests to share)
   const { data: receivedInvites } = await supabase
     .from("decoded_invites")
-    .select("id, inviter_id, inviter_name, inviter_email, status, share_with_human, share_with_coach, compatibility_report, created_at, consented_at")
+    .select("id, inviter_id, inviter_name, inviter_email, status, share_with_human, share_with_coach, compatibility_report, created_at, consented_at, upgrade_requested_level, upgrade_requested_by")
     .eq("recipient_id", user.id)
     .order("created_at", { ascending: false });
 
