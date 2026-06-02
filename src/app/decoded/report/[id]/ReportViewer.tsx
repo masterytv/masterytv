@@ -10,7 +10,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Lock, ArrowRight, Loader2, Printer, MessageSquare } from 'lucide-react';
+import { Lock, ArrowRight, ArrowUpRight, Loader2, Printer, MessageSquare } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import BigFiveRadar from './BigFiveRadar';
 import BigFiveContext from './BigFiveContext';
@@ -74,6 +74,20 @@ interface ReportViewerProps {
 // ─────────────────────────────────────────────────────
 // V2 Structured Section Renderer
 // ─────────────────────────────────────────────────────
+
+/**
+ * Sprint 0.4: Build a deep link URL to open the coach with context about
+ * a specific report section. The chat page reads these params and auto-sends
+ * an opening message to the coach.
+ */
+function buildCoachDeepLink(section: string, topic?: string): string {
+  const params = new URLSearchParams({
+    context: 'report_deep_link',
+    section,
+  });
+  if (topic) params.set('topic', topic);
+  return `/dashboard/chat?${params.toString()}`;
+}
 
 interface V2SectionContentProps {
   sectionId: string;
@@ -152,6 +166,14 @@ function V2SectionContent({
               <p className="v2-named-pattern__desc">{pattern.description}</p>
             </div>
           )}
+          <a
+            href={buildCoachDeepLink('Personality Deep Dive', pattern?.name ?? 'your personality patterns')}
+            className="coach-deep-link"
+            style={{ marginTop: '1.25rem' }}
+          >
+            Explore these patterns with your coach
+            <ArrowUpRight size={14} className="coach-deep-link__icon" />
+          </a>
         </div>
       );
     }
@@ -320,7 +342,16 @@ function V2SectionContent({
         <div className="v2-section-content">
           {tldr && <p className="v2-section-tldr">{tldr}</p>}
           {edges.map((edge) => (
-            <GrowthEdgeCardComponent key={edge.priority} edge={edge} />
+            <div key={edge.priority}>
+              <GrowthEdgeCardComponent edge={edge} />
+              <a
+                href={buildCoachDeepLink('Growth Roadmap', edge.title)}
+                className="coach-deep-link"
+              >
+                Explore this with your coach
+                <ArrowUpRight size={14} className="coach-deep-link__icon" />
+              </a>
+            </div>
           ))}
           {challenge && (
             <div className="v2-challenge">
@@ -668,12 +699,20 @@ export default function ReportViewer({ report: initialReport, scores }: ReportVi
                           </>
                         )}
 
-                        {/* Coach question callout (both versions) */}
+                        {/* Coach question callout — Sprint 0.4: now links to coach */}
                         {section.coach_question && (
-                          <div className="coach-question">
+                          <a
+                            href={buildCoachDeepLink(config.title, section.coach_question)}
+                            className="coach-question coach-question--clickable"
+                            style={{ display: 'block', textDecoration: 'none' }}
+                          >
                             <div className="coach-question__label">Your Coach Question</div>
                             <div className="coach-question__text">&ldquo;{section.coach_question}&rdquo;</div>
-                          </div>
+                            <span className="coach-deep-link" style={{ marginTop: '0.5rem' }}>
+                              Discuss with your coach
+                              <ArrowUpRight size={14} className="coach-deep-link__icon" />
+                            </span>
+                          </a>
                         )}
                       </>
                     ) : (

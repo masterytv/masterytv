@@ -496,6 +496,17 @@ export async function assemblePrompt(
 }> {
   const supabase = createSupabaseClient();
 
+  // ── Resolve latest assessment ID first (needed for score query) ──
+  const latestAssessmentResult = await supabase
+    .from("assessments")
+    .select("id")
+    .eq("user_id", userId)
+    .not("completed_at", "is", null)
+    .order("completed_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const latestAssessmentId = latestAssessmentResult.data?.id ?? null;
+
   // ── Parallel data loading (minimize latency) ──
   const [
     userResult,
@@ -557,19 +568,23 @@ export async function assemblePrompt(
       .select("name, category, cost_model, description, strengths, when_to_recommend")
       .eq("auto_flagged", false),
     // Decoded assessment scores (S0.4 — Coach Handoff)
-    supabase
-      .from("assessment_scores")
-      .select("instrument_id, total_score, subscale_scores, percentile_scores, interpretation")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false }),
-    // Decoded assessment report (archetype data)
-    supabase
-      .from("assessment_reports")
-      .select("archetype_base, archetype_sublabel, archetype_tagline, generated_at")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
+    // IMPORTANT: Only load from the LATEST completed assessment.
+    // Without this filter, scores from multiple assessments get mixed,
+    // and the Map constructor in buildAssessmentProfile keeps the wrong values.
+    latestAssessmentId
+      ? supabase
+          .from("assessment_scores")
+          .select("instrument_id, total_score, subscale_scores, percentile_scores, interpretation")
+          .eq("assessment_id", latestAssessmentId)
+      : Promise.resolve({ data: [], error: null }),
+    // Decoded assessment report (archetype data — same assessment as scores)
+    latestAssessmentId
+      ? supabase
+          .from("assessment_reports")
+          .select("archetype_base, archetype_sublabel, archetype_tagline, generated_at")
+          .eq("assessment_id", latestAssessmentId)
+          .maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
   ]);
 
   const user = userResult.data as UserProfile | null;
@@ -664,9 +679,9 @@ export async function assemblePrompt(
   if (decodedScores.length > 0 && decodedReport) {
     try {
       // Dynamic import to avoid loading Decoded code when not needed
-      // These modules are co-located in the Edge Function bundle
-      const { buildAssessmentProfile } = await import("../../src/lib/decoded/coaching/assessment-profile.ts");
-      const { buildDecodedProfileLayer } = await import("../../src/lib/decoded/coaching/prompt-layer.ts");
+      // These modules live in _shared/decoded/ alongside the prompt assembler
+      const { buildAssessmentProfile } = await import("./decoded/assessment-profile.ts");
+      const { buildDecodedProfileLayer } = await import("./decoded/prompt-layer.ts");
       const assessmentProfile = buildAssessmentProfile(decodedScores, decodedReport);
       decodedLayer = buildDecodedProfileLayer(assessmentProfile);
       console.log(`[prompt-assembler] Decoded profile loaded (${decodedScores.length} instruments, archetype: ${decodedReport.archetype_base})`);

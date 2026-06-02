@@ -765,6 +765,51 @@
   transform: translateY(-1px);
 }
 
+/* ── Sprint 0.4: Inline coach deep link ── */
+/* Editorial text link style — subtle, not a button.
+   Appears after coach questions and growth edges. */
+.coach-deep-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-top: 0.75rem;
+  padding: 0;
+  background: none;
+  border: none;
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-primary);
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.coach-deep-link:hover {
+  opacity: 0.8;
+}
+
+.coach-deep-link__icon {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+/* Make the coach question callout clickable when it has a link */
+.coach-question--clickable {
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.coach-question--clickable:hover {
+  border-color: rgba(96, 99, 238, 0.25);
+  background: rgba(96, 99, 238, 0.1);
+}
+
+[data-theme="light"] .coach-question--clickable:hover {
+  border-color: rgba(0, 7, 103, 0.15);
+  background: rgba(0, 7, 103, 0.06);
+}
+
 /* =============================================================
    Voice Selector — Narrative voice picker (S15)
    ============================================================= */

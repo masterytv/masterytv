@@ -14,12 +14,13 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createSupabaseClient, createSupabaseClientWithAuth } from "../_shared/supabase.ts";
-import { corsHeaders, handleCors } from "../_shared/cors.ts";
+import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 import { logError, errorResponse } from "../_shared/errors.ts";
 import { callClaudeStreaming, calculateCost } from "../_shared/anthropic.ts";
 import { assemblePrompt } from "../_shared/prompt-assembler.ts";
 import { generateEmbedding, logEmbeddingCost } from "../_shared/embeddings.ts";
 import { SEARCH_FACTS_TOOL, handleSearchFacts } from "../_shared/search-facts.ts";
+import { LOOKUP_ASSESSMENT_TOOL, handleLookupAssessment } from "../_shared/lookup-assessment.ts";
 import {
   resolveConversation,
   COACHING_DISCLAIMER,
@@ -44,6 +45,9 @@ Deno.serve(async (req: Request) => {
   const corsResponse = handleCors(req);
   if (corsResponse) return corsResponse;
 
+  // Compute CORS headers from the actual request origin (supports localhost + production)
+  const corsHeaders = getCorsHeaders(req);
+
   if (req.method !== "POST") {
     return errorResponse("METHOD_NOT_ALLOWED", "Only POST is allowed", 405, corsHeaders);
   }
@@ -64,6 +68,8 @@ Deno.serve(async (req: Request) => {
     const body = await req.json();
     const message = body.message?.trim();
     const channel = body.channel || "web";
+    // Sprint 0.4: Deep link context from report CTAs
+    const context = body.context as { type?: string; section?: string; topic?: string } | undefined;
 
     if (!message) {
       return errorResponse("BAD_REQUEST", "Message is required", 400, corsHeaders);
@@ -92,7 +98,8 @@ Deno.serve(async (req: Request) => {
     const pipelineStart = debugMode ? performance.now() : 0;
 
     // ── 2.5 Free tier message limit check (S5.9) ──
-    const { limitReached, upgradeResponse } = await checkMessageLimit(supabase, userId, corsHeaders);
+    // Sprint 0.4: Deep link messages from report CTAs get bonus allowance
+    const { limitReached, upgradeResponse } = await checkMessageLimit(supabase, userId, corsHeaders, context);
     if (limitReached && upgradeResponse) {
       return upgradeResponse;
     }
@@ -141,7 +148,7 @@ Deno.serve(async (req: Request) => {
         channel,
         role: "user",
         content: message,
-        metadata: {},
+        metadata: context?.type ? { context_type: context.type, section: context.section } : {},
       })
       .select("id")
       .single();
@@ -190,6 +197,15 @@ Deno.serve(async (req: Request) => {
     const { system, conversationHistory, metadata, debugTrace } = await assemblePrompt(userId, message, debugMode);
     const promptMs = debugMode ? performance.now() - promptStart : 0;
 
+    // Sprint 0.4: Inject deep link context instruction
+    // When a user arrives from a report CTA, the coach should focus on
+    // that specific assessment finding rather than a generic response.
+    let contextualSystem = system;
+    if (context?.type === 'report_deep_link' && context.section) {
+      const contextInstruction = `\n\nCONTEXT INSTRUCTION: The user just came from their Decoded assessment report, specifically the "${context.section}" section${context.topic ? ` about "${context.topic}"` : ''}. They want to discuss this specific finding. Lead with what you know about this area from their assessment data (Layer 4.5). Be specific and personal — reference their actual scores and patterns. Do NOT start with generic questions; demonstrate that you already know them.`;
+      contextualSystem = system + contextInstruction;
+    }
+
     const claudeMessages = [
       ...conversationHistory,
       { role: "user" as const, content: message },
@@ -198,9 +214,9 @@ Deno.serve(async (req: Request) => {
     // ── 6. Stream Claude response to client ──
     const claudeStart = debugMode ? performance.now() : 0;
     const anthropicResponse = await callClaudeStreaming({
-      system,
+      system: contextualSystem,
       messages: claudeMessages,
-      tools: [SEARCH_FACTS_TOOL],
+      tools: [SEARCH_FACTS_TOOL, LOOKUP_ASSESSMENT_TOOL],
       maxTokens: 1024,
     });
 
@@ -339,6 +355,18 @@ Deno.serve(async (req: Request) => {
                     duration_ms: Math.round(performance.now() - toolCallStart),
                   });
                 }
+              } else if (pendingToolUse.name === "lookup_assessment") {
+                const result = await handleLookupAssessment(streamUserId, toolInput);
+                toolResult = JSON.stringify(result);
+                if (debugMode) {
+                  toolCallsDebug.push({
+                    name: pendingToolUse.name,
+                    query: `${toolInput.category}${toolInput.instrument_id ? `:${toolInput.instrument_id}` : ''}${toolInput.section_key ? `:${toolInput.section_key}` : ''}`,
+                    result_confidence: result.found ? "high" : "low",
+                    cached: false,
+                    duration_ms: Math.round(performance.now() - toolCallStart),
+                  });
+                }
               } else {
                 toolResult = JSON.stringify({ error: `Unknown tool: ${pendingToolUse.name}` });
               }
@@ -362,10 +390,16 @@ Deno.serve(async (req: Request) => {
               },
             ];
 
+            // Send keepalive comment to prevent client-side connection timeout
+            // SSE spec: lines starting with ":" are comments, ignored by EventSource
+            await writer.write(
+              encoder.encode(": keepalive\n\n")
+            );
+
             currentResponse = await callClaudeStreaming({
-              system,
+              system: contextualSystem,
               messages: toolUseMessages,
-              tools: [SEARCH_FACTS_TOOL],
+              tools: [SEARCH_FACTS_TOOL, LOOKUP_ASSESSMENT_TOOL],
               maxTokens: 1024,
             });
 
@@ -534,7 +568,8 @@ const FREE_TIER_DAILY_LIMIT = 5;
 async function checkMessageLimit(
   supabase: ReturnType<typeof createSupabaseClient>,
   userId: string,
-  headers: Record<string, string>
+  headers: Record<string, string>,
+  context?: { type?: string; section?: string; topic?: string },
 ): Promise<{ limitReached: boolean; upgradeResponse?: Response }> {
   const { data: user } = await supabase
     .from("users")
@@ -559,10 +594,32 @@ async function checkMessageLimit(
     currentCount = 0;
   }
 
+  // Sprint 0.4: Deep link messages from the report are bonus (don't count against limit)
+  // First 3 context-linked messages per day are free.
+  const isDeepLinkMessage = context?.type === 'report_deep_link';
+  if (isDeepLinkMessage) {
+    const BONUS_LIMIT = 3;
+    // Check how many deep-link messages were sent today
+    const todayStart = `${today}T00:00:00.000Z`;
+    const { count: deepLinkCount } = await supabase
+      .from("messages")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .gte("created_at", todayStart)
+      .contains("metadata", { context_type: "report_deep_link" });
+
+    if ((deepLinkCount ?? 0) < BONUS_LIMIT) {
+      console.log(`[coach] Deep link bonus message (${(deepLinkCount ?? 0) + 1}/${BONUS_LIMIT})`);
+      // Don't increment the daily counter — this is a bonus message
+      return { limitReached: false };
+    }
+    // If bonus limit exceeded, fall through to normal limit check
+  }
+
   if (currentCount >= FREE_TIER_DAILY_LIMIT) {
     // Return an SSE upgrade prompt
     const remaining = 0;
-    const upgradeMessage = `You've used all ${FREE_TIER_DAILY_LIMIT} free messages for today. 🔒\n\nUpgrade to **Core** ($99/month) for unlimited coaching:\n- Unlimited conversations across all channels\n- Morning briefings & accountability check-ins\n- Weekly coaching sessions\n- Real-time factual grounding\n\nVisit your **Settings** page to upgrade, or come back tomorrow for ${FREE_TIER_DAILY_LIMIT} more free messages.`;
+    const upgradeMessage = `You've used all ${FREE_TIER_DAILY_LIMIT} free messages for today. \u{1F512}\n\nUpgrade to **Core** ($99/month) for unlimited coaching:\n- Unlimited conversations across all channels\n- Morning briefings & accountability check-ins\n- Weekly coaching sessions\n- Real-time factual grounding\n\nVisit your **Settings** page to upgrade, or come back tomorrow for ${FREE_TIER_DAILY_LIMIT} more free messages.`;
 
     const encoder = new TextEncoder();
     const stream = new ReadableStream({

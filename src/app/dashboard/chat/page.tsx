@@ -12,8 +12,9 @@
  * Architecture: SPRINT.md S2.8
  */
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import dynamic from "next/dynamic";
+import { useSearchParams, useRouter } from "next/navigation";
 import ChatWindow from "@/components/chat/chat-window";
 import { sendMessageStream, loadConversationHistory, type ChatMessage, type DebugSummary } from "@/lib/chat";
 import { useUser } from "@/hooks/useUser";
@@ -24,8 +25,10 @@ const DebugPanel = dynamic(() => import("@/components/debug/debug-panel"), {
   loading: () => null,
 });
 
-export default function ChatPage() {
+function ChatPageInner() {
   const { user } = useUser();
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -34,6 +37,8 @@ export default function ChatPage() {
   const abortRef = useRef<(() => void) | null>(null);
   // Ref to accumulate streamed text — avoids React Strict Mode double-invoke of state updaters
   const streamedTextRef = useRef<string>("");
+  // Sprint 0.4: Deep link context from report CTAs
+  const deepLinkContext = useRef<{ type: string; section?: string; topic?: string } | null>(null);
 
   // ── Debug mode state (admin only) ──
   const [debugMode, setDebugMode] = useState(false);
@@ -65,6 +70,33 @@ export default function ChatPage() {
       abortRef.current?.();
     };
   }, []);
+
+  // Sprint 0.4: Read deep link context from URL and auto-send first message
+  const deepLinkProcessed = useRef(false);
+  useEffect(() => {
+    if (deepLinkProcessed.current || isInitialLoad) return;
+
+    const contextType = searchParams.get('context');
+    const section = searchParams.get('section');
+    const topic = searchParams.get('topic');
+
+    if (contextType === 'report_deep_link' && section) {
+      deepLinkProcessed.current = true;
+      deepLinkContext.current = { type: contextType, section, topic: topic ?? undefined };
+
+      // Build a natural opening message from the deep link context
+      const openingMessage = topic
+        ? `I was just reading my Decoded report — the ${section} section about ${topic}. Can we dig into this?`
+        : `I was just reading my Decoded report — the ${section} section. I'd love to explore this with you.`;
+
+      // Auto-send after a brief delay to let UI settle
+      setTimeout(() => handleSendMessage(openingMessage), 300);
+
+      // Clean URL to prevent re-triggering on refresh
+      router.replace('/dashboard/chat', { scroll: false });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isInitialLoad, searchParams]);
 
   const handleSendMessage = useCallback(
     async (message: string) => {
@@ -135,10 +167,18 @@ export default function ChatPage() {
             },
           },
           // Pass debug flag only when admin has debug mode active
-          { debug: debugMode && isAdmin }
+          // Sprint 0.4: Pass deep link context on first message
+          {
+            debug: debugMode && isAdmin,
+            ...(deepLinkContext.current ? { context: deepLinkContext.current } : {}),
+          }
         );
 
         abortRef.current = abort;
+        // Sprint 0.4: Clear deep link context after first use
+        if (deepLinkContext.current) {
+          deepLinkContext.current = null;
+        }
       } catch (error) {
         console.error("Failed to send message:", error);
         setStreamingContent("");
@@ -205,5 +245,19 @@ export default function ChatPage() {
         />
       )}
     </div>
+  );
+}
+
+/** Wrap in Suspense because useSearchParams requires it in Next.js 15 */
+export default function ChatPage() {
+  return (
+    <Suspense fallback={
+      <div className="chat-loading">
+        <div className="chat-loading-spinner" />
+        <p>Loading your coaching session...</p>
+      </div>
+    }>
+      <ChatPageInner />
+    </Suspense>
   );
 }

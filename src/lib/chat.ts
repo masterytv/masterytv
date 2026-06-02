@@ -51,7 +51,7 @@ export async function sendMessageStream(
   message: string,
   conversationId: string | undefined,
   callbacks: StreamCallbacks,
-  options?: { debug?: boolean }
+  options?: { debug?: boolean; context?: { type: string; section?: string; topic?: string } }
 ): Promise<() => void> {
   const supabase = createClient();
   const {
@@ -78,6 +78,7 @@ export async function sendMessageStream(
       channel: "web",
       conversation_id: conversationId,
       ...(options?.debug ? { debug: true } : {}),
+      ...(options?.context ? { context: options.context } : {}),
     }),
     signal: abortController.signal,
   });
@@ -105,53 +106,58 @@ export async function sendMessageStream(
         return;
       }
 
-      // Read the SSE stream
+      // Read the SSE stream — with proper cleanup
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
 
-        buffer += decoder.decode(value, { stream: true });
+          buffer += decoder.decode(value, { stream: true });
 
-        // Process complete SSE lines
-        const lines = buffer.split("\n");
-        buffer = lines.pop() ?? "";
+          // Process complete SSE lines
+          const lines = buffer.split("\n");
+          buffer = lines.pop() ?? "";
 
-        let currentEvent = "";
-        for (const line of lines) {
-          if (line.startsWith("event: ")) {
-            currentEvent = line.slice(7);
-          } else if (line.startsWith("data: ")) {
-            const data = line.slice(6);
-            try {
-              const parsed = JSON.parse(data);
+          let currentEvent = "";
+          for (const line of lines) {
+            if (line.startsWith("event: ")) {
+              currentEvent = line.slice(7);
+            } else if (line.startsWith("data: ")) {
+              const data = line.slice(6);
+              try {
+                const parsed = JSON.parse(data);
 
-              switch (currentEvent) {
-                case "conversation":
-                  callbacks.onConversationId(parsed.conversation_id);
-                  break;
-                case "delta":
-                  callbacks.onDelta(parsed.text);
-                  break;
-                case "done":
-                  callbacks.onDone(parsed);
-                  break;
-                case "debug_summary":
-                  callbacks.onDebugTrace?.(parsed as DebugSummary);
-                  break;
-                case "error":
-                  callbacks.onError(new Error(parsed.message || "Stream error"));
-                  break;
+                switch (currentEvent) {
+                  case "conversation":
+                    callbacks.onConversationId(parsed.conversation_id);
+                    break;
+                  case "delta":
+                    callbacks.onDelta(parsed.text);
+                    break;
+                  case "done":
+                    callbacks.onDone(parsed);
+                    break;
+                  case "debug_summary":
+                    callbacks.onDebugTrace?.(parsed as DebugSummary);
+                    break;
+                  case "error":
+                    callbacks.onError(new Error(parsed.message || "Stream error"));
+                    break;
+                }
+              } catch {
+                // Skip unparseable events
               }
-            } catch {
-              // Skip unparseable events
+              currentEvent = "";
             }
-            currentEvent = "";
           }
         }
+      } finally {
+        // Release the reader lock to free the underlying TCP connection
+        reader.releaseLock();
       }
     } catch (error) {
       if ((error as Error).name === "AbortError") return;

@@ -771,6 +771,7 @@ Deno.serve(async (req: Request) => {
     const generatePromise = generateReport(
       serviceClient,
       report_id,
+      assessment_id,
       archetypeName,
       archetypeSublabel,
       archetypeTagline,
@@ -803,6 +804,7 @@ Deno.serve(async (req: Request) => {
 async function generateReport(
   supabase: ReturnType<typeof createSupabaseClient>,
   reportId: string,
+  assessmentId: string,
   archetypeName: string,
   archetypeSublabel: string | null,
   archetypeTagline: string | null,
@@ -962,6 +964,429 @@ Write the ${template.sectionId} "${template.title}" section.`;
   console.log(
     `[decoded-generate-report] Complete: ${completedCount}/${V2_SECTION_TEMPLATES.length} sections for report=${reportId}, voice=${voiceId}`,
   );
+
+  // ── SPRINT 0.4: Coach Handoff Pipeline ──────────────────────────────────
+  // After report generation, build the coaching profile, seed coach prefs,
+  // generate the coaching letter, and mark onboarding complete.
+  // This ensures the coach "already knows" the user from day one.
+  try {
+    await runCoachHandoff(
+      supabase, userId, assessmentId, scoreRows,
+      archetypeName, archetypeSublabel, archetypeTagline, sections,
+    );
+  } catch (err) {
+    // Coach handoff failure is non-fatal — the report is already generated.
+    console.error("[decoded-generate-report] Coach handoff pipeline failed:", (err as Error).message);
+    await logError("decoded-generate-report/coach-handoff", err as Error, userId);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sprint 0.4: Coach Handoff Pipeline
+// Runs once after report generation to bridge Decoded → Mastery Coach.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Coach Handoff — called after report generation completes.
+ *
+ * Steps:
+ *   1. Build structured AssessmentProfile from raw scores
+ *   2. Store in assessment_profiles table
+ *   3. Seed coach_profiles with personality-derived communication preferences
+ *   4. Generate personalized coaching letter
+ *   5. Mark onboarding as complete (Decoded IS the onboarding)
+ *
+ * Why here and not in a separate function: The report Edge Function already
+ * has all the data loaded (scores, archetype, user). Running it inline avoids
+ * an extra network call and a second data load.
+ */
+async function runCoachHandoff(
+  supabase: ReturnType<typeof createSupabaseClient>,
+  userId: string,
+  assessmentId: string,
+  scoreRows: ScoreRow[],
+  archetypeName: string,
+  archetypeSublabel: string | null,
+  archetypeTagline: string | null,
+  sections: Record<string, unknown>,
+): Promise<void> {
+  console.log(`[coach-handoff] Starting for user=${userId}, assessment=${assessmentId}`);
+
+  // ── 1. Extract strengths/edges from S1 section (if generated) ──
+  const s1 = sections["S1"] as { content_markdown?: string } | undefined;
+  let topStrengths: string[] = [];
+  let growthEdges: string[] = [];
+  let coachingPriorities: string[] = [];
+
+  if (s1?.content_markdown) {
+    try {
+      const s1Parsed = JSON.parse(s1.content_markdown);
+      topStrengths = (s1Parsed.top_strengths ?? []).map((s: { label: string }) => s.label);
+      growthEdges = (s1Parsed.growth_edges ?? []).map((e: { label: string }) => e.label);
+    } catch {
+      console.warn("[coach-handoff] Failed to parse S1 content for strengths/edges");
+    }
+  }
+
+  // ── 2. Derive coaching priorities from scores ──
+  coachingPriorities = deriveCoachingPrioritiesForHandoff(scoreRows);
+
+  // ── 3. Build Big Five summary for the profile ──
+  const ipip = scoreRows.find(s => s.instrument_id === "ipip50");
+  const bigFiveSummary = ipip?.percentile_scores ? {
+    openness: ipip.percentile_scores.openness ?? 50,
+    conscientiousness: ipip.percentile_scores.conscientiousness ?? 50,
+    extraversion: ipip.percentile_scores.extraversion ?? 50,
+    agreeableness: ipip.percentile_scores.agreeableness ?? 50,
+    neuroticism: ipip.percentile_scores.neuroticism ?? 50,
+  } : null;
+
+  // ── 4. Get attachment style ──
+  const ecr = scoreRows.find(s => s.instrument_id === "ecr_r_short");
+  const attachmentStyle = (ecr?.interpretation?.attachmentStyle as string) ?? null;
+
+  // ── 5. Build key insights (cross-instrument synthesis) ──
+  const keyInsights = buildKeyInsights(scoreRows, archetypeName);
+
+  // ── 6. Generate coaching letter (template-based, zero LLM cost) ──
+  const coachOpener = generateCoachingLetter(
+    archetypeName, archetypeSublabel, archetypeTagline,
+    bigFiveSummary, attachmentStyle, coachingPriorities,
+    topStrengths, growthEdges,
+  );
+
+  // ── 7. Store assessment profile ──
+  const { error: profileError } = await supabase
+    .from("assessment_profiles")
+    .upsert({
+      user_id: userId,
+      assessment_id: assessmentId,
+      archetype: archetypeName,
+      top_strengths: topStrengths,
+      growth_edges: growthEdges,
+      attachment_style: attachmentStyle,
+      big_five_summary: bigFiveSummary,
+      coaching_priorities: coachingPriorities,
+      key_insights: keyInsights,
+      coach_opener: coachOpener,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "user_id" });
+
+  if (profileError) {
+    console.error("[coach-handoff] Failed to store assessment profile:", profileError.message);
+  } else {
+    console.log("[coach-handoff] Assessment profile stored");
+  }
+
+  // ── 8. Seed coach_profiles with assessment-derived communication prefs ──
+  await seedCoachProfile(supabase, userId, bigFiveSummary, attachmentStyle, scoreRows);
+
+  // ── 9. Mark onboarding as complete — Decoded IS the onboarding ──
+  const { error: onboardingError } = await supabase
+    .from("onboarding_state")
+    .upsert({
+      user_id: userId,
+      current_step: "complete",
+      data: { source: "decoded", assessment_id: assessmentId },
+      coaching_letter: coachOpener,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "user_id" });
+
+  if (onboardingError) {
+    console.error("[coach-handoff] Failed to update onboarding state:", onboardingError.message);
+  } else {
+    console.log("[coach-handoff] Onboarding marked complete (source: decoded)");
+  }
+
+  console.log(`[coach-handoff] Pipeline complete for user=${userId}`);
+}
+
+/**
+ * Seed coach_profiles with assessment-derived communication preferences.
+ *
+ * MERGE strategy: Assessment data has higher confidence for personality
+ * dimensions and overrides those fields. Research data from onboarding
+ * (job, company, industry) is preserved — we only touch communication dims.
+ */
+async function seedCoachProfile(
+  supabase: ReturnType<typeof createSupabaseClient>,
+  userId: string,
+  bigFive: Record<string, number> | null,
+  attachmentStyle: string | null,
+  scoreRows: ScoreRow[],
+): Promise<void> {
+  if (!bigFive) return;
+
+  // Map Big Five percentiles → 1-10 coaching dimensions
+  // These mappings are based on coaching research on how personality
+  // traits predict communication preferences.
+
+  // Directness: Low agreeableness → prefers direct communication
+  const directness = mapPercentileToDimension(100 - (bigFive.agreeableness ?? 50));
+
+  // Warmth: High agreeableness + low neuroticism → relationship-first
+  const warmth = mapPercentileToDimension(
+    (bigFive.agreeableness ?? 50) * 0.7 + (100 - (bigFive.neuroticism ?? 50)) * 0.3
+  );
+
+  // Pacing: High extraversion + high conscientiousness → likes momentum
+  const pacing = mapPercentileToDimension(
+    (bigFive.extraversion ?? 50) * 0.6 + (bigFive.conscientiousness ?? 50) * 0.4
+  );
+
+  // Autonomy: High openness + low agreeableness → prefers independence
+  let autonomy = mapPercentileToDimension(
+    (bigFive.openness ?? 50) * 0.5 + (100 - (bigFive.agreeableness ?? 50)) * 0.5
+  );
+  // Attachment override: anxious → lower autonomy, avoidant → higher
+  if (attachmentStyle === "anxious") autonomy = Math.max(3, autonomy - 2);
+  if (attachmentStyle === "avoidant") autonomy = Math.min(9, autonomy + 2);
+
+  // Challenge level: Low neuroticism + low agreeableness → handles challenge well
+  let challengeLevel = mapPercentileToDimension(
+    (100 - (bigFive.neuroticism ?? 50)) * 0.6 + (100 - (bigFive.agreeableness ?? 50)) * 0.4
+  );
+  // Attachment override: anxious → lower challenge tolerance
+  if (attachmentStyle === "anxious" || attachmentStyle === "disorganized") {
+    challengeLevel = Math.max(2, challengeLevel - 2);
+  }
+
+  // Accountability: Map from WEIMS Self-Determination Index
+  const weims = scoreRows.find(s => s.instrument_id === "weims");
+  const sdi = (weims?.interpretation?.sdi as number) ?? 0;
+  // High SDI (autonomous motivation) → internal accountability is fine
+  // Low SDI (controlled motivation) → needs external accountability
+  const accountability = sdi >= 8 ? 3 : sdi >= 0 ? 5 : 8;
+
+  // Evidence style: High openness → stories/metaphors, Low openness → data
+  const evidenceStyle = mapPercentileToDimension(bigFive.openness ?? 50);
+
+  // Framing: High neuroticism → opportunity framing to counterbalance worry
+  const framing = mapPercentileToDimension(bigFive.neuroticism ?? 50);
+
+  // Check for existing profile to preserve research data
+  const { data: existing } = await supabase
+    .from("coach_profiles")
+    .select("id, source, trust_level, framework_affinity")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  const profileData = {
+    user_id: userId,
+    directness,
+    framing,
+    warmth,
+    autonomy,
+    pacing,
+    evidence_style: evidenceStyle,
+    accountability,
+    challenge_level: challengeLevel,
+    source: "decoded",
+    confidence: 0.8, // Assessment data is high confidence vs self-reported
+    // Preserve trust_level and framework_affinity from existing profile
+    trust_level: existing?.trust_level ?? 1,
+    framework_affinity: existing?.framework_affinity ?? {},
+    updated_at: new Date().toISOString(),
+  };
+
+  if (existing) {
+    // MERGE: update communication dims, preserve research context
+    const { error } = await supabase
+      .from("coach_profiles")
+      .update(profileData)
+      .eq("user_id", userId);
+
+    if (error) {
+      console.error("[coach-handoff] Failed to update coach profile:", error.message);
+    } else {
+      console.log("[coach-handoff] Coach profile updated (merge: assessment overrides personality dims)");
+    }
+  } else {
+    // INSERT: new profile from assessment data
+    const { error } = await supabase
+      .from("coach_profiles")
+      .insert(profileData);
+
+    if (error) {
+      console.error("[coach-handoff] Failed to insert coach profile:", error.message);
+    } else {
+      console.log("[coach-handoff] Coach profile created from assessment data");
+    }
+  }
+}
+
+/**
+ * Map a percentile (0-100) to a 1-10 coaching dimension.
+ * Uses a linear mapping with floor/ceiling at 1 and 10.
+ */
+function mapPercentileToDimension(percentile: number): number {
+  return Math.max(1, Math.min(10, Math.round(percentile / 10)));
+}
+
+/**
+ * Derive coaching priorities from assessment scores.
+ * Ordered by clinical urgency, then impact potential.
+ */
+function deriveCoachingPrioritiesForHandoff(scoreRows: ScoreRow[]): string[] {
+  const scoreMap = new Map(scoreRows.map(s => [s.instrument_id, s]));
+  const priorities: Array<{ text: string; weight: number }> = [];
+
+  // Anxiety screening
+  const gad7 = scoreMap.get("gad7");
+  const severity = gad7?.interpretation?.severity as string | undefined;
+  if (severity === "moderate" || severity === "severe") {
+    priorities.push({ text: "Anxiety management", weight: 10 });
+  }
+
+  // Emotional regulation
+  const ders = scoreMap.get("ders16");
+  if (ders && (ders.total_score ?? 0) >= 48) {
+    priorities.push({ text: "Emotional regulation skills", weight: 9 });
+  }
+
+  // Execution gap (high N + low C)
+  const ipip = scoreMap.get("ipip50");
+  const nPct = ipip?.percentile_scores?.neuroticism ?? 50;
+  const cPct = ipip?.percentile_scores?.conscientiousness ?? 50;
+  if (nPct >= 75 && cPct <= 30) {
+    priorities.push({ text: "Intention-to-action gap", weight: 8 });
+  } else if (nPct >= 75) {
+    priorities.push({ text: "Stress resilience", weight: 7 });
+  }
+
+  // Insecure attachment
+  const ecr = scoreMap.get("ecr_r_short");
+  const style = ecr?.interpretation?.attachmentStyle as string | undefined;
+  if (style && style !== "secure") {
+    priorities.push({ text: "Relationship patterns", weight: 6 });
+  }
+
+  // Low self-compassion
+  const scs = scoreMap.get("scs_sf");
+  if (scs && (scs.total_score ?? 5) < 3.0) {
+    priorities.push({ text: "Self-compassion", weight: 6 });
+  }
+
+  // Wellness
+  const wellness = scoreMap.get("wellness_check");
+  const wSub = wellness?.subscale_scores ?? {};
+  if ((wSub.exercise ?? 5) <= 1 || (wSub.sleep ?? 5) <= 2) {
+    priorities.push({ text: "Foundational wellness habits", weight: 5 });
+  }
+
+  return priorities
+    .sort((a, b) => b.weight - a.weight)
+    .slice(0, 5)
+    .map(p => p.text);
+}
+
+/**
+ * Build cross-instrument key insights for the assessment profile.
+ */
+function buildKeyInsights(scoreRows: ScoreRow[], archetype: string): string[] {
+  const scoreMap = new Map(scoreRows.map(s => [s.instrument_id, s]));
+  const insights: string[] = [];
+
+  const ipip = scoreMap.get("ipip50");
+  const ecr = scoreMap.get("ecr_r_short");
+
+  // Personality tension insights
+  const oPct = ipip?.percentile_scores?.openness ?? 50;
+  const cPct = ipip?.percentile_scores?.conscientiousness ?? 50;
+  const nPct = ipip?.percentile_scores?.neuroticism ?? 50;
+  const aPct = ipip?.percentile_scores?.agreeableness ?? 50;
+
+  if (oPct >= 75 && cPct <= 30) {
+    insights.push("High creativity with low follow-through — a systems problem, not a discipline problem");
+  }
+  if (nPct >= 70 && cPct >= 70) {
+    insights.push("Driven perfectionist pattern — produces results but risks burnout");
+  }
+  if (aPct >= 75 && nPct >= 60) {
+    insights.push("People-pleaser risk — prioritizes others' needs at own expense");
+  }
+
+  // Attachment-personality interaction
+  const attachStyle = ecr?.interpretation?.attachmentStyle as string | undefined;
+  if (attachStyle === "anxious" && nPct >= 60) {
+    insights.push("Anxiety amplifies attachment anxiety — emotional intensity in relationships");
+  }
+  if (attachStyle === "avoidant" && aPct <= 35) {
+    insights.push("Independence preference reinforced by avoidant attachment — may under-invest in relationships");
+  }
+
+  // Add archetype insight
+  insights.push(`${archetype} archetype — use this as a coaching lens, not a label`);
+
+  return insights.slice(0, 5);
+}
+
+/**
+ * Generate a template-based coaching letter. Zero LLM tokens.
+ * Referenced by the coach as its opening message for Decoded users.
+ */
+function generateCoachingLetter(
+  archetype: string,
+  sublabel: string | null,
+  tagline: string | null,
+  bigFive: Record<string, number> | null,
+  attachmentStyle: string | null,
+  priorities: string[],
+  strengths: string[],
+  edges: string[],
+): string {
+  const parts: string[] = [];
+
+  parts.push(`I've read your full Decoded assessment, and I'm not starting from scratch here. I already have a real sense of how you think, what drives you, and where the friction points might be.`);
+  parts.push('');
+
+  if (archetype !== "Unknown") {
+    parts.push(`**Your Archetype: The ${archetype}${sublabel ? ` — ${sublabel}` : ''}**`);
+    if (tagline) parts.push(tagline);
+    parts.push('');
+  }
+
+  // Pick most interesting Big Five tension
+  if (bigFive) {
+    const o = bigFive.openness ?? 50;
+    const c = bigFive.conscientiousness ?? 50;
+    const n = bigFive.neuroticism ?? 50;
+
+    if (o >= 70 && c <= 35) {
+      parts.push(`Your mind is wired for ideas and possibility, but converting those into finished work can be a struggle. That's one of the most coachable patterns I see — it's a systems problem, not a discipline problem.`);
+    } else if (n >= 70 && c >= 65) {
+      parts.push(`You hold yourself to a very high standard — disciplined and driven. But your emotional sensitivity means you can be hard on yourself when things don't go perfectly. We'll work on keeping the drive without the self-punishment.`);
+    } else if (n >= 70) {
+      parts.push(`Your emotional sensitivity runs high. That's not a weakness — it means you care intensely. But stress can hit harder, and we'll build a stronger relationship with that inner intensity.`);
+    }
+    parts.push('');
+  }
+
+  if (attachmentStyle && attachmentStyle !== "secure" && attachmentStyle !== "unknown") {
+    const notes: Record<string, string> = {
+      anxious: "On the relationship side, you might notice yourself seeking reassurance or reading into silences. We'll build awareness around these patterns.",
+      avoidant: "You tend toward independence — sometimes pulling back when things get emotionally intense. Understanding these triggers can unlock a lot.",
+      disorganized: "Your relationship patterns are complex — pulled between wanting closeness and needing distance. We'll map the triggers together.",
+    };
+    if (notes[attachmentStyle]) {
+      parts.push(notes[attachmentStyle]);
+      parts.push('');
+    }
+  }
+
+  if (priorities.length > 0) {
+    parts.push(`**Where I think we should focus:**`);
+    for (const p of priorities.slice(0, 3)) {
+      parts.push(`- ${p}`);
+    }
+    parts.push('');
+    parts.push(`These aren't a rigid agenda — they're starting compass points. As we talk, we'll refine what matters most to you right now.`);
+    parts.push('');
+  }
+
+  parts.push(`**What's the one thing most on your mind right now?** It might be something from the list above, or something completely different. Either way, that's where we start.`);
+
+  return parts.join('\n');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
