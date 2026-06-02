@@ -116,8 +116,15 @@ export default function DecodedLanding() {
     });
     setLoading(false);
     if (resetError) {
-      setError(resetError.message);
+      // Show user-friendly rate limit message
+      if (resetError.message.includes("security purposes") || resetError.message.includes("rate")) {
+        setError("Please wait a moment before requesting another reset email.");
+      } else {
+        setError(resetError.message);
+      }
     } else {
+      // Success — dismiss accountExists and show the "check email" screen
+      setAccountExists(false);
       setConfirmationSent(true);
     }
   }
@@ -221,6 +228,15 @@ export default function DecodedLanding() {
               <span className="font-medium text-text-primary">{email}</span>{" "}
               already exists. Sign in to continue your assessment.
             </p>
+            {error && (
+              <motion.p
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-3 text-sm text-danger"
+              >
+                {error}
+              </motion.p>
+            )}
             <button
               onClick={() => {
                 setAccountExists(false);
@@ -234,13 +250,11 @@ export default function DecodedLanding() {
               <ArrowRight className="h-4 w-4" />
             </button>
             <button
-              onClick={() => {
-                setAccountExists(false);
-                handleForgotPassword();
-              }}
-              className="mt-3 text-sm text-text-muted hover:text-text-secondary transition-colors"
+              onClick={handleForgotPassword}
+              disabled={loading}
+              className="mt-3 text-sm text-text-muted hover:text-text-secondary transition-colors disabled:opacity-50"
             >
-              Forgot your password?
+              {loading ? "Sending…" : "Forgot your password?"}
             </button>
           </motion.div>
         ) : (
