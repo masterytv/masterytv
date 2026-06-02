@@ -8,7 +8,11 @@
  *   X = Anxiety (low-left → high-right)
  *   Y = Avoidance (low-bottom → high-top)
  * This produces four quadrants matching Bartholomew & Horowitz (1991).
+ *
+ * Each quadrant shows a tooltip on hover with a positive description.
  */
+
+import { useState, useCallback } from 'react';
 
 interface AttachmentQuadrantProps {
   anxiety: number;    // ECR-R anxiety score (1-7)
@@ -17,23 +21,65 @@ interface AttachmentQuadrantProps {
   size?: number;
 }
 
+// Positive descriptions for each attachment quadrant
+const QUADRANT_INFO: Record<string, { tagline: string; strengths: string; growth: string }> = {
+  'Secure': {
+    tagline: 'Comfortable with closeness and independence',
+    strengths: 'You trust easily, communicate openly, and handle conflict with grace. You can depend on others without losing yourself.',
+    growth: 'Your emotional stability is a foundation others lean on. You build deep, lasting bonds naturally.',
+  },
+  'Anxious-Preoccupied': {
+    tagline: 'Deeply attuned to relationships',
+    strengths: 'You are highly empathetic, emotionally available, and deeply invested in the people you love. You notice subtle shifts in others.',
+    growth: 'Your relational awareness is a superpower — it makes you an incredible partner and friend when channeled with self-trust.',
+  },
+  'Dismissive-Avoidant': {
+    tagline: 'Self-reliant and emotionally independent',
+    strengths: 'You are resilient, composed under pressure, and capable of thriving independently. You bring stability and calm to chaotic situations.',
+    growth: 'Your self-sufficiency is a genuine strength. Learning to let others in selectively can unlock even deeper fulfillment.',
+  },
+  'Fearful-Avoidant': {
+    tagline: 'Complex emotional depth',
+    strengths: 'You experience emotions with profound depth and nuance. You understand both the desire for closeness and the need for protection.',
+    growth: 'Your emotional complexity gives you rare insight into the human experience. With the right support, this depth becomes wisdom.',
+  },
+};
+
 export default function AttachmentQuadrant({
   anxiety,
   avoidance,
   style,
   size = 400,
 }: AttachmentQuadrantProps) {
+  const [activeQuadrant, setActiveQuadrant] = useState<string | null>(null);
   const padding = 65;
   const plotSize = size - padding * 2;
 
+  // Toggle on click/tap (universal). Hover sets on desktop only.
+  const handleQuadrantClick = useCallback((key: string) => {
+    setActiveQuadrant(prev => prev === key ? null : key);
+  }, []);
+
+  // Desktop-only: show on hover, but don't fight with click
+  const handleMouseEnter = useCallback((key: string) => {
+    // Only apply hover if nothing is "pinned" via click
+    if (typeof window !== 'undefined' && window.matchMedia('(hover: hover)').matches) {
+      setActiveQuadrant(key);
+    }
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    if (typeof window !== 'undefined' && window.matchMedia('(hover: hover)').matches) {
+      setActiveQuadrant(null);
+    }
+  }, []);
+
   // The scoring engine classifies at threshold=3.5 (see engine.ts L170-177).
-  // The chart midlines must align with this threshold, NOT the linear midpoint of [1,7].
-  // Map scores so that 3.5 → 0.5 (visual center), 1 → 0, 7 → 1.
   const threshold = 3.5;
   const normX = Math.min(1, Math.max(0, 
     anxiety <= threshold 
-      ? (anxiety - 1) / (threshold - 1) * 0.5          // [1, 3.5] → [0, 0.5]
-      : 0.5 + (anxiety - threshold) / (7 - threshold) * 0.5  // [3.5, 7] → [0.5, 1]
+      ? (anxiety - 1) / (threshold - 1) * 0.5
+      : 0.5 + (anxiety - threshold) / (7 - threshold) * 0.5
   ));
   const normY = Math.min(1, Math.max(0,
     avoidance <= threshold
@@ -46,10 +92,18 @@ export default function AttachmentQuadrant({
   const dotY = padding + (1 - normY) * plotSize;
 
   const quadrantLabels = [
-    { label: 'Dismissive-\nAvoidant', x: padding + plotSize * 0.25, y: padding + plotSize * 0.25 },
-    { label: 'Fearful-\nAvoidant', x: padding + plotSize * 0.75, y: padding + plotSize * 0.25 },
-    { label: 'Secure', x: padding + plotSize * 0.25, y: padding + plotSize * 0.75 },
-    { label: 'Anxious-\nPreoccupied', x: padding + plotSize * 0.75, y: padding + plotSize * 0.75 },
+    { label: 'Dismissive-\nAvoidant', key: 'Dismissive-Avoidant', x: padding + plotSize * 0.25, y: padding + plotSize * 0.25 },
+    { label: 'Fearful-\nAvoidant', key: 'Fearful-Avoidant', x: padding + plotSize * 0.75, y: padding + plotSize * 0.25 },
+    { label: 'Secure', key: 'Secure', x: padding + plotSize * 0.25, y: padding + plotSize * 0.75 },
+    { label: 'Anxious-\nPreoccupied', key: 'Anxious-Preoccupied', x: padding + plotSize * 0.75, y: padding + plotSize * 0.75 },
+  ];
+
+  // Clickable quadrant regions (for hover/tap)
+  const quadrantRects = [
+    { key: 'Dismissive-Avoidant', x: padding, y: padding, w: plotSize / 2, h: plotSize / 2 },
+    { key: 'Fearful-Avoidant', x: padding + plotSize / 2, y: padding, w: plotSize / 2, h: plotSize / 2 },
+    { key: 'Secure', x: padding, y: padding + plotSize / 2, w: plotSize / 2, h: plotSize / 2 },
+    { key: 'Anxious-Preoccupied', x: padding + plotSize / 2, y: padding + plotSize / 2, w: plotSize / 2, h: plotSize / 2 },
   ];
 
   // Normalize legacy labels from older database records
@@ -71,7 +125,7 @@ export default function AttachmentQuadrant({
   const dotColor = styleColors[normalizedStyle] ?? 'var(--color-primary)';
 
   return (
-    <div className="viz-container" style={{ display: 'flex', justifyContent: 'center' }}>
+    <div className="viz-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       <svg
         width="100%"
         height="auto"
@@ -89,6 +143,23 @@ export default function AttachmentQuadrant({
           strokeWidth={1}
           opacity={0.3}
         />
+
+        {/* Hover highlight rects */}
+        {quadrantRects.map((q) => (
+          <rect
+            key={q.key}
+            x={q.x}
+            y={q.y}
+            width={q.w}
+            height={q.h}
+            fill={activeQuadrant === q.key ? 'rgba(96, 99, 238, 0.06)' : 'transparent'}
+            stroke="none"
+            style={{ cursor: 'pointer', transition: 'fill 0.15s ease' }}
+            onMouseEnter={() => handleMouseEnter(q.key)}
+            onMouseLeave={handleMouseLeave}
+            onClick={() => handleQuadrantClick(q.key)}
+          />
+        ))}
 
         {/* Midlines — dashed dividers */}
         <line
@@ -112,9 +183,13 @@ export default function AttachmentQuadrant({
             dominantBaseline="middle"
             fill="var(--text-heading)"
             fontSize={13}
-            fontWeight={500}
+            fontWeight={activeQuadrant === q.key ? 600 : 500}
             fontFamily="var(--font-sans)"
-            opacity={0.55}
+            opacity={activeQuadrant === q.key ? 0.9 : 0.55}
+            style={{ cursor: 'pointer', transition: 'opacity 0.15s ease' }}
+            onMouseEnter={() => handleMouseEnter(q.key)}
+            onMouseLeave={handleMouseLeave}
+            onClick={() => handleQuadrantClick(q.key)}
           >
             {q.label.split('\n').map((line, j) => (
               <tspan key={j} x={q.x} dy={j === 0 ? 0 : 16}>{line}</tspan>
@@ -164,6 +239,42 @@ export default function AttachmentQuadrant({
           {normalizedStyle}
         </text>
       </svg>
+
+      {/* Tooltip — renders below the chart */}
+      {activeQuadrant && QUADRANT_INFO[activeQuadrant] && (
+        <div style={{
+          width: '100%',
+          padding: '0.75rem 1rem',
+          marginTop: '0.5rem',
+          background: 'var(--color-surface-100)',
+          borderRadius: 'var(--radius-md)',
+          fontSize: '0.8125rem',
+          lineHeight: 1.6,
+          color: 'var(--text-body)',
+          transition: 'all 0.15s ease',
+        }}>
+          <div style={{ fontWeight: 600, color: 'var(--text-heading)', marginBottom: '0.125rem' }}>
+            {activeQuadrant}
+          </div>
+          <div style={{ fontStyle: 'italic', color: 'var(--text-label)', marginBottom: '0.5rem', fontSize: '0.8125rem' }}>
+            {QUADRANT_INFO[activeQuadrant].tagline}
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.625rem' }}>
+            <div>
+              <div style={{ fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-primary)', marginBottom: '0.125rem' }}>
+                Strengths
+              </div>
+              <div>{QUADRANT_INFO[activeQuadrant].strengths}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-primary)', marginBottom: '0.125rem' }}>
+                Growth Edge
+              </div>
+              <div>{QUADRANT_INFO[activeQuadrant].growth}</div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
