@@ -4,24 +4,29 @@
  * 12 section prompt templates (RS01–RS12) that transform scored
  * assessment data into personalized personality narratives.
  *
- * Tone: DECODED_REPORT_STRUCTURE.md — "brutally honest but caring"
- * Voice: Second person, coaching-framed, growth-oriented
+ * Architecture:
+ * - DECODED_SAFETY_RULES: Immutable clinical safety + output format rules
+ * - DECODED_DEFAULT_VOICE: Legacy voice block (used when voice system is inactive)
+ * - DECODED_TONE_GUIDE: Combined legacy block (safety + default voice)
+ *
+ * The voice system (voice-prompt-assembler.ts) replaces DECODED_DEFAULT_VOICE
+ * with a personalized voice block when active.
  */
 
-import type { ReportSectionPrompt } from './types';
+import type { ReportSectionPrompt, SectionId } from './types';
+import type { VoiceContext } from '../voice/types';
+import { buildVoicePromptBlock } from '../voice/voice-prompt-assembler';
 
 // ---------------------------------------------------------------------------
-// Shared system-level instructions (prefixed to every section prompt)
+// Prompt Building Blocks (split for voice system integration)
 // ---------------------------------------------------------------------------
 
-const DECODED_TONE_GUIDE = `You are a senior personality coach writing a section of a premium personality report for Decoded (mastery.tv/decoded).
-
-VOICE & TONE:
-- Write in second person ("You tend to…", "Your pattern shows…")
-- Be direct, warm, and specific. Not clinical. Not flattering. Not vague.
-- Think of this as the first session of a coaching relationship — you've just read their full file
-- Surprise them with insight they haven't heard before
-- Every paragraph should make them feel SEEN, not labeled
+/**
+ * IMMUTABLE safety rules + output format.
+ * These are NEVER modified by the voice system. They protect users
+ * from clinical language, ensure growth framing, and enforce JSON output.
+ */
+const DECODED_SAFETY_RULES = `You are a senior personality coach writing a section of a premium personality report for Decoded (mastery.tv/decoded).
 
 CRITICAL RULES:
 - Never use diagnostic language ("you have", "you suffer from", "disorder", "condition")
@@ -42,6 +47,25 @@ Return valid JSON with exactly these fields:
 
 The content_markdown should use markdown formatting (##, **, *, >) for structure.
 Do NOT include the section title as an H2 — it's rendered separately by the UI.`;
+
+/**
+ * Default voice block used when the adaptive voice system is NOT active.
+ * This is the original "brutally honest but caring" coaching tone.
+ * When the voice system IS active, this is replaced by the assembled voice prompt.
+ */
+const DECODED_DEFAULT_VOICE = `VOICE & TONE:
+- Write in second person ("You tend to…", "Your pattern shows…")
+- Be direct, warm, and specific. Not clinical. Not flattering. Not vague.
+- Think of this as the first session of a coaching relationship: you've just read their full file
+- Surprise them with insight they haven't heard before
+- Every paragraph should make them feel SEEN, not labeled`;
+
+/**
+ * Combined legacy tone guide (safety + default voice).
+ * Used by the backward-compatible buildSectionPrompt() function.
+ * New code should use buildSectionPromptWithVoice() instead.
+ */
+const DECODED_TONE_GUIDE = `${DECODED_SAFETY_RULES}\n\n${DECODED_DEFAULT_VOICE}`;
 
 // ---------------------------------------------------------------------------
 // RS01: You, Decoded — Summary Dashboard
@@ -420,8 +444,12 @@ export const REPORT_PROMPTS: Record<string, ReportSectionPrompt> = {
 };
 
 /**
- * Build the final prompt messages for a given section.
- * Returns [systemMessage, userMessage] ready for the OpenAI API.
+ * Build the final prompt messages for a given section (LEGACY).
+ *
+ * Uses the default tone guide (no adaptive voice).
+ * Kept for backward compatibility. New code should use buildSectionPromptWithVoice().
+ *
+ * @returns [systemMessage, userMessage] ready for the OpenAI API
  */
 export function buildSectionPrompt(
   sectionId: string,
@@ -443,7 +471,69 @@ export function buildSectionPrompt(
   };
 }
 
-/** Get the ordered list of all section IDs */
-export function getAllSectionIds(): string[] {
-  return Object.keys(REPORT_PROMPTS);
+/**
+ * Build prompts with the adaptive voice system.
+ *
+ * Replaces the default voice block in the system prompt with the
+ * assembled voice context (voice profile + modifiers + section overrides).
+ *
+ * Architecture: DECODED_NARRATIVE_VOICES_ARCHITECTURE.md §3.2
+ * PRD: NVR05–NVR08
+ *
+ * @param sectionId  Which report section (RS01–RS12)
+ * @param scoreDataJson  JSON string of section-specific score data
+ * @param archetypeJson  JSON string of archetype classification
+ * @param bigFiveJson  JSON string of Big Five profile
+ * @param voiceContext  Assembled voice context from assembleVoicePrompt()
+ * @returns [systemMessage, userMessage] with personalized voice instructions
+ */
+export function buildSectionPromptWithVoice(
+  sectionId: string,
+  scoreDataJson: string,
+  archetypeJson: string,
+  bigFiveJson: string,
+  voiceContext: VoiceContext,
+): { system: string; user: string; voiceId: string } {
+  const template = REPORT_PROMPTS[sectionId];
+  if (!template) throw new Error(`Unknown section ID: ${sectionId}`);
+
+  // Build the personalized voice prompt block
+  const voiceBlock = buildVoicePromptBlock(voiceContext);
+
+  // Replace the default voice block in the system prompt with the personalized one.
+  // Section prompts are built as: DECODED_TONE_GUIDE + section-specific instructions.
+  // DECODED_TONE_GUIDE = DECODED_SAFETY_RULES + DECODED_DEFAULT_VOICE.
+  // We replace DECODED_DEFAULT_VOICE with the voice system output.
+  const voiceAwareSystemPrompt = template.systemPrompt.replace(
+    DECODED_DEFAULT_VOICE,
+    voiceBlock,
+  );
+
+  const userPrompt = template.userPromptTemplate
+    .replace('{{archetype}}', archetypeJson)
+    .replace('{{bigFive}}', bigFiveJson)
+    .replace('{{sectionData}}', scoreDataJson);
+
+  return {
+    system: voiceAwareSystemPrompt,
+    user: userPrompt,
+    voiceId: voiceContext.voice.id,
+  };
 }
+
+/** Get the ordered list of all section IDs */
+export function getAllSectionIds(): SectionId[] {
+  return Object.keys(REPORT_PROMPTS) as SectionId[];
+}
+
+/**
+ * Exported for testing: the immutable safety rules block.
+ * Voice system NEVER modifies this.
+ */
+export { DECODED_SAFETY_RULES };
+
+/**
+ * Exported for testing: the default voice block.
+ * Used to verify string replacement works in buildSectionPromptWithVoice.
+ */
+export { DECODED_DEFAULT_VOICE };

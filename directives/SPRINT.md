@@ -1175,3 +1175,29 @@ Discovered during implementation. Items here should be prioritized into future s
   - Confirmation flow with email verification before deletion
   - Edge Function: `delete-user-data/index.ts` with Supabase admin client
 - **Sprint Target:** Pre-launch (before beta invites go out)
+
+### TD-007: Google OAuth Consent Screen Shows Supabase Project ID (Sprint 6)
+- **Discovered:** 2026-06-02 during testing
+- **Problem:** The Google "Sign in with Google" consent screen shows "Sign in to lwmadssysqcwbsoiaokc.supabase.co" instead of "Sign in to MasteryTV". This looks unprofessional and could reduce sign-up conversion — users don't trust an app name that looks like a random string.
+- **Impact:** Medium — affects first impression and trust during onboarding
+- **Proposed Fix:**
+  - Go to [Google Cloud Console → APIs & Services → OAuth consent screen](https://console.cloud.google.com/apis/credentials/consent)
+  - Update the **Application name** to "MasteryTV"
+  - Upload a proper app logo (the MasteryTV icon)
+  - Set the **Application home page** to `https://mastery.tv`
+  - Set **Privacy Policy URL** to `https://mastery.tv/privacy`
+  - Set **Terms of Service URL** to `https://mastery.tv/terms`
+  - Submit for Google verification if not already verified (required to remove "unverified app" warnings)
+- **Sprint Target:** S6 (Polish) — quick config fix, no code changes needed
+
+### TD-008: Resend "Domain Not Verified" Error on Decoded Invite Email (Sprint 6)
+- **Discovered:** 2026-06-02 during production testing
+- **Problem:** The "Invite someone to take it too" email send on `/assess` returns: `{"statusCode":403,"message":"The mail.masterytv.com domain is not verified. Please, add and verify your domain on https://resend.com/domains","name":"validation_error"}`. However, the Resend dashboard confirms `mail.masterytv.com` is **Verified** (us-east-1), and the `.env.local` API key is correct.
+- **Impact:** Medium — blocks the viral invite loop for Decoded assessments
+- **Root Cause (likely):** The `RESEND_API_KEY` deployed to **Vercel production** is stale or belongs to a different Resend account/team than the one where `mail.masterytv.com` is verified. The local `.env.local` key may be correct, but Vercel's env vars may not match.
+- **Proposed Fix:**
+  1. Check Vercel dashboard → Settings → Environment Variables → verify `RESEND_API_KEY` matches the key from the Resend account that owns `mail.masterytv.com`
+  2. In Resend, go to API Keys → confirm the key starts with the same prefix as what's in Vercel
+  3. If keys don't match, update the Vercel env var and redeploy
+  4. Also check: the invite route in `src/app/api/decoded/invite/route.ts` uses `from: '... <donotreply@mail.masterytv.com>'` per GEMINI.md rules
+- **Sprint Target:** S6 (Polish) — likely a 5-minute env var fix

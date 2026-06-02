@@ -70,6 +70,7 @@ export async function generateReport(assessmentId: string): Promise<GenerateRepo
       user_id: user.id,
       sections: {},
       generation_model: 'gpt-4o',
+      report_version: 2,
     })
     .select('id')
     .single();

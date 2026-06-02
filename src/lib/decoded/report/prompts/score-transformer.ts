@@ -9,7 +9,7 @@
 
 import type { InstrumentScore } from '../../scoring/types';
 import type { ArchetypeResult } from '../../archetypes/types';
-import type { SectionId, SectionScoreData } from './types';
+import type { SectionIdV1, SectionScoreData } from './types';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -228,7 +228,7 @@ function transformRS12(scores: InstrumentScore[], archetype: ArchetypeResult): R
 // ---------------------------------------------------------------------------
 
 const SECTION_TRANSFORMERS: Record<
-  SectionId,
+  SectionIdV1,
   (scores: InstrumentScore[], archetype: ArchetypeResult) => Record<string, unknown>
 > = {
   RS01: transformRS01,
@@ -249,7 +249,7 @@ const SECTION_TRANSFORMERS: Record<
  * Transform scoring data into a prompt-ready package for a specific report section.
  */
 export function transformScoreDataForSection(
-  sectionId: SectionId,
+  sectionId: SectionIdV1,
   scores: InstrumentScore[],
   archetype: ArchetypeResult,
 ): SectionScoreData {

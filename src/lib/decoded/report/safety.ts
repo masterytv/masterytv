@@ -94,3 +94,39 @@ export const CRISIS_RESOURCES = [
   { name: 'SAMHSA Helpline', contact: '1-800-662-4357', region: 'US' },
   { name: 'International Association for Suicide Prevention', contact: 'https://www.iasp.info/resources/Crisis_Centres/', region: 'Global' },
 ];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Voice System Bridge (S12)
+// ─────────────────────────────────────────────────────────────────────────────
+
+import type { ModifierId } from './voice/types';
+
+/**
+ * Shape expected by the modifier resolver's resolveModifiers() function.
+ * This is the bridge between the existing safety layer and the voice system.
+ */
+export interface VoiceSafetyInput {
+  highDistress: boolean;
+  emotionalRegulationConcern?: boolean;
+  forceModifiers?: ModifierId[];
+}
+
+/**
+ * Convert SafetyFlags to the input shape the voice modifier resolver expects.
+ *
+ * This bridges the two systems:
+ * - safety.ts (existing) evaluates clinical instrument scores
+ * - modifier-resolver.ts (voice) uses safety flags to force tone modifiers
+ *
+ * When highDistress is true, compassion_boost + anxiety_softener are forced.
+ * When emotionalRegulationConcern is true, emotion_regulation_buffer is forced.
+ */
+export function buildVoiceSafetyInput(flags: SafetyFlags): VoiceSafetyInput {
+  return {
+    highDistress: flags.highDistress,
+    emotionalRegulationConcern: flags.emotionalRegulationConcern,
+    // No additional forceModifiers for now — the modifier resolver handles
+    // the mapping from these boolean flags to specific modifier IDs.
+  };
+}
+
