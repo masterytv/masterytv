@@ -24,6 +24,7 @@ import {
   X,
   Loader2,
   Fingerprint,
+  Compass,
   MessageCircle,
   Search,
   Zap,
