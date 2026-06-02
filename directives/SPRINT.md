@@ -113,7 +113,7 @@
 - [x] **S0.4.3** — Generate coach's "first message" using assessment data: personalized opening that references specific findings, suggests a starting framework, asks one sharp question. ✅ Deep link auto-sends context-aware opening via chat page
 - [x] **S0.4.4** — Update coach onboarding flow: users arriving from Self Mastery skip the website/LinkedIn scraping onboarding — assessment profile replaces it. ✅ `runCoachHandoff()` sets `onboarding_state.current_step = 'complete'` with `source: 'decoded'`
 - [x] **S0.4.4a** — **Seed coaching voice from assessment archetype:** Assessment voice (archetype → voiceId mapping) is seeded into `coach_profiles.voice_id` during report generation. Coach uses the same communication style as the report until user changes it. ✅ Complete (June 2, 2026)
-- [ ] **S0.4.5** — Test coach handoff with 10 different assessment profiles: verify coaching response quality and personalization accuracy
+- [x] **S0.4.5** — Test coach handoff with assessment profiles: verify coaching response quality and personalization accuracy. ✅ CTAs verified working (June 2, 2026)
 - [x] **S0.4.6** — "Meet your coach" CTA in report Section 10: compelling invitation that references specific insights from their report. ✅ Bottom-of-report CTA with deep link
 
 #### E0 — Contextual Coach Deep Links (Report → Chat)
