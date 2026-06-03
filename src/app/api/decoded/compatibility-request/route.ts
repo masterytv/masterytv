@@ -50,7 +50,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
     }
 
-    if (invite.status !== 'completed') {
+    // Allow requests on completed (initial) and consented/connected (re-request/upgrade)
+    if (!['completed', 'consented', 'connected'].includes(invite.status)) {
       return NextResponse.json(
         { error: 'Both parties must have completed the assessment first' },
         { status: 400 },

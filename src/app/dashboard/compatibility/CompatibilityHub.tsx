@@ -145,6 +145,23 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
     }
   }
 
+  /** Deny an upgrade request — clears the request without changing sharing level */
+  async function handleDenyUpgrade(inviteId: string) {
+    setSaving(inviteId);
+    try {
+      await fetch('/api/decoded/deny-upgrade', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inviteId }),
+      });
+      router.refresh();
+    } catch {
+      // silent
+    } finally {
+      setSaving(null);
+    }
+  }
+
   // ── Shared UI components ──
 
   /** Inline share-level picker (2 options) */
@@ -366,13 +383,33 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
                         ) : null}
                       </div>
 
-                      {/* Denial context — below the header row */}
-                      {isConnected && inv.upgrade_requested_level === 'full' && inv.share_with_human !== 'full' && inv.upgrade_requested_by && inv.upgrade_requested_by !== userId && (
-                        <p className="mt-2 ml-11 text-body-sm text-amber-400">
-                          {inviterName} requested <strong>Full Report + Compatibility</strong> — Full Report Denied. Compatibility Accepted.
-                        </p>
+                      {/* Upgrade re-request from the other party — Accept / Deny */}
+                      {isConnected && theyRequested && inv.upgrade_requested_level === 'full' && inv.share_with_human !== 'full' && (
+                        <div className="mt-3 ml-11">
+                          <p className="text-body-sm text-amber-400 font-medium mb-2">
+                            {inviterName} requested <strong>Full Report + Compatibility</strong> again
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => setExpandedCard(isExpanded ? null : `recv-${inv.id}`)}
+                              className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 transition-opacity"
+                            >
+                              <Heart className="h-3 w-3" />
+                              Accept
+                            </button>
+                            <button
+                              onClick={() => handleDenyUpgrade(inv.id)}
+                              disabled={saving === inv.id}
+                              className="flex items-center gap-1.5 rounded-lg border border-surface-200 px-3 py-1.5 text-xs font-medium text-text-muted hover:text-red-400 hover:border-red-400/30 transition-colors"
+                            >
+                              Deny
+                            </button>
+                          </div>
+                        </div>
                       )}
-                      {isConnected && inv.upgrade_requested_level === 'full' && inv.share_with_human !== 'full' && inv.upgrade_requested_by === userId && (
+
+                      {/* I requested upgrade — waiting */}
+                      {isConnected && iRequested && inv.upgrade_requested_level === 'full' && inv.share_with_human !== 'full' && (
                         <p className="mt-2 ml-11 text-body-sm text-text-muted">
                           You requested <strong>Full Report + Compatibility</strong> — Full Report Denied. Compatibility Accepted.
                         </p>
@@ -480,16 +517,34 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
                             </button>
                           </div>
                         </div>
-                        {/* Denial context */}
+                        {/* Denial / re-request context */}
                         {inv.upgrade_requested_level === 'full' && inv.share_with_human !== 'full' && inv.upgrade_requested_by === userId && (
                           <p className="mt-2 ml-11 text-body-sm text-text-muted">
                             You requested <strong>Full Report + Compatibility</strong> — Full Report Denied. Compatibility Accepted.
                           </p>
                         )}
                         {inv.upgrade_requested_level === 'full' && inv.share_with_human !== 'full' && inv.upgrade_requested_by && inv.upgrade_requested_by !== userId && (
-                          <p className="mt-2 ml-11 text-body-sm text-amber-400">
-                            {inv.recipient_email.split('@')[0]} requested <strong>Full Report + Compatibility</strong> — Full Report Denied. Compatibility Accepted.
-                          </p>
+                          <div className="mt-3 ml-11">
+                            <p className="text-body-sm text-amber-400 font-medium mb-2">
+                              {inv.recipient_email.split('@')[0]} requested <strong>Full Report + Compatibility</strong> again
+                            </p>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => setExpandedCard(expandedCard === `sent-${inv.id}` ? null : `sent-${inv.id}`)}
+                                className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 transition-opacity"
+                              >
+                                <Heart className="h-3 w-3" />
+                                Accept
+                              </button>
+                              <button
+                                onClick={() => handleDenyUpgrade(inv.id)}
+                                disabled={saving === inv.id}
+                                className="flex items-center gap-1.5 rounded-lg border border-surface-200 px-3 py-1.5 text-xs font-medium text-text-muted hover:text-red-400 hover:border-red-400/30 transition-colors"
+                              >
+                                Deny
+                              </button>
+                            </div>
+                          </div>
                         )}
                       </div>
                     ) : assessmentComplete ? (
