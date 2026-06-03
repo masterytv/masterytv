@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
+import { claimPendingInvites } from "@/lib/decoded/claim-invites";
 import DashboardHome from "./DashboardHome";
 
 export const metadata: Metadata = {
@@ -24,6 +25,11 @@ export default async function DashboardPage() {
 
   if (!user) {
     redirect("/decoded");
+  }
+
+  // Auto-claim any pending invites for this user's email
+  if (user.email) {
+    await claimPendingInvites(supabase, user.id, user.email);
   }
 
   // Check for COMPLETED assessment (exclude superseded retakes)

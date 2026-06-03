@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
+import { claimPendingInvites } from "@/lib/decoded/claim-invites";
 import CompatibilityHub from "./CompatibilityHub";
 
 export const metadata: Metadata = {
@@ -23,6 +24,11 @@ export default async function CompatibilityPage() {
 
   if (!user) {
     redirect("/decoded");
+  }
+
+  // Auto-claim any pending invites for this user's email
+  if (user.email) {
+    await claimPendingInvites(supabase, user.id, user.email);
   }
 
   // Load invites sent BY this user

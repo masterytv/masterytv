@@ -482,15 +482,16 @@ function getGreeting(): string {
 }
 
 function InviteStatusBadge({ status }: { status: string }) {
-  const config: Record<string, { label: string; color: string; bg: string }> = {
-    pending: { label: '⏳ Pending', color: 'text-amber-400', bg: 'bg-amber-400/10' },
-    completed: { label: '✅ Completed', color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
-    consented: { label: '🔗 Connected', color: 'text-[#a3a6ff]', bg: 'bg-[rgba(96,99,238,0.1)]' },
-    connected: { label: '🔗 Connected', color: 'text-[#a3a6ff]', bg: 'bg-[rgba(96,99,238,0.1)]' },
+  const config: Record<string, { label: string; color: string; bg: string; Icon: typeof Clock }> = {
+    pending: { label: 'Pending', color: 'text-amber-400', bg: 'bg-amber-400/10', Icon: Clock },
+    completed: { label: 'Awaiting Consent', color: 'text-amber-400', bg: 'bg-amber-400/10', Icon: Clock },
+    consented: { label: 'Connected', color: 'text-[#a3a6ff]', bg: 'bg-[rgba(96,99,238,0.1)]', Icon: Users },
+    connected: { label: 'Connected', color: 'text-[#a3a6ff]', bg: 'bg-[rgba(96,99,238,0.1)]', Icon: Users },
   };
   const c = config[status] ?? config.pending;
   return (
-    <span className={`text-label-sm ${c.color} ${c.bg} rounded-full px-2 py-0.5`}>
+    <span className={`inline-flex items-center gap-1 text-label-sm ${c.color} ${c.bg} rounded-full px-2 py-0.5`}>
+      <c.Icon className="h-3 w-3" />
       {c.label}
     </span>
   );

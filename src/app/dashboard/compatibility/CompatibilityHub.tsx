@@ -193,7 +193,7 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
             <div className="flex items-center gap-2 mb-4">
               <Shield className="h-4 w-4 text-[#a3a6ff]" />
               <h2 className="text-title-md text-text-primary font-semibold">
-                Sharing Requests
+                People Who Invited You
               </h2>
               <span className="text-label-sm text-text-muted ml-auto">
                 {allReceived.length} {allReceived.length === 1 ? 'person' : 'people'}
@@ -238,10 +238,10 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
                       {isPending ? (
                         <button
                           onClick={() => setExpandedConsent(isExpanded ? null : inv.id)}
-                          className="flex items-center gap-1.5 rounded-lg bg-amber-400/10 px-3 py-1.5 text-sm font-medium text-amber-400 hover:bg-amber-400/20 transition-colors"
+                          className="flex items-center gap-1.5 rounded-lg bg-[rgba(96,99,238,0.1)] px-3 py-1.5 text-sm font-medium text-[#a3a6ff] hover:bg-[rgba(96,99,238,0.15)] transition-colors"
                         >
-                          <Shield className="h-3.5 w-3.5" />
-                          Review
+                          <Heart className="h-3.5 w-3.5" />
+                          Compare Profiles
                           <ChevronDown className={`h-3 w-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                         </button>
                       ) : (
@@ -537,10 +537,10 @@ const statusConfig: Record<string, { label: string; icon: React.ReactNode; cls: 
     avatarCls: 'bg-amber-400/10 text-amber-400',
   },
   completed: {
-    label: 'Taken',
-    icon: <Check className="h-3 w-3" />,
-    cls: 'text-emerald-400 bg-emerald-400/10',
-    avatarCls: 'bg-emerald-400/10 text-emerald-400',
+    label: 'Awaiting Consent',
+    icon: <Clock className="h-3 w-3" />,
+    cls: 'text-amber-400 bg-amber-400/10',
+    avatarCls: 'bg-amber-400/10 text-amber-400',
   },
   consented: {
     label: 'Connected',
