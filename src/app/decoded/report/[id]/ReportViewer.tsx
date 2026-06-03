@@ -27,6 +27,7 @@ import {
 } from './v2-components';
 import { createClient } from '@/lib/supabase/client';
 import ShareModal from '@/components/decoded/ShareModal';
+import ArchetypeCard from './ArchetypeCard';
 import DecodedNav from '../../DecodedNav';
 import { getSectionConfigs, getUpgradeGateAfter, isSectionUnlocked } from '@/lib/decoded/report/sections/section-config';
 import { REPORT_DISCLAIMER, evaluateSafetyFlags, CRISIS_RESOURCES } from '@/lib/decoded/report/safety';
@@ -34,6 +35,7 @@ import type { InstrumentScore } from '@/lib/decoded/scoring/types';
 import type { ReportTier } from '@/lib/decoded/report/prompts/types';
 import './report.css';
 import './v2-components.css';
+import './archetype-card.css';
 
 interface ScoreRow {
   instrument_id: string;
@@ -577,6 +579,14 @@ export default function ReportViewer({ report: initialReport, scores, sharedOwne
           </h1>
           {report.archetype_tagline && (
             <p className="report-header__tagline">{report.archetype_tagline}</p>
+          )}
+
+          {/* Collectible archetype card — animal default with style switcher & share */}
+          {report.archetype_base && (
+            <ArchetypeCard
+              archetype={report.archetype_base}
+              sublabel={report.archetype_sublabel}
+            />
           )}
 
         </motion.div>

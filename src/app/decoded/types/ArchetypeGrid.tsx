@@ -100,7 +100,7 @@ const ARCHETYPES: Archetype[] = [
     object: 'Lightning bolt striking anvil',
     maleFigure: 'Figure lighting chain of torches',
     femaleFigure: 'Figure lighting chain of torches',
-    availableStyles: ['animal'],
+    availableStyles: ['animal', 'object', 'male', 'female'],
   },
   {
     slug: 'sage',
@@ -165,7 +165,7 @@ const ARCHETYPES: Archetype[] = [
     object: 'Balanced scales, handshake',
     maleFigure: 'Figure bridging two groups',
     femaleFigure: 'Figure bridging two groups',
-    availableStyles: [],
+    availableStyles: ['animal', 'object', 'male', 'female'],
   },
   {
     slug: 'maverick',
@@ -191,7 +191,7 @@ const ARCHETYPES: Archetype[] = [
     object: 'Shield, fortress, keys',
     maleFigure: 'Figure blocking doorway in storm',
     femaleFigure: 'Figure blocking doorway in storm',
-    availableStyles: [],
+    availableStyles: ['animal', 'object', 'male', 'female'],
   },
   {
     slug: 'luminary',
@@ -217,7 +217,7 @@ const ARCHETYPES: Archetype[] = [
     object: 'Chess board, telescope, star map',
     maleFigure: 'Figure at chess board',
     femaleFigure: 'Figure at chess board',
-    availableStyles: [],
+    availableStyles: ['animal', 'object', 'male', 'female'],
   },
   {
     slug: 'rebel',
@@ -230,7 +230,7 @@ const ARCHETYPES: Archetype[] = [
     object: 'Shattered crown, rose through concrete',
     maleFigure: 'Figure breaking free from chains',
     femaleFigure: 'Figure breaking free from chains',
-    availableStyles: [],
+    availableStyles: ['animal', 'object', 'male', 'female'],
   },
   {
     slug: 'anchor',
@@ -243,7 +243,7 @@ const ARCHETYPES: Archetype[] = [
     object: 'Ship anchor, compass rose, oak roots',
     maleFigure: 'Figure as pillar of strength',
     femaleFigure: 'Figure as pillar of strength',
-    availableStyles: [],
+    availableStyles: ['animal', 'object', 'male', 'female'],
   },
 ];
 
