@@ -16,6 +16,30 @@
   }
 }
 
+/* ── Shared report banner ── */
+.shared-report-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.5rem;
+  background: rgba(96, 99, 238, 0.06);
+  border: 1px solid rgba(96, 99, 238, 0.15);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  color: var(--text-body);
+  line-height: 1.5;
+}
+
+.shared-report-banner strong {
+  color: var(--text-heading);
+}
+
+.shared-report-banner__icon {
+  font-size: 1.125rem;
+  flex-shrink: 0;
+}
+
 /* ── Report header ── */
 .report-header {
   text-align: center;

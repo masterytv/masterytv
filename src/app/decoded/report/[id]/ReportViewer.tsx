@@ -70,6 +70,8 @@ interface ReportData {
 interface ReportViewerProps {
   report: ReportData;
   scores: ScoreRow[];
+  /** When viewing someone else's shared report, their name or email */
+  sharedOwnerName?: string;
 }
 
 // ─────────────────────────────────────────────────────
@@ -392,7 +394,7 @@ function V2SectionContent({
   }
 }
 
-export default function ReportViewer({ report: initialReport, scores }: ReportViewerProps) {
+export default function ReportViewer({ report: initialReport, scores, sharedOwnerName }: ReportViewerProps) {
   const [report, setReport] = useState<ReportData>(initialReport);
   const [readingProgress, setReadingProgress] = useState(0);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -548,6 +550,14 @@ export default function ReportViewer({ report: initialReport, scores }: ReportVi
       <div className="reading-progress" style={{ width: `${readingProgress}%` }} />
 
       <div className="report-container">
+        {/* Shared report banner */}
+        {sharedOwnerName && (
+          <div className="shared-report-banner">
+            <span className="shared-report-banner__icon">👤</span>
+            You&apos;re viewing <strong>{sharedOwnerName}&apos;s</strong> Decoded Report
+          </div>
+        )}
+
         {/* Report header */}
         <motion.div
           className="report-header"

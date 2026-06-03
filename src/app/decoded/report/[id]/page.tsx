@@ -98,10 +98,34 @@ export default async function ReportPage({ params, searchParams }: PageProps) {
   if (shared === 'true') {
     const result = await verifySharedAccess(user.id, id);
     if (result) {
+      // Look up owner's display name or email for the banner
+      const admin = createServiceClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      );
+      const ownerId = result.report.user_id;
+      let ownerName = 'Someone';
+
+      // Try decoded_profiles first (has display name)
+      const { data: profile } = await admin
+        .from('decoded_profiles')
+        .select('display_name')
+        .eq('user_id', ownerId)
+        .single();
+
+      if (profile?.display_name) {
+        ownerName = profile.display_name;
+      } else {
+        // Fall back to auth user email
+        const { data: { user: ownerUser } } = await admin.auth.admin.getUserById(ownerId);
+        ownerName = ownerUser?.email ?? 'Someone';
+      }
+
       return (
         <ReportViewer
           report={result.report}
           scores={result.scores}
+          sharedOwnerName={ownerName}
         />
       );
     }
