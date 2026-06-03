@@ -379,8 +379,8 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
                         ) : null}
                       </div>
 
-                      {/* They sent a request — show what they requested */}
-                      {theyRequested && !isExpanded && (
+                      {/* They sent a request — show what they requested (only when not yet connected) */}
+                      {theyRequested && !isExpanded && !isConnected && (
                         <p className="mt-2 ml-11 text-body-sm text-text-secondary">
                           <strong>{inviterName}</strong> requested <strong>{requestedLevelLabel}</strong> sharing
                         </p>
