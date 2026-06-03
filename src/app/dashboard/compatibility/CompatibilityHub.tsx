@@ -341,12 +341,12 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
                             {/* Show denial context if they requested higher than agreed */}
                             {inv.upgrade_requested_level === 'full' && inv.share_with_human !== 'full' && inv.upgrade_requested_by && inv.upgrade_requested_by !== userId && (
                               <p className="mt-2 text-body-sm text-amber-400">
-                                {inviterName} requested <strong>Full Report + Compatibility</strong> — You Denied
+                                {inviterName} requested <strong>Full Report + Compatibility</strong> — Full Report Denied. Compatibility Accepted.
                               </p>
                             )}
                             {inv.upgrade_requested_level === 'full' && inv.share_with_human !== 'full' && inv.upgrade_requested_by === userId && (
                               <p className="mt-2 text-body-sm text-text-muted">
-                                You requested <strong>Full Report + Compatibility</strong> — Denied
+                                You requested <strong>Full Report + Compatibility</strong> — Full Report Denied. Compatibility Accepted.
                               </p>
                             )}
                           </div>
@@ -484,12 +484,12 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
                         {/* Denial context */}
                         {inv.upgrade_requested_level === 'full' && inv.share_with_human !== 'full' && inv.upgrade_requested_by === userId && (
                           <p className="mt-2 ml-11 text-body-sm text-text-muted">
-                            You requested <strong>Full Report + Compatibility</strong> — Denied
+                            You requested <strong>Full Report + Compatibility</strong> — Full Report Denied. Compatibility Accepted.
                           </p>
                         )}
                         {inv.upgrade_requested_level === 'full' && inv.share_with_human !== 'full' && inv.upgrade_requested_by && inv.upgrade_requested_by !== userId && (
                           <p className="mt-2 ml-11 text-body-sm text-amber-400">
-                            {inv.recipient_email.split('@')[0]} requested <strong>Full Report + Compatibility</strong> — You Denied
+                            {inv.recipient_email.split('@')[0]} requested <strong>Full Report + Compatibility</strong> — Full Report Denied. Compatibility Accepted.
                           </p>
                         )}
                       </div>
