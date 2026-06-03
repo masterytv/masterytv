@@ -96,9 +96,22 @@ export async function GET(req: NextRequest) {
   const displayName = name.includes('@') ? '' : name;
   const nameStyle = displayName ? getNameStyle(displayName) : null;
 
-  const width = format === 'og' ? 1200 : 1080;
-  const height = format === 'og' ? 630 : 1080;
+  // Dimensions per format
+  // square: 1080x1080 (default — download/preview)
+  // og:     1200x630  (OpenGraph social preview)
+  // feed:   1080x1080 (Instagram Feed 1:1)
+  // story:  1080x1920 (Instagram Story 9:16)
+  const dimensions: Record<string, { w: number; h: number }> = {
+    square: { w: 1080, h: 1080 },
+    og:     { w: 1200, h: 630 },
+    feed:   { w: 1080, h: 1080 },
+    story:  { w: 1080, h: 1920 },
+  };
+  const dim = dimensions[format] ?? dimensions.square;
+  const width = dim.w;
+  const height = dim.h;
   const isOg = format === 'og';
+  const isStory = format === 'story';
 
   const origin = req.nextUrl.origin;
   const baseImageUrl = `${origin}/decoded/cards/${archetype}/base/${style}.png`;
@@ -140,13 +153,13 @@ export async function GET(req: NextRequest) {
             bottom: 0,
             left: 0,
             right: 0,
-            height: isOg ? '45%' : '33%',
+            height: isStory ? '44%' : isOg ? '45%' : '33%',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: isOg ? '2% 8% 2%' : '3% 10% 5%',
-            gap: isOg ? 6 : 10,
+            padding: isStory ? '3% 8% 5%' : isOg ? '2% 8% 2%' : '3% 10% 5%',
+            gap: isStory ? 16 : isOg ? 6 : 10,
             fontFamily: '"Playfair Display", Georgia, serif',
           }}
         >
@@ -154,7 +167,7 @@ export async function GET(req: NextRequest) {
           {sublabel && (
             <div
               style={{
-                fontSize: isOg ? 22 : 34,
+                fontSize: isStory ? 42 : isOg ? 22 : 34,
                 fontWeight: 700,
                 fontStyle: 'italic',
                 color: '#F5F0E8',
@@ -175,10 +188,10 @@ export async function GET(req: NextRequest) {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: isOg ? 15 : 22,
+                fontSize: isStory ? 26 : isOg ? 15 : 22,
                 fontWeight: 400,
                 color: '#F5F0E8',
-                gap: isOg ? 16 : 22,
+                gap: isStory ? 28 : isOg ? 16 : 22,
                 marginTop: 2,
               }}
             >
@@ -205,12 +218,12 @@ export async function GET(req: NextRequest) {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                marginTop: isOg ? 4 : 8,
+                marginTop: isStory ? 12 : isOg ? 4 : 8,
               }}
             >
               <span
                 style={{
-                  fontSize: isOg ? Math.round(nameStyle.fontSize * 0.75) : nameStyle.fontSize,
+                  fontSize: isStory ? Math.round(nameStyle.fontSize * 1.1) : isOg ? Math.round(nameStyle.fontSize * 0.75) : nameStyle.fontSize,
                   fontWeight: 700,
                   letterSpacing: nameStyle.letterSpacing,
                   color: '#fabd00',
@@ -228,7 +241,7 @@ export async function GET(req: NextRequest) {
         <div
           style={{
             position: 'absolute',
-            bottom: isOg ? 6 : 14,
+            bottom: isStory ? 20 : isOg ? 6 : 14,
             left: 0,
             right: 0,
             display: 'flex',
@@ -237,7 +250,7 @@ export async function GET(req: NextRequest) {
         >
           <span
             style={{
-              fontSize: isOg ? 10 : 13,
+              fontSize: isStory ? 16 : isOg ? 10 : 13,
               color: 'rgba(245, 240, 232, 0.4)',
               letterSpacing: '0.06em',
               fontFamily: '"Playfair Display", Georgia, serif',

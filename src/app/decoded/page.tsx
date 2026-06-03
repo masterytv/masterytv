@@ -15,19 +15,28 @@ export const metadata: Metadata = {
   },
 };
 
+interface PageProps {
+  searchParams: Promise<{ invite?: string }>;
+}
+
 /**
  * /decoded — Landing page with auth gate.
  * Authenticated users are redirected to /decoded/assess.
  * Unauthenticated users see the landing + login form.
+ *
+ * Accepts ?invite=[code] from invite landing page to preserve
+ * invite context through the auth flow.
  */
-export default async function DecodedPage() {
+export default async function DecodedPage({ searchParams }: PageProps) {
+  const { invite } = await searchParams;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Already authenticated → go to unified dashboard
+  // Already authenticated → go to unified dashboard (preserve invite if present)
   if (user) {
-    redirect("/dashboard");
+    const redirectUrl = invite ? `/dashboard?invite=${invite}` : "/dashboard";
+    redirect(redirectUrl);
   }
 
-  return <DecodedLanding />;
+  return <DecodedLanding inviteCode={invite} />;
 }

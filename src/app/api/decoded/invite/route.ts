@@ -7,6 +7,11 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
  * POST /api/decoded/invite
  * Send a Decoded assessment invite email via Resend.
  * Requires authenticated user.
+ *
+ * Flow:
+ * 1. Upsert invite row to get a stable ID
+ * 2. Build invite URL using that ID → /decoded/invite/[id]
+ * 3. Send the email with the personalized landing page link
  */
 export async function POST(req: NextRequest) {
   try {
@@ -34,7 +39,7 @@ export async function POST(req: NextRequest) {
       || user.email?.split('@')[0]
       || 'Someone';
 
-    const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://masterytv.com'}/decoded?ref=${user.id}`;
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://masterytv.com';
 
     const resendKey = process.env.RESEND_API_KEY;
     if (!resendKey) {
@@ -45,6 +50,33 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Step 1: Get the inviter's latest report
+    const { data: reportData } = await supabase
+      .from('assessment_reports')
+      .select('id')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    // Step 2: Upsert invite row to get a stable ID for the landing page URL
+    const { data: inviteRow } = await supabase.from('decoded_invites').upsert({
+      inviter_id: user.id,
+      recipient_email: recipientEmail,
+      inviter_report_id: reportData?.id ?? null,
+      inviter_name: senderName,
+      inviter_email: user.email ?? '',
+      status: 'pending',
+    }, { onConflict: 'inviter_id,recipient_email' })
+      .select('id')
+      .single();
+
+    // Build the personalized invite landing page URL
+    const inviteUrl = inviteRow?.id
+      ? `${appUrl}/decoded/invite/${inviteRow.id}`
+      : `${appUrl}/decoded`;
+
+    // Step 3: Send the invite email
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -118,24 +150,6 @@ export async function POST(req: NextRequest) {
       recipient_email: recipientEmail,
       section_unlocked: 'S5',
     });
-
-    // Invite lifecycle tracking — upsert to avoid duplicates
-    const { data: reportData } = await supabase
-      .from('assessment_reports')
-      .select('id')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
-
-    await supabase.from('decoded_invites').upsert({
-      inviter_id: user.id,
-      recipient_email: recipientEmail,
-      inviter_report_id: reportData?.id ?? null,
-      inviter_name: senderName,
-      inviter_email: user.email ?? '',
-      status: 'pending',
-    }, { onConflict: 'inviter_id,recipient_email' });
 
     return NextResponse.json({ success: true });
   } catch (error) {

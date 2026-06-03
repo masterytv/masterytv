@@ -41,6 +41,14 @@ const STYLE_META: Record<CardStyle, { label: string; description: string }> = {
 
 const ALL_STYLES: CardStyle[] = ['animal', 'object', 'male', 'female'];
 
+// Download format options
+type DownloadFormat = 'square' | 'story' | 'feed';
+const DOWNLOAD_FORMATS: { id: DownloadFormat; label: string; desc: string }[] = [
+  { id: 'square', label: 'Standard', desc: '1:1' },
+  { id: 'story', label: 'Story', desc: '9:16' },
+  { id: 'feed', label: 'Feed', desc: '1:1' },
+];
+
 // Social platforms
 const SOCIAL_PLATFORMS = [
   { id: 'x', label: 'X / Twitter',
@@ -88,6 +96,8 @@ export default function ArchetypeCard({
   const slug = normalizeSlug(archetype);
   const [activeStyle, setActiveStyle] = useState<CardStyle>('animal');
   const [showShare, setShowShare] = useState(false);
+  const [showDownloadMenu, setShowDownloadMenu] = useState(false);
+  const [downloadFormat, setDownloadFormat] = useState<DownloadFormat>('square');
   const [copied, setCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
 
@@ -106,11 +116,11 @@ export default function ArchetypeCard({
   const shareText = `I'm "The ${archetype}" — just decoded my personality with Decoded by MasteryTV. Try it free →`;
 
   // Build the Satori API URL for downloads (pixel-perfect PNG)
-  const downloadUrl = useMemo(() => {
+  const buildDownloadUrl = useCallback((fmt: DownloadFormat) => {
     const params = new URLSearchParams({
       archetype: slug,
       style: activeStyle,
-      format: 'square',
+      format: fmt,
     });
     if (displayName) params.set('name', displayName);
     if (sublabel) params.set('sublabel', sublabel);
@@ -119,31 +129,37 @@ export default function ArchetypeCard({
     return `/api/decoded/card?${params.toString()}`;
   }, [slug, activeStyle, displayName, sublabel, tagline, strengths]);
 
+  // Default URL for the card preview (always square)
+  const previewUrl = useMemo(() => buildDownloadUrl('square'), [buildDownloadUrl]);
+
   const handleShare = useCallback((platform: typeof SOCIAL_PLATFORMS[number]) => {
     const url = platform.buildUrl(shareUrl, shareText);
     window.open(url, '_blank', 'width=600,height=400');
     setShowShare(false);
   }, [shareUrl, shareText]);
 
-  const handleDownload = useCallback(async () => {
+  const handleDownload = useCallback(async (fmt?: DownloadFormat) => {
+    const selectedFormat = fmt || downloadFormat;
     setDownloading(true);
+    setShowDownloadMenu(false);
     try {
-      const response = await fetch(downloadUrl);
+      const url = buildDownloadUrl(selectedFormat);
+      const response = await fetch(url);
       const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
+      const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url;
-      a.download = `decoded-${slug}-${activeStyle}.png`;
+      a.href = blobUrl;
+      a.download = `decoded-${slug}-${activeStyle}-${selectedFormat}.png`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      URL.revokeObjectURL(blobUrl);
     } catch {
-      window.open(downloadUrl, '_blank');
+      window.open(buildDownloadUrl(selectedFormat), '_blank');
     } finally {
       setDownloading(false);
     }
-  }, [downloadUrl, slug, activeStyle]);
+  }, [buildDownloadUrl, downloadFormat, slug, activeStyle]);
 
   const handleCopyLink = useCallback(async () => {
     try {
@@ -165,7 +181,7 @@ export default function ArchetypeCard({
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={downloadUrl}
+          src={previewUrl}
           alt={`Your personalized ${archetype} card — ${STYLE_META[activeStyle].label} style`}
           className="ahc-card__base-image"
           width={480}
@@ -202,7 +218,7 @@ export default function ArchetypeCard({
         <div className="archetype-hero-card__actions">
           <button
             className="archetype-hero-card__action-btn"
-            onClick={handleDownload}
+            onClick={() => setShowDownloadMenu(!showDownloadMenu)}
             disabled={downloading}
             title="Download personalized card"
           >
@@ -219,6 +235,42 @@ export default function ArchetypeCard({
           </button>
         </div>
       </div>
+
+      {/* Download format dropdown */}
+      <AnimatePresence>
+        {showDownloadMenu && (
+          <motion.div
+            className="archetype-hero-card__share-panel"
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2 }}
+          >
+            <div className="archetype-hero-card__share-header">
+              <span className="archetype-hero-card__share-title">Save Format</span>
+              <button
+                className="archetype-hero-card__share-close"
+                onClick={() => setShowDownloadMenu(false)}
+                aria-label="Close download format menu"
+              >
+                <X size={14} />
+              </button>
+            </div>
+            <div className="archetype-hero-card__share-grid">
+              {DOWNLOAD_FORMATS.map((fmt) => (
+                <button
+                  key={fmt.id}
+                  className="archetype-hero-card__share-btn"
+                  onClick={() => handleDownload(fmt.id)}
+                >
+                  <Download size={14} />
+                  {fmt.label} ({fmt.desc})
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Share dropdown */}
       <AnimatePresence>

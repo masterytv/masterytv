@@ -141,8 +141,8 @@
 
 #### E0 — Go-To-Market
 
-- [ ] **S0.5.1** — Build `/decoded` landing page: hero, value prop, sample report preview, social proof, "Take the assessment" CTA
-- [ ] **S0.5.2** — Build shareable personality cards (F06/F07): Big Five visual, attachment style badge — downloadable/shareable on Instagram/X (Story 9:16, Feed 1:1, Landscape 16:9 formats). **Design mandate: premium glassmorphism — no clipart, no sparkles. BRAND.md §14.**
+- [x] **S0.5.1** — Build `/decoded` landing page: hero, value prop, sample report preview, social proof, "Take the assessment" CTA. ✅ Complete (June 3, 2026) — Full scroll page: Hero → What You'll Discover (4-column grid) → The Science (instrument tags) → Auth Section.
+- [x] **S0.5.2** — Build shareable personality cards (F06/F07): Big Five visual, attachment style badge — downloadable/shareable on Instagram/X (Story 9:16, Feed 1:1, Landscape 16:9 formats). **Design mandate: premium glassmorphism — no clipart, no sparkles. BRAND.md §14.** ✅ Complete (June 3, 2026) — Satori card API supports `square`, `og`, `story` (9:16), `feed` (1:1) formats. Download format selector in ArchetypeCard.
 #### E0 — Compare / Profile Invite (F03 — Viral Acquisition Engine)
 
 > [!IMPORTANT]
@@ -150,7 +150,7 @@
 
 - [x] **S0.5.3a** — **Schema:** `decoded_invites` table with invite lifecycle (`pending → completed → consented → connected`), granular consent (`share_with_human`, `share_with_coach`: `compatibility | type_compatibility | full`), upgrade request fields (`upgrade_requested_level`, `upgrade_requested_by`), compatibility report storage. RLS: inviter can insert/read, recipient can read/update consent. ✅ Complete (June 2, 2026)
 - [x] **S0.5.3b** — **Invite creation UI:** ShareModal component with email invites (via Resend) + social/link sharing. Triggered from report page and Compatibility Hub "Send Invite" button. ✅ Complete (June 2, 2026)
-- [ ] **S0.5.3c** — **Invite landing page:** `/decoded/invite/[code]` — Recipient sees inviter's archetype + teaser + CTA to take assessment. *(Not yet built — invites currently go via email with direct link to `/decoded`)*
+- [x] **S0.5.3c** — **Invite landing page:** `/decoded/invite/[code]` — Recipient sees inviter's archetype card + teaser + CTA to take assessment. ✅ Complete (June 3, 2026) — Dynamic OG metadata, archetype card image, gold CTA, trust signals. Invite URL uses UUID as code.
 - [x] **S0.5.3d** — **Invite link flow:** Recipient creates account → completes assessment → `recipient_id` linked → status advances to `completed`. ✅ Auto-linking via email match (June 2, 2026)
 - [x] **S0.5.3e** — **Compatibility view:** `/decoded/compatibility/[inviteId]` — AI-generated report with tabs for 3 relationship contexts (Intimate, Family/Friends, Work). Each context: chemistry, friction, superpower, watch-out, personalized advice. 5 compatibility dimensions with animated score bars. ✅ Complete (June 2, 2026)
 - [x] **S0.5.3f** — **AI Compatibility Report:** GPT-4o generates punchy, context-specific insights using both users' assessment data. Service-role client bypasses RLS for cross-user reads. Cached after first generation. **Currently free** (no paywall gate). ✅ Complete (June 2, 2026)
@@ -159,7 +159,7 @@
 - [x] **S0.5.3g3** — **Denial & re-request UX:** Context-aware messages per user ("Full Report Denied. Compatibility Accepted."). Request Again / Accept / Deny buttons for upgrade re-requests. New `deny-upgrade` API. Unshare buttons on all connected cards. ✅ Complete (June 3, 2026)
 - [x] **S0.5.3g4** — **Coach access control:** `lookup-relationship` tool and `prompt-assembler` Layer 4.6 both respect `share_with_human` column. Coach only reads data at the agreed sharing level. ✅ Complete (June 3, 2026)
 - [x] **S0.5.3g5** — **Shared report identity:** "You're viewing X's Decoded Report" banner on shared full reports. Owner name from `decoded_profiles.display_name` or auth email. ✅ Complete (June 3, 2026)
-- [ ] **S0.5.3h** — **Invite notifications:** Email inviter when recipient completes assessment. *(Not yet built — status updates visible in hub but no push notification)*
+- [x] **S0.5.3h** — **Invite notifications:** Email inviter when recipient completes assessment. ✅ Complete (June 3, 2026) — `/api/decoded/invite-notify` route, `notified_at` column for idempotency, fire-and-forget from dashboard after `claimPendingInvites`.
 
 #### E0 — Unlock "Your Relationships" via Share (Viral Section Gate)
 

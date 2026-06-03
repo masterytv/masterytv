@@ -28,8 +28,21 @@ export default async function DashboardPage() {
   }
 
   // Auto-claim any pending invites for this user's email
+  // and notify inviters when their recipient has completed the assessment
   if (user.email) {
-    await claimPendingInvites(supabase, user.id, user.email);
+    const claimedIds = await claimPendingInvites(supabase, user.id, user.email);
+
+    // Fire-and-forget notifications for newly claimed invites
+    if (claimedIds.length > 0) {
+      const origin = process.env.NEXT_PUBLIC_APP_URL || 'https://masterytv.com';
+      for (const inviteId of claimedIds) {
+        fetch(`${origin}/api/decoded/invite-notify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ inviteId }),
+        }).catch((err) => console.error('[dashboard] notify error:', err));
+      }
+    }
   }
 
   // Check for COMPLETED assessment (exclude superseded retakes)

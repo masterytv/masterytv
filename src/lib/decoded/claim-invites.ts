@@ -10,13 +10,13 @@ import type { SupabaseClient } from '@supabase/supabase-js';
  *
  * This is idempotent — calling it multiple times is safe.
  *
- * @returns The number of invites claimed
+ * @returns Array of claimed invite IDs (empty if none claimed)
  */
 export async function claimPendingInvites(
   supabase: SupabaseClient,
   userId: string,
   userEmail: string,
-): Promise<number> {
+): Promise<string[]> {
   // Check if user has completed an assessment (needed for "completed" status)
   const { data: hasReport } = await supabase
     .from('assessment_reports')
@@ -42,12 +42,12 @@ export async function claimPendingInvites(
 
   if (error) {
     console.error('[claimPendingInvites] Error:', error.message);
-    return 0;
+    return [];
   }
 
   if (data && data.length > 0) {
     console.log(`[claimPendingInvites] Claimed ${data.length} invite(s) for ${userEmail}`);
   }
 
-  return data?.length ?? 0;
+  return data?.map((row) => row.id) ?? [];
 }
