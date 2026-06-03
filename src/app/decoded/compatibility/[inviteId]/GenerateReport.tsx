@@ -1,18 +1,24 @@
 'use client';
 
 /**
- * GenerateButton — Auto-triggers compatibility report generation
- * when the page loads, with a manual retry button if it fails.
+ * GenerateReport — Auto-triggers compatibility report generation via Edge Function.
+ * Follows the same pattern as the coach client: calls the Supabase Edge Function
+ * directly with the user's JWT, bypassing the Next.js API route.
+ *
+ * Architecture: Consistent with decoded-generate-report (Edge Function does the work).
  */
 
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 import { Loader2, RefreshCw } from 'lucide-react';
 import './compatibility.css';
 
 interface Props {
   inviteId: string;
 }
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 
 export default function GenerateReport({ inviteId }: Props) {
   const [status, setStatus] = useState<'generating' | 'error'>('generating');
@@ -31,18 +37,36 @@ export default function GenerateReport({ inviteId }: Props) {
     setErrorMsg('');
 
     try {
-      const res = await fetch('/api/decoded/compatibility-report', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ inviteId }),
-      });
+      // Get the user's session token for Edge Function auth
+      const supabase = createClient();
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+
+      if (!accessToken) {
+        setErrorMsg('Not authenticated — please sign in again');
+        setStatus('error');
+        return;
+      }
+
+      // Call the Edge Function directly (same pattern as coach)
+      const res = await fetch(
+        `${SUPABASE_URL}/functions/v1/decoded-compatibility-report`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({ invite_id: inviteId }),
+        },
+      );
 
       if (res.ok) {
         // Report generated — refresh the server component to show it
         router.refresh();
       } else {
         const data = await res.json().catch(() => ({}));
-        setErrorMsg(data.error || 'Generation failed');
+        setErrorMsg(data.message || data.error || 'Generation failed');
         setStatus('error');
       }
     } catch {
