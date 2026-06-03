@@ -204,10 +204,13 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
               {allReceived.map((inv) => {
                 const isPending = inv.status === 'completed';
                 const isExpanded = expandedConsent === inv.id;
+                const hasReceivedUpgradeRequest = inv.upgrade_requested_level && inv.upgrade_requested_by && inv.upgrade_requested_by !== userId;
+                const receivedUpgradeLabel = inv.upgrade_requested_level === 'full' ? 'Full Report' : inv.upgrade_requested_level === 'type_compatibility' ? 'Personality Archetype + Compatibility' : inv.upgrade_requested_level;
+                const inviterDisplayName = inv.inviter_name || inv.inviter_email?.split('@')[0] || 'Someone';
 
                 return (
+                  <div key={inv.id}>
                   <motion.div
-                    key={inv.id}
                     layout
                     className={`rounded-xl border p-4 transition-colors ${
                       isPending
@@ -348,6 +351,39 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
                       )}
                     </AnimatePresence>
                   </motion.div>
+
+                    {/* Upgrade request banner — shown when the other party requested elevated access */}
+                    {hasReceivedUpgradeRequest && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        className="ml-11 mt-1 flex items-center justify-between rounded-lg border border-amber-400/20 bg-amber-400/5 px-4 py-2.5"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Shield className="h-4 w-4 text-amber-400" />
+                          <span className="text-sm text-text-primary">
+                            <strong>{inviterDisplayName}</strong> requested <strong>{receivedUpgradeLabel}</strong> access
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleUpgradeResponse(inv.id, 'approve')}
+                            disabled={saving === inv.id}
+                            className="flex items-center gap-1 rounded-lg bg-emerald-400/10 px-3 py-1.5 text-xs font-semibold text-emerald-400 hover:bg-emerald-400/15 transition-colors"
+                          >
+                            <Check className="h-3 w-3" /> Approve
+                          </button>
+                          <button
+                            onClick={() => handleUpgradeResponse(inv.id, 'deny')}
+                            disabled={saving === inv.id}
+                            className="rounded-lg px-3 py-1.5 text-xs font-semibold text-text-muted hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </div>
                 );
               })}
             </div>

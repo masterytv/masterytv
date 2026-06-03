@@ -487,3 +487,91 @@
   font-size: 0.875rem;
   color: var(--text-label);
 }
+
+/* ── Full Report link (inside sharing card) ── */
+.compat-sharing__full-report-link {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.625rem;
+  background: linear-gradient(135deg, rgba(163, 166, 255, 0.06), rgba(96, 99, 238, 0.03));
+  border: 1px solid rgba(163, 166, 255, 0.15);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.compat-sharing__full-report-link:hover {
+  background: rgba(163, 166, 255, 0.1);
+  border-color: rgba(163, 166, 255, 0.25);
+}
+
+/* ── Coach CTA ── */
+.compat-coach-cta {
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+}
+
+.compat-coach-cta__link {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  border-radius: 1rem;
+  background: var(--surface-card);
+  border: 1px solid var(--ghost-border);
+  text-decoration: none;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.compat-coach-cta__link:hover {
+  border-color: var(--color-primary);
+  background: rgba(163, 166, 255, 0.03);
+}
+
+.compat-coach-cta__link > svg:first-child {
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.compat-coach-cta__title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-heading);
+}
+
+.compat-coach-cta__subtitle {
+  font-size: 0.8125rem;
+  color: var(--text-label);
+  margin-top: 0.125rem;
+}
+
+.compat-coach-cta__arrow {
+  color: var(--color-primary);
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+/* ── Regenerating state ── */
+.compat-regenerating {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-radius: 0.75rem;
+  background: rgba(163, 166, 255, 0.06);
+  border: 1px solid rgba(163, 166, 255, 0.12);
+  margin-bottom: 2rem;
+  font-size: 0.875rem;
+  color: var(--text-body);
+}
+
+.compat-regenerating__icon {
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+

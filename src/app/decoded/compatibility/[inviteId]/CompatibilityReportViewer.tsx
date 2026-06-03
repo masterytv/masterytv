@@ -1,8 +1,12 @@
 'use client';
 
 /**
- * CompatibilityReportViewer — Visual display with tabs for three relationship contexts
- * and a sharing transparency section showing what data was shared vs. not shared.
+ * CompatibilityReportViewer — Per-user personalized compatibility report
+ * 
+ * Each user sees their own version written in their Decoded narrative voice.
+ * Advice is reframed as "Advice for you" / "Advice for {otherName}".
+ * When full report access is shared, shows a link to view the other person's
+ * full Decoded report.
  */
 
 import { useState } from 'react';
@@ -11,8 +15,9 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   ArrowLeft, Heart, Users, Briefcase, Check, Lock,
-  Send, Loader2, Eye, EyeOff,
+  Send, Loader2, Eye,
   Handshake, Flame, Zap, ShieldAlert,
+  MessageSquare, ArrowUpRight, FileText,
 } from 'lucide-react';
 import './compatibility.css';
 
@@ -28,8 +33,12 @@ interface ContextInsights {
   friction: string;
   superpower: string;
   watch_out: string;
-  advice_for_a: string;
-  advice_for_b: string;
+  // Per-user format (new)
+  advice_for_reader?: string;
+  advice_for_other?: string;
+  // Legacy shared format (backward compat)
+  advice_for_a?: string;
+  advice_for_b?: string;
 }
 
 interface CompatReport {
@@ -44,6 +53,8 @@ interface CompatReport {
   watch_out?: string;
   advice_for_a?: string;
   advice_for_b?: string;
+  advice_for_reader?: string;
+  advice_for_other?: string;
   compatibility_dimensions: CompatDimension[];
 }
 
@@ -56,6 +67,8 @@ interface Props {
   inviteId: string;
   otherPersonName: string;
   upgradeAlreadyRequested?: boolean;
+  /** The other person's Decoded report ID — only set when share_with_human === 'full' */
+  otherReportId?: string | null;
 }
 
 type TabId = 'intimate' | 'family_friendship' | 'work';
@@ -78,10 +91,22 @@ function isShared(itemMinLevel: string, currentLevel: string): boolean {
   return order.indexOf(currentLevel) >= order.indexOf(itemMinLevel);
 }
 
+/**
+ * Build a deep link URL to open the coach with compatibility context.
+ */
+function buildCoachDeepLink(otherName: string, inviteId: string): string {
+  const params = new URLSearchParams({
+    context: 'compatibility',
+    topic: `my relationship with ${otherName}`,
+    inviteId,
+  });
+  return `/dashboard/chat?${params.toString()}`;
+}
+
 export default function CompatibilityReportViewer({
   report, inviterName, recipientName,
   shareWithHuman, isInviter, inviteId, otherPersonName,
-  upgradeAlreadyRequested = false,
+  upgradeAlreadyRequested = false, otherReportId,
 }: Props) {
   const isMultiContext = !!report.intimate || !!report.family_friendship || !!report.work;
   const [activeTab, setActiveTab] = useState<TabId>('intimate');
@@ -96,15 +121,21 @@ export default function CompatibilityReportViewer({
         friction: report.friction || '',
         superpower: report.superpower || '',
         watch_out: report.watch_out || '',
-        advice_for_a: report.advice_for_a || '',
-        advice_for_b: report.advice_for_b || '',
+        advice_for_reader: report.advice_for_reader || report.advice_for_a || '',
+        advice_for_other: report.advice_for_other || report.advice_for_b || '',
       };
 
   // Show the sharing card to both users so they see the mutual level
   const showSharingCard = shareWithHuman !== 'none';
 
-  // Check if there are items not shared (to show Request Access)
-  const hasLockedItems = shareWithHuman !== 'full';
+  // Resolve advice labels: per-user reports use advice_for_reader/advice_for_other;
+  // legacy shared reports use advice_for_a/advice_for_b
+  function getAdviceForReader(ctx: ContextInsights): string {
+    return ctx.advice_for_reader || (isInviter ? ctx.advice_for_a || '' : ctx.advice_for_b || '');
+  }
+  function getAdviceForOther(ctx: ContextInsights): string {
+    return ctx.advice_for_other || (isInviter ? ctx.advice_for_b || '' : ctx.advice_for_a || '');
+  }
 
   async function handleRequestUpgrade() {
     setRequestingUpgrade(true);
@@ -193,6 +224,18 @@ export default function CompatibilityReportViewer({
               );
             })}
           </div>
+
+          {/* View Full Report link — only when full access is shared */}
+          {shareWithHuman === 'full' && otherReportId && (
+            <Link
+              href={`/decoded/report/${otherReportId}?shared=true`}
+              className="compat-sharing__full-report-link"
+            >
+              <FileText className="h-4 w-4" />
+              View {otherPersonName}&apos;s Full Decoded Report
+              <ArrowUpRight className="h-3.5 w-3.5" />
+            </Link>
+          )}
         </motion.div>
       )}
 
@@ -261,14 +304,15 @@ export default function CompatibilityReportViewer({
               </div>
             </div>
 
+            {/* Personalized advice — "Advice for you" / "Advice for {Name}" */}
             <div className="compat-advice">
               <div className="compat-advice__card">
-                <div className="compat-advice__for">Advice for {inviterName}</div>
-                <p className="compat-advice__text">{context.advice_for_a}</p>
+                <div className="compat-advice__for">Advice for you</div>
+                <p className="compat-advice__text">{getAdviceForReader(context)}</p>
               </div>
               <div className="compat-advice__card">
-                <div className="compat-advice__for">Advice for {recipientName}</div>
-                <p className="compat-advice__text">{context.advice_for_b}</p>
+                <div className="compat-advice__for">Advice for {otherPersonName}</div>
+                <p className="compat-advice__text">{getAdviceForOther(context)}</p>
               </div>
             </div>
           </motion.div>
@@ -311,6 +355,28 @@ export default function CompatibilityReportViewer({
           ))}
         </motion.div>
       )}
+
+      {/* ═══ Coach Deep Link CTA ═══ */}
+      <motion.div
+        className="compat-coach-cta"
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+      >
+        <Link
+          href={buildCoachDeepLink(otherPersonName, inviteId)}
+          className="compat-coach-cta__link"
+        >
+          <MessageSquare className="h-5 w-5" />
+          <div>
+            <div className="compat-coach-cta__title">Discuss this relationship with your coach</div>
+            <div className="compat-coach-cta__subtitle">
+              Ask questions about your compatibility with {otherPersonName}
+            </div>
+          </div>
+          <ArrowUpRight className="h-4 w-4 compat-coach-cta__arrow" />
+        </Link>
+      </motion.div>
     </div>
   );
 }

@@ -58,10 +58,10 @@ export default function GenerateReport({ inviteId }: Props) {
           <>
             <Loader2 className="h-8 w-8 text-[#a3a6ff] animate-spin" />
             <p className="compat-loading__text">
-              Generating your compatibility report...
+              Generating your personalized compatibility report...
             </p>
-            <p className="compat-loading__text" style={{ opacity: 0.5 }}>
-              This usually takes 15–30 seconds.
+            <p className="compat-loading__text" style={{ opacity: 0.5, maxWidth: '24rem', textAlign: 'center', lineHeight: 1.6 }}>
+              Your report is being written in your unique Decoded voice, based on both of your complete profiles.
             </p>
           </>
         ) : (
