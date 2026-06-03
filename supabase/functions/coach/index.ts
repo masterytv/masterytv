@@ -680,22 +680,32 @@ async function checkMessageLimit(
   }
 
   if (currentCount >= FREE_TIER_DAILY_LIMIT) {
-    // Return an SSE upgrade prompt
-    const remaining = 0;
-    const upgradeMessage = `You've used all ${FREE_TIER_DAILY_LIMIT} free messages for today. \u{1F512}\n\nUpgrade to **Core** ($99/month) for unlimited coaching:\n- Unlimited conversations across all channels\n- Morning briefings & accountability check-ins\n- Weekly coaching sessions\n- Real-time factual grounding\n\nVisit your **Settings** page to upgrade, or come back tomorrow for ${FREE_TIER_DAILY_LIMIT} more free messages.`;
+    // Calculate tomorrow's reset time (same time tomorrow in user's local perception)
+    const now = new Date();
+    const tomorrow = new Date(now);
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+    tomorrow.setUTCHours(0, 0, 0, 0);
+    // Format as a human-readable time (UTC midnight = their daily reset)
+    const resetHours = Math.ceil((tomorrow.getTime() - now.getTime()) / (1000 * 60 * 60));
+
+    const upgradeMessage = `You've reached your daily coaching limit (${FREE_TIER_DAILY_LIMIT} messages per day). Your limit resets in about ${resetHours} hour${resetHours !== 1 ? 's' : ''}.\n\nIf you'd like unlimited coaching conversations, you can upgrade anytime from your [Settings](/dashboard/settings) page.`;
 
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       start(controller) {
         controller.enqueue(
-          encoder.encode(sseEvent("token", { text: upgradeMessage }))
+          encoder.encode(sseEvent("delta", { text: upgradeMessage }))
         );
         controller.enqueue(
           encoder.encode(
             sseEvent("done", {
+              message_id: null,
+              model: "system",
+              tokens: { input_tokens: 0, output_tokens: 0 },
+              cost_usd: 0,
+              active_challenges: [],
               limit_reached: true,
-              remaining_today: remaining,
-              upgrade_url: "/coachapp/dashboard/settings",
+              remaining_today: 0,
             })
           )
         );

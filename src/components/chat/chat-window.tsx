@@ -46,6 +46,8 @@ function renderMarkdown(text: string): string {
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
     // Italic (*text*)
     .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, "<em>$1</em>")
+    // Links [text](url) — only allow safe protocols (relative, http, https)
+    .replace(/\[([^\]]+)\]\((\/?[^\)]+)\)/g, '<a href="$2" class="chat-link">$1</a>')
     // Bullet lists
     .replace(/^- (.+)$/gm, '<li class="chat-li">$1</li>')
     .replace(new RegExp('(<li class="chat-li">.*?<\\/li>\\n?)+', 'g'), '<ul class="chat-ul">$&</ul>')
