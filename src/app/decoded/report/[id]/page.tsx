@@ -4,14 +4,80 @@ import { redirect, notFound } from 'next/navigation';
 import ReportViewer from './ReportViewer';
 import type { Metadata } from 'next';
 
-export const metadata: Metadata = {
-  title: 'Your Decoded Report | Mastery',
-  description: 'Your personalized personality report powered by 13 validated instruments.',
-};
-
 interface PageProps {
   params: Promise<{ id: string }>;
   searchParams: Promise<{ shared?: string }>;
+}
+
+/**
+ * Dynamic OG metadata — generates a personalized card image for social sharing.
+ * Uses the /api/decoded/card route to composite the archetype illustration
+ * with the user's sublabel, tagline, and name.
+ */
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { id } = await params;
+
+  // Try to load the report for metadata (using admin to bypass RLS)
+  const admin = createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  );
+  const { data: report } = await admin
+    .from('assessment_reports')
+    .select('archetype_base, archetype_sublabel, archetype_tagline, user_id')
+    .eq('id', id)
+    .single();
+
+  if (!report?.archetype_base) {
+    return {
+      title: 'Your Decoded Report | Mastery',
+      description: 'Your personalized personality report powered by 13 validated instruments.',
+    };
+  }
+
+  // Get display name for the OG card
+  let displayName = '';
+  const { data: profile } = await admin
+    .from('decoded_profiles')
+    .select('display_name')
+    .eq('user_id', report.user_id)
+    .single();
+  if (profile?.display_name) displayName = profile.display_name;
+
+  const slug = report.archetype_base.toLowerCase().replace(/^the\s+/, '');
+  const ogParams = new URLSearchParams({
+    archetype: slug,
+    style: 'animal',
+    format: 'og',
+  });
+  if (displayName) ogParams.set('name', displayName);
+  if (report.archetype_sublabel) ogParams.set('sublabel', report.archetype_sublabel);
+  if (report.archetype_tagline) ogParams.set('tagline', report.archetype_tagline);
+
+  const title = report.archetype_sublabel
+    ? `The ${report.archetype_base} — ${report.archetype_sublabel} | Decoded`
+    : `The ${report.archetype_base} | Decoded`;
+
+  return {
+    title,
+    description: report.archetype_tagline ?? 'Your personalized personality report powered by 13 validated instruments.',
+    openGraph: {
+      title,
+      description: report.archetype_tagline ?? 'Decoded by MasteryTV — personality assessment',
+      images: [{
+        url: `/api/decoded/card?${ogParams.toString()}`,
+        width: 1200,
+        height: 630,
+        alt: `The ${report.archetype_base} personality card`,
+      }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description: report.archetype_tagline ?? 'Decoded by MasteryTV',
+      images: [`/api/decoded/card?${ogParams.toString()}`],
+    },
+  };
 }
 
 /**

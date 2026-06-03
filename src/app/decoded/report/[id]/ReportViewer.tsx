@@ -402,7 +402,23 @@ export default function ReportViewer({ report: initialReport, scores, sharedOwne
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareUnlocked, setShareUnlocked] = useState(false);
+  const [userName, setUserName] = useState<string | undefined>(undefined);
   const userTier: ReportTier = 'free'; // TODO: Connect to user subscription
+
+  // Fetch user's display name for the personalized archetype card
+  useEffect(() => {
+    const fetchUser = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const name = user.user_metadata?.display_name
+          || user.user_metadata?.full_name
+          || user.email?.split('@')[0];
+        if (name) setUserName(name);
+      }
+    };
+    fetchUser();
+  }, []);
 
   // S0.5.3i: Check if user already earned the share unlock
   useEffect(() => {
@@ -581,13 +597,31 @@ export default function ReportViewer({ report: initialReport, scores, sharedOwne
             <p className="report-header__tagline">{report.archetype_tagline}</p>
           )}
 
-          {/* Collectible archetype card — animal default with style switcher & share */}
-          {report.archetype_base && (
-            <ArchetypeCard
-              archetype={report.archetype_base}
-              sublabel={report.archetype_sublabel}
-            />
-          )}
+          {/* Collectible archetype card — dynamically composited with user data */}
+          {report.archetype_base && (() => {
+            // Extract top 3 strengths from S1 section (if available)
+            const s1 = displaySections?.['S1'];
+            let topStrengths: string[] = [];
+            if (s1) {
+              try {
+                const parsed = JSON.parse(s1.content_markdown);
+                const strengths = (parsed.top_strengths ?? []) as Array<{ label: string }>;
+                topStrengths = strengths.slice(0, 3).map(s => s.label);
+              } catch { /* S1 not JSON — skip strengths */ }
+            }
+
+            const displayName = sharedOwnerName ?? userName;
+
+            return (
+              <ArchetypeCard
+                archetype={report.archetype_base!}
+                sublabel={report.archetype_sublabel}
+                tagline={report.archetype_tagline}
+                userName={displayName}
+                strengths={topStrengths}
+              />
+            );
+          })()}
 
         </motion.div>
 

@@ -1,19 +1,20 @@
 'use client';
 
 /**
- * ArchetypeCard — Collectible personality card shown in the report header.
+ * ArchetypeCard — Personalized collectible card shown in the report header.
  *
- * Default: Animal/Object hybrid view. Users can switch between all 4 styles
- * (Animal, Object, Male, Female) and share any card to social media.
+ * Renders a DYNAMIC card via /api/decoded/card — composites the base
+ * illustration with the user's personalized data (sublabel, tagline,
+ * superpowers, name). Users can switch between 4 styles and share/download.
  *
- * Uses the same social platform list as ShareModal for consistency.
- * Cards are static images from /decoded/cards/{slug}/{style}.png
+ * The pre-generated images in /decoded/cards/ are used only as style
+ * picker thumbnails. The main card is always dynamically generated.
  */
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Share2, Download, X, Check, ExternalLink } from 'lucide-react';
+import { Share2, Download, X, Check, ExternalLink, Loader2 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
 // Types & data
@@ -79,22 +80,55 @@ function normalizeSlug(archetype: string): string {
 interface ArchetypeCardProps {
   /** Archetype name from the report, e.g. "Architect" or "The Architect" */
   archetype: string;
-  /** Optional sublabel, e.g. "Designer with Compassion" */
+  /** AI-generated sublabel, e.g. "The Unconventional Maverick" */
   sublabel?: string;
+  /** Archetype tagline/description from the report */
+  tagline?: string;
+  /** User's display name */
+  userName?: string;
+  /** Top 3 personalized strengths from S1 section */
+  strengths?: string[];
 }
 
-export default function ArchetypeCard({ archetype, sublabel }: ArchetypeCardProps) {
+export default function ArchetypeCard({
+  archetype,
+  sublabel,
+  tagline,
+  userName,
+  strengths = [],
+}: ArchetypeCardProps) {
   const slug = normalizeSlug(archetype);
   const [activeStyle, setActiveStyle] = useState<CardStyle>('animal');
   const [showShare, setShowShare] = useState(false);
   const [copied, setCopied] = useState(false);
-  const shareRef = useRef<HTMLDivElement>(null);
+  const [downloading, setDownloading] = useState(false);
+  const [cardImageUrl, setCardImageUrl] = useState<string | null>(null);
 
-  const imageSrc = `/decoded/cards/${slug}/${activeStyle}.png`;
+  // Build the API URL for the dynamic card
+  const cardApiUrl = useMemo(() => {
+    const params = new URLSearchParams({
+      archetype: slug,
+      style: activeStyle,
+      format: 'square',
+    });
+    if (userName) params.set('name', userName);
+    if (sublabel) params.set('sublabel', sublabel);
+    if (tagline) params.set('tagline', tagline);
+    if (strengths.length > 0) params.set('strengths', strengths.slice(0, 3).join(','));
+    return `/api/decoded/card?${params.toString()}`;
+  }, [slug, activeStyle, userName, sublabel, tagline, strengths]);
+
+  // Preload the card image whenever style changes
+  useEffect(() => {
+    setCardImageUrl(cardApiUrl);
+  }, [cardApiUrl]);
+
   const shareUrl = typeof window !== 'undefined'
     ? `${window.location.origin}/decoded`
     : 'https://masterytv.com/decoded';
-  const shareText = `I'm "The ${archetype}" — just decoded my personality with Decoded by MasteryTV. Try it free →`;
+  const shareText = userName
+    ? `I'm "The ${archetype}" — just decoded my personality with Decoded by MasteryTV. Try it free →`
+    : `I'm "The ${archetype}" — decoded by MasteryTV. Try it free →`;
 
   const handleShare = useCallback((platform: typeof SOCIAL_PLATFORMS[number]) => {
     const url = platform.buildUrl(shareUrl, shareText);
@@ -103,8 +137,10 @@ export default function ArchetypeCard({ archetype, sublabel }: ArchetypeCardProp
   }, [shareUrl, shareText]);
 
   const handleDownload = useCallback(async () => {
+    if (!cardImageUrl) return;
+    setDownloading(true);
     try {
-      const response = await fetch(imageSrc);
+      const response = await fetch(cardImageUrl);
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -115,10 +151,12 @@ export default function ArchetypeCard({ archetype, sublabel }: ArchetypeCardProp
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch {
-      // Fallback: open image in new tab
-      window.open(imageSrc, '_blank');
+      // Fallback: open in new tab
+      window.open(cardImageUrl, '_blank');
+    } finally {
+      setDownloading(false);
     }
-  }, [imageSrc, slug, activeStyle]);
+  }, [cardImageUrl, slug, activeStyle]);
 
   const handleCopyLink = useCallback(async () => {
     try {
@@ -132,22 +170,28 @@ export default function ArchetypeCard({ archetype, sublabel }: ArchetypeCardProp
 
   return (
     <div className="archetype-hero-card">
-      {/* Main card image */}
+      {/* Main card — dynamically generated via API */}
       <motion.div
         className="archetype-hero-card__image-wrap"
         key={activeStyle}
-        initial={{ opacity: 0, scale: 0.95 }}
+        initial={{ opacity: 0, scale: 0.97 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.3 }}
+        transition={{ duration: 0.35 }}
       >
-        <Image
-          src={imageSrc}
-          alt={`The ${archetype} — ${STYLE_META[activeStyle].label} style card`}
-          width={480}
-          height={480}
-          className="archetype-hero-card__image"
-          priority
-        />
+        {cardImageUrl ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={cardImageUrl}
+            alt={`Your personalized ${archetype} card — ${STYLE_META[activeStyle].label} style`}
+            className="archetype-hero-card__image"
+            width={480}
+            height={480}
+          />
+        ) : (
+          <div className="archetype-hero-card__loading">
+            <Loader2 className="animate-spin" size={24} />
+          </div>
+        )}
       </motion.div>
 
       {/* Style selector row */}
@@ -162,6 +206,7 @@ export default function ArchetypeCard({ archetype, sublabel }: ArchetypeCardProp
               onClick={() => setActiveStyle(style)}
               title={STYLE_META[style].description}
             >
+              {/* Thumbnails use pre-generated static images */}
               <Image
                 src={`/decoded/cards/${slug}/${style}.png`}
                 alt={STYLE_META[style].label}
@@ -181,15 +226,16 @@ export default function ArchetypeCard({ archetype, sublabel }: ArchetypeCardProp
           <button
             className="archetype-hero-card__action-btn"
             onClick={handleDownload}
-            title="Download card"
+            disabled={downloading}
+            title="Download your personalized card"
           >
-            <Download size={16} />
-            <span>Save</span>
+            {downloading ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+            <span>{downloading ? 'Saving…' : 'Save'}</span>
           </button>
           <button
             className="archetype-hero-card__action-btn archetype-hero-card__action-btn--primary"
             onClick={() => setShowShare(!showShare)}
-            title="Share card"
+            title="Share your card"
           >
             <Share2 size={16} />
             <span>Share</span>
@@ -201,7 +247,6 @@ export default function ArchetypeCard({ archetype, sublabel }: ArchetypeCardProp
       <AnimatePresence>
         {showShare && (
           <motion.div
-            ref={shareRef}
             className="archetype-hero-card__share-panel"
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -245,7 +290,7 @@ export default function ArchetypeCard({ archetype, sublabel }: ArchetypeCardProp
 }
 
 // ---------------------------------------------------------------------------
-// Social icons — duplicated from ShareModal to avoid cross-dependency
+// Social icons
 // ---------------------------------------------------------------------------
 
 function SocialIcon({ id }: { id: string }) {
