@@ -1,18 +1,21 @@
 /**
- * Decoded Card Generator API — Dynamic archetype card compositing.
+ * Decoded Card Generator API — Downloadable personalized card.
  *
- * Uses next/og (Satori + Resvg) to render personalized cards:
- * - Base illustration from /public/decoded/cards/{archetype}/{style}.png
- * - Dynamic text overlay: sublabel, description, superpowers, user name
+ * APPROACH: Uses the pre-generated card image as the base (which includes
+ * the frame, illustration, and archetype name), then overlays personalized
+ * text (sublabel, quote, strengths, name) on the bottom portion.
+ *
+ * This matches what the CSS overlay does in the browser, but produces
+ * a pixel-perfect PNG for downloading and social sharing.
  *
  * GET /api/decoded/card?
- *   archetype=rebel           # Required: archetype slug
- *   style=animal              # Required: animal | object | male | female
- *   name=Thomas+Wood          # Optional: user's display name
- *   sublabel=The+Unconventional+Maverick  # Required: AI sub-label
- *   tagline=Defying+norms+with+fearless+individuality  # Required: tagline
- *   strengths=Bold+Intuition,Creative+Disruption,Fearless+Action  # Required: top 3
- *   format=square             # Optional: square (1080×1080) | og (1200×630)
+ *   archetype=rebel
+ *   style=animal
+ *   name=Thomas+Wood
+ *   sublabel=The+Unconventional+Maverick
+ *   tagline=Defying+norms+with+fearless+individuality
+ *   strengths=Bold+Intuition,Creative+Disruption,Fearless+Action
+ *   format=square|og
  */
 
 import { ImageResponse } from 'next/og';
@@ -20,7 +23,6 @@ import { NextRequest } from 'next/server';
 
 export const runtime = 'edge';
 
-// Valid archetype slugs
 const VALID_ARCHETYPES = new Set([
   'architect', 'explorer', 'advocate', 'sentinel', 'catalyst', 'sage',
   'healer', 'commander', 'artist', 'diplomat', 'maverick', 'guardian',
@@ -29,10 +31,7 @@ const VALID_ARCHETYPES = new Set([
 
 const VALID_STYLES = new Set(['animal', 'object', 'male', 'female']);
 
-/**
- * Responsive name sizing — longer names get smaller text.
- */
-function getNameStyle(name: string): { fontSize: number; letterSpacing: string } {
+function getNameStyle(name: string) {
   const len = name.length;
   if (len <= 12) return { fontSize: 36, letterSpacing: '0.15em' };
   if (len <= 20) return { fontSize: 30, letterSpacing: '0.1em' };
@@ -40,9 +39,6 @@ function getNameStyle(name: string): { fontSize: number; letterSpacing: string }
   return { fontSize: 20, letterSpacing: '0.04em' };
 }
 
-/**
- * Sanitize text to prevent injection and excessive length.
- */
 function sanitize(text: string, maxLen = 100): string {
   return text.replace(/[<>"]/g, '').substring(0, maxLen).trim();
 }
@@ -59,7 +55,6 @@ export async function GET(req: NextRequest) {
   const strengths = strengthsRaw.split(',').map(s => sanitize(s, 40)).filter(Boolean).slice(0, 3);
   const format = searchParams.get('format') ?? 'square';
 
-  // Validation
   if (!VALID_ARCHETYPES.has(archetype)) {
     return new Response('Invalid archetype', { status: 400 });
   }
@@ -67,16 +62,19 @@ export async function GET(req: NextRequest) {
     return new Response('Invalid style', { status: 400 });
   }
 
-  const displayName = archetype.charAt(0).toUpperCase() + archetype.slice(1);
-  const nameStyle = name ? getNameStyle(name) : null;
+  // Don't show email addresses
+  const displayName = name.includes('@') ? '' : name;
+  const nameStyle = displayName ? getNameStyle(displayName) : null;
 
-  // Image dimensions
   const width = format === 'og' ? 1200 : 1080;
   const height = format === 'og' ? 630 : 1080;
+  const isOg = format === 'og';
 
-  // Build the illustration URL (absolute for Satori)
+  // Base card image URL — the pre-generated card with frame, illustration, archetype name
   const origin = req.nextUrl.origin;
-  const illustrationUrl = `${origin}/decoded/cards/${archetype}/${style}.png`;
+  const cardImageUrl = `${origin}/decoded/cards/${archetype}/${style}.png`;
+
+  const displayArchetype = archetype.charAt(0).toUpperCase() + archetype.slice(1);
 
   return new ImageResponse(
     (
@@ -85,171 +83,112 @@ export async function GET(req: NextRequest) {
           width: '100%',
           height: '100%',
           display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: '#0b1326',
-          fontFamily: 'Inter, system-ui, sans-serif',
           position: 'relative',
           overflow: 'hidden',
         }}
       >
-        {/* Navy background with subtle gradient */}
-        <div
+        {/* Full pre-generated card image as base layer */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={cardImageUrl}
+          alt=""
+          width={width}
+          height={height}
           style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
             position: 'absolute',
             inset: 0,
-            background: 'linear-gradient(180deg, #0d1730 0%, #0b1326 30%, #080e1e 100%)',
-            display: 'flex',
           }}
         />
 
-        {/* Outer border */}
+        {/* Gradient overlay covering the bottom text area */}
         <div
           style={{
             position: 'absolute',
-            inset: format === 'og' ? 12 : 20,
-            border: '1px solid rgba(245, 240, 232, 0.2)',
-            borderRadius: 8,
-            display: 'flex',
-          }}
-        />
-        <div
-          style={{
-            position: 'absolute',
-            inset: format === 'og' ? 16 : 26,
-            border: '1px solid rgba(245, 240, 232, 0.1)',
-            borderRadius: 6,
-            display: 'flex',
-          }}
-        />
-
-        {/* Content container */}
-        <div
-          style={{
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: isOg ? '55%' : '42%',
+            background: 'linear-gradient(to bottom, transparent 0%, rgba(11,19,38,0.7) 10%, rgba(11,19,38,0.95) 20%, #0b1326 30%)',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            justifyContent: 'center',
-            padding: format === 'og' ? '20px 40px' : '40px',
-            zIndex: 1,
-            width: '100%',
-            height: '100%',
+            justifyContent: 'flex-start',
+            padding: isOg ? '0 8% 3%' : '0 8% 4%',
           }}
         >
-          {/* DECODED header */}
-          <div
-            style={{
-              fontSize: format === 'og' ? 16 : 22,
-              fontWeight: 600,
-              letterSpacing: '0.35em',
-              color: '#F5F0E8',
-              textTransform: 'uppercase' as const,
-              marginBottom: format === 'og' ? 12 : 20,
-              display: 'flex',
-            }}
-          >
-            DECODED
-          </div>
-
-          {/* Illustration */}
-          <div
-            style={{
-              width: format === 'og' ? 280 : 520,
-              height: format === 'og' ? 280 : 520,
-              borderRadius: 4,
-              overflow: 'hidden',
-              display: 'flex',
-              marginBottom: format === 'og' ? 12 : 24,
-              flexShrink: 0,
-            }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={illustrationUrl}
-              alt=""
-              width={format === 'og' ? 280 : 520}
-              height={format === 'og' ? 280 : 520}
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-              }}
-            />
-          </div>
-
           {/* Archetype name */}
           <div
             style={{
-              fontSize: format === 'og' ? 28 : 44,
+              fontSize: isOg ? 28 : 44,
               fontWeight: 700,
-              letterSpacing: '0.12em',
+              letterSpacing: '0.1em',
               color: '#F5F0E8',
               textTransform: 'uppercase' as const,
-              marginBottom: format === 'og' ? 4 : 8,
+              marginBottom: isOg ? 2 : 4,
               display: 'flex',
             }}
           >
-            THE {displayName.toUpperCase()}
+            THE {displayArchetype.toUpperCase()}
           </div>
 
-          {/* Diamond divider */}
+          {/* Divider */}
           <div
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: format === 'og' ? 6 : 10,
-              marginBottom: format === 'og' ? 4 : 8,
+              fontSize: isOg ? 8 : 12,
               color: 'rgba(245, 240, 232, 0.4)',
-              fontSize: format === 'og' ? 10 : 14,
+              letterSpacing: '0.2em',
+              marginBottom: isOg ? 4 : 6,
+              display: 'flex',
             }}
           >
-            <span style={{ display: 'flex' }}>────</span>
-            <span style={{ display: 'flex' }}>◆</span>
-            <span style={{ display: 'flex' }}>────</span>
+            ◆◇◆
           </div>
 
-          {/* Sub-label (personalized) */}
+          {/* Sublabel */}
           {sublabel && (
             <div
               style={{
-                fontSize: format === 'og' ? 16 : 24,
+                fontSize: isOg ? 16 : 24,
                 fontWeight: 500,
                 fontStyle: 'italic',
                 color: '#F5F0E8',
-                marginBottom: format === 'og' ? 4 : 8,
+                marginBottom: isOg ? 3 : 6,
                 display: 'flex',
+                textAlign: 'center',
               }}
             >
               {sublabel}
             </div>
           )}
 
-          {/* Tagline / description (personalized) */}
+          {/* Quote */}
           {tagline && (
             <div
               style={{
-                fontSize: format === 'og' ? 11 : 16,
+                fontSize: isOg ? 11 : 16,
                 fontStyle: 'italic',
-                color: 'rgba(245, 240, 232, 0.65)',
-                marginBottom: format === 'og' ? 8 : 14,
+                color: 'rgba(245, 240, 232, 0.6)',
+                marginBottom: isOg ? 6 : 10,
                 display: 'flex',
                 textAlign: 'center',
-                maxWidth: format === 'og' ? 400 : 600,
+                maxWidth: '85%',
               }}
             >
               &ldquo;{tagline}&rdquo;
             </div>
           )}
 
-          {/* Superpowers (personalized) */}
+          {/* Strengths */}
           {strengths.length > 0 && (
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: format === 'og' ? 12 : 18,
-                marginBottom: format === 'og' ? 10 : 18,
+                gap: isOg ? 10 : 16,
+                marginBottom: isOg ? 8 : 12,
                 flexWrap: 'wrap',
                 justifyContent: 'center',
               }}
@@ -260,8 +199,8 @@ export async function GET(req: NextRequest) {
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: format === 'og' ? 4 : 6,
-                    fontSize: format === 'og' ? 11 : 16,
+                    gap: isOg ? 3 : 5,
+                    fontSize: isOg ? 10 : 15,
                     fontWeight: 500,
                     color: '#F5F0E8',
                   }}
@@ -273,20 +212,20 @@ export async function GET(req: NextRequest) {
             </div>
           )}
 
-          {/* User name (personalized) */}
-          {name && nameStyle && (
+          {/* User name */}
+          {displayName && nameStyle && (
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: 8,
-                marginBottom: format === 'og' ? 6 : 10,
+                marginBottom: isOg ? 4 : 8,
               }}
             >
-              <span style={{ color: '#fabd00', fontSize: nameStyle.fontSize * 0.5, display: 'flex' }}>✾</span>
+              <span style={{ color: '#fabd00', fontSize: (isOg ? nameStyle.fontSize * 0.5 : nameStyle.fontSize * 0.6), display: 'flex' }}>✾</span>
               <span
                 style={{
-                  fontSize: format === 'og' ? Math.round(nameStyle.fontSize * 0.7) : nameStyle.fontSize,
+                  fontSize: isOg ? Math.round(nameStyle.fontSize * 0.7) : nameStyle.fontSize,
                   fontWeight: 700,
                   letterSpacing: nameStyle.letterSpacing,
                   color: '#fabd00',
@@ -294,16 +233,16 @@ export async function GET(req: NextRequest) {
                   display: 'flex',
                 }}
               >
-                {name.toUpperCase()}
+                {displayName.toUpperCase()}
               </span>
-              <span style={{ color: '#fabd00', fontSize: nameStyle.fontSize * 0.5, display: 'flex' }}>✾</span>
+              <span style={{ color: '#fabd00', fontSize: (isOg ? nameStyle.fontSize * 0.5 : nameStyle.fontSize * 0.6), display: 'flex' }}>✾</span>
             </div>
           )}
 
           {/* Watermark */}
           <div
             style={{
-              fontSize: format === 'og' ? 10 : 14,
+              fontSize: isOg ? 10 : 14,
               color: 'rgba(245, 240, 232, 0.35)',
               letterSpacing: '0.05em',
               display: 'flex',
@@ -314,9 +253,6 @@ export async function GET(req: NextRequest) {
         </div>
       </div>
     ),
-    {
-      width,
-      height,
-    },
+    { width, height },
   );
 }
