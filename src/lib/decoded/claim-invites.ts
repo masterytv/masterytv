@@ -22,6 +22,7 @@ export async function claimPendingInvites(
     .from('assessment_reports')
     .select('id')
     .eq('user_id', userId)
+    .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
 
@@ -33,6 +34,7 @@ export async function claimPendingInvites(
     .from('decoded_invites')
     .update({
       recipient_id: userId,
+      recipient_report_id: hasReport?.id ?? null,
       status: newStatus,
       ...(hasReport ? { completed_at: new Date().toISOString() } : {}),
     })
