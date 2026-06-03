@@ -1,23 +1,11 @@
 /**
- * Decoded Card Generator API — Programmatic text compositing (Option B).
+ * Decoded Card Generator API — Option B: Satori text compositing.
  *
- * APPROACH: Uses illustration-only base images (frame + art + archetype name,
- * with blank space at bottom) and overlays personalized text via Satori.
+ * Uses illustration-only base images (frame + art + archetype name, blank bottom)
+ * and renders personalized text via Satori with custom serif font.
  *
- * Base images stored in: /public/decoded/cards/{archetype}/base/{style}.png
- * These contain: frame, "DECODED" header, illustration, archetype name, divider
- * They do NOT contain: sublabel, quote, strengths, user name, watermark
- *
- * Satori renders the personalized text in the blank area at the bottom.
- *
- * GET /api/decoded/card?
- *   archetype=rebel
- *   style=animal
- *   name=Thomas+Wood
- *   sublabel=The+Unconventional+Maverick
- *   tagline=Defying+norms+with+fearless+individuality
- *   strengths=Bold+Intuition,Creative+Disruption,Fearless+Action
- *   format=square|og
+ * Base images: /public/decoded/cards/{archetype}/base/{style}.png
+ * Font: Playfair Display (loaded from Google Fonts for premium serif look)
  */
 
 import { ImageResponse } from 'next/og';
@@ -45,6 +33,26 @@ function sanitize(text: string, maxLen = 100): string {
   return text.replace(/[<>"]/g, '').substring(0, maxLen).trim();
 }
 
+// Cache the font data in the module scope so we only fetch once
+let fontCache: ArrayBuffer | null = null;
+let fontBoldCache: ArrayBuffer | null = null;
+
+async function loadFonts() {
+  if (fontCache && fontBoldCache) return { regular: fontCache, bold: fontBoldCache };
+
+  // Fetch Playfair Display from Google Fonts (elegant serif matching the original cards)
+  const [regular, bold] = await Promise.all([
+    fetch('https://fonts.gstatic.com/s/playfairdisplay/v37/nuFiD-vYSZviVYUb_rj3ij__anPXDTnCjmHKM4nYO7KN_qiTbtbK-F2rA.woff')
+      .then(r => r.arrayBuffer()),
+    fetch('https://fonts.gstatic.com/s/playfairdisplay/v37/nuFiD-vYSZviVYUb_rj3ij__anPXDTnCjmHKM4nYO7KN_pGUbtbK-F2rA.woff')
+      .then(r => r.arrayBuffer()),
+  ]);
+
+  fontCache = regular;
+  fontBoldCache = bold;
+  return { regular, bold };
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
 
@@ -64,7 +72,7 @@ export async function GET(req: NextRequest) {
     return new Response('Invalid style', { status: 400 });
   }
 
-  // Don't show email addresses as names
+  // Don't show email addresses
   const displayName = name.includes('@') ? '' : name;
   const nameStyle = displayName ? getNameStyle(displayName) : null;
 
@@ -72,9 +80,14 @@ export async function GET(req: NextRequest) {
   const height = format === 'og' ? 630 : 1080;
   const isOg = format === 'og';
 
-  // Base image: illustration-only (frame + art + archetype name, blank bottom)
   const origin = req.nextUrl.origin;
   const baseImageUrl = `${origin}/decoded/cards/${archetype}/base/${style}.png`;
+
+  // Load premium serif font
+  const fonts = await loadFonts();
+
+  // Build the strengths string with diamond separators: ◆ Str1  ◆ Str2  ◆ Str3
+  const strengthsText = strengths.map(s => `◆ ${s}`).join('   ');
 
   return new ImageResponse(
     (
@@ -85,10 +98,9 @@ export async function GET(req: NextRequest) {
           display: 'flex',
           position: 'relative',
           overflow: 'hidden',
-          fontFamily: 'Georgia, "Times New Roman", serif',
         }}
       >
-        {/* Base card image — fills entire card, has blank space at bottom */}
+        {/* Base card image — frame + illustration + archetype name, blank bottom */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={baseImageUrl}
@@ -116,15 +128,16 @@ export async function GET(req: NextRequest) {
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: isOg ? '0 8% 2%' : '0 10% 3%',
-            gap: isOg ? 4 : 6,
+            padding: isOg ? '0 8% 2%' : '0 12% 5%',
+            gap: isOg ? 6 : 8,
+            fontFamily: '"Playfair Display", Georgia, serif',
           }}
         >
-          {/* Personalized sublabel */}
+          {/* Personalized sublabel — bold italic */}
           {sublabel && (
             <div
               style={{
-                fontSize: isOg ? 18 : 26,
+                fontSize: isOg ? 20 : 28,
                 fontWeight: 700,
                 fontStyle: 'italic',
                 color: '#F5F0E8',
@@ -141,9 +154,9 @@ export async function GET(req: NextRequest) {
           {tagline && (
             <div
               style={{
-                fontSize: isOg ? 12 : 17,
+                fontSize: isOg ? 13 : 18,
                 fontStyle: 'italic',
-                color: 'rgba(245, 240, 232, 0.6)',
+                color: 'rgba(245, 240, 232, 0.65)',
                 textAlign: 'center',
                 display: 'flex',
                 lineHeight: 1.3,
@@ -154,48 +167,39 @@ export async function GET(req: NextRequest) {
             </div>
           )}
 
-          {/* Personalized strengths */}
+          {/* Personalized strengths — diamond-separated */}
           {strengths.length > 0 && (
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: isOg ? 14 : 20,
-                flexWrap: 'wrap',
                 justifyContent: 'center',
-                marginTop: isOg ? 2 : 4,
+                fontSize: isOg ? 12 : 16,
+                fontWeight: 400,
+                color: '#F5F0E8',
+                gap: isOg ? 16 : 22,
+                marginTop: 2,
               }}
             >
               {strengths.map((s, i) => (
-                <div
-                  key={i}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: isOg ? 4 : 6,
-                    fontSize: isOg ? 11 : 15,
-                    fontWeight: 600,
-                    color: '#F5F0E8',
-                  }}
-                >
-                  <span style={{ color: '#fabd00', display: 'flex', fontSize: isOg ? 8 : 11 }}>◆</span>
-                  {s}
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: isOg ? 5 : 7 }}>
+                  <span style={{ color: '#fabd00', fontSize: isOg ? 9 : 12, display: 'flex' }}>&#9670;</span>
+                  <span style={{ display: 'flex' }}>{s}</span>
                 </div>
               ))}
             </div>
           )}
 
-          {/* Personalized user name */}
+          {/* Personalized user name — gold, bold */}
           {displayName && nameStyle && (
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 8,
-                marginTop: isOg ? 4 : 6,
+                justifyContent: 'center',
+                marginTop: isOg ? 4 : 8,
               }}
             >
-              <span style={{ color: '#fabd00', fontSize: isOg ? 12 : 16, display: 'flex' }}>✾</span>
               <span
                 style={{
                   fontSize: isOg ? Math.round(nameStyle.fontSize * 0.75) : nameStyle.fontSize,
@@ -208,25 +212,52 @@ export async function GET(req: NextRequest) {
               >
                 {displayName.toUpperCase()}
               </span>
-              <span style={{ color: '#fabd00', fontSize: isOg ? 12 : 16, display: 'flex' }}>✾</span>
             </div>
           )}
+        </div>
 
-          {/* Watermark */}
-          <div
+        {/* Watermark — placed at very bottom, inside the frame border area */}
+        <div
+          style={{
+            position: 'absolute',
+            bottom: isOg ? 6 : 14,
+            left: 0,
+            right: 0,
+            display: 'flex',
+            justifyContent: 'center',
+          }}
+        >
+          <span
             style={{
               fontSize: isOg ? 10 : 13,
-              color: 'rgba(245, 240, 232, 0.3)',
-              letterSpacing: '0.04em',
+              color: 'rgba(245, 240, 232, 0.4)',
+              letterSpacing: '0.06em',
+              fontFamily: '"Playfair Display", Georgia, serif',
               display: 'flex',
-              marginTop: isOg ? 2 : 4,
             }}
           >
             masterytv.com/decoded
-          </div>
+          </span>
         </div>
       </div>
     ),
-    { width, height },
+    {
+      width,
+      height,
+      fonts: [
+        {
+          name: 'Playfair Display',
+          data: fonts.regular,
+          weight: 400 as const,
+          style: 'normal' as const,
+        },
+        {
+          name: 'Playfair Display',
+          data: fonts.bold,
+          weight: 700 as const,
+          style: 'normal' as const,
+        },
+      ],
+    },
   );
 }
