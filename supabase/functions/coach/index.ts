@@ -21,6 +21,7 @@ import { assemblePrompt } from "../_shared/prompt-assembler.ts";
 import { generateEmbedding, logEmbeddingCost } from "../_shared/embeddings.ts";
 import { SEARCH_FACTS_TOOL, handleSearchFacts } from "../_shared/search-facts.ts";
 import { LOOKUP_ASSESSMENT_TOOL, handleLookupAssessment } from "../_shared/lookup-assessment.ts";
+import { LOOKUP_RELATIONSHIP_TOOL, handleLookupRelationship } from "../_shared/lookup-relationship.ts";
 import {
   resolveConversation,
   COACHING_DISCLAIMER,
@@ -266,7 +267,7 @@ Deno.serve(async (req: Request) => {
     const anthropicResponse = await callClaudeStreaming({
       system: contextualSystem,
       messages: claudeMessages,
-      tools: [SEARCH_FACTS_TOOL, LOOKUP_ASSESSMENT_TOOL],
+      tools: [SEARCH_FACTS_TOOL, LOOKUP_ASSESSMENT_TOOL, LOOKUP_RELATIONSHIP_TOOL],
       maxTokens: 1024,
     });
 
@@ -417,6 +418,18 @@ Deno.serve(async (req: Request) => {
                     duration_ms: Math.round(performance.now() - toolCallStart),
                   });
                 }
+              } else if (pendingToolUse.name === "lookup_relationship") {
+                const result = await handleLookupRelationship(streamUserId, toolInput);
+                toolResult = JSON.stringify(result);
+                if (debugMode) {
+                  toolCallsDebug.push({
+                    name: pendingToolUse.name,
+                    query: toolInput.person_name ?? "",
+                    result_confidence: result.found ? "high" : "low",
+                    cached: false,
+                    duration_ms: Math.round(performance.now() - toolCallStart),
+                  });
+                }
               } else {
                 toolResult = JSON.stringify({ error: `Unknown tool: ${pendingToolUse.name}` });
               }
@@ -449,7 +462,7 @@ Deno.serve(async (req: Request) => {
             currentResponse = await callClaudeStreaming({
               system: contextualSystem,
               messages: toolUseMessages,
-              tools: [SEARCH_FACTS_TOOL, LOOKUP_ASSESSMENT_TOOL],
+              tools: [SEARCH_FACTS_TOOL, LOOKUP_ASSESSMENT_TOOL, LOOKUP_RELATIONSHIP_TOOL],
               maxTokens: 1024,
             });
 
