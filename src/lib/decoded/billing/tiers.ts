@@ -44,8 +44,8 @@ export const DECODED_TIERS: DecodedTierInfo[] = [
       'Big Five personality radar',
       'Attachment style mapping',
       'Your Decoded Archetype',
-      'Invite friends to compare profiles',
-      'Downloadable PDF report',
+      '1 compatibility report',
+      '5 AI coaching messages per day',
     ],
   },
   {
@@ -58,10 +58,9 @@ export const DECODED_TIERS: DecodedTierInfo[] = [
       'Everything in Free',
       'Your emotional patterns decoded',
       'Career and motivation alignment',
+      '3 compatibility reports',
       '50 AI coaching messages per week',
-      '1 compatibility report with a partner',
     ],
-    recommended: true,
   },
   {
     id: 'growth',
@@ -71,11 +70,12 @@ export const DECODED_TIERS: DecodedTierInfo[] = [
     priceSubtext: '/year',
     features: [
       'Everything in Insight',
-      'Unlimited relationship comparisons',
+      'Unlimited compatibility reports',
       'Relationship dynamics analysis',
       'Wellness and life satisfaction map',
       '300 AI coaching messages per month',
     ],
+    recommended: true,
   },
   {
     id: 'mastery',
@@ -87,8 +87,8 @@ export const DECODED_TIERS: DecodedTierInfo[] = [
       'Everything in Growth',
       'Your personalized growth roadmap',
       'Unlimited AI coaching access',
+      'Unlimited compatibility reports',
       'Complete coaching framework library',
-      'Deep-dive add-on reports',
     ],
   },
 ];
