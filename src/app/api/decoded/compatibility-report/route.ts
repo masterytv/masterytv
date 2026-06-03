@@ -275,9 +275,10 @@ Profile Summary: ${JSON.stringify(recipientS1?.content_markdown || recipientS1 |
       report: callerReport,
     });
   } catch (error) {
-    console.error('[compatibility-report] Error:', error);
+    const errMsg = error instanceof Error ? error.message : String(error);
+    console.error('[compatibility-report] Error:', errMsg, error);
     return NextResponse.json(
-      { error: 'Failed to generate compatibility report' },
+      { error: `Failed to generate compatibility report: ${errMsg}` },
       { status: 500 },
     );
   }
