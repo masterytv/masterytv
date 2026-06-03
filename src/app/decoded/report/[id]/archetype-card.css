@@ -1,12 +1,9 @@
 /* =============================================================
-   Archetype Hero Card — Collectible card with CSS text overlay
+   Archetype Hero Card — Option B: Satori-composited display
    
-   APPROACH: Show the pre-generated card image (frame + illustration + 
-   archetype name), then overlay a navy panel on the bottom ~40% that
-   replaces the baked-in generic text with personalized user data.
-   
-   The image provides: frame, "DECODED", illustration, "THE [NAME]"
-   The overlay provides: sublabel, quote, strengths, user name, watermark
+   The card image comes directly from /api/decoded/card which
+   composites the illustration-only base image with personalized
+   text using Satori. No CSS overlay needed.
    ============================================================= */
 
 .archetype-hero-card {
@@ -17,7 +14,7 @@
   position: relative;
 }
 
-/* ── The card container ── */
+/* ── Card container ── */
 .ahc-card {
   position: relative;
   width: 100%;
@@ -31,7 +28,6 @@
   border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-/* Base image — fills the entire card */
 .ahc-card__base-image {
   width: 100%;
   height: 100%;
@@ -39,137 +35,9 @@
   display: block;
 }
 
-/* ── Personalized text overlay ──
-   Covers the bottom portion of the card (where generic text is baked in).
-   Uses a gradient from transparent → navy to blend seamlessly into the 
-   illustration, then solid navy for the text area. */
-.ahc-card__overlay {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 42%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  padding: 0 8% 4%;
-  background: linear-gradient(
-    to bottom,
-    transparent 0%,
-    rgba(11, 19, 38, 0.7) 10%,
-    rgba(11, 19, 38, 0.95) 20%,
-    #0b1326 30%
-  );
-  z-index: 2;
-}
-
-/* Archetype name — matches the baked-in font style */
-.ahc-card__archetype-name {
-  font-family: var(--font-display), 'Georgia', serif;
-  font-size: clamp(1.125rem, 4.5vw, 1.75rem);
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  color: #F5F0E8;
-  text-transform: uppercase;
-  text-align: center;
-  margin-bottom: 0.125em;
-  line-height: 1.2;
-}
-
-/* Diamond divider */
-.ahc-card__divider {
-  font-size: 0.5rem;
-  color: rgba(245, 240, 232, 0.4);
-  letter-spacing: 0.2em;
-  margin-bottom: 0.35em;
-  line-height: 1;
-}
-
-/* Personalized sublabel — italic, cream */
-.ahc-card__sublabel {
-  font-family: var(--font-display), 'Georgia', serif;
-  font-size: clamp(0.6875rem, 2.8vw, 1rem);
-  font-weight: 500;
-  font-style: italic;
-  color: #F5F0E8;
-  text-align: center;
-  line-height: 1.3;
-  margin-bottom: 0.2em;
-}
-
-/* Personalized tagline/quote — smaller, muted */
-.ahc-card__quote {
-  font-family: var(--font-display), 'Georgia', serif;
-  font-size: clamp(0.5rem, 2vw, 0.6875rem);
-  font-style: italic;
-  color: rgba(245, 240, 232, 0.6);
-  text-align: center;
-  line-height: 1.4;
-  margin-bottom: 0.35em;
-  max-width: 85%;
-}
-
-/* Personalized strengths — diamond bullets */
-.ahc-card__strengths {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5em;
-  flex-wrap: wrap;
-  margin-bottom: 0.4em;
-}
-
-.ahc-card__strength {
-  font-family: var(--font-sans);
-  font-size: clamp(0.4375rem, 1.8vw, 0.625rem);
-  font-weight: 500;
-  color: #F5F0E8;
-  white-space: nowrap;
-}
-
-.ahc-card__strength-diamond {
-  color: #fabd00;
-  font-size: 0.7em;
-  margin-right: 0.15em;
-}
-
-/* Personalized name — gold */
-.ahc-card__user-name {
-  font-family: var(--font-display), 'Georgia', serif;
-  font-size: clamp(0.625rem, 2.5vw, 0.9375rem);
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  color: #fabd00;
-  text-transform: uppercase;
-  text-align: center;
-  margin-bottom: 0.25em;
-  display: flex;
-  align-items: center;
-  gap: 0.4em;
-}
-
-.ahc-card__name-flourish {
-  font-size: 0.7em;
-  opacity: 0.7;
-}
-
-/* Watermark */
-.ahc-card__watermark {
-  font-family: var(--font-sans);
-  font-size: clamp(0.375rem, 1.5vw, 0.5625rem);
-  color: rgba(245, 240, 232, 0.3);
-  letter-spacing: 0.04em;
-}
-
-/* ── Responsive ── */
 @media (max-width: 480px) {
   .ahc-card {
     max-width: 320px;
-  }
-  .ahc-card__overlay {
-    height: 44%;
-    padding: 0 6% 3%;
   }
 }
 
@@ -372,9 +240,7 @@
 /* ── Print ── */
 @media print {
   .archetype-hero-card__controls,
-  .archetype-hero-card__share-panel {
-    display: none;
-  }
+  .archetype-hero-card__share-panel { display: none; }
   .ahc-card {
     box-shadow: none;
     border: 1px solid #ddd;
@@ -385,7 +251,5 @@
 /* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
   .archetype-hero-card__style-btn,
-  .archetype-hero-card__action-btn {
-    transition: none;
-  }
+  .archetype-hero-card__action-btn { transition: none; }
 }

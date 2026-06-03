@@ -91,7 +91,7 @@ export default function ArchetypeCard({
   const [copied, setCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
 
-  const imageSrc = `/decoded/cards/${slug}/${activeStyle}.png`;
+
 
   // Clean display name — never show email addresses
   const displayName = useMemo(() => {
@@ -155,7 +155,7 @@ export default function ArchetypeCard({
 
   return (
     <div className="archetype-hero-card">
-      {/* The card — base image + personalized text overlay */}
+      {/* The card — rendered by Satori API (base illustration + personalized text) */}
       <motion.div
         className="ahc-card"
         key={activeStyle}
@@ -163,61 +163,14 @@ export default function ArchetypeCard({
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.3 }}
       >
-        {/* Full pre-generated card image (frame + illustration + baked text) */}
-        <Image
-          src={imageSrc}
-          alt={`The ${archetype} — ${STYLE_META[activeStyle].label} style`}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={downloadUrl}
+          alt={`Your personalized ${archetype} card — ${STYLE_META[activeStyle].label} style`}
+          className="ahc-card__base-image"
           width={480}
           height={480}
-          className="ahc-card__base-image"
-          priority
         />
-
-        {/* Personalized text overlay — covers the baked-in text area */}
-        <div className="ahc-card__overlay">
-          {/* Archetype name (matches the baked-in style) */}
-          <div className="ahc-card__archetype-name">
-            THE {archetype.toUpperCase().replace(/^THE\s+/, '')}
-          </div>
-
-          {/* Diamond divider */}
-          <div className="ahc-card__divider">
-            <span>◆◇◆</span>
-          </div>
-
-          {/* Personalized sublabel */}
-          {sublabel && (
-            <div className="ahc-card__sublabel">{sublabel}</div>
-          )}
-
-          {/* Personalized tagline/quote */}
-          {tagline && (
-            <div className="ahc-card__quote">&ldquo;{tagline}&rdquo;</div>
-          )}
-
-          {/* Personalized superpowers */}
-          {strengths.length > 0 && (
-            <div className="ahc-card__strengths">
-              {strengths.slice(0, 3).map((s, i) => (
-                <span key={i} className="ahc-card__strength">
-                  <span className="ahc-card__strength-diamond">◆</span> {s}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {/* Personalized name (never show emails) */}
-          {displayName && (
-            <div className="ahc-card__user-name">
-              <span className="ahc-card__name-flourish">✾</span>
-              {displayName.toUpperCase()}
-              <span className="ahc-card__name-flourish">✾</span>
-            </div>
-          )}
-
-          {/* Watermark */}
-          <div className="ahc-card__watermark">masterytv.com/decoded</div>
-        </div>
       </motion.div>
 
       {/* Style selector + actions */}

@@ -1,12 +1,14 @@
 /**
- * Decoded Card Generator API — Downloadable personalized card.
+ * Decoded Card Generator API — Programmatic text compositing (Option B).
  *
- * APPROACH: Uses the pre-generated card image as the base (which includes
- * the frame, illustration, and archetype name), then overlays personalized
- * text (sublabel, quote, strengths, name) on the bottom portion.
+ * APPROACH: Uses illustration-only base images (frame + art + archetype name,
+ * with blank space at bottom) and overlays personalized text via Satori.
  *
- * This matches what the CSS overlay does in the browser, but produces
- * a pixel-perfect PNG for downloading and social sharing.
+ * Base images stored in: /public/decoded/cards/{archetype}/base/{style}.png
+ * These contain: frame, "DECODED" header, illustration, archetype name, divider
+ * They do NOT contain: sublabel, quote, strengths, user name, watermark
+ *
+ * Satori renders the personalized text in the blank area at the bottom.
  *
  * GET /api/decoded/card?
  *   archetype=rebel
@@ -33,10 +35,10 @@ const VALID_STYLES = new Set(['animal', 'object', 'male', 'female']);
 
 function getNameStyle(name: string) {
   const len = name.length;
-  if (len <= 12) return { fontSize: 36, letterSpacing: '0.15em' };
-  if (len <= 20) return { fontSize: 30, letterSpacing: '0.1em' };
-  if (len <= 30) return { fontSize: 24, letterSpacing: '0.06em' };
-  return { fontSize: 20, letterSpacing: '0.04em' };
+  if (len <= 12) return { fontSize: 32, letterSpacing: '0.14em' };
+  if (len <= 20) return { fontSize: 26, letterSpacing: '0.1em' };
+  if (len <= 30) return { fontSize: 22, letterSpacing: '0.06em' };
+  return { fontSize: 18, letterSpacing: '0.04em' };
 }
 
 function sanitize(text: string, maxLen = 100): string {
@@ -62,7 +64,7 @@ export async function GET(req: NextRequest) {
     return new Response('Invalid style', { status: 400 });
   }
 
-  // Don't show email addresses
+  // Don't show email addresses as names
   const displayName = name.includes('@') ? '' : name;
   const nameStyle = displayName ? getNameStyle(displayName) : null;
 
@@ -70,11 +72,9 @@ export async function GET(req: NextRequest) {
   const height = format === 'og' ? 630 : 1080;
   const isOg = format === 'og';
 
-  // Base card image URL — the pre-generated card with frame, illustration, archetype name
+  // Base image: illustration-only (frame + art + archetype name, blank bottom)
   const origin = req.nextUrl.origin;
-  const cardImageUrl = `${origin}/decoded/cards/${archetype}/${style}.png`;
-
-  const displayArchetype = archetype.charAt(0).toUpperCase() + archetype.slice(1);
+  const baseImageUrl = `${origin}/decoded/cards/${archetype}/base/${style}.png`;
 
   return new ImageResponse(
     (
@@ -85,12 +85,13 @@ export async function GET(req: NextRequest) {
           display: 'flex',
           position: 'relative',
           overflow: 'hidden',
+          fontFamily: 'Georgia, "Times New Roman", serif',
         }}
       >
-        {/* Full pre-generated card image as base layer */}
+        {/* Base card image — fills entire card, has blank space at bottom */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={cardImageUrl}
+          src={baseImageUrl}
           alt=""
           width={width}
           height={height}
@@ -103,94 +104,66 @@ export async function GET(req: NextRequest) {
           }}
         />
 
-        {/* Gradient overlay covering the bottom text area */}
+        {/* Personalized text — positioned in the blank area at the bottom */}
         <div
           style={{
             position: 'absolute',
             bottom: 0,
             left: 0,
             right: 0,
-            height: isOg ? '55%' : '42%',
-            background: 'linear-gradient(to bottom, transparent 0%, rgba(11,19,38,0.7) 10%, rgba(11,19,38,0.95) 20%, #0b1326 30%)',
+            height: isOg ? '45%' : '28%',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            justifyContent: 'flex-start',
-            padding: isOg ? '0 8% 3%' : '0 8% 4%',
+            justifyContent: 'center',
+            padding: isOg ? '0 8% 2%' : '0 10% 3%',
+            gap: isOg ? 4 : 6,
           }}
         >
-          {/* Archetype name */}
-          <div
-            style={{
-              fontSize: isOg ? 28 : 44,
-              fontWeight: 700,
-              letterSpacing: '0.1em',
-              color: '#F5F0E8',
-              textTransform: 'uppercase' as const,
-              marginBottom: isOg ? 2 : 4,
-              display: 'flex',
-            }}
-          >
-            THE {displayArchetype.toUpperCase()}
-          </div>
-
-          {/* Divider */}
-          <div
-            style={{
-              fontSize: isOg ? 8 : 12,
-              color: 'rgba(245, 240, 232, 0.4)',
-              letterSpacing: '0.2em',
-              marginBottom: isOg ? 4 : 6,
-              display: 'flex',
-            }}
-          >
-            ◆◇◆
-          </div>
-
-          {/* Sublabel */}
+          {/* Personalized sublabel */}
           {sublabel && (
             <div
               style={{
-                fontSize: isOg ? 16 : 24,
-                fontWeight: 500,
+                fontSize: isOg ? 18 : 26,
+                fontWeight: 700,
                 fontStyle: 'italic',
                 color: '#F5F0E8',
-                marginBottom: isOg ? 3 : 6,
-                display: 'flex',
                 textAlign: 'center',
+                display: 'flex',
+                lineHeight: 1.2,
               }}
             >
               {sublabel}
             </div>
           )}
 
-          {/* Quote */}
+          {/* Personalized tagline/quote */}
           {tagline && (
             <div
               style={{
-                fontSize: isOg ? 11 : 16,
+                fontSize: isOg ? 12 : 17,
                 fontStyle: 'italic',
                 color: 'rgba(245, 240, 232, 0.6)',
-                marginBottom: isOg ? 6 : 10,
-                display: 'flex',
                 textAlign: 'center',
-                maxWidth: '85%',
+                display: 'flex',
+                lineHeight: 1.3,
+                maxWidth: '90%',
               }}
             >
               &ldquo;{tagline}&rdquo;
             </div>
           )}
 
-          {/* Strengths */}
+          {/* Personalized strengths */}
           {strengths.length > 0 && (
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: isOg ? 10 : 16,
-                marginBottom: isOg ? 8 : 12,
+                gap: isOg ? 14 : 20,
                 flexWrap: 'wrap',
                 justifyContent: 'center',
+                marginTop: isOg ? 2 : 4,
               }}
             >
               {strengths.map((s, i) => (
@@ -199,33 +172,33 @@ export async function GET(req: NextRequest) {
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: isOg ? 3 : 5,
-                    fontSize: isOg ? 10 : 15,
-                    fontWeight: 500,
+                    gap: isOg ? 4 : 6,
+                    fontSize: isOg ? 11 : 15,
+                    fontWeight: 600,
                     color: '#F5F0E8',
                   }}
                 >
-                  <span style={{ color: '#fabd00', display: 'flex' }}>◆</span>
+                  <span style={{ color: '#fabd00', display: 'flex', fontSize: isOg ? 8 : 11 }}>◆</span>
                   {s}
                 </div>
               ))}
             </div>
           )}
 
-          {/* User name */}
+          {/* Personalized user name */}
           {displayName && nameStyle && (
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: 8,
-                marginBottom: isOg ? 4 : 8,
+                marginTop: isOg ? 4 : 6,
               }}
             >
-              <span style={{ color: '#fabd00', fontSize: (isOg ? nameStyle.fontSize * 0.5 : nameStyle.fontSize * 0.6), display: 'flex' }}>✾</span>
+              <span style={{ color: '#fabd00', fontSize: isOg ? 12 : 16, display: 'flex' }}>✾</span>
               <span
                 style={{
-                  fontSize: isOg ? Math.round(nameStyle.fontSize * 0.7) : nameStyle.fontSize,
+                  fontSize: isOg ? Math.round(nameStyle.fontSize * 0.75) : nameStyle.fontSize,
                   fontWeight: 700,
                   letterSpacing: nameStyle.letterSpacing,
                   color: '#fabd00',
@@ -235,17 +208,18 @@ export async function GET(req: NextRequest) {
               >
                 {displayName.toUpperCase()}
               </span>
-              <span style={{ color: '#fabd00', fontSize: (isOg ? nameStyle.fontSize * 0.5 : nameStyle.fontSize * 0.6), display: 'flex' }}>✾</span>
+              <span style={{ color: '#fabd00', fontSize: isOg ? 12 : 16, display: 'flex' }}>✾</span>
             </div>
           )}
 
           {/* Watermark */}
           <div
             style={{
-              fontSize: isOg ? 10 : 14,
-              color: 'rgba(245, 240, 232, 0.35)',
-              letterSpacing: '0.05em',
+              fontSize: isOg ? 10 : 13,
+              color: 'rgba(245, 240, 232, 0.3)',
+              letterSpacing: '0.04em',
               display: 'flex',
+              marginTop: isOg ? 2 : 4,
             }}
           >
             masterytv.com/decoded
