@@ -322,33 +322,20 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
                         </div>
 
                         {isConnected ? (
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <Link
-                                href={`/decoded/compatibility/${inv.id}`}
-                                className="flex items-center gap-1.5 rounded-lg bg-[rgba(96,99,238,0.1)] px-3 py-1.5 text-sm font-medium text-[#a3a6ff] hover:bg-[rgba(96,99,238,0.15)] transition-colors"
-                              >
-                                View Report <ArrowRight className="h-3.5 w-3.5" />
-                              </Link>
-                              <button
-                                onClick={() => handleRevoke(inv.id)}
-                                disabled={saving === inv.id}
-                                className="rounded-lg px-2 py-1.5 text-xs font-medium text-text-muted hover:text-red-400 hover:bg-red-400/10 transition-colors"
-                              >
-                                Unshare
-                              </button>
-                            </div>
-                            {/* Show denial context if they requested higher than agreed */}
-                            {inv.upgrade_requested_level === 'full' && inv.share_with_human !== 'full' && inv.upgrade_requested_by && inv.upgrade_requested_by !== userId && (
-                              <p className="mt-2 text-body-sm text-amber-400">
-                                {inviterName} requested <strong>Full Report + Compatibility</strong> — Full Report Denied. Compatibility Accepted.
-                              </p>
-                            )}
-                            {inv.upgrade_requested_level === 'full' && inv.share_with_human !== 'full' && inv.upgrade_requested_by === userId && (
-                              <p className="mt-2 text-body-sm text-text-muted">
-                                You requested <strong>Full Report + Compatibility</strong> — Full Report Denied. Compatibility Accepted.
-                              </p>
-                            )}
+                          <div className="flex items-center gap-2">
+                            <Link
+                              href={`/decoded/compatibility/${inv.id}`}
+                              className="flex items-center gap-1.5 rounded-lg bg-[rgba(96,99,238,0.1)] px-3 py-1.5 text-sm font-medium text-[#a3a6ff] hover:bg-[rgba(96,99,238,0.15)] transition-colors"
+                            >
+                              View Report <ArrowRight className="h-3.5 w-3.5" />
+                            </Link>
+                            <button
+                              onClick={() => handleRevoke(inv.id)}
+                              disabled={saving === inv.id}
+                              className="rounded-lg px-2 py-1.5 text-xs font-medium text-text-muted hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                            >
+                              Unshare
+                            </button>
                           </div>
                         ) : theyRequested ? (
                           /* They sent a request — show Accept */
@@ -378,6 +365,18 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
                           </button>
                         ) : null}
                       </div>
+
+                      {/* Denial context — below the header row */}
+                      {isConnected && inv.upgrade_requested_level === 'full' && inv.share_with_human !== 'full' && inv.upgrade_requested_by && inv.upgrade_requested_by !== userId && (
+                        <p className="mt-2 ml-11 text-body-sm text-amber-400">
+                          {inviterName} requested <strong>Full Report + Compatibility</strong> — Full Report Denied. Compatibility Accepted.
+                        </p>
+                      )}
+                      {isConnected && inv.upgrade_requested_level === 'full' && inv.share_with_human !== 'full' && inv.upgrade_requested_by === userId && (
+                        <p className="mt-2 ml-11 text-body-sm text-text-muted">
+                          You requested <strong>Full Report + Compatibility</strong> — Full Report Denied. Compatibility Accepted.
+                        </p>
+                      )}
 
                       {/* They sent a request — show what they requested (only when not yet connected) */}
                       {theyRequested && !isExpanded && !isConnected && (
