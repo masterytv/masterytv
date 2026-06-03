@@ -1,19 +1,19 @@
 "use client";
 
 import { useUser } from "@/hooks/useUser";
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
+import { DECODED_TIERS, MESSAGE_LIMITS, isUpgrade } from "@/lib/decoded/billing/tiers";
+import type { ReportTier } from "@/lib/decoded/report/prompts/types";
 import {
   Save,
   Loader2,
   Check,
-  Crown,
   Zap,
   CreditCard,
   ExternalLink,
-  Star,
   Shield,
   X,
   Flag,
@@ -23,8 +23,8 @@ import {
   Download,
   Trash2,
   AlertTriangle,
+  ArrowRight,
 } from "lucide-react";
-import { useCallback } from "react";
 
 const TIMEZONES = [
   "America/New_York",
@@ -48,45 +48,8 @@ const CHANNELS = [
   { value: "web", label: "Web Chat", icon: MessageSquare },
 ] as const;
 
-// ─── TIER CONFIG ──────────────────────────────────────────────────────────
-const TIERS = {
-  free: {
-    name: "Free",
-    icon: Zap,
-    color: "text-text-secondary",
-    bg: "bg-surface-100",
-    border: "border-surface-300",
-    badge: "bg-surface-200 text-text-secondary",
-    description: "5 messages per day",
-  },
-  core: {
-    name: "Core",
-    icon: Crown,
-    color: "text-[#a3a6ff]",
-    bg: "bg-[rgba(96,99,238,0.05)]",
-    border: "border-transparent",
-    badge: "bg-[rgba(96,99,238,0.1)] text-[#a3a6ff]",
-    description: "Unlimited coaching",
-  },
-  premium: {
-    name: "Premium",
-    icon: Star,
-    color: "text-violet-400",
-    bg: "bg-violet-500/5",
-    border: "border-violet-500/20",
-    badge: "bg-violet-500/10 text-violet-400",
-    description: "White-glove coaching",
-  },
-} as const;
-
-const CORE_FEATURES = [
-  "Unlimited AI coaching messages",
-  "Morning briefings & accountability",
-  "Weekly coaching sessions",
-  "Real-time factual grounding",
-  "Email, Telegram & web channels",
-  "Monthly progress reviews",
-];
+// ─── TIER ORDER (for display & comparison) ────────────────────────────────
+const TIER_ORDER: ReportTier[] = ["free", "insight", "growth", "mastery"];
 
 // ─── COACH PROFILE DIMENSION CONFIG ───────────────────────────────────
 
@@ -126,8 +89,7 @@ function SettingsContent() {
   const searchParams = useSearchParams();
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [upgrading, setUpgrading] = useState(false);
-  const [billingInterval, setBillingInterval] = useState<"monthly" | "yearly">("monthly");
+  const [upgradingTier, setUpgradingTier] = useState<string | null>(null);
 
   // Data management state (TD-006)
   const [exporting, setExporting] = useState(false);
@@ -188,7 +150,7 @@ function SettingsContent() {
       setToast({
         type: "success",
         message:
-          "Welcome to Mastery Coach Core! Your unlimited coaching is now active.",
+          "Your upgrade is now active. Welcome to your new plan!",
       });
       // Clean URL
       window.history.replaceState({}, "", window.location.pathname);
@@ -228,54 +190,34 @@ function SettingsContent() {
     }
   }
 
-  async function handleUpgrade() {
+  async function handleUpgrade(targetTier: ReportTier) {
     if (!user) return;
-    setUpgrading(true);
+    setUpgradingTier(targetTier);
 
     try {
-      const supabase = createClient();
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session?.access_token) {
-        setToast({ type: "error", message: "Please sign in to upgrade." });
-        setUpgrading(false);
-        return;
-      }
-
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/create-checkout`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({
-            tier: "core",
-            interval: billingInterval,
-          }),
-        }
-      );
+      const response = await fetch("/api/decoded/create-checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tier: targetTier, interval: "annual" }),
+      });
 
       const data = await response.json();
 
-      if (data.checkout_url) {
-        window.location.href = data.checkout_url;
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
       } else {
         setToast({
           type: "error",
-          message: data.message || "Failed to create checkout session.",
+          message: data.error || "Failed to create checkout session.",
         });
-        setUpgrading(false);
+        setUpgradingTier(null);
       }
     } catch {
       setToast({
         type: "error",
         message: "Something went wrong. Please try again.",
       });
-      setUpgrading(false);
+      setUpgradingTier(null);
     }
   }
 
@@ -417,10 +359,10 @@ function SettingsContent() {
     );
   }
 
-  const tier = user?.subscription_tier ?? "free";
-  const tierConfig = TIERS[tier as keyof typeof TIERS] ?? TIERS.free;
-  const TierIcon = tierConfig.icon;
-  const isPaid = tier === "core" || tier === "premium";
+  const currentTier = (user?.subscription_tier ?? "free") as ReportTier;
+  const currentTierInfo = DECODED_TIERS.find(t => t.id === currentTier) ?? DECODED_TIERS[0];
+  const isPaid = currentTier !== "free";
+  const messageLimit = MESSAGE_LIMITS[currentTier];
 
   return (
     <div className="overflow-y-auto h-full">
@@ -460,167 +402,146 @@ function SettingsContent() {
 
         <div className="space-y-8">
           {/* ─── SUBSCRIPTION SECTION ─────────────────────────────────── */}
-          <section
-            id="subscription-section"
-            className={`rounded-xl p-6 ${tierConfig.bg} relative overflow-hidden`}
-          >
-            {/* Subtle gradient accent for paid tiers */}
-            {isPaid && (
-              <div className="absolute inset-0 pointer-events-none">
-                <div
-                    className={`absolute top-0 right-0 w-48 h-48 rounded-full blur-3xl opacity-10 ${
-                      tier === "premium"
-                        ? "bg-violet-500"
-                        : "bg-[#6063ee]"
-                  }`}
-                />
+          <section id="subscription-section">
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h2 className="text-lg font-medium text-text-primary">
+                  Your Plan
+                </h2>
+                <p className="text-sm text-text-secondary">
+                  You&apos;re on the <strong>{currentTierInfo.name}</strong> plan
+                  {messageLimit.count === Infinity
+                    ? " — unlimited coaching messages"
+                    : ` — ${messageLimit.label} coaching messages`}
+                </p>
               </div>
-            )}
 
-            <div className="relative">
-              <div className="flex items-center justify-between mb-5">
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`flex h-10 w-10 items-center justify-center rounded-lg ${tierConfig.badge}`}
-                  >
-                    <TierIcon className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-medium text-text-primary">
-                      {tierConfig.name} Plan
-                    </h2>
-                    <p className="text-sm text-text-secondary">
-                      {tierConfig.description}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Tier badge */}
-                <span
-                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${tierConfig.badge}`}
+              {/* Manage billing for paid users */}
+              {isPaid && (
+                <button
+                  id="manage-billing-button"
+                  onClick={handleManageBilling}
+                  className="flex items-center gap-2 rounded-lg bg-surface-100 px-4 py-2.5 text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-surface-200 transition-all"
                 >
-                  <TierIcon className="h-3.5 w-3.5" />
-                  {tierConfig.name}
-                </span>
-              </div>
+                  <CreditCard className="h-4 w-4" />
+                  Manage Billing
+                  <ExternalLink className="h-3.5 w-3.5 ml-1 opacity-50" />
+                </button>
+              )}
+            </div>
 
-              {/* Free tier → Upgrade CTA */}
-              {!isPaid && (
-                <div className="mt-4">
-                   <div className="mb-5 rounded-lg bg-surface-100 p-5">
-                    <h3 className="text-sm font-semibold text-text-primary mb-3">
-                      Upgrade to Core — Unlimited Coaching
+            {/* 4-tier comparison grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {DECODED_TIERS.map((tierInfo) => {
+                const isCurrent = tierInfo.id === currentTier;
+                const canUpgrade = isUpgrade(currentTier, tierInfo.id);
+                const isRecommended = tierInfo.recommended && canUpgrade;
+
+                return (
+                  <div
+                    key={tierInfo.id}
+                    className={`
+                      relative rounded-xl p-5 transition-all
+                      ${isCurrent
+                        ? "bg-[rgba(96,99,238,0.08)] ring-1 ring-[rgba(96,99,238,0.3)]"
+                        : isRecommended
+                          ? "bg-surface-100 ring-1 ring-[rgba(96,99,238,0.2)]"
+                          : "bg-surface-100"
+                      }
+                    `}
+                  >
+                    {/* Current / Recommended badge */}
+                    {isCurrent && (
+                      <div className="absolute -top-2.5 left-4 px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-[rgba(96,99,238,0.15)] text-[#a3a6ff]">
+                        Current Plan
+                      </div>
+                    )}
+                    {isRecommended && !isCurrent && (
+                      <div className="absolute -top-2.5 left-4 px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-[#6063ee] text-white">
+                        Recommended
+                      </div>
+                    )}
+
+                    {/* Tier name */}
+                    <h3 className="text-base font-semibold text-text-primary mt-1">
+                      {tierInfo.name}
                     </h3>
+
+                    {/* Price */}
+                    <div className="flex items-baseline gap-1 mt-2 mb-1">
+                      <span className="text-2xl font-bold text-text-primary">
+                        {tierInfo.price}
+                      </span>
+                      {tierInfo.priceSubtext && (
+                        <span className="text-xs text-text-muted">
+                          {tierInfo.priceSubtext}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Tagline */}
+                    <p className="text-xs text-text-muted mb-4">
+                      {tierInfo.tagline}
+                    </p>
+
+                    {/* Features */}
                     <ul className="space-y-2 mb-5">
-                      {CORE_FEATURES.map((feature) => (
+                      {tierInfo.features.map((feature) => (
                         <li
                           key={feature}
-                          className="flex items-center gap-2.5 text-sm text-text-secondary"
+                          className="flex items-start gap-2 text-xs text-text-secondary"
                         >
-                          <Check className="h-4 w-4 text-emerald-400 shrink-0" />
+                          <Check className="h-3.5 w-3.5 text-emerald-400 shrink-0 mt-0.5" />
                           {feature}
                         </li>
                       ))}
                     </ul>
 
-                    {/* Billing toggle */}
-                    <div className="flex items-center gap-3 mb-5">
-                      <div className="inline-flex rounded-lg bg-surface-100 p-0.5">
-                        <button
-                          onClick={() => setBillingInterval("monthly")}
-                          className={`rounded-md px-4 py-1.5 text-sm font-medium transition-all ${
-                            billingInterval === "monthly"
-                              ? "bg-surface-0 text-text-primary shadow-sm"
-                              : "text-text-muted hover:text-text-secondary"
-                          }`}
-                        >
-                          Monthly
-                        </button>
-                        <button
-                          onClick={() => setBillingInterval("yearly")}
-                          className={`rounded-md px-4 py-1.5 text-sm font-medium transition-all ${
-                            billingInterval === "yearly"
-                              ? "bg-surface-0 text-text-primary shadow-sm"
-                              : "text-text-muted hover:text-text-secondary"
-                          }`}
-                        >
-                          Yearly
-                          <span className="ml-1.5 text-xs text-emerald-400 font-semibold">
-                            Save 17%
-                          </span>
-                        </button>
+                    {/* CTA */}
+                    {canUpgrade ? (
+                      <motion.button
+                        id={`upgrade-${tierInfo.id}`}
+                        onClick={() => handleUpgrade(tierInfo.id)}
+                        disabled={upgradingTier !== null}
+                        whileTap={{ scale: 0.98 }}
+                        className={`
+                          flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all disabled:opacity-50
+                          ${isRecommended
+                            ? "bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] text-white shadow-lg shadow-[rgba(96,99,238,0.2)]"
+                            : "bg-surface-200 text-text-primary hover:bg-surface-300"
+                          }
+                        `}
+                      >
+                        {upgradingTier === tierInfo.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <ArrowRight className="h-4 w-4" />
+                        )}
+                        {upgradingTier === tierInfo.id
+                          ? "Processing..."
+                          : `Upgrade to ${tierInfo.name}`}
+                      </motion.button>
+                    ) : isCurrent ? (
+                      <div className="flex w-full items-center justify-center gap-2 rounded-lg bg-[rgba(96,99,238,0.1)] px-4 py-2.5 text-sm font-medium text-[#a3a6ff]">
+                        <Check className="h-4 w-4" />
+                        Active
                       </div>
-                    </div>
-
-                    {/* Price */}
-                    <div className="flex items-baseline gap-2 mb-5">
-                      <span className="text-3xl font-bold text-text-primary">
-                        ${billingInterval === "monthly" ? "99" : "990"}
-                      </span>
-                      <span className="text-sm text-text-muted">
-                        /{billingInterval === "monthly" ? "month" : "year"}
-                      </span>
-                      {billingInterval === "yearly" && (
-                        <span className="text-xs text-text-muted ml-1">
-                          ($82.50/mo)
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Upgrade button */}
-                    <motion.button
-                      id="upgrade-button"
-                      onClick={handleUpgrade}
-                      disabled={upgrading}
-                      whileTap={{ scale: 0.98 }}
-                      className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-6 py-3 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-all shadow-lg shadow-[rgba(96,99,238,0.2)]"
-                    >
-                      {upgrading ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Crown className="h-4 w-4" />
-                      )}
-                      {upgrading ? "Redirecting to checkout..." : "Upgrade to Core"}
-                    </motion.button>
-
-                    <p className="mt-3 text-center text-xs text-text-muted flex items-center justify-center gap-1.5">
-                      <Shield className="h-3.5 w-3.5" />
-                      Secure checkout via Stripe. Cancel anytime.
-                    </p>
+                    ) : (
+                      /* Lower tier than current — no action needed */
+                      <div className="flex w-full items-center justify-center gap-2 rounded-lg bg-surface-200/50 px-4 py-2.5 text-sm font-medium text-text-muted">
+                        <Check className="h-4 w-4" />
+                        Included
+                      </div>
+                    )}
                   </div>
-
-                  {/* Usage indicator for free tier */}
-                  {user && (
-                    <div className="flex items-center gap-3 text-sm text-text-muted">
-                      <CreditCard className="h-4 w-4" />
-                      <span>
-                        {user.daily_message_count ?? 0}/5 free messages used today
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Paid tier → Manage subscription */}
-              {isPaid && (
-                <div className="mt-2 space-y-4">
-                  <div className="flex items-center gap-3 text-sm text-text-secondary">
-                    <Check className="h-4 w-4 text-emerald-400" />
-                    <span>Unlimited coaching messages active</span>
-                  </div>
-
-                  <button
-                    id="manage-billing-button"
-                    onClick={handleManageBilling}
-                    className="flex items-center gap-2 rounded-lg bg-surface-100 px-4 py-2.5 text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-surface-200 transition-all"
-                  >
-                    <CreditCard className="h-4 w-4" />
-                    Manage Subscription
-                    <ExternalLink className="h-3.5 w-3.5 ml-1 opacity-50" />
-                  </button>
-                </div>
-              )}
+                );
+              })}
             </div>
+
+            <p className="mt-4 text-center text-xs text-text-muted flex items-center justify-center gap-1.5">
+              <Shield className="h-3.5 w-3.5" />
+              Secure checkout via Stripe. Cancel anytime.
+            </p>
           </section>
 
           {/* ─── PROFILE SECTION ─────────────────────────────────────── */}
