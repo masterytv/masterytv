@@ -764,9 +764,14 @@ The user has personality profile connections with the following people:
 
 ${relationshipParts.join("\n\n---\n\n")}
 
-IMPORTANT: You have access to this data because the other person explicitly consented to share it. 
-Use it naturally in conversation — discuss their dynamic, offer relationship-specific coaching, and help the user understand how their personality interacts with their partner's.
-Do NOT volunteer this data unprompted. Wait for the user to bring up the relationship, then enrich your responses with these insights.`;
+IMPORTANT ACCESS RULES:
+- You have access to this data because the other person explicitly consented to share it.
+- Respect the sharing level for each connection:
+  * "type_compatibility" = You can see their archetype and the compatibility report. You do NOT have access to their full Decoded assessment. Do not claim knowledge of their detailed scores.
+  * "full" = You can see their full profile, archetype, and compatibility analysis.
+- Use this data naturally in conversation — discuss their dynamic, offer relationship-specific coaching.
+- Do NOT volunteer this data unprompted. Wait for the user to bring up the relationship, then enrich your responses.
+- If the user asks about details you don't have access to at the current sharing level, say so: "I don't have access to that level of detail about [name]'s profile."`;
         console.log(`[prompt-assembler] Loaded ${relationshipParts.length} shared relationship profile(s)`);
       }
     }

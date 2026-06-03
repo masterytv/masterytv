@@ -119,6 +119,13 @@ export async function handleLookupRelationship(
     status: invite.status,
   };
 
+  // Access control note for Claude
+  if (invite.share_with_human === 'type_compatibility') {
+    result.access_note = `Sharing level is 'Compatibility Report'. You can see ${otherName}'s personality archetype and the compatibility analysis. You do NOT have access to their full Decoded report. Do not claim knowledge of their detailed assessment scores.`;
+  } else if (invite.share_with_human === 'full') {
+    result.access_note = `Sharing level is 'Full Report + Compatibility'. You can see ${otherName}'s full profile, archetype, and the compatibility analysis.`;
+  }
+
   if (compatReport) {
     result.compatibility_report = compatReport;
   } else {
@@ -126,13 +133,13 @@ export async function handleLookupRelationship(
   }
 
   // Load the other person's archetype if sharing level allows
-  if (invite.share_with_human === "type_compatibility" || invite.share_with_human === "full") {
+  if (invite.share_with_human === 'type_compatibility' || invite.share_with_human === 'full') {
     const otherReportId = isInviter ? invite.recipient_report_id : invite.inviter_report_id;
     if (otherReportId) {
       const { data: otherReport } = await supabase
-        .from("assessment_reports")
-        .select("archetype_base, archetype_sublabel, archetype_tagline")
-        .eq("id", otherReportId)
+        .from('assessment_reports')
+        .select('archetype_base, archetype_sublabel, archetype_tagline')
+        .eq('id', otherReportId)
         .maybeSingle();
 
       if (otherReport) {
@@ -145,19 +152,19 @@ export async function handleLookupRelationship(
     }
   }
 
-  // Load the other person's full report summary if full sharing
-  if (invite.share_with_human === "full") {
+  // Load the other person's full report summary ONLY if full sharing
+  if (invite.share_with_human === 'full') {
     const otherReportId = isInviter ? invite.recipient_report_id : invite.inviter_report_id;
     if (otherReportId) {
       const { data: otherReport } = await supabase
-        .from("assessment_reports")
-        .select("sections")
-        .eq("id", otherReportId)
+        .from('assessment_reports')
+        .select('sections')
+        .eq('id', otherReportId)
         .maybeSingle();
 
       if (otherReport?.sections) {
         const sections = otherReport.sections as Record<string, { content_markdown?: string }>;
-        // Only include S1 (overview) — full report is too large
+        // Include S1 (overview) — full report is too large for context
         if (sections.S1) {
           result.other_person_profile_summary = sections.S1.content_markdown ?? JSON.stringify(sections.S1);
         }
