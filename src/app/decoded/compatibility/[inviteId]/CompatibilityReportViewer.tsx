@@ -117,23 +117,19 @@ export default function CompatibilityReportViewer({
   const isMultiContext = !!report.intimate || !!report.family_friendship || !!report.work;
   const [activeTab, setActiveTab] = useState<TabId>('intimate');
   const [requestingUpgrade, setRequestingUpgrade] = useState(false);
+  const [acceptingUpgrade, setAcceptingUpgrade] = useState(false);
 
-  // Only treat it as an "upgrade request" if the requested level is actually HIGHER
-  // than the current agreed level. A request for the same level is a no-op.
-  const levelOrder = ['none', 'compatibility', 'type_compatibility', 'full'];
-  const isActualUpgrade = upgradeRequestedLevel
-    ? levelOrder.indexOf(upgradeRequestedLevel) > levelOrder.indexOf(shareWithHuman)
-    : false;
-
-  const [upgradeRequested, setUpgradeRequested] = useState(isActualUpgrade);
+  // Upgrade request states — 3 clean states:
+  //   1. theyRequestedUpgrade → show Accept / Deny buttons to me
+  //   2. iRequestedUpgrade → show "Requested" (waiting)
+  //   3. neither → show "Request Access" button
+  // Note: denial clears both fields to null, so there is no "denied" state in the data.
+  const iRequestedUpgrade = upgradeRequestedLevel && upgradeRequestedBy === userId;
+  const theyRequestedUpgrade = upgradeRequestedLevel && upgradeRequestedBy && upgradeRequestedBy !== userId;
+  const [localIRequested, setLocalIRequested] = useState(!!iRequestedUpgrade);
+  const [upgradeAccepted, setUpgradeAccepted] = useState(false);
   const [unsharing, setUnsharing] = useState(false);
   const router = useRouter();
-
-  // Who requested the upgrade?
-  const iRequestedUpgrade = isActualUpgrade && upgradeRequestedBy === userId;
-  const theyRequestedUpgrade = isActualUpgrade && upgradeRequestedBy && upgradeRequestedBy !== userId;
-  // Was the upgrade denied? (requested level > agreed level)
-  const upgradeDenied = upgradeRequestedLevel === 'full' && shareWithHuman !== 'full';
 
   const context: ContextInsights | null = isMultiContext
     ? (report[activeTab] ?? null)
@@ -167,10 +163,40 @@ export default function CompatibilityReportViewer({
         body: JSON.stringify({ inviteId, level: 'full' }),
       });
       if (res.ok) {
-        setUpgradeRequested(true);
+        setLocalIRequested(true);
       }
     } finally {
       setRequestingUpgrade(false);
+    }
+  }
+
+  async function handleAcceptUpgrade() {
+    setAcceptingUpgrade(true);
+    try {
+      const res = await fetch('/api/decoded/invite-consent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inviteId, shareLevel: 'full' }),
+      });
+      if (res.ok) {
+        setUpgradeAccepted(true);
+        router.refresh();
+      }
+    } finally {
+      setAcceptingUpgrade(false);
+    }
+  }
+
+  async function handleDenyUpgrade() {
+    try {
+      await fetch('/api/decoded/deny-upgrade', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inviteId }),
+      });
+      router.refresh();
+    } catch {
+      // silent
     }
   }
 
@@ -226,10 +252,7 @@ export default function CompatibilityReportViewer({
           <div className="compat-sharing__items">
             {SHARE_ITEMS.map((item) => {
               const shared = isShared(item.minLevel, shareWithHuman);
-              // Determine if this specific item was requested but denied
               const isFullItem = item.key === 'full';
-              const fullWasRequestedAndDenied = isFullItem && upgradeDenied;
-
               return (
                 <div
                   key={item.key}
@@ -242,53 +265,43 @@ export default function CompatibilityReportViewer({
                   )}
                   <span className="compat-sharing__item-label">{item.label}</span>
 
-                  {/* Full report status — context-aware per user */}
+                  {/* Full report upgrade — 3 clean states */}
                   {isFullItem && !shared && (
                     <>
-                      {fullWasRequestedAndDenied && iRequestedUpgrade ? (
-                        /* I requested, they denied */
+                      {upgradeAccepted ? (
+                        /* Just accepted — refreshing */
+                        <span className="compat-sharing__requested">
+                          <Check className="h-3 w-3" /> Accepted
+                        </span>
+                      ) : theyRequestedUpgrade && !localIRequested ? (
+                        /* They requested full access — show Accept / Deny */
                         <div className="compat-sharing__denied-group">
-                          <span className="compat-sharing__denied-badge">
-                            <X className="h-3 w-3" /> Denied
-                          </span>
                           <button
-                            onClick={handleRequestUpgrade}
-                            disabled={requestingUpgrade}
+                            onClick={handleAcceptUpgrade}
+                            disabled={acceptingUpgrade}
                             className="compat-sharing__request-btn"
                           >
-                            {requestingUpgrade ? (
-                              <><Loader2 className="h-3 w-3 animate-spin" /> Requesting...</>
+                            {acceptingUpgrade ? (
+                              <><Loader2 className="h-3 w-3 animate-spin" /> Accepting...</>
                             ) : (
-                              <><Send className="h-3 w-3" /> Request Again</>
+                              <><Check className="h-3 w-3" /> Accept</>
                             )}
                           </button>
+                          <button
+                            onClick={handleDenyUpgrade}
+                            className="compat-sharing__denied-badge"
+                            style={{ cursor: 'pointer' }}
+                          >
+                            <X className="h-3 w-3" /> Deny
+                          </button>
                         </div>
-                      ) : fullWasRequestedAndDenied && theyRequestedUpgrade ? (
-                        /* They requested, I denied */
-                        <div className="compat-sharing__denied-group">
-                          <span className="compat-sharing__denied-badge">
-                            You Denied
-                          </span>
-                          {!upgradeRequested ? (
-                            <button
-                              onClick={handleRequestUpgrade}
-                              disabled={requestingUpgrade}
-                              className="compat-sharing__request-btn"
-                            >
-                              {requestingUpgrade ? (
-                                <><Loader2 className="h-3 w-3 animate-spin" /> Requesting...</>
-                              ) : (
-                                <><Send className="h-3 w-3" /> Request</>
-                              )}
-                            </button>
-                          ) : (
-                            <span className="compat-sharing__requested">
-                              <Check className="h-3 w-3" /> Requested
-                            </span>
-                          )}
-                        </div>
-                      ) : !upgradeRequested ? (
-                        /* No request yet */
+                      ) : localIRequested || iRequestedUpgrade ? (
+                        /* I requested — waiting for their response */
+                        <span className="compat-sharing__requested">
+                          <Check className="h-3 w-3" /> Requested
+                        </span>
+                      ) : (
+                        /* No request yet — show Request Access button */
                         <button
                           onClick={handleRequestUpgrade}
                           disabled={requestingUpgrade}
@@ -300,11 +313,6 @@ export default function CompatibilityReportViewer({
                             <><Send className="h-3 w-3" /> Request Access</>
                           )}
                         </button>
-                      ) : (
-                        /* Requested, waiting for response */
-                        <span className="compat-sharing__requested">
-                          <Check className="h-3 w-3" /> Requested
-                        </span>
                       )}
                     </>
                   )}
