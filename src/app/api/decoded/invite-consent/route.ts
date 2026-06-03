@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
     const requesterLevel = invite.upgrade_requested_level || shareLevel;
     const effectiveLevel = minLevel(requesterLevel, shareLevel);
 
-    // Update to consented with mutual minimum
+    // Update to consented with mutual minimum — clear upgrade request fields
     const { error } = await supabase
       .from('decoded_invites')
       .update({
@@ -118,6 +118,8 @@ export async function POST(req: NextRequest) {
         status: 'consented',
         consented_at: new Date().toISOString(),
         revoked_at: null,
+        upgrade_requested_level: null,
+        upgrade_requested_by: null,
       })
       .eq('id', inviteId);
 
@@ -151,18 +153,9 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Fire-and-forget: generate compatibility report
-    const origin = req.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL || 'https://masterytv.com';
-    fetch(`${origin}/api/decoded/compatibility-report`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Cookie': req.headers.get('cookie') || '',
-      },
-      body: JSON.stringify({ inviteId }),
-    }).catch((err) => {
-      console.error('[invite-consent] Compatibility report trigger error:', err);
-    });
+    // Compatibility report is generated on-demand when either user visits
+    // the compatibility page — the Edge Function (decoded-compatibility-report)
+    // handles generation. No fire-and-forget needed here.
 
     return NextResponse.json({
       success: true,

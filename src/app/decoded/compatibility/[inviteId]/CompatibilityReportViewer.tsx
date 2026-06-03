@@ -117,13 +117,21 @@ export default function CompatibilityReportViewer({
   const isMultiContext = !!report.intimate || !!report.family_friendship || !!report.work;
   const [activeTab, setActiveTab] = useState<TabId>('intimate');
   const [requestingUpgrade, setRequestingUpgrade] = useState(false);
-  const [upgradeRequested, setUpgradeRequested] = useState(!!upgradeRequestedLevel);
+
+  // Only treat it as an "upgrade request" if the requested level is actually HIGHER
+  // than the current agreed level. A request for the same level is a no-op.
+  const levelOrder = ['none', 'compatibility', 'type_compatibility', 'full'];
+  const isActualUpgrade = upgradeRequestedLevel
+    ? levelOrder.indexOf(upgradeRequestedLevel) > levelOrder.indexOf(shareWithHuman)
+    : false;
+
+  const [upgradeRequested, setUpgradeRequested] = useState(isActualUpgrade);
   const [unsharing, setUnsharing] = useState(false);
   const router = useRouter();
 
   // Who requested the upgrade?
-  const iRequestedUpgrade = upgradeRequestedBy === userId;
-  const theyRequestedUpgrade = upgradeRequestedBy && upgradeRequestedBy !== userId;
+  const iRequestedUpgrade = isActualUpgrade && upgradeRequestedBy === userId;
+  const theyRequestedUpgrade = isActualUpgrade && upgradeRequestedBy && upgradeRequestedBy !== userId;
   // Was the upgrade denied? (requested level > agreed level)
   const upgradeDenied = upgradeRequestedLevel === 'full' && shareWithHuman !== 'full';
 
