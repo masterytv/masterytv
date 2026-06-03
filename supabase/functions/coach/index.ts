@@ -69,7 +69,7 @@ Deno.serve(async (req: Request) => {
     const message = body.message?.trim();
     const channel = body.channel || "web";
     // Sprint 0.4: Deep link context from report CTAs
-    const context = body.context as { type?: string; section?: string; topic?: string } | undefined;
+    const context = body.context as { type?: string; section?: string; topic?: string; inviteId?: string } | undefined;
 
     if (!message) {
       return errorResponse("BAD_REQUEST", "Message is required", 400, corsHeaders);
@@ -148,7 +148,7 @@ Deno.serve(async (req: Request) => {
         channel,
         role: "user",
         content: message,
-        metadata: context?.type ? { context_type: context.type, section: context.section } : {},
+        metadata: context?.type ? { context_type: context.type, section: context.section, invite_id: context.inviteId } : {},
       })
       .select("id")
       .single();
@@ -204,6 +204,56 @@ Deno.serve(async (req: Request) => {
     if (context?.type === 'report_deep_link' && context.section) {
       const contextInstruction = `\n\nCONTEXT INSTRUCTION: The user just came from their Decoded assessment report, specifically the "${context.section}" section${context.topic ? ` about "${context.topic}"` : ''}. They want to discuss this specific finding. Lead with what you know about this area from their assessment data (Layer 4.5). Be specific and personal — reference their actual scores and patterns. Do NOT start with generic questions; demonstrate that you already know them.`;
       contextualSystem = system + contextInstruction;
+    }
+
+    // Sprint 0.5: Inject compatibility context when user arrives from a compatibility report
+    // Loads the invite's compatibility report + the other person's assessment data
+    if (context?.type === 'compatibility' && context.inviteId) {
+      try {
+        const { data: invite } = await supabase
+          .from('decoded_invites')
+          .select('inviter_id, recipient_id, inviter_name, recipient_email, compatibility_report_inviter, compatibility_report_recipient, inviter_report_id, recipient_report_id, share_with_human')
+          .eq('id', context.inviteId)
+          .single();
+
+        if (invite && (invite.inviter_id === userId || invite.recipient_id === userId)) {
+          const isInviter = invite.inviter_id === userId;
+          const otherName = isInviter
+            ? (invite.recipient_email?.split('@')[0] || 'the other person')
+            : (invite.inviter_name || 'the other person');
+
+          // Load the user's per-user compatibility report
+          const userCompatReport = isInviter
+            ? invite.compatibility_report_inviter
+            : invite.compatibility_report_recipient;
+
+          // Load the other person's assessment report (if full sharing is enabled)
+          let otherReportSummary = '';
+          if (invite.share_with_human === 'full') {
+            const otherReportId = isInviter ? invite.recipient_report_id : invite.inviter_report_id;
+            if (otherReportId) {
+              const { data: otherReport } = await supabase
+                .from('assessment_reports')
+                .select('sections, archetype_base, archetype_sublabel')
+                .eq('id', otherReportId)
+                .single();
+              if (otherReport) {
+                otherReportSummary = `\n\n${otherName.toUpperCase()}'S DECODED PROFILE:\nArchetype: ${otherReport.archetype_base ?? 'Unknown'}${otherReport.archetype_sublabel ? ` — ${otherReport.archetype_sublabel}` : ''}\nProfile Summary: ${JSON.stringify(otherReport.sections?.S1?.content_markdown ?? otherReport.sections?.S1 ?? 'No data')}`;
+              }
+            }
+          }
+
+          const compatData = userCompatReport
+            ? `\n\nCOMPATIBILITY REPORT DATA (${otherName}):\n${JSON.stringify(userCompatReport, null, 2)}`
+            : '';
+
+          const compatInstruction = `\n\nCONTEXT INSTRUCTION: The user just came from their compatibility report with ${otherName}. They want to discuss their relationship dynamics. You have their compatibility analysis below — use it to give specific, personal relationship coaching. Reference actual compatibility dimensions, friction points, and advice from the report. Do NOT start with generic questions; demonstrate that you already know about this relationship.${compatData}${otherReportSummary}`;
+          contextualSystem = contextualSystem + compatInstruction;
+        }
+      } catch (e) {
+        console.error('[coach] Failed to load compatibility context:', (e as Error).message);
+        // Fall through without context — don't block the conversation
+      }
     }
 
     const claudeMessages = [
@@ -569,7 +619,7 @@ async function checkMessageLimit(
   supabase: ReturnType<typeof createSupabaseClient>,
   userId: string,
   headers: Record<string, string>,
-  context?: { type?: string; section?: string; topic?: string },
+  context?: { type?: string; section?: string; topic?: string; inviteId?: string },
 ): Promise<{ limitReached: boolean; upgradeResponse?: Response }> {
   const { data: user } = await supabase
     .from("users")

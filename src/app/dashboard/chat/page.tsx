@@ -41,7 +41,7 @@ function ChatPageInner() {
   // Ref to accumulate streamed text — avoids React Strict Mode double-invoke of state updaters
   const streamedTextRef = useRef<string>("");
   // Sprint 0.4: Deep link context from report CTAs
-  const deepLinkContext = useRef<{ type: string; section?: string; topic?: string } | null>(null);
+  const deepLinkContext = useRef<{ type: string; section?: string; topic?: string; inviteId?: string } | null>(null);
 
   // ── Debug mode state (admin only) ──
   const [debugMode, setDebugMode] = useState(false);
@@ -85,6 +85,7 @@ function ChatPageInner() {
     const contextType = searchParams.get('context');
     const section = searchParams.get('section');
     const topic = searchParams.get('topic');
+    const inviteId = searchParams.get('inviteId');
 
     if (contextType === 'report_deep_link' && section) {
       deepLinkProcessed.current = true;
@@ -99,6 +100,16 @@ function ChatPageInner() {
       setTimeout(() => handleSendMessage(openingMessage), 300);
 
       // Clean URL to prevent re-triggering on refresh
+      router.replace('/dashboard/chat', { scroll: false });
+    } else if (contextType === 'compatibility' && inviteId) {
+      deepLinkProcessed.current = true;
+      const otherName = topic ? topic.replace('my relationship with ', '') : 'them';
+      deepLinkContext.current = { type: contextType, topic: topic ?? undefined, inviteId };
+
+      // Build an opening message that references the specific relationship
+      const openingMessage = `I was just reading my compatibility report with ${otherName}. I have a question about our relationship.`;
+
+      setTimeout(() => handleSendMessage(openingMessage), 300);
       router.replace('/dashboard/chat', { scroll: false });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps

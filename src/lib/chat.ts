@@ -51,7 +51,7 @@ export async function sendMessageStream(
   message: string,
   conversationId: string | undefined,
   callbacks: StreamCallbacks,
-  options?: { debug?: boolean; context?: { type: string; section?: string; topic?: string } }
+  options?: { debug?: boolean; context?: { type: string; section?: string; topic?: string; inviteId?: string } }
 ): Promise<() => void> {
   const supabase = createClient();
   const {
