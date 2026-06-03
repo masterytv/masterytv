@@ -84,7 +84,9 @@ export default async function CompatibilityReportPage({ params }: PageProps) {
       isInviter={isInviter}
       inviteId={inviteId}
       otherPersonName={isInviter ? recipientName : inviterName}
-      upgradeAlreadyRequested={!!invite.upgrade_requested_level}
+      upgradeRequestedLevel={invite.upgrade_requested_level || null}
+      upgradeRequestedBy={invite.upgrade_requested_by || null}
+      userId={user.id}
       otherReportId={otherReportId}
     />
   );

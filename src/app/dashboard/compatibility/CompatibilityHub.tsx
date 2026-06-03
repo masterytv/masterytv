@@ -322,20 +322,33 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
                         </div>
 
                         {isConnected ? (
-                          <div className="flex items-center gap-2">
-                            <Link
-                              href={`/decoded/compatibility/${inv.id}`}
-                              className="flex items-center gap-1.5 rounded-lg bg-[rgba(96,99,238,0.1)] px-3 py-1.5 text-sm font-medium text-[#a3a6ff] hover:bg-[rgba(96,99,238,0.15)] transition-colors"
-                            >
-                              View Report <ArrowRight className="h-3.5 w-3.5" />
-                            </Link>
-                            <button
-                              onClick={() => handleRevoke(inv.id)}
-                              disabled={saving === inv.id}
-                              className="rounded-lg px-2 py-1.5 text-xs font-medium text-text-muted hover:text-red-400 hover:bg-red-400/10 transition-colors"
-                            >
-                              Unshare
-                            </button>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <Link
+                                href={`/decoded/compatibility/${inv.id}`}
+                                className="flex items-center gap-1.5 rounded-lg bg-[rgba(96,99,238,0.1)] px-3 py-1.5 text-sm font-medium text-[#a3a6ff] hover:bg-[rgba(96,99,238,0.15)] transition-colors"
+                              >
+                                View Report <ArrowRight className="h-3.5 w-3.5" />
+                              </Link>
+                              <button
+                                onClick={() => handleRevoke(inv.id)}
+                                disabled={saving === inv.id}
+                                className="rounded-lg px-2 py-1.5 text-xs font-medium text-text-muted hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                              >
+                                Unshare
+                              </button>
+                            </div>
+                            {/* Show denial context if they requested higher than agreed */}
+                            {inv.upgrade_requested_level === 'full' && inv.share_with_human !== 'full' && inv.upgrade_requested_by && inv.upgrade_requested_by !== userId && (
+                              <p className="mt-2 text-body-sm text-amber-400">
+                                {inviterName} requested <strong>Full Report + Compatibility</strong> — You Denied
+                              </p>
+                            )}
+                            {inv.upgrade_requested_level === 'full' && inv.share_with_human !== 'full' && inv.upgrade_requested_by === userId && (
+                              <p className="mt-2 text-body-sm text-text-muted">
+                                You requested <strong>Full Report + Compatibility</strong> — Denied
+                              </p>
+                            )}
                           </div>
                         ) : theyRequested ? (
                           /* They sent a request — show Accept */
@@ -436,31 +449,50 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
                 return (
                   <div key={inv.id}>
                     {isConnected ? (
-                      /* Connected — link to report */
-                      <Link
-                        href={`/decoded/compatibility/${inv.id}`}
-                        className="flex items-center justify-between rounded-xl border border-surface-200 bg-surface-50 px-4 py-3 hover:border-[rgba(96,99,238,0.3)] cursor-pointer transition-colors"
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold bg-[rgba(96,99,238,0.1)] text-[#a3a6ff]">
-                            {inv.recipient_email[0].toUpperCase()}
+                      /* Connected — link to report + unshare */
+                      <div className="rounded-xl border border-surface-200 bg-surface-50 px-4 py-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold bg-[rgba(96,99,238,0.1)] text-[#a3a6ff]">
+                              {inv.recipient_email[0].toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-body-md text-text-primary font-medium truncate">
+                                {inv.recipient_email}
+                              </p>
+                              <p className="text-body-sm text-text-muted">
+                                Connected {inv.consented_at ? new Date(inv.consented_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}
+                              </p>
+                            </div>
                           </div>
-                          <div className="min-w-0">
-                            <p className="text-body-md text-text-primary font-medium truncate">
-                              {inv.recipient_email}
-                            </p>
-                            <p className="text-body-sm text-text-muted">
-                              Connected {inv.consented_at ? new Date(inv.consented_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}
-                            </p>
+                          <div className="flex items-center gap-2">
+                            <Link
+                              href={`/decoded/compatibility/${inv.id}`}
+                              className="flex items-center gap-1.5 rounded-lg bg-[rgba(96,99,238,0.1)] px-3 py-1.5 text-sm font-medium text-[#a3a6ff] hover:bg-[rgba(96,99,238,0.15)] transition-colors"
+                            >
+                              View Report <ArrowRight className="h-3.5 w-3.5" />
+                            </Link>
+                            <button
+                              onClick={() => handleRevoke(inv.id)}
+                              disabled={saving === inv.id}
+                              className="rounded-lg px-2 py-1.5 text-xs font-medium text-text-muted hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                            >
+                              Unshare
+                            </button>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="flex items-center gap-1.5 rounded-lg bg-[rgba(96,99,238,0.1)] px-3 py-1.5 text-sm font-medium text-[#a3a6ff]">
-                            View Report <ArrowRight className="h-3.5 w-3.5" />
-                          </span>
-                          <StatusBadge status="connected" />
-                        </div>
-                      </Link>
+                        {/* Denial context */}
+                        {inv.upgrade_requested_level === 'full' && inv.share_with_human !== 'full' && inv.upgrade_requested_by === userId && (
+                          <p className="mt-2 ml-11 text-body-sm text-text-muted">
+                            You requested <strong>Full Report + Compatibility</strong> — Denied
+                          </p>
+                        )}
+                        {inv.upgrade_requested_level === 'full' && inv.share_with_human !== 'full' && inv.upgrade_requested_by && inv.upgrade_requested_by !== userId && (
+                          <p className="mt-2 ml-11 text-body-sm text-amber-400">
+                            {inv.recipient_email.split('@')[0]} requested <strong>Full Report + Compatibility</strong> — You Denied
+                          </p>
+                        )}
+                      </div>
                     ) : assessmentComplete ? (
                       /* Assessment complete — show request/accept states */
                       <div className="rounded-xl border border-surface-200 bg-surface-50 px-4 py-3">

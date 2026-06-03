@@ -14,7 +14,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  ArrowLeft, Heart, Users, Briefcase, Check, Lock,
+  ArrowLeft, Heart, Users, Briefcase, Check, Lock, X,
   Send, Loader2, Eye,
   Handshake, Flame, Zap, ShieldAlert,
   MessageSquare, ArrowUpRight, FileText,
@@ -66,7 +66,12 @@ interface Props {
   isInviter: boolean;
   inviteId: string;
   otherPersonName: string;
-  upgradeAlreadyRequested?: boolean;
+  /** The level the upgrade was requested at (e.g. 'full') */
+  upgradeRequestedLevel: string | null;
+  /** Who requested the upgrade — user ID */
+  upgradeRequestedBy: string | null;
+  /** Current user's ID */
+  userId: string;
   /** The other person's Decoded report ID — only set when share_with_human === 'full' */
   otherReportId?: string | null;
 }
@@ -106,13 +111,21 @@ function buildCoachDeepLink(otherName: string, inviteId: string): string {
 export default function CompatibilityReportViewer({
   report, inviterName, recipientName,
   shareWithHuman, isInviter, inviteId, otherPersonName,
-  upgradeAlreadyRequested = false, otherReportId,
+  upgradeRequestedLevel, upgradeRequestedBy, userId,
+  otherReportId,
 }: Props) {
   const isMultiContext = !!report.intimate || !!report.family_friendship || !!report.work;
   const [activeTab, setActiveTab] = useState<TabId>('intimate');
   const [requestingUpgrade, setRequestingUpgrade] = useState(false);
-  const [upgradeRequested, setUpgradeRequested] = useState(upgradeAlreadyRequested);
+  const [upgradeRequested, setUpgradeRequested] = useState(!!upgradeRequestedLevel);
+  const [unsharing, setUnsharing] = useState(false);
   const router = useRouter();
+
+  // Who requested the upgrade?
+  const iRequestedUpgrade = upgradeRequestedBy === userId;
+  const theyRequestedUpgrade = upgradeRequestedBy && upgradeRequestedBy !== userId;
+  // Was the upgrade denied? (requested level > agreed level)
+  const upgradeDenied = upgradeRequestedLevel === 'full' && shareWithHuman !== 'full';
 
   const context: ContextInsights | null = isMultiContext
     ? (report[activeTab] ?? null)
@@ -140,16 +153,30 @@ export default function CompatibilityReportViewer({
   async function handleRequestUpgrade() {
     setRequestingUpgrade(true);
     try {
-      const res = await fetch('/api/decoded/invite-upgrade', {
+      const res = await fetch('/api/decoded/compatibility-request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ inviteId, action: 'request', level: 'full' }),
+        body: JSON.stringify({ inviteId, level: 'full' }),
       });
       if (res.ok) {
         setUpgradeRequested(true);
       }
     } finally {
       setRequestingUpgrade(false);
+    }
+  }
+
+  async function handleUnshare() {
+    setUnsharing(true);
+    try {
+      await fetch('/api/decoded/invite-consent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inviteId, shareLevel: 'none' }),
+      });
+      router.push('/dashboard/compatibility');
+    } finally {
+      setUnsharing(false);
     }
   }
 
@@ -191,6 +218,10 @@ export default function CompatibilityReportViewer({
           <div className="compat-sharing__items">
             {SHARE_ITEMS.map((item) => {
               const shared = isShared(item.minLevel, shareWithHuman);
+              // Determine if this specific item was requested but denied
+              const isFullItem = item.key === 'full';
+              const fullWasRequestedAndDenied = isFullItem && upgradeDenied;
+
               return (
                 <div
                   key={item.key}
@@ -202,23 +233,72 @@ export default function CompatibilityReportViewer({
                     <Lock className="compat-sharing__item-icon compat-sharing__item-icon--lock" />
                   )}
                   <span className="compat-sharing__item-label">{item.label}</span>
-                  {!shared && !upgradeRequested && (
-                    <button
-                      onClick={handleRequestUpgrade}
-                      disabled={requestingUpgrade}
-                      className="compat-sharing__request-btn"
-                    >
-                      {requestingUpgrade ? (
-                        <><Loader2 className="h-3 w-3 animate-spin" /> Requesting...</>
+
+                  {/* Full report status — context-aware per user */}
+                  {isFullItem && !shared && (
+                    <>
+                      {fullWasRequestedAndDenied && iRequestedUpgrade ? (
+                        /* I requested, they denied */
+                        <div className="compat-sharing__denied-group">
+                          <span className="compat-sharing__denied-badge">
+                            <X className="h-3 w-3" /> Denied
+                          </span>
+                          <button
+                            onClick={handleRequestUpgrade}
+                            disabled={requestingUpgrade}
+                            className="compat-sharing__request-btn"
+                          >
+                            {requestingUpgrade ? (
+                              <><Loader2 className="h-3 w-3 animate-spin" /> Requesting...</>
+                            ) : (
+                              <><Send className="h-3 w-3" /> Request Again</>
+                            )}
+                          </button>
+                        </div>
+                      ) : fullWasRequestedAndDenied && theyRequestedUpgrade ? (
+                        /* They requested, I denied */
+                        <div className="compat-sharing__denied-group">
+                          <span className="compat-sharing__denied-badge">
+                            You Denied
+                          </span>
+                          {!upgradeRequested ? (
+                            <button
+                              onClick={handleRequestUpgrade}
+                              disabled={requestingUpgrade}
+                              className="compat-sharing__request-btn"
+                            >
+                              {requestingUpgrade ? (
+                                <><Loader2 className="h-3 w-3 animate-spin" /> Requesting...</>
+                              ) : (
+                                <><Send className="h-3 w-3" /> Request</>
+                              )}
+                            </button>
+                          ) : (
+                            <span className="compat-sharing__requested">
+                              <Check className="h-3 w-3" /> Requested
+                            </span>
+                          )}
+                        </div>
+                      ) : !upgradeRequested ? (
+                        /* No request yet */
+                        <button
+                          onClick={handleRequestUpgrade}
+                          disabled={requestingUpgrade}
+                          className="compat-sharing__request-btn"
+                        >
+                          {requestingUpgrade ? (
+                            <><Loader2 className="h-3 w-3 animate-spin" /> Requesting...</>
+                          ) : (
+                            <><Send className="h-3 w-3" /> Request Access</>
+                          )}
+                        </button>
                       ) : (
-                        <><Send className="h-3 w-3" /> Request Access</>
+                        /* Requested, waiting for response */
+                        <span className="compat-sharing__requested">
+                          <Check className="h-3 w-3" /> Requested
+                        </span>
                       )}
-                    </button>
-                  )}
-                  {!shared && upgradeRequested && (
-                    <span className="compat-sharing__requested">
-                      <Check className="h-3 w-3" /> Requested
-                    </span>
+                    </>
                   )}
                 </div>
               );
@@ -236,6 +316,15 @@ export default function CompatibilityReportViewer({
               <ArrowUpRight className="h-3.5 w-3.5" />
             </Link>
           )}
+
+          {/* Unshare button */}
+          <button
+            onClick={handleUnshare}
+            disabled={unsharing}
+            className="compat-sharing__unshare-btn"
+          >
+            {unsharing ? 'Unsharing...' : 'Unshare this connection'}
+          </button>
         </motion.div>
       )}
 
