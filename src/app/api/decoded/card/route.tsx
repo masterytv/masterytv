@@ -36,21 +36,41 @@ function sanitize(text: string, maxLen = 100): string {
 // Cache the font data in the module scope so we only fetch once
 let fontCache: ArrayBuffer | null = null;
 let fontBoldCache: ArrayBuffer | null = null;
+let fontBoldItalicCache: ArrayBuffer | null = null;
 
-async function loadFonts() {
-  if (fontCache && fontBoldCache) return { regular: fontCache, bold: fontBoldCache };
+async function loadFonts(): Promise<{ regular: ArrayBuffer; bold: ArrayBuffer; boldItalic: ArrayBuffer } | null> {
+  if (fontCache && fontBoldCache && fontBoldItalicCache) return { regular: fontCache, bold: fontBoldCache, boldItalic: fontBoldItalicCache };
 
-  // Fetch Playfair Display from Google Fonts (elegant serif matching the original cards)
-  const [regular, bold] = await Promise.all([
-    fetch('https://fonts.gstatic.com/s/playfairdisplay/v37/nuFiD-vYSZviVYUb_rj3ij__anPXDTnCjmHKM4nYO7KN_qiTbtbK-F2rA.woff')
-      .then(r => r.arrayBuffer()),
-    fetch('https://fonts.gstatic.com/s/playfairdisplay/v37/nuFiD-vYSZviVYUb_rj3ij__anPXDTnCjmHKM4nYO7KN_pGUbtbK-F2rA.woff')
-      .then(r => r.arrayBuffer()),
-  ]);
+  try {
+    // Playfair Display from jsDelivr / fontsource CDN
+    // IMPORTANT: Satori only supports .woff and .ttf — NOT .woff2
+    const [regular, bold, boldItalic] = await Promise.all([
+      fetch('https://cdn.jsdelivr.net/fontsource/fonts/playfair-display@latest/latin-400-normal.woff')
+        .then(r => {
+          if (!r.ok) throw new Error(`Font fetch failed: ${r.status}`);
+          return r.arrayBuffer();
+        }),
+      fetch('https://cdn.jsdelivr.net/fontsource/fonts/playfair-display@latest/latin-700-normal.woff')
+        .then(r => {
+          if (!r.ok) throw new Error(`Font fetch failed: ${r.status}`);
+          return r.arrayBuffer();
+        }),
+      fetch('https://cdn.jsdelivr.net/fontsource/fonts/playfair-display@latest/latin-700-italic.woff')
+        .then(r => {
+          if (!r.ok) throw new Error(`Font fetch failed: ${r.status}`);
+          return r.arrayBuffer();
+        }),
+    ]);
 
-  fontCache = regular;
-  fontBoldCache = bold;
-  return { regular, bold };
+    fontCache = regular;
+    fontBoldCache = bold;
+    fontBoldItalicCache = boldItalic;
+    return { regular, bold, boldItalic };
+  } catch (err) {
+    // Graceful degradation — render with default font if CDN is down
+    console.error('Failed to load Playfair Display font:', err);
+    return null;
+  }
 }
 
 export async function GET(req: NextRequest) {
@@ -83,11 +103,8 @@ export async function GET(req: NextRequest) {
   const origin = req.nextUrl.origin;
   const baseImageUrl = `${origin}/decoded/cards/${archetype}/base/${style}.png`;
 
-  // Load premium serif font
+  // Load premium serif font (gracefully degrades to system serif)
   const fonts = await loadFonts();
-
-  // Build the strengths string with diamond separators: ◆ Str1  ◆ Str2  ◆ Str3
-  const strengthsText = strengths.map(s => `◆ ${s}`).join('   ');
 
   return new ImageResponse(
     (
@@ -123,13 +140,13 @@ export async function GET(req: NextRequest) {
             bottom: 0,
             left: 0,
             right: 0,
-            height: isOg ? '45%' : '28%',
+            height: isOg ? '45%' : '33%',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: isOg ? '0 8% 2%' : '0 12% 5%',
-            gap: isOg ? 6 : 8,
+            padding: isOg ? '2% 8% 2%' : '3% 10% 5%',
+            gap: isOg ? 6 : 10,
             fontFamily: '"Playfair Display", Georgia, serif',
           }}
         >
@@ -137,7 +154,7 @@ export async function GET(req: NextRequest) {
           {sublabel && (
             <div
               style={{
-                fontSize: isOg ? 20 : 28,
+                fontSize: isOg ? 22 : 34,
                 fontWeight: 700,
                 fontStyle: 'italic',
                 color: '#F5F0E8',
@@ -150,22 +167,6 @@ export async function GET(req: NextRequest) {
             </div>
           )}
 
-          {/* Personalized tagline/quote */}
-          {tagline && (
-            <div
-              style={{
-                fontSize: isOg ? 13 : 18,
-                fontStyle: 'italic',
-                color: 'rgba(245, 240, 232, 0.65)',
-                textAlign: 'center',
-                display: 'flex',
-                lineHeight: 1.3,
-                maxWidth: '90%',
-              }}
-            >
-              &ldquo;{tagline}&rdquo;
-            </div>
-          )}
 
           {/* Personalized strengths — diamond-separated */}
           {strengths.length > 0 && (
@@ -174,7 +175,7 @@ export async function GET(req: NextRequest) {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: isOg ? 12 : 16,
+                fontSize: isOg ? 15 : 22,
                 fontWeight: 400,
                 color: '#F5F0E8',
                 gap: isOg ? 16 : 22,
@@ -183,8 +184,15 @@ export async function GET(req: NextRequest) {
             >
               {strengths.map((s, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: isOg ? 5 : 7 }}>
-                  <span style={{ color: '#fabd00', fontSize: isOg ? 9 : 12, display: 'flex' }}>&#9670;</span>
-                  <span style={{ display: 'flex' }}>{s}</span>
+                  <div style={{
+                    width: isOg ? 6 : 9,
+                    height: isOg ? 6 : 9,
+                    backgroundColor: '#fabd00',
+                    transform: 'rotate(45deg)',
+                    flexShrink: 0,
+                    display: 'flex',
+                  }} />
+                  <span style={{ display: 'flex', lineHeight: 1, marginTop: isOg ? 2 : 3 }}>{s}</span>
                 </div>
               ))}
             </div>
@@ -244,20 +252,28 @@ export async function GET(req: NextRequest) {
     {
       width,
       height,
-      fonts: [
-        {
-          name: 'Playfair Display',
-          data: fonts.regular,
-          weight: 400 as const,
-          style: 'normal' as const,
-        },
-        {
-          name: 'Playfair Display',
-          data: fonts.bold,
-          weight: 700 as const,
-          style: 'normal' as const,
-        },
-      ],
+      ...(fonts ? {
+        fonts: [
+          {
+            name: 'Playfair Display',
+            data: fonts.regular,
+            weight: 400 as const,
+            style: 'normal' as const,
+          },
+          {
+            name: 'Playfair Display',
+            data: fonts.bold,
+            weight: 700 as const,
+            style: 'normal' as const,
+          },
+          {
+            name: 'Playfair Display',
+            data: fonts.boldItalic,
+            weight: 700 as const,
+            style: 'italic' as const,
+          },
+        ],
+      } : {}),
     },
   );
 }

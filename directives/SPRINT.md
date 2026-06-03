@@ -3,7 +3,7 @@
 > **Author:** Thomas Wood + Antigravity Orchestrator
 > **Date:** March 30, 2026 | Updated: May 18, 2026
 > **Version:** 1.6 (Sprint 0 renamed: Self Mastery Assessment → Decoded)
-> **Status:** ✅ Gate 3 Approved | Sprint 3 COMPLETE — Ready for Sprint 4 | Sprint 0 PLANNING
+> **Status:** ✅ Gate 3 Approved | Sprint 3 COMPLETE — Ready for Sprint 4 | Sprint 0 BUILDING
 > **Source:** [ARCHITECTURE.md](file:///Users/thomaswood/Documents/Antigravity/MasteryTV/directives/ARCHITECTURE.md) (Gate 2 ✅) | [DECODED.md](file:///Users/thomaswood/Documents/Antigravity/MasteryTV/directives/DECODED.md) (Gate 0 🟡)
 > **Methodology:** BMAD + Antigravity Method (Phase 3 — Sprint Planning)
 
@@ -155,6 +155,10 @@
 - [x] **S0.5.3e** — **Compatibility view:** `/decoded/compatibility/[inviteId]` — AI-generated report with tabs for 3 relationship contexts (Intimate, Family/Friends, Work). Each context: chemistry, friction, superpower, watch-out, personalized advice. 5 compatibility dimensions with animated score bars. ✅ Complete (June 2, 2026)
 - [x] **S0.5.3f** — **AI Compatibility Report:** GPT-4o generates punchy, context-specific insights using both users' assessment data. Service-role client bypasses RLS for cross-user reads. Cached after first generation. **Currently free** (no paywall gate). ✅ Complete (June 2, 2026)
 - [x] **S0.5.3g** — **Invite management:** Compatibility Hub (`/dashboard/compatibility`) with sidebar link. Sections: sent invites (status tracking), received invites (consent management), invite creation. Granular sharing consent with mutual exchange model. ✅ Complete (June 2, 2026)
+- [x] **S0.5.3g2** — **Two-step sharing flow:** Separated "invite to take test" from "request to share results". Step 1: `compatibility-request` API stores request. Step 2: `invite-consent` API computes mutual minimum. ShareLevelPicker with 2 options. ✅ Complete (June 3, 2026)
+- [x] **S0.5.3g3** — **Denial & re-request UX:** Context-aware messages per user ("Full Report Denied. Compatibility Accepted."). Request Again / Accept / Deny buttons for upgrade re-requests. New `deny-upgrade` API. Unshare buttons on all connected cards. ✅ Complete (June 3, 2026)
+- [x] **S0.5.3g4** — **Coach access control:** `lookup-relationship` tool and `prompt-assembler` Layer 4.6 both respect `share_with_human` column. Coach only reads data at the agreed sharing level. ✅ Complete (June 3, 2026)
+- [x] **S0.5.3g5** — **Shared report identity:** "You're viewing X's Decoded Report" banner on shared full reports. Owner name from `decoded_profiles.display_name` or auth email. ✅ Complete (June 3, 2026)
 - [ ] **S0.5.3h** — **Invite notifications:** Email inviter when recipient completes assessment. *(Not yet built — status updates visible in hub but no push notification)*
 
 #### E0 — Unlock "Your Relationships" via Share (Viral Section Gate)
@@ -167,7 +171,7 @@
 - [ ] **S0.5.3k** — **Viral tracking:** Log invite → assessment_complete → section_unlock funnel. Admin dashboard metrics: invites sent, conversion rate (invite → assessment start → completion), sections unlocked via share vs paid.
 - [ ] **S0.5.4** — Implement Share Your Type callout (F07): Banner appears in report after Archetype section + at report footer. Reuses F06 modal.
 - [ ] **S0.5.5** — Implement referral mechanic (F08): Unique referral URL → friend completes → referrer unlocks 1 Insight section free; milestone rewards at 3 and 5 referrals
-- [ ] **S0.5.6** — SEO metadata: title tags, meta descriptions, Open Graph for `/decoded` and report pages
+- [x] **S0.5.6** — SEO metadata: Open Graph + Twitter cards for `/decoded/report/[id]` with dynamic archetype card images via Satori compositing. ✅ Partially complete — report pages done (June 3, 2026). Landing page OG still needed.
 - [ ] **S0.5.7** — Disclaimers & legal: non-clinical disclaimer on assessment start, data privacy statement, GDPR delete-anytime flow
 - [ ] **S0.5.8** — Product Hunt launch assets: product images, description, teaser, maker notes
 - [ ] **S0.5.9** — Admin visibility: add Decoded metrics to admin dashboard (assessments started, completed, conversion by tier, report views, viral loop stats)
