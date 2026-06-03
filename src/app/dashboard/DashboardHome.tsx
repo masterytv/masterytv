@@ -483,8 +483,8 @@ function getGreeting(): string {
 
 function InviteStatusBadge({ status }: { status: string }) {
   const config: Record<string, { label: string; color: string; bg: string; Icon: typeof Clock }> = {
-    pending: { label: 'Pending', color: 'text-amber-400', bg: 'bg-amber-400/10', Icon: Clock },
-    completed: { label: 'Awaiting Consent', color: 'text-amber-400', bg: 'bg-amber-400/10', Icon: Clock },
+    pending: { label: 'Invite Sent', color: 'text-amber-400', bg: 'bg-amber-400/10', Icon: Clock },
+    completed: { label: 'Assessment Complete', color: 'text-emerald-400', bg: 'bg-emerald-400/10', Icon: Check },
     consented: { label: 'Connected', color: 'text-[#a3a6ff]', bg: 'bg-[rgba(96,99,238,0.1)]', Icon: Users },
     connected: { label: 'Connected', color: 'text-[#a3a6ff]', bg: 'bg-[rgba(96,99,238,0.1)]', Icon: Users },
   };

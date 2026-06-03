@@ -442,7 +442,7 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
                               {inv.recipient_email}
                             </p>
                             <p className="text-body-sm text-text-muted">
-                              Invited {new Date(inv.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                              Connected {inv.consented_at ? new Date(inv.consented_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}
                             </p>
                           </div>
                         </div>
@@ -453,7 +453,36 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
                           <StatusBadge status={inv.status} />
                         </div>
                       </Link>
+                    ) : inv.status === 'completed' ? (
+                      /* Both have assessments — sender can request compatibility */
+                      <div className="rounded-xl border border-surface-200 bg-surface-50 px-4 py-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                              statusConfig[inv.status]?.avatarCls || 'bg-surface-200 text-text-muted'
+                            }`}>
+                              {inv.recipient_email[0].toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-body-md text-text-primary font-medium truncate">
+                                {inv.recipient_email}
+                              </p>
+                              <p className="text-body-sm text-emerald-400">
+                                Assessment complete
+                              </p>
+                            </div>
+                          </div>
+                          <Link
+                            href={`/decoded/compatibility/${inv.id}`}
+                            className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+                          >
+                            <Heart className="h-3.5 w-3.5" />
+                            Request Compatibility
+                          </Link>
+                        </div>
+                      </div>
                     ) : (
+                      /* Pending — assessment not taken yet */
                       <div className={`flex items-center justify-between rounded-xl border border-surface-200 bg-surface-50 px-4 py-3`}>
                         <div className="flex items-center gap-3 min-w-0">
                           <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold ${
@@ -466,7 +495,7 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
                               {inv.recipient_email}
                             </p>
                             <p className="text-body-sm text-text-muted">
-                              Invited {new Date(inv.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                              Invited {new Date(inv.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · Assessment pending
                             </p>
                           </div>
                         </div>
@@ -531,16 +560,16 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
 
 const statusConfig: Record<string, { label: string; icon: React.ReactNode; cls: string; avatarCls: string }> = {
   pending: {
-    label: 'Pending',
+    label: 'Invite Sent',
     icon: <Clock className="h-3 w-3" />,
     cls: 'text-amber-400 bg-amber-400/10',
     avatarCls: 'bg-amber-400/10 text-amber-400',
   },
   completed: {
-    label: 'Awaiting Consent',
-    icon: <Clock className="h-3 w-3" />,
-    cls: 'text-amber-400 bg-amber-400/10',
-    avatarCls: 'bg-amber-400/10 text-amber-400',
+    label: 'Ready',
+    icon: <Check className="h-3 w-3" />,
+    cls: 'text-emerald-400 bg-emerald-400/10',
+    avatarCls: 'bg-emerald-400/10 text-emerald-400',
   },
   consented: {
     label: 'Connected',
