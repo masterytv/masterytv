@@ -5,6 +5,7 @@ import { useUser } from "@/hooks/useUser";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { Topbar } from "@/components/dashboard/topbar";
 import { createClient } from "@/lib/supabase/client";
+import ShareModal from "@/components/decoded/ShareModal";
 
 /**
  * Unified dashboard layout — wraps all post-auth pages
@@ -21,6 +22,7 @@ export default function DashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [assessmentCompleted, setAssessmentCompleted] = useState(false);
   const [reportId, setReportId] = useState<string | null>(null);
+  const [showShareModal, setShowShareModal] = useState(false);
   const { user } = useUser();
 
   // Check if user has a completed (non-superseded) assessment
@@ -64,6 +66,7 @@ export default function DashboardLayout({
         onClose={() => setSidebarOpen(false)}
         assessmentCompleted={assessmentCompleted}
         reportId={reportId}
+        onShareClick={() => setShowShareModal(true)}
       />
 
       {/* Main content area */}
@@ -79,6 +82,14 @@ export default function DashboardLayout({
           {children}
         </main>
       </div>
+
+      {/* Share modal — triggered from sidebar Share button */}
+      <ShareModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        onUnlock={() => setShowShareModal(false)}
+        shareUrl={typeof window !== 'undefined' ? `${window.location.origin}/decoded` : 'https://masterytv.com/decoded'}
+      />
     </div>
   );
 }

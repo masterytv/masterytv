@@ -105,7 +105,12 @@ export default function DashboardHome({
   }
 
   function handleCopyLink() {
-    const shareUrl = `${window.location.origin}/decoded`;
+    // Use the most recent invite URL if available, otherwise fall back to /decoded
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://masterytv.com';
+    const latestInvite = sentInvites[0];
+    const shareUrl = latestInvite
+      ? `${origin}/decoded/invite/${latestInvite.id}`
+      : `${origin}/decoded`;
     navigator.clipboard.writeText(shareUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -450,7 +455,7 @@ export default function DashboardHome({
                       className="flex items-center gap-1.5 rounded-lg bg-surface-200 px-3 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-surface-300 transition-all"
                     >
                       <Mail className="h-3.5 w-3.5" />
-                      Email invite
+                      Email / Post
                     </button>
                   </div>
                 </>
@@ -468,7 +473,7 @@ export default function DashboardHome({
           setShowShareModal(false);
           router.refresh();
         }}
-        shareUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/decoded`}
+        shareUrl={`${typeof window !== 'undefined' ? window.location.origin : 'https://masterytv.com'}/decoded${sentInvites[0] ? `/invite/${sentInvites[0].id}` : ''}`}
       />
     </div>
   );

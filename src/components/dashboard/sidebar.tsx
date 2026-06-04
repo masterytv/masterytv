@@ -17,7 +17,6 @@ import {
   Fingerprint,
   Lock,
 } from "lucide-react";
-import { useState } from "react";
 
 function getNavItems(reportId: string | null) {
   return [
@@ -47,18 +46,11 @@ interface SidebarProps {
   onClose: () => void;
   assessmentCompleted?: boolean;
   reportId?: string | null;
+  onShareClick?: () => void;
 }
 
-export function Sidebar({ open, onClose, assessmentCompleted = false, reportId = null }: SidebarProps) {
+export function Sidebar({ open, onClose, assessmentCompleted = false, reportId = null, onShareClick }: SidebarProps) {
   const pathname = usePathname();
-  const [copied, setCopied] = useState(false);
-
-  function handleShare() {
-    const shareUrl = `${window.location.origin}/decoded`;
-    navigator.clipboard.writeText(shareUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }
 
   return (
     <>
@@ -155,13 +147,13 @@ export function Sidebar({ open, onClose, assessmentCompleted = false, reportId =
             );
           })}
 
-          {/* Share — special action item */}
+          {/* Share — opens the share/invite modal */}
           <button
-            onClick={handleShare}
+            onClick={() => { onShareClick?.(); onClose(); }}
             className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-text-secondary hover:bg-surface-200 hover:text-text-primary transition-all"
           >
             <Share2 className="h-4.5 w-4.5 text-text-muted group-hover:text-text-secondary" />
-            {copied ? "Link copied!" : "Share"}
+            Share
           </button>
         </nav>
 
