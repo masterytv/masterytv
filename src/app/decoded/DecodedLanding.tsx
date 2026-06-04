@@ -407,15 +407,14 @@ export default function DecodedLanding({ inviteCode }: { inviteCode?: string }) 
                 <label htmlFor="decoded-name" className="mb-1.5 block text-sm font-medium text-text-secondary">
                   Name <span className="text-text-muted font-normal">(optional)</span>
                 </label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
+              <div>
                   <input
                     id="decoded-name"
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Your name"
-                    className="w-full rounded-lg bg-surface-100 pl-10 pr-4 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:bg-surface-0 focus:outline-none focus:ring-1 focus:ring-[rgba(96,99,238,0.2)] transition-all"
+                    className="w-full rounded-lg bg-surface-100 px-4 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:bg-surface-0 focus:outline-none focus:ring-1 focus:ring-[rgba(96,99,238,0.2)] transition-all"
                   />
                 </div>
               </div>
