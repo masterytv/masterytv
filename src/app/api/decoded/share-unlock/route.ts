@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
-const VALID_METHODS = ['x', 'facebook', 'linkedin', 'whatsapp', 'reddit', 'threads'] as const;
+const VALID_METHODS = ['x', 'facebook', 'linkedin', 'whatsapp', 'reddit', 'copy_link'] as const;
 
 /**
  * POST /api/decoded/share-unlock

@@ -14,11 +14,11 @@ import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X, Mail, Send, Loader2, Check, ArrowRight,
-  ExternalLink,
+  ExternalLink, Copy,
 } from 'lucide-react';
 import './share-modal.css';
 
-type ShareMethod = 'email' | 'x' | 'facebook' | 'linkedin' | 'whatsapp' | 'reddit' | 'threads';
+type ShareMethod = 'email' | 'x' | 'facebook' | 'linkedin' | 'whatsapp' | 'reddit' | 'copy_link';
 
 interface ShareModalProps {
   isOpen: boolean;
@@ -69,10 +69,10 @@ const SOCIAL_PLATFORMS: Array<{
     buildUrl: (url, text) => `https://reddit.com/submit?url=${encodeURIComponent(url)}&title=${encodeURIComponent(text)}`,
   },
   {
-    id: 'threads',
-    label: 'Threads',
-    color: '#000000',
-    buildUrl: (url, text) => `https://threads.net/intent/post?text=${encodeURIComponent(text + ' ' + url)}`,
+    id: 'copy_link',
+    label: 'Copy Link',
+    color: '#6063ee',
+    buildUrl: () => '',  // handled specially
   },
 ];
 
@@ -82,6 +82,7 @@ export default function ShareModal({ isOpen, onClose, onUnlock, shareUrl, archet
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState('');
+  const [linkCopied, setLinkCopied] = useState(false);
   const unlocked = useRef(false);
 
   const shareText = archetype
@@ -89,9 +90,16 @@ export default function ShareModal({ isOpen, onClose, onUnlock, shareUrl, archet
     : SHARE_TEXT;
 
   async function handleSocialShare(platform: typeof SOCIAL_PLATFORMS[number]) {
-    // Open share window
-    const url = platform.buildUrl(shareUrl, shareText);
-    window.open(url, '_blank', 'width=600,height=400');
+    if (platform.id === 'copy_link') {
+      // Copy invite URL to clipboard
+      navigator.clipboard.writeText(shareUrl);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+    } else {
+      // Open share window
+      const url = platform.buildUrl(shareUrl, shareText);
+      window.open(url, '_blank', 'width=600,height=400');
+    }
 
     // Record unlock (fire and forget)
     if (!unlocked.current) {
@@ -202,7 +210,7 @@ export default function ShareModal({ isOpen, onClose, onUnlock, shareUrl, archet
                         style={{ '--platform-color': platform.color } as React.CSSProperties}
                       >
                         <SocialIcon id={platform.id} />
-                        {platform.label}
+                        {platform.id === 'copy_link' && linkCopied ? 'Copied!' : platform.label}
                       </button>
                     ))}
                   </div>
@@ -275,8 +283,8 @@ function SocialIcon({ id }: { id: string }) {
       return <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>;
     case 'reddit':
       return <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327 0 0 0-.231.094.33.33 0 0 0 0 .463c.842.842 2.484.913 2.961.913.477 0 2.105-.056 2.961-.913a.361.361 0 0 0 .029-.463.33.33 0 0 0-.464 0c-.547.533-1.684.73-2.512.73-.828 0-1.979-.196-2.512-.73a.326.326 0 0 0-.232-.095z"/></svg>;
-    case 'threads':
-      return <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.186 24h-.007c-3.581-.024-6.334-1.205-8.184-3.509C2.35 18.44 1.5 15.586 1.472 12.01v-.017c.03-3.579.879-6.43 2.525-8.482C5.845 1.205 8.6.024 12.18 0h.014c2.746.02 5.043.725 6.826 2.098 1.677 1.29 2.858 3.13 3.509 5.467l-2.04.569c-1.104-3.96-3.898-5.984-8.304-6.015-2.91.022-5.11.936-6.54 2.717C4.307 6.504 3.616 8.914 3.59 12c.025 3.086.718 5.496 2.057 7.164 1.432 1.781 3.632 2.695 6.54 2.717 1.986-.013 3.758-.507 5.078-1.545 1.46-1.143 2.122-2.673 2.072-4.313-.066-2.171-1.373-3.605-3.175-4.23-.068 3.484-1.162 5.698-3.262 6.608-.826.357-1.758.502-2.6.482-1.202-.028-2.25-.424-2.952-1.117-.825-.817-1.242-1.993-1.166-3.302.164-2.834 2.177-4.542 5.226-4.666.86-.035 1.658.061 2.38.263.017-.54.006-1.063-.035-1.562-.116-1.409-.455-2.035-1.199-2.376-.487-.224-1.29-.26-2.25-.1-.932.156-1.57.583-2.007 1.031l-1.395-1.458C7.37 3.887 8.464 3.344 9.8 3.12c1.094-.183 2.332-.155 3.223.234 1.345.586 2.06 1.7 2.238 3.5.053.537.067 1.125.04 1.749.945.378 1.757.915 2.378 1.667.803.972 1.237 2.21 1.29 3.681.073 2.155-.876 4.185-2.753 5.656-1.647 1.29-3.793 1.943-6.21 1.96h-.01c.006 0-.008 0-.01 0z"/></svg>;
+    case 'copy_link':
+      return <Copy size={16} />;
     default:
       return <ExternalLink size={16} />;
   }
