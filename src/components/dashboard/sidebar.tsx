@@ -36,6 +36,7 @@ function getNavItems(reportId: string | null) {
       href: "/dashboard/coaching-letter",
       label: "Coaching Letter",
       icon: FileText,
+      requiresAssessment: true,
     },
     { href: "/dashboard/settings", label: "Settings", icon: Settings },
   ];
