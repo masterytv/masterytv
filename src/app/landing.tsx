@@ -302,30 +302,7 @@ export default function LandingPage({ isLoggedIn, userName }: LandingPageProps) 
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: [0.4, 0, 0.2, 1] }}
         >
-          {isLoggedIn ? (
-            /* ── Logged-In Hero ── */
-            <>
-              <h1 className="landing__hero-title">
-                Welcome back, {userName}.
-              </h1>
-              <p className="landing__hero-sub">
-                Your coach is ready. Check your latest insights, review your
-                report, or start a new coaching session.
-              </p>
-              <div className="landing__hero-actions">
-                <Link href="/dashboard" className="landing__cta-gold" id="hero-cta">
-                  View Your Assessment &amp; Coach
-                  <ArrowRight className="w-5 h-5" />
-                </Link>
-                <Link href="/decoded" className="landing__cta-ghost-light" id="hero-retake">
-                  Retake Assessment
-                </Link>
-              </div>
-            </>
-          ) : (
-            /* ── Logged-Out Hero ── */
-            <>
-              <div className="landing__hero-label">
+          <div className="landing__hero-label">
                 <Fingerprint className="w-3.5 h-3.5" />
                 Personality Science + AI Coaching
               </div>
@@ -340,15 +317,20 @@ export default function LandingPage({ isLoggedIn, userName }: LandingPageProps) 
                 than any test you&apos;ve taken — and a coach that remembers{" "}
                 <strong style={{ color: "#dfe4fe" }}>everything.</strong>
               </p>
-              <Link href="/decoded" className="landing__cta-gold" id="hero-cta">
-                Take the Free Assessment
-                <ArrowRight className="w-5 h-5" />
-              </Link>
+              {isLoggedIn ? (
+                <Link href="/dashboard" className="landing__cta-gold" id="hero-cta">
+                  View Your Assessment &amp; Coach
+                  <ArrowRight className="w-5 h-5" />
+                </Link>
+              ) : (
+                <Link href="/decoded" className="landing__cta-gold" id="hero-cta">
+                  Take the Free Assessment
+                  <ArrowRight className="w-5 h-5" />
+                </Link>
+              )}
               <p className="landing__hero-trust">
                 Free · 30 minutes · 15 validated instruments · Results are private
               </p>
-            </>
-          )}
         </motion.div>
       </section>
 

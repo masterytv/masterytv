@@ -606,9 +606,29 @@ body {
   border-color: rgba(255, 255, 255, 0.12);
 }
 
+/* Hero is always dark — force light icon colors regardless of theme */
+.landing__nav-center .floating-theme-toggle__btn {
+  color: rgba(223, 228, 254, 0.5);
+}
+
+.landing__nav-center .floating-theme-toggle__btn:hover {
+  color: rgba(223, 228, 254, 0.85);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* When scrolled in light mode, switch to dark styling */
 [data-theme="light"] .landing__nav--scrolled .landing__nav-center .floating-theme-toggle {
   background: rgba(0, 0, 0, 0.04);
   border-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .landing__nav--scrolled .landing__nav-center .floating-theme-toggle__btn {
+  color: rgba(26, 28, 30, 0.4);
+}
+
+[data-theme="light"] .landing__nav--scrolled .landing__nav-center .floating-theme-toggle__btn:hover {
+  color: rgba(26, 28, 30, 0.7);
+  background: rgba(0, 0, 0, 0.06);
 }
 
 .floating-theme-toggle__btn {
