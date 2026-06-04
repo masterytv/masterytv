@@ -10,7 +10,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Lock, ArrowRight, ArrowUpRight, Loader2, Printer, MessageSquare } from 'lucide-react';
+import { Lock, ArrowRight, ArrowUpRight, Loader2, Printer, MessageSquare, Share2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import BigFiveRadar from './BigFiveRadar';
 import BigFiveContext from './BigFiveContext';
@@ -403,36 +403,48 @@ export default function ReportViewer({ report: initialReport, scores, sharedOwne
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareUnlocked, setShareUnlocked] = useState(false);
   const [userName, setUserName] = useState<string | undefined>(undefined);
-  const userTier: ReportTier = 'free'; // TODO: Connect to user subscription
+  const [userTier, setUserTier] = useState<ReportTier>('free');
 
-  // Fetch user's display name for the personalized archetype card
+  // Fetch user data: display name, decoded_tier, and share unlock status
   useEffect(() => {
-    const fetchUser = async () => {
+    const fetchUserData = async () => {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        // Display name
         const name = user.user_metadata?.display_name
           || user.user_metadata?.full_name
           || user.email?.split('@')[0];
         if (name) setUserName(name);
+
+        // Decoded tier from users table
+        const { data: userData } = await supabase
+          .from('users')
+          .select('decoded_tier')
+          .eq('id', user.id)
+          .single();
+        if (userData?.decoded_tier) {
+          setUserTier(userData.decoded_tier as ReportTier);
+        }
+
+        // S0.5.3i: Check if user already earned the share unlock
+        const { data: unlocks } = await supabase
+          .from('share_unlocks')
+          .select('id')
+          .limit(1);
+        if (unlocks && unlocks.length > 0) {
+          setShareUnlocked(true);
+        }
       }
     };
-    fetchUser();
+    fetchUserData();
   }, []);
 
-  // S0.5.3i: Check if user already earned the share unlock
-  useEffect(() => {
-    const checkShareUnlock = async () => {
-      const supabase = createClient();
-      const { data } = await supabase
-        .from('share_unlocks')
-        .select('id')
-        .limit(1);
-      if (data && data.length > 0) {
-        setShareUnlocked(true);
-      }
-    };
-    checkShareUnlock();
+  // S0.5.3j: Alpha upgrade callback — refresh tier state instantly
+  const handleUpgradeComplete = useCallback((newTier: ReportTier) => {
+    setUserTier(newTier);
+    // Small delay to let user see the success state before closing
+    setTimeout(() => setShowUpgradeModal(false), 1500);
   }, []);
 
   // Version-aware section config — v1 reports use RS01-RS12, v2 uses S1-S8
@@ -622,6 +634,17 @@ export default function ReportViewer({ report: initialReport, scores, sharedOwne
               />
             );
           })()}
+
+          {/* S0.5.4: Share Your Type prompt — inline after archetype card */}
+          {!sharedOwnerName && report.archetype_base && (
+            <button
+              className="share-type-prompt"
+              onClick={() => setShowShareModal(true)}
+            >
+              <Share2 size={15} className="share-type-prompt__icon" />
+              Know someone who&apos;d recognize you from this? Share your type.
+            </button>
+          )}
 
         </motion.div>
 
@@ -917,6 +940,30 @@ export default function ReportViewer({ report: initialReport, scores, sharedOwne
         </button>
       )}
 
+      {/* S0.5.4: Share Your Type — footer card */}
+      {!isGenerating && generatedCount > 0 && !sharedOwnerName && report.archetype_base && (
+        <div className="share-type-footer no-print">
+          <div className="share-type-footer__content">
+            <div className="share-type-footer__label">YOUR TYPE</div>
+            <h3 className="share-type-footer__archetype">
+              The {report.archetype_base}
+              {report.archetype_sublabel && (
+                <span className="share-type-footer__sublabel"> — {report.archetype_sublabel}</span>
+              )}
+            </h3>
+            <p className="share-type-footer__text">
+              Share your Decoded type with friends — see who resonates, and unlock your compatibility report together.
+            </p>
+            <button
+              className="share-type-footer__cta"
+              onClick={() => setShowShareModal(true)}
+            >
+              <Share2 size={16} /> Share Your Type
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Meet Your Coach CTA — conversion funnel from assessment to coaching */}
       {!isGenerating && generatedCount > 0 && (
         <div className="coach-cta no-print">
@@ -945,6 +992,7 @@ export default function ReportViewer({ report: initialReport, scores, sharedOwne
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
         currentTier={userTier}
+        onUpgradeComplete={handleUpgradeComplete}
       />
 
       {/* S0.5.3i: Share-to-unlock modal */}

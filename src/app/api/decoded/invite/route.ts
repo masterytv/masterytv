@@ -146,9 +146,17 @@ export async function POST(req: NextRequest) {
     // S0.5.3i: Record share for section unlock tracking
     await supabase.from('share_unlocks').insert({
       user_id: user.id,
-      method: 'email',
-      recipient_email: recipientEmail,
+      method: 'email_invite',
       section_unlocked: 'S5',
+      invite_id: inviteRow?.id ?? null,
+    });
+
+    // S0.5.3k: Log viral funnel event
+    await supabase.from('viral_events').insert({
+      user_id: user.id,
+      invite_id: inviteRow?.id ?? null,
+      event_type: 'invite_sent',
+      metadata: { method: 'email', recipient_email: recipientEmail },
     });
 
     return NextResponse.json({ success: true });

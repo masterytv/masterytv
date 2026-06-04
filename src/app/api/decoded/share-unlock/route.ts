@@ -38,6 +38,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to record share' }, { status: 500 });
     }
 
+    // S0.5.3k: Log viral funnel event
+    await supabase.from('viral_events').insert({
+      user_id: user.id,
+      event_type: 'social_share',
+      metadata: { method, section_unlocked: 'S5' },
+    });
+
     return NextResponse.json({ success: true, unlocked: 'S5' });
   } catch (error) {
     console.error('[share-unlock] Unexpected error:', error);
