@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
+import { useUser } from "@/hooks/useUser";
 import {
   Home,
   ClipboardCheck,
@@ -51,6 +52,16 @@ interface SidebarProps {
 
 export function Sidebar({ open, onClose, assessmentCompleted = false, reportId = null, onShareClick }: SidebarProps) {
   const pathname = usePathname();
+  const { user } = useUser();
+
+  // Map decoded_tier to display label
+  const tierLabels: Record<string, string> = {
+    free: 'Free Plan',
+    insight: 'Insight Plan',
+    growth: 'Growth Plan',
+    mastery: 'Mastery Plan',
+  };
+  const tierLabel = tierLabels[user?.decoded_tier ?? 'free'] ?? 'Free Plan';
 
   return (
     <>
@@ -161,7 +172,7 @@ export function Sidebar({ open, onClose, assessmentCompleted = false, reportId =
         <div className="p-4">
           <div className="rounded-lg bg-surface-100 px-3 py-2 text-center">
             <span className="text-xs font-medium text-text-muted uppercase tracking-wider">
-              Free Plan
+              {tierLabel}
             </span>
           </div>
         </div>

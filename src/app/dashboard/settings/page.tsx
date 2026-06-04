@@ -195,20 +195,25 @@ function SettingsContent() {
     setUpgradingTier(targetTier);
 
     try {
-      const response = await fetch("/api/decoded/create-checkout", {
+      const response = await fetch("/api/decoded/alpha-upgrade", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tier: targetTier, interval: "annual" }),
+        body: JSON.stringify({ tier: targetTier }),
       });
 
       const data = await response.json();
 
-      if (data.checkoutUrl) {
-        window.location.href = data.checkoutUrl;
+      if (data.success) {
+        setToast({
+          type: "success",
+          message: `Plan changed to ${targetTier.charAt(0).toUpperCase() + targetTier.slice(1)}. Your new limits are active immediately.`,
+        });
+        // Reload user data so sidebar badge and limits update
+        window.location.reload();
       } else {
         setToast({
           type: "error",
-          message: data.error || "Failed to create checkout session.",
+          message: data.error || "Failed to change plan.",
         });
         setUpgradingTier(null);
       }
@@ -359,7 +364,7 @@ function SettingsContent() {
     );
   }
 
-  const currentTier = (user?.subscription_tier ?? "free") as ReportTier;
+  const currentTier = (user?.decoded_tier ?? "free") as ReportTier;
   const currentTierInfo = DECODED_TIERS.find(t => t.id === currentTier) ?? DECODED_TIERS[0];
   const isPaid = currentTier !== "free";
   const messageLimit = MESSAGE_LIMITS[currentTier];
@@ -498,15 +503,20 @@ function SettingsContent() {
                     </ul>
 
                     {/* CTA */}
-                    {canUpgrade ? (
+                    {isCurrent ? (
+                      <div className="flex w-full items-center justify-center gap-2 rounded-lg bg-[rgba(96,99,238,0.1)] px-4 py-2.5 text-sm font-medium text-[#a3a6ff]">
+                        <Check className="h-4 w-4" />
+                        Active
+                      </div>
+                    ) : (
                       <motion.button
-                        id={`upgrade-${tierInfo.id}`}
+                        id={`change-${tierInfo.id}`}
                         onClick={() => handleUpgrade(tierInfo.id)}
                         disabled={upgradingTier !== null}
                         whileTap={{ scale: 0.98 }}
                         className={`
                           flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all disabled:opacity-50
-                          ${isRecommended
+                          ${canUpgrade && isRecommended
                             ? "bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] text-white shadow-lg shadow-[rgba(96,99,238,0.2)]"
                             : "bg-surface-200 text-text-primary hover:bg-surface-300"
                           }
@@ -519,19 +529,10 @@ function SettingsContent() {
                         )}
                         {upgradingTier === tierInfo.id
                           ? "Processing..."
-                          : `Upgrade to ${tierInfo.name}`}
+                          : canUpgrade
+                            ? `Upgrade to ${tierInfo.name}`
+                            : `Switch to ${tierInfo.name}`}
                       </motion.button>
-                    ) : isCurrent ? (
-                      <div className="flex w-full items-center justify-center gap-2 rounded-lg bg-[rgba(96,99,238,0.1)] px-4 py-2.5 text-sm font-medium text-[#a3a6ff]">
-                        <Check className="h-4 w-4" />
-                        Active
-                      </div>
-                    ) : (
-                      /* Lower tier than current — no action needed */
-                      <div className="flex w-full items-center justify-center gap-2 rounded-lg bg-surface-200/50 px-4 py-2.5 text-sm font-medium text-text-muted">
-                        <Check className="h-4 w-4" />
-                        Included
-                      </div>
                     )}
                   </div>
                 );
@@ -539,8 +540,8 @@ function SettingsContent() {
             </div>
 
             <p className="mt-4 text-center text-xs text-text-muted flex items-center justify-center gap-1.5">
-              <Shield className="h-3.5 w-3.5" />
-              Secure checkout via Stripe. Cancel anytime.
+              <Zap className="h-3.5 w-3.5" />
+              Alpha testing — all plans available without payment. Changes take effect immediately.
             </p>
           </section>
 
