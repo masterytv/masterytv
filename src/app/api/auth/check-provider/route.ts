@@ -7,12 +7,14 @@ import { createClient as createServiceClient } from '@supabase/supabase-js';
  * Given an email, check which auth provider the user registered with.
  * Returns { provider: 'google' | 'email' | null }
  *
- * Uses service role + raw SQL to query auth.identities — this table
- * isn't exposed via PostgREST so we use .rpc or direct SQL.
+ * Uses a SECURITY DEFINER function (get_auth_provider_for_email) that
+ * queries auth.identities. Only callable by service_role — anon and
+ * authenticated roles are revoked.
  *
- * Security: Returns null for unknown emails to avoid leaking
- * registration status. Only reveals OAuth provider for confirmed users
- * so the UI can show "use Google sign-in instead" on forgot password.
+ * Returns null for:
+ * - Unknown emails (avoids leaking registration status)
+ * - Email-only users (provider = 'email' is excluded by the function)
+ * - Any error (fail open — don't block forgot password)
  */
 export async function POST(req: NextRequest) {
   try {
@@ -22,54 +24,27 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ provider: null });
     }
 
-    const cleanEmail = email.toLowerCase().trim();
-
     const admin = createServiceClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
       { auth: { autoRefreshToken: false, persistSession: false } },
     );
 
-    // Use Supabase admin API to list users and check identities.
-    // admin.auth.admin.listUsers doesn't filter by email, so we
-    // iterate. For small user bases this is fine; at scale we'd
-    // add a database function.
-
-    // First try: use the admin getUserByEmail-like approach
-    // Supabase admin API doesn't have getUserByEmail, so we list
-    // and filter. The admin API returns identities on each user.
-    const { data: listData, error: listError } = await admin.auth.admin.listUsers({
-      page: 1,
-      perPage: 1000,
+    // Call the DB function — returns the OAuth provider name or null
+    const { data, error } = await admin.rpc('get_auth_provider_for_email', {
+      lookup_email: email.trim(),
     });
 
-    if (listError || !listData?.users) {
+    if (error) {
+      console.error('[check-provider] RPC error:', error.message);
       return NextResponse.json({ provider: null });
     }
 
-    const matchedUser = listData.users.find(
-      (u) => u.email?.toLowerCase() === cleanEmail
-    );
+    // RPC returns the provider string directly (e.g., 'google') or null
+    return NextResponse.json({ provider: data ?? null });
 
-    if (!matchedUser) {
-      return NextResponse.json({ provider: null });
-    }
-
-    // Check identities — OAuth users have an identity with provider != 'email'
-    const identities = matchedUser.identities ?? [];
-    const oauthIdentity = identities.find(
-      (id) => id.provider !== 'email'
-    );
-
-    if (oauthIdentity) {
-      return NextResponse.json({ provider: oauthIdentity.provider });
-    }
-
-    // Email/password user
-    return NextResponse.json({ provider: 'email' });
-
-  } catch {
-    // Fail silently — don't block the forgot password flow
+  } catch (err) {
+    console.error('[check-provider] Unexpected error:', err);
     return NextResponse.json({ provider: null });
   }
 }
