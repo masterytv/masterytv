@@ -1,52 +1,51 @@
 "use client";
 
 /**
- * LandingPage — Premium marketing page for Mastery Coach
- * S6.11 — All CTAs open beta lead capture modal
+ * LandingPage — Unified marketing page for MasteryTV
  *
- * Hero: Option C from MARKETING.md ("Not a Chatbot")
- * Sections: Hero → Social Proof → Memory → How It Works →
- *           Adaptation → Privacy → Comparison → Pricing → Final CTA → Footer
+ * Blends personality assessment (Decoded) + AI coaching into one story.
+ * Hero switches between logged-out conversion and logged-in welcome-back.
+ *
+ * Sections: Hero → Social Proof → Feature Grid → How It Works →
+ *           Differentiator → Testimonial Stories → Final CTA → Footer
+ *
+ * BRAND.md: Manrope headlines, Inter body, accent-gold single CTA,
+ * glassmorphism nav, no emoji icons, no hard borders.
  */
 
-import { useState, useEffect, useCallback } from "react";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { useState, useEffect } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import {
-  Users,
-  Target,
-  TrendingUp,
   ArrowRight,
+  Fingerprint,
+  Brain,
+  Heart,
+  Briefcase,
+  Flame,
+  Users,
+  BarChart3,
+  Sparkles,
+  MessageSquare,
+  FileText,
+  ChevronRight,
   Shield,
   Lock,
   Download,
   Trash2,
-  Check,
-  X,
-  Loader2,
-  Fingerprint,
-  Compass,
-  MessageCircle,
-  Search,
-  Zap,
-  SlidersHorizontal,
-  ChevronRight,
-  Mail,
+  User,
+  LogOut,
 } from "lucide-react";
 import Image from "next/image";
-import { createClient } from "@/lib/supabase/client";
+import Link from "next/link";
+import { FloatingThemeToggle } from "@/components/floating-theme-toggle";
 
 /* ════════════════════════════════════════════
-   Animation variants (respects reduced motion)
+   Animation variants
    ════════════════════════════════════════════ */
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
   visible: { opacity: 1, y: 0 },
-};
-
-const fadeIn = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1 },
 };
 
 const stagger = {
@@ -57,447 +56,127 @@ const stagger = {
    Data
    ════════════════════════════════════════════ */
 
-const SOCIAL_PROOF = [
+const TESTIMONIALS = [
   {
-    quote:
-      "My human coach knew my name but forgot my goals between sessions. Mastery Coach reminded me about a commitment I made 3 weeks ago — at exactly the right moment.",
+    quote: "I felt like someone finally gets me.",
     author: "Sarah M.",
     role: "Startup Founder",
   },
   {
     quote:
-      "It told me I had a pattern of avoiding hard conversations. I didn't see it. My coach did — because it remembered every time I mentioned avoiding one.",
-    author: "James K.",
-    role: "VP of Engineering",
+      "My coach understood both me and my partner in a way neither of us ever considered.",
+    author: "James & Rachel K.",
+    role: "Married 12 years",
   },
   {
     quote:
-      "The first few sessions it was pretty generic. By week 2, it was speaking my language. Direct, no fluff, straight to what matters.",
-    author: "Alex R.",
-    role: "Serial Entrepreneur",
+      "This goes beyond a personality test and gives you a deep understanding of why you are the way you are.",
+    author: "David L.",
+    role: "Executive Coach",
   },
 ];
 
-const MEMORY_CARDS = [
+const FEATURES = [
   {
-    icon: Users,
-    title: "Your People",
-    description:
-      "Your coach knows the names, roles, and dynamics of every important person in your professional life.",
-    quote:
-      '"You mentioned you and Chuck got in a heated debate yesterday. Have you reached out to him to resolve it like we discussed?"',
+    icon: BarChart3,
+    feature: "15 Personality Tests in 30 min",
+    benefit: "Know yourself deeper than ever",
   },
   {
-    icon: Target,
-    title: "Your Goals",
-    description:
-      "Not just what you want to achieve — your coach tracks life goals, quarterly rocks, and weekly targets.",
-    quote:
-      '"Your Q2 rock was \'hire your first employee.\' You\'re at 30% progress with 6 weeks left. Want to break it into smaller steps?"',
+    icon: MessageSquare,
+    feature: "Coaching Platform Built In",
+    benefit: "The only coach that knows everything about you",
   },
   {
-    icon: TrendingUp,
-    title: "Your Patterns",
-    description:
-      "Human coaches take months to spot a pattern. Your AI coach detects them in weeks — because it remembers everything.",
-    quote:
-      '"I\'ve noticed you tend to delay difficult conversations — this is the 3rd time in 2 months. Want to explore what\'s behind this?"',
-  },
-];
-
-const FRAMEWORK_TIERS = [
-  {
-    tier: "Tier 1",
-    emoji: "🏗️",
-    label: "Session Structure",
-    tagline: "How we coach you",
-    color: "var(--color-primary)",
-    frameworks: ["GROW", "OSKAR", "Motivational Interviewing", "Socratic Questioning"],
-    example: "You're stuck on a decision → GROW walks you through Goal → Reality → Options → Will.",
+    icon: Heart,
+    feature: "Relationship Compatibility",
+    benefit: "Stop guessing — your coach will guide you",
   },
   {
-    tier: "Tier 2",
-    emoji: "📈",
-    label: "Business & Execution",
-    tagline: "What we coach you on",
-    color: "var(--success-hex)",
-    frameworks: ["EOS/Traction", "Lean Startup", "Hormozi Offers", "Situational Leadership", "Robbins RPM"],
-    example: "Your pricing isn't converting → Hormozi Offer Optimization restructures your value stack.",
+    icon: Briefcase,
+    feature: "Work Style Assessment",
+    benefit: "Know which jobs are best for you",
   },
   {
-    tier: "Tier 3",
-    emoji: "🧠",
-    label: "Mindset & Resilience",
-    tagline: "Who you're becoming",
-    color: "#b4a6ff",
-    frameworks: ["Stoic Philosophy", "PERMA+", "Growth Mindset", "Mindfulness", "Stages of Change"],
-    example: "You're burned out → PERMA+ identifies which life pillar is depleted and rebuilds it.",
+    icon: Flame,
+    feature: "Work Motivation Mapping",
+    benefit: "Understand why you love or hate what you do",
   },
   {
-    tier: "Tier 4",
-    emoji: "🔮",
-    label: "Deep Psychology",
-    tagline: "Trust-unlocked (Month 2+)",
-    color: "#ff8fa3",
-    frameworks: ["Narrative Coaching", "Shadow Work", "Inner Critic", "Psychodynamic", "Emotional Fluidity"],
-    example: "You keep saying 'I'm not a real CEO' → Narrative Coaching rewrites the story you're trapped in.",
+    icon: Brain,
+    feature: "Emotional Pattern Analysis",
+    benefit: "See the patterns you've never noticed",
   },
 ];
 
 const HOW_IT_WORKS = [
   {
     step: 1,
-    title: "Sign Up",
+    icon: FileText,
+    title: "Take the Assessment",
     description:
-      "Create your account in 30 seconds. No credit card required for the free tier.",
+      "Answer questions across 15 validated instruments. Takes about 30 minutes. It's free.",
   },
   {
     step: 2,
-    title: "Your Coach Researches You",
+    icon: Fingerprint,
+    title: "Get Your Report",
     description:
-      "Share your LinkedIn or website. Your coach builds a profile and writes your personalized coaching letter.",
+      "13 deep narrative sections. Your Big Five profile, attachment style, emotional patterns, archetype, and more.",
   },
   {
     step: 3,
-    title: "Start Coaching",
+    icon: Sparkles,
+    title: "Meet Your Coach",
     description:
-      "Chat on the web, reply via email, or message on Telegram. Your coach is always ready — and always remembers.",
+      "An AI coach that has read your entire report. It knows your strengths, blind spots, and how you communicate.",
   },
 ];
 
-const ADAPTATION_DIMS = [
+const STORIES = [
   {
-    label: "Directness",
-    icon: "🎯",
-    low: "Diplomatic",
-    high: "Straight Talk",
-    value: 72,
+    quote:
+      "I felt totally understood and have the support I need to get to the next level.",
+    context: "On personal growth",
+    author: "Michael T.",
+    role: "Entrepreneur",
   },
   {
-    label: "Warmth",
-    icon: "🤝",
-    low: "Challenge-First",
-    high: "Relationship-First",
-    value: 58,
+    quote:
+      "We know how to communicate with each other better and we always have a coach that knows us in case things get difficult.",
+    context: "On relationships",
+    author: "Lisa & Mark P.",
+    role: "Couple",
   },
   {
-    label: "Autonomy",
-    icon: "🧭",
-    low: "Tell Me What to Do",
-    high: "Help Me Figure It Out",
-    value: 65,
+    quote:
+      "The only personality test that didn't just label me — it gave me a coach and a plan.",
+    context: "On the difference",
+    author: "Alex R.",
+    role: "Team Lead",
   },
-  {
-    label: "Challenge Level",
-    icon: "🔥",
-    low: "Comfort Zone",
-    high: "Stretch Zone",
-    value: 80,
-  },
-];
-
-const COMPARISON_ROWS = [
-  {
-    feature: "Remembers your goals",
-    generic: "Resets every chat",
-    human: "From notes (if reviewed)",
-    mastery: "Automatic, always current",
-  },
-  {
-    feature: "Knows your people",
-    generic: "No",
-    human: "After months",
-    mastery: "From Day 1",
-  },
-  {
-    feature: "Detects your patterns",
-    generic: "No",
-    human: "After many sessions",
-    mastery: "Within weeks",
-  },
-  {
-    feature: "Adapts communication style",
-    generic: "One voice",
-    human: "Intuitively, slowly",
-    mastery: "8 dimensions, calibrated by Week 2",
-  },
-  {
-    feature: "Coaching methodologies",
-    generic: "Generic prompts",
-    human: "2–3 they know",
-    mastery: "20+ frameworks, auto-selected",
-  },
-  {
-    feature: "Proactive check-ins",
-    generic: "You initiate",
-    human: "Between sessions only",
-    mastery: "Daily, intelligent",
-  },
-  {
-    feature: "Available 24/7",
-    generic: "Yes",
-    human: "Scheduled only",
-    mastery: "Any channel, any time",
-  },
-  {
-    feature: "Cost",
-    generic: "$0–20/mo",
-    human: "$300–500/hr",
-    mastery: "$99/mo",
-  },
-];
-
-const FREE_FEATURES = [
-  "5 messages per day",
-  "Web chat",
-  "Personalized coaching letter",
-  "Background research",
-  "Memory & pattern detection",
-];
-
-const CORE_FEATURES = [
-  "Unlimited messages",
-  "Web, email, and Telegram",
-  "Morning briefings",
-  "Accountability check-ins",
-  "20+ coaching frameworks",
-  "AI tool recommendations",
-  "Priority support",
 ];
 
 const PRIVACY_FEATURES = [
-  { icon: Lock, text: "End-to-end encrypted conversations" },
-  { icon: Shield, text: "Never sold, never shared, never used to train AI" },
+  { icon: Lock, text: "Encrypted conversations" },
+  { icon: Shield, text: "Never sold or shared" },
   { icon: Download, text: "Export your data anytime" },
   { icon: Trash2, text: "Delete everything with one click" },
 ];
 
 /* ════════════════════════════════════════════
-   Beta Capture Modal
-   ════════════════════════════════════════════ */
-
-function BetaModal({
-  isOpen,
-  onClose,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-}) {
-  const [email, setEmail] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const prefersReducedMotion = useReducedMotion();
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email) return;
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      // Store lead in Supabase — use the existing EmailForm pattern
-      const supabase = createClient();
-      const { error: insertError } = await supabase
-        .from("email_signups")
-        .insert({ email });
-
-      if (insertError) {
-        // Duplicate email is fine — treat as success
-        if (insertError.code === "23505") {
-          setSubmitted(true);
-        } else {
-          setError("Something went wrong. Please try again.");
-        }
-      } else {
-        setSubmitted(true);
-      }
-    } catch {
-      setError("Something went wrong. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Close on Escape
-  useEffect(() => {
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    if (isOpen) {
-      document.addEventListener("keydown", handleKey);
-      document.body.style.overflow = "hidden";
-    }
-    return () => {
-      document.removeEventListener("keydown", handleKey);
-      document.body.style.overflow = "";
-    };
-  }, [isOpen, onClose]);
-
-  // Reset on close
-  useEffect(() => {
-    if (!isOpen) {
-      setTimeout(() => {
-        setEmail("");
-        setSubmitted(false);
-        setError(null);
-      }, 300);
-    }
-  }, [isOpen]);
-
-  return (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          className="landing__modal-overlay"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: prefersReducedMotion ? 0 : 0.2 }}
-          onClick={(e) => {
-            if (e.target === e.currentTarget) onClose();
-          }}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Join the beta waitlist"
-        >
-          <motion.div
-            className="landing__modal"
-            initial={{ opacity: 0, scale: 0.95, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 10 }}
-            transition={{
-              duration: prefersReducedMotion ? 0 : 0.25,
-              ease: [0.34, 1.56, 0.64, 1],
-            }}
-          >
-            {/* Close button */}
-            <button
-              onClick={onClose}
-              className="absolute top-4 right-4 p-1 rounded-md hover:bg-surface-200/50 transition-colors"
-              aria-label="Close"
-              style={{ position: "absolute", top: "1rem", right: "1rem" }}
-            >
-              <X className="w-5 h-5" style={{ color: "var(--text-hint)" }} />
-            </button>
-
-            {submitted ? (
-              <motion.div
-                className="landing__modal-success"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-              >
-                <div className="landing__modal-success-icon">
-                  <Check className="w-6 h-6" />
-                </div>
-                <h3 className="landing__modal-title">You&apos;re on the list!</h3>
-                <p className="landing__modal-desc">
-                  We&apos;ll send you an invite as soon as we&apos;re ready.
-                  Keep an eye on your inbox.
-                </p>
-                <button
-                  onClick={onClose}
-                  className="landing__cta-primary"
-                  style={{ marginTop: "0.5rem" }}
-                >
-                  Got it
-                </button>
-              </motion.div>
-            ) : (
-              <>
-                <div style={{ marginBottom: "0.25rem" }}>
-                  <Fingerprint
-                    className="w-5 h-5"
-                    style={{
-                      color: "var(--color-primary-container)",
-                      marginBottom: "0.75rem",
-                    }}
-                  />
-                </div>
-                <h3 className="landing__modal-title">We&apos;re launching soon</h3>
-                <p className="landing__modal-desc">
-                  Enter your email to be invited to the beta. Early members get
-                  priority access and founding member pricing.
-                </p>
-
-                <form onSubmit={handleSubmit}>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@company.com"
-                    required
-                    className="landing__modal-input"
-                    autoFocus
-                    id="beta-email-input"
-                  />
-
-                  {error && (
-                    <p
-                      style={{
-                        color: "var(--danger-hex)",
-                        fontSize: "0.8125rem",
-                        marginTop: "0.5rem",
-                      }}
-                    >
-                      {error}
-                    </p>
-                  )}
-
-                  <button
-                    type="submit"
-                    disabled={loading || !email}
-                    className="landing__cta-primary"
-                    style={{
-                      width: "100%",
-                      justifyContent: "center",
-                      marginTop: "1rem",
-                      opacity: loading || !email ? 0.6 : 1,
-                      cursor: loading ? "wait" : "pointer",
-                    }}
-                  >
-                    {loading ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <>
-                        Join the Waitlist
-                        <ArrowRight className="w-4 h-4" />
-                      </>
-                    )}
-                  </button>
-                </form>
-
-                <p
-                  style={{
-                    fontSize: "0.6875rem",
-                    color: "var(--text-hint)",
-                    marginTop: "1rem",
-                    textAlign: "center",
-                  }}
-                >
-                  No spam. We&apos;ll only email you about the launch.
-                </p>
-              </>
-            )}
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
-}
-
-/* ════════════════════════════════════════════
    Main Component
    ════════════════════════════════════════════ */
 
-export default function LandingPage() {
-  const [modalOpen, setModalOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-  const prefersReducedMotion = useReducedMotion();
+interface LandingPageProps {
+  isLoggedIn: boolean;
+  userName: string;
+}
 
-  const openModal = useCallback(() => setModalOpen(true), []);
-  const closeModal = useCallback(() => setModalOpen(false), []);
+export default function LandingPage({ isLoggedIn, userName }: LandingPageProps) {
+  const [scrolled, setScrolled] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const prefersReducedMotion = useReducedMotion();
 
   // Nav scroll detection
   useEffect(() => {
@@ -508,7 +187,16 @@ export default function LandingPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Animation wrapper — returns static props when reduced motion
+  // Close profile dropdown on outside click
+  useEffect(() => {
+    if (!profileOpen) return;
+    function handleClick() {
+      setProfileOpen(false);
+    }
+    document.addEventListener("click", handleClick);
+    return () => document.removeEventListener("click", handleClick);
+  }, [profileOpen]);
+
   const anim = prefersReducedMotion
     ? { initial: undefined, whileInView: undefined, viewport: undefined }
     : {
@@ -519,6 +207,8 @@ export default function LandingPage() {
 
   return (
     <>
+      <FloatingThemeToggle />
+
       {/* ─── Navigation ─── */}
       <nav
         className={`landing__nav ${scrolled ? "landing__nav--scrolled" : ""}`}
@@ -527,64 +217,137 @@ export default function LandingPage() {
       >
         <div className="landing__nav-inner">
           <div className="landing__logo">
-            <Image src="/logo.png" alt="Mastery Coach" width={36} height={36} />
-            Mastery Coach
+            <Image src="/logo.png" alt="MasteryTV" width={36} height={36} />
+            MasteryTV
           </div>
           <div className="landing__nav-actions">
-            <button
-              onClick={openModal}
-              className="landing__cta-ghost"
-              id="nav-sign-in"
-            >
-              Sign In
-            </button>
-            <button
-              onClick={openModal}
-              className="landing__cta-primary landing__cta-primary--sm"
-              id="nav-get-started"
-            >
-              Get Started
-              <ArrowRight className="w-4 h-4" />
-            </button>
+            {isLoggedIn ? (
+              <div className="landing__profile-wrap">
+                <button
+                  className="landing__profile-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setProfileOpen(!profileOpen);
+                  }}
+                  aria-label="Profile menu"
+                  id="nav-profile"
+                >
+                  <div className="landing__avatar">
+                    <User className="w-4 h-4" />
+                  </div>
+                  <span className="landing__profile-name">{userName}</span>
+                </button>
+                {profileOpen && (
+                  <div className="landing__profile-dropdown">
+                    <Link
+                      href="/dashboard"
+                      className="landing__profile-item"
+                    >
+                      Your Dashboard
+                    </Link>
+                    <Link
+                      href="/dashboard/settings"
+                      className="landing__profile-item"
+                    >
+                      Settings
+                    </Link>
+                    <button
+                      className="landing__profile-item landing__profile-item--danger"
+                      onClick={() => {
+                        // Sign out via supabase client
+                        import("@/lib/supabase/client").then(({ createClient }) => {
+                          const supabase = createClient();
+                          supabase.auth.signOut().then(() => {
+                            window.location.reload();
+                          });
+                        });
+                      }}
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      Log out
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                <Link href="/decoded" className="landing__cta-ghost" id="nav-sign-in">
+                  Sign In
+                </Link>
+                <Link
+                  href="/decoded"
+                  className="landing__cta-primary landing__cta-primary--sm"
+                  id="nav-get-started"
+                >
+                  Take the Test
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </nav>
 
       {/* ─── Hero ─── */}
       <section className="landing__hero" id="hero">
-        <div className="landing__dot-pattern" aria-hidden="true" style={{
-          position: "absolute",
-          inset: 0,
-          zIndex: 1,
-          opacity: 0.1,
-        }} />
+        <div
+          className="landing__dot-pattern"
+          aria-hidden="true"
+          style={{ position: "absolute", inset: 0, zIndex: 1, opacity: 0.1 }}
+        />
         <motion.div
           className="landing__hero-content"
           initial={prefersReducedMotion ? undefined : { opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: [0.4, 0, 0.2, 1] }}
         >
-          <div className="landing__hero-label">
-            <Compass className="w-3.5 h-3.5" />
-            AI Coaching for High-Performers
-          </div>
-          <h1 className="landing__hero-title">
-            Not a Chatbot.
-            <br />A Performance Coach That <em>Really Knows You.</em>
-          </h1>
-          <p className="landing__hero-sub">
-            It knows your boss is Chuck, your Q2 rock is hiring, and you always
-            procrastinate before investor calls. Because it remembers —{" "}
-            <strong style={{ color: "#dfe4fe" }}>everything.</strong>
-          </p>
-          <button
-            onClick={openModal}
-            className="landing__cta-primary"
-            id="hero-cta"
-          >
-            Start Your First Session Free
-            <ArrowRight className="w-5 h-5" />
-          </button>
+          {isLoggedIn ? (
+            /* ── Logged-In Hero ── */
+            <>
+              <h1 className="landing__hero-title">
+                Welcome back, {userName}.
+              </h1>
+              <p className="landing__hero-sub">
+                Your coach is ready. Check your latest insights, review your
+                report, or start a new coaching session.
+              </p>
+              <div className="landing__hero-actions">
+                <Link href="/dashboard" className="landing__cta-gold" id="hero-cta">
+                  Go to Your Dashboard
+                  <ArrowRight className="w-5 h-5" />
+                </Link>
+                <Link href="/decoded" className="landing__cta-ghost-light" id="hero-retake">
+                  Retake Assessment
+                </Link>
+              </div>
+            </>
+          ) : (
+            /* ── Logged-Out Hero ── */
+            <>
+              <div className="landing__hero-label">
+                <Fingerprint className="w-3.5 h-3.5" />
+                Personality Science + AI Coaching
+              </div>
+              <h1 className="landing__hero-title">
+                Know Thyself.
+                <br />
+                <em>Then Grow Thyself.</em>
+              </h1>
+              <p className="landing__hero-sub">
+                The only personality test that gives you a coach.
+                15 validated instruments. 30 minutes. A report that goes deeper
+                than any test you&apos;ve taken — and a coach that remembers{" "}
+                <strong style={{ color: "#dfe4fe" }}>everything.</strong>
+              </p>
+              <Link href="/decoded" className="landing__cta-gold" id="hero-cta">
+                Take the Free Assessment
+                <ArrowRight className="w-5 h-5" />
+              </Link>
+              <p className="landing__hero-trust">
+                Free · 30 minutes · 15 validated instruments · Results are private
+              </p>
+            </>
+          )}
         </motion.div>
       </section>
 
@@ -595,7 +358,7 @@ export default function LandingPage() {
           variants={stagger}
           {...anim}
         >
-          {SOCIAL_PROOF.map((item, i) => (
+          {TESTIMONIALS.map((item, i) => (
             <motion.div
               key={i}
               className="landing__proof-card"
@@ -610,40 +373,40 @@ export default function LandingPage() {
         </motion.div>
       </section>
 
-      {/* ─── Memory Differentiator ─── */}
+      {/* ─── Feature Grid — Know Yourself. Grow Yourself. ─── */}
       <section className="landing__section" id="features">
         <motion.div className="landing__section-inner" variants={stagger} {...anim}>
           <motion.div variants={fadeUp} transition={{ duration: 0.5 }}>
             <p className="landing__section-label">
-              <Image src="/logo.png" alt="" width={16} height={16} />
-              The Memory Advantage
+              <Fingerprint className="w-4 h-4" />
+              Features &amp; Benefits
             </p>
             <h2 className="landing__section-title">
-              A Coach That Remembers Everything That Matters
+              Discover Who You Really Are.{" "}
+              <em>Then Become Everything You Want to Be.</em>
             </h2>
             <p className="landing__section-desc">
-              Your people. Your goals. Your fears. Your wins. Every conversation
-              builds on the last — so you never have to repeat yourself.
+              Not just another personality label. A complete system that maps who
+              you are — and gives you an AI coach to help you grow.
             </p>
           </motion.div>
 
-          <div className="landing__memory-grid">
-            {MEMORY_CARDS.map((card, i) => (
+          <div className="landing__feature-grid">
+            {FEATURES.map((item, i) => (
               <motion.div
                 key={i}
-                className="landing__memory-card"
+                className="landing__feature-card"
                 variants={fadeUp}
-                transition={{ duration: 0.5, delay: i * 0.1 }}
+                transition={{ duration: 0.5, delay: i * 0.08 }}
                 {...anim}
               >
-                <div className="landing__memory-icon">
-                  <card.icon className="w-6 h-6" />
+                <div className="landing__feature-icon">
+                  <item.icon className="w-5 h-5" />
                 </div>
-                <h3 className="landing__memory-title">{card.title}</h3>
-                <p className="landing__memory-description">
-                  {card.description}
-                </p>
-                <div className="landing__memory-quote">{card.quote}</div>
+                <div>
+                  <h3 className="landing__feature-title">{item.feature}</h3>
+                  <p className="landing__feature-benefit">{item.benefit}</p>
+                </div>
               </motion.div>
             ))}
           </div>
@@ -651,15 +414,33 @@ export default function LandingPage() {
       </section>
 
       {/* ─── How It Works ─── */}
-      <section className="landing__section" style={{ background: "var(--color-surface-50)" }} id="how-it-works">
+      <section
+        className="landing__section"
+        style={{ background: "var(--color-surface-50)" }}
+        id="how-it-works"
+      >
         <motion.div className="landing__section-inner" variants={stagger} {...anim}>
-          <motion.div variants={fadeUp} transition={{ duration: 0.5 }} style={{ textAlign: "center" }}>
-            <p className="landing__section-label" style={{ justifyContent: "center" }}>
-              <Zap className="w-4 h-4" />
+          <motion.div
+            variants={fadeUp}
+            transition={{ duration: 0.5 }}
+            style={{ textAlign: "center" }}
+          >
+            <p
+              className="landing__section-label"
+              style={{ justifyContent: "center" }}
+            >
+              <Sparkles className="w-4 h-4" />
               How It Works
             </p>
-            <h2 className="landing__section-title" style={{ marginLeft: "auto", marginRight: "auto", maxWidth: "600px" }}>
-              From Signup to Coaching in Under 5 Minutes
+            <h2
+              className="landing__section-title"
+              style={{
+                marginLeft: "auto",
+                marginRight: "auto",
+                maxWidth: "700px",
+              }}
+            >
+              From Assessment to Coaching in Under an Hour
             </h2>
           </motion.div>
 
@@ -672,7 +453,10 @@ export default function LandingPage() {
                 transition={{ duration: 0.5, delay: i * 0.15 }}
                 {...anim}
               >
-                <div className="landing__step-number">{item.step}</div>
+                <div className="landing__step-icon">
+                  <item.icon className="w-6 h-6" />
+                </div>
+                <div className="landing__step-number">Step {item.step}</div>
                 <h3 className="landing__step-title">{item.title}</h3>
                 <p className="landing__step-desc">{item.description}</p>
               </motion.div>
@@ -681,118 +465,110 @@ export default function LandingPage() {
         </motion.div>
       </section>
 
-      {/* ─── Frameworks ─── */}
-      <section className="landing__section" id="frameworks">
-        <motion.div className="landing__section-inner" variants={stagger} {...anim}>
-          <motion.div variants={fadeUp} transition={{ duration: 0.5 }} style={{ textAlign: "center" }}>
-            <p className="landing__section-label" style={{ justifyContent: "center" }}>
-              <Search className="w-4 h-4" />
-              20+ Proven Frameworks
-            </p>
-            <h2 className="landing__section-title" style={{ marginLeft: "auto", marginRight: "auto", maxWidth: "700px" }}>
-              One Coach. Twenty Methods.{" "}
-              <em>The Right One for This Exact Moment.</em>
-            </h2>
-            <p className="landing__section-desc" style={{ maxWidth: "640px", marginLeft: "auto", marginRight: "auto" }}>
-              A human coach knows 2–3 methods and uses them for everything.
-              Your Mastery Coach selects from 20+ proven frameworks — automatically
-              matched to your challenge, your stage, and your readiness.
-            </p>
-          </motion.div>
-
-          <div className="landing__fw-grid">
-            {FRAMEWORK_TIERS.map((tier, i) => (
-              <motion.div
-                key={i}
-                className="landing__fw-card"
-                variants={fadeUp}
-                transition={{ duration: 0.5, delay: i * 0.1 }}
-                {...anim}
-              >
-                <div className="landing__fw-header">
-                  <span className="landing__fw-emoji">{tier.emoji}</span>
-                  <div>
-                    <div className="landing__fw-tier" style={{ color: tier.color }}>
-                      {tier.tier}: {tier.label}
-                    </div>
-                    <div className="landing__fw-tagline">{tier.tagline}</div>
-                  </div>
-                </div>
-                <div className="landing__fw-pills">
-                  {tier.frameworks.map((fw, j) => (
-                    <span key={j} className="landing__fw-pill">{fw}</span>
-                  ))}
-                </div>
-                <div className="landing__fw-example">
-                  <ChevronRight className="w-3.5 h-3.5" style={{ flexShrink: 0, marginTop: "2px", color: tier.color }} />
-                  <span>{tier.example}</span>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-
-          <motion.div
-            className="landing__fw-bottom"
-            variants={fadeUp}
-            transition={{ duration: 0.5, delay: 0.5 }}
-            {...anim}
-          >
-            <p className="landing__fw-bottom-text">
-              Your coach detects that your &ldquo;marketing problem&rdquo; is actually an
-              avoidance pattern, coaches you through the inner resistance,{" "}
-              <em>and then</em> helps you build the marketing plan.{" "}
-              <strong>In the same conversation.</strong>
-            </p>
-          </motion.div>
-        </motion.div>
-      </section>
-
-      {/* ─── Adaptation ─── */}
-      <section className="landing__section" id="adaptation">
+      {/* ─── Differentiator ─── */}
+      <section className="landing__section" id="differentiator">
         <motion.div className="landing__section-inner" variants={stagger} {...anim}>
           <motion.div variants={fadeUp} transition={{ duration: 0.5 }}>
             <p className="landing__section-label">
-              <SlidersHorizontal className="w-4 h-4" />
-              Adaptive Communication
+              <Brain className="w-4 h-4" />
+              What Makes This Different
             </p>
             <h2 className="landing__section-title">
-              A Coach That Speaks Your Language
+              The Only Personality Test That{" "}
+              <em>Gives You a Coach</em>
             </h2>
-            <p className="landing__section-desc">
-              Your coach tracks 8 dimensions of your communication style and
-              adapts every single message. No personality quiz — it learns by
-              listening.
+            <p className="landing__section-desc" style={{ maxWidth: "680px" }}>
+              Other tests give you a label and a PDF. We give you a 13-section
+              deep report — and then an AI coach that has read every word of it.
+              Your coach knows your strengths, your blind spots, your attachment
+              style, and your emotional patterns. From day one.
             </p>
           </motion.div>
 
-          <div className="landing__adapt-grid">
-            {ADAPTATION_DIMS.map((dim, i) => (
+          <div className="landing__diff-grid">
+            <motion.div
+              className="landing__diff-card"
+              variants={fadeUp}
+              transition={{ duration: 0.5 }}
+              {...anim}
+            >
+              <div className="landing__diff-label">Other Tests</div>
+              <ul className="landing__diff-list landing__diff-list--other">
+                <li>One personality framework</li>
+                <li>Generic 2-page PDF</li>
+                <li>A label you forget in a week</li>
+                <li>No coaching, no action plan</li>
+                <li>No relationship insight</li>
+              </ul>
+            </motion.div>
+            <motion.div
+              className="landing__diff-card landing__diff-card--us"
+              variants={fadeUp}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              {...anim}
+            >
+              <div className="landing__diff-label landing__diff-label--us">
+                MasteryTV Decoded
+              </div>
+              <ul className="landing__diff-list landing__diff-list--us">
+                <li>15 validated instruments combined</li>
+                <li>13-section narrative report</li>
+                <li>Your unique archetype</li>
+                <li>AI coach that knows you deeply</li>
+                <li>Relationship compatibility reports</li>
+              </ul>
+            </motion.div>
+          </div>
+        </motion.div>
+      </section>
+
+      {/* ─── Deeper Stories ─── */}
+      <section
+        className="landing__section"
+        style={{ background: "var(--color-surface-50)" }}
+        id="stories"
+      >
+        <motion.div className="landing__section-inner" variants={stagger} {...anim}>
+          <motion.div
+            variants={fadeUp}
+            transition={{ duration: 0.5 }}
+            style={{ textAlign: "center" }}
+          >
+            <p
+              className="landing__section-label"
+              style={{ justifyContent: "center" }}
+            >
+              <Users className="w-4 h-4" />
+              Real Stories
+            </p>
+            <h2
+              className="landing__section-title"
+              style={{
+                marginLeft: "auto",
+                marginRight: "auto",
+                maxWidth: "700px",
+              }}
+            >
+              A Better Entrepreneur. Partner. Parent. Leader. <em>Lover.</em>
+            </h2>
+          </motion.div>
+
+          <div className="landing__stories-grid">
+            {STORIES.map((story, i) => (
               <motion.div
                 key={i}
-                className="landing__adapt-card"
+                className="landing__story-card"
                 variants={fadeUp}
                 transition={{ duration: 0.5, delay: i * 0.1 }}
                 {...anim}
               >
-                <div className="landing__adapt-label">
-                  <span>{dim.icon}</span> {dim.label}
-                </div>
-                <div className="landing__adapt-bar">
-                  <motion.div
-                    className="landing__adapt-fill"
-                    initial={{ width: 0 }}
-                    whileInView={{ width: `${dim.value}%` }}
-                    viewport={{ once: true }}
-                    transition={{
-                      duration: prefersReducedMotion ? 0 : 1.2,
-                      delay: 0.3 + i * 0.1,
-                      ease: [0.4, 0, 0.2, 1],
-                    }}
-                  />
-                </div>
-                <div className="landing__adapt-range">
-                  <span>{dim.low}</span>
-                  <span>{dim.high}</span>
+                <p className="landing__story-context">{story.context}</p>
+                <blockquote className="landing__story-quote">
+                  &ldquo;{story.quote}&rdquo;
+                </blockquote>
+                <div className="landing__story-author">
+                  <span className="landing__story-name">{story.author}</span>
+                  <span className="landing__story-role">{story.role}</span>
                 </div>
               </motion.div>
             ))}
@@ -800,12 +576,8 @@ export default function LandingPage() {
         </motion.div>
       </section>
 
-      {/* ─── Privacy & Trust ─── */}
-      <section
-        className="landing__section"
-        style={{ background: "var(--color-surface-50)" }}
-        id="privacy"
-      >
+      {/* ─── Privacy ─── */}
+      <section className="landing__section" id="privacy">
         <motion.div
           className="landing__section-inner landing__privacy"
           variants={stagger}
@@ -815,18 +587,26 @@ export default function LandingPage() {
             <div className="landing__privacy-icon">
               <Shield className="w-7 h-7" />
             </div>
-            <h2 className="landing__section-title" style={{ maxWidth: "600px", marginLeft: "auto", marginRight: "auto" }}>
+            <h2
+              className="landing__section-title"
+              style={{
+                maxWidth: "600px",
+                marginLeft: "auto",
+                marginRight: "auto",
+              }}
+            >
               Your Data. Your Rules. Always.
             </h2>
             <p
               className="landing__section-desc"
-              style={{ maxWidth: "640px", marginLeft: "auto", marginRight: "auto" }}
+              style={{
+                maxWidth: "640px",
+                marginLeft: "auto",
+                marginRight: "auto",
+              }}
             >
               Everything you share stays between you and your coach. Your data is
-              never sold, never shared, and never used to train AI models. With
-              bank-grade encryption and full data portability, you&apos;re more
-              protected than any paper notebook could offer — and you can view,
-              export, or delete your data at any time.
+              never sold, never shared, and never used to train AI models.
             </p>
           </motion.div>
 
@@ -852,136 +632,6 @@ export default function LandingPage() {
         </motion.div>
       </section>
 
-      {/* ─── Comparison Table ─── */}
-      <section className="landing__section" id="compare">
-        <motion.div className="landing__section-inner" {...anim} variants={fadeUp} transition={{ duration: 0.5 }}>
-          <p className="landing__section-label">
-            <MessageCircle className="w-4 h-4" />
-            See the Difference
-          </p>
-          <h2 className="landing__section-title">
-            Not All Coaching is Created Equal
-          </h2>
-          <p className="landing__section-desc">
-            See how Mastery Coach compares to generic AI chat and traditional
-            human coaching.
-          </p>
-
-          <div className="landing__table-wrap">
-            <table className="landing__table">
-              <thead>
-                <tr>
-                  <th>Feature</th>
-                  <th>Generic AI Chat</th>
-                  <th>Human Coach</th>
-                  <th>Mastery Coach</th>
-                </tr>
-              </thead>
-              <tbody>
-                {COMPARISON_ROWS.map((row, i) => (
-                  <tr key={i}>
-                    <td>{row.feature}</td>
-                    <td>{row.generic}</td>
-                    <td>{row.human}</td>
-                    <td>{row.mastery}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </motion.div>
-      </section>
-
-      {/* ─── Pricing ─── */}
-      <section
-        className="landing__section"
-        style={{ background: "var(--color-surface-50)" }}
-        id="pricing"
-      >
-        <motion.div className="landing__section-inner" variants={stagger} {...anim}>
-          <motion.div variants={fadeUp} transition={{ duration: 0.5 }} style={{ textAlign: "center" }}>
-            <p className="landing__section-label" style={{ justifyContent: "center" }}>
-              <Fingerprint className="w-4 h-4" />
-              Simple Pricing
-            </p>
-            <h2 className="landing__section-title" style={{ marginLeft: "auto", marginRight: "auto" }}>
-              Start Free. Upgrade When You&apos;re Ready.
-            </h2>
-          </motion.div>
-
-          <div className="landing__pricing-grid">
-            {/* Free tier */}
-            <motion.div
-              className="landing__pricing-card"
-              variants={fadeUp}
-              transition={{ duration: 0.5 }}
-              {...anim}
-            >
-              <h3 className="landing__pricing-tier">Free</h3>
-              <div className="landing__pricing-price">
-                <span className="landing__pricing-amount">$0</span>
-                <span className="landing__pricing-period">/month</span>
-              </div>
-              <p className="landing__pricing-desc">
-                Get started with the basics. Perfect for trying out AI coaching.
-              </p>
-              <ul className="landing__pricing-features">
-                {FREE_FEATURES.map((f, i) => (
-                  <li key={i} className="landing__pricing-feature">
-                    <Check className="landing__pricing-check" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <button
-                onClick={openModal}
-                className="landing__cta-ghost"
-                style={{ width: "100%", justifyContent: "center" }}
-                id="pricing-free-cta"
-              >
-                Get Started
-              </button>
-            </motion.div>
-
-            {/* Core tier */}
-            <motion.div
-              className="landing__pricing-card landing__pricing-card--featured"
-              variants={fadeUp}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              {...anim}
-            >
-              <div className="landing__pricing-badge">Most Popular</div>
-              <h3 className="landing__pricing-tier">Core</h3>
-              <div className="landing__pricing-price">
-                <span className="landing__pricing-amount">$99</span>
-                <span className="landing__pricing-period">/month</span>
-              </div>
-              <p className="landing__pricing-desc">
-                The full coaching experience. Unlimited access across all
-                channels.
-              </p>
-              <ul className="landing__pricing-features">
-                {CORE_FEATURES.map((f, i) => (
-                  <li key={i} className="landing__pricing-feature">
-                    <Check className="landing__pricing-check" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <button
-                onClick={openModal}
-                className="landing__cta-primary"
-                style={{ width: "100%", justifyContent: "center" }}
-                id="pricing-core-cta"
-              >
-                Start Your First Session Free
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </motion.div>
-          </div>
-        </motion.div>
-      </section>
-
       {/* ─── Final CTA ─── */}
       <section className="landing__final-cta">
         <div
@@ -995,19 +645,22 @@ export default function LandingPage() {
           variants={fadeUp}
           transition={{ duration: 0.6 }}
         >
-          <h2 className="landing__final-cta-title">Your coach is ready.</h2>
+          <h2 className="landing__final-cta-title">
+            Personal Development, Decoded and Delivered.
+          </h2>
           <p className="landing__final-cta-sub">
-            Stop repeating yourself. Start building momentum with a coach that
-            remembers everything.
+            {isLoggedIn
+              ? "Your coach is waiting. Pick up where you left off."
+              : "Know yourself. Grow yourself. Start today — it's free."}
           </p>
-          <button
-            onClick={openModal}
-            className="landing__cta-primary"
+          <Link
+            href={isLoggedIn ? "/dashboard" : "/decoded"}
+            className="landing__cta-gold"
             id="final-cta"
           >
-            Start Your First Session Free
+            {isLoggedIn ? "Go to Dashboard" : "Take the Free Assessment"}
             <ArrowRight className="w-5 h-5" />
-          </button>
+          </Link>
         </motion.div>
       </section>
 
@@ -1016,12 +669,6 @@ export default function LandingPage() {
         <div className="landing__footer-inner">
           <p className="landing__footer-text">
             © {new Date().getFullYear()} MasteryTV. All rights reserved.
-          </p>
-          <p
-            className="landing__footer-text"
-            style={{ fontStyle: "italic" }}
-          >
-            Crafted with love from the team at MasteryTV.
           </p>
           <div className="landing__footer-links">
             <a href="/privacy" className="landing__footer-link">
@@ -1033,9 +680,6 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
-
-      {/* ─── Beta Lead Capture Modal ─── */}
-      <BetaModal isOpen={modalOpen} onClose={closeModal} />
     </>
   );
 }
