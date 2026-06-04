@@ -218,14 +218,24 @@ export default function DecodedNoirLanding() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Fallback: if IntersectionObserver doesn't fire (iOS Chrome bug),
+  // force all sections visible after 2 seconds
+  const [forceVisible, setForceVisible] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setForceVisible(true), 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
   // Animation wrapper — returns static props when reduced motion is preferred
   const anim = prefersReducedMotion
     ? { initial: undefined, whileInView: undefined, viewport: undefined }
-    : {
-        initial: "hidden" as const,
-        whileInView: "visible" as const,
-        viewport: { once: true, margin: "-60px" },
-      };
+    : forceVisible
+      ? { initial: "visible" as const, animate: "visible" as const }
+      : {
+          initial: "hidden" as const,
+          whileInView: "visible" as const,
+          viewport: { once: true, amount: 0.1 },
+        };
 
   return (
     <div className="dn__page">
@@ -655,8 +665,8 @@ export default function DecodedNoirLanding() {
         <div className="dn__final-grid" aria-hidden="true" />
         <motion.div
           className="dn__final-content"
-          initial={prefersReducedMotion ? undefined : { opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          initial={prefersReducedMotion || forceVisible ? undefined : { opacity: 0, y: 24 }}
+          {...(forceVisible ? { animate: { opacity: 1, y: 0 } } : { whileInView: { opacity: 1, y: 0 } })}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
         >

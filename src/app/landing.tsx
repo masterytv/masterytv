@@ -198,20 +198,23 @@ export default function LandingPage({ isLoggedIn, userName }: LandingPageProps) 
   }, [profileOpen]);
 
   // Fallback: if IntersectionObserver doesn't fire (iOS Chrome bug),
-  // force all sections visible after 2 seconds
+  // force all sections visible after 2 seconds by driving them to
+  // the "visible" variant state explicitly
   const [forceVisible, setForceVisible] = useState(false);
   useEffect(() => {
     const timer = setTimeout(() => setForceVisible(true), 2000);
     return () => clearTimeout(timer);
   }, []);
 
-  const anim = prefersReducedMotion || forceVisible
+  const anim = prefersReducedMotion
     ? { initial: undefined, whileInView: undefined, viewport: undefined }
-    : {
-        initial: "hidden" as const,
-        whileInView: "visible" as const,
-        viewport: { once: true, amount: 0.1 },
-      };
+    : forceVisible
+      ? { initial: "visible" as const, animate: "visible" as const }
+      : {
+          initial: "hidden" as const,
+          whileInView: "visible" as const,
+          viewport: { once: true, amount: 0.1 },
+        };
 
   return (
     <>

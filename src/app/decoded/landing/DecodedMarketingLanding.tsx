@@ -214,14 +214,24 @@ export default function DecodedMarketingLanding() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Fallback: if IntersectionObserver doesn't fire (iOS Chrome bug),
+  // force all sections visible after 2 seconds
+  const [forceVisible, setForceVisible] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setForceVisible(true), 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
   // Animation wrapper — returns static props when reduced motion is preferred
   const anim = prefersReducedMotion
     ? { initial: undefined, whileInView: undefined, viewport: undefined }
-    : {
-        initial: "hidden" as const,
-        whileInView: "visible" as const,
-        viewport: { once: true, margin: "-80px" },
-      };
+    : forceVisible
+      ? { initial: "visible" as const, animate: "visible" as const }
+      : {
+          initial: "hidden" as const,
+          whileInView: "visible" as const,
+          viewport: { once: true, amount: 0.1 },
+        };
 
   return (
     <>
@@ -622,8 +632,8 @@ export default function DecodedMarketingLanding() {
           style={{ position: "absolute", inset: 0, zIndex: 1, opacity: 0.08 }}
         />
         <motion.div
-          initial={prefersReducedMotion ? undefined : { opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          initial={prefersReducedMotion || forceVisible ? undefined : { opacity: 0, y: 30 }}
+          {...(forceVisible ? { animate: { opacity: 1, y: 0 } } : { whileInView: { opacity: 1, y: 0 } })}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
         >
