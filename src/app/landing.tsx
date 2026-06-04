@@ -197,12 +197,20 @@ export default function LandingPage({ isLoggedIn, userName }: LandingPageProps) 
     return () => document.removeEventListener("click", handleClick);
   }, [profileOpen]);
 
-  const anim = prefersReducedMotion
+  // Fallback: if IntersectionObserver doesn't fire (iOS Chrome bug),
+  // force all sections visible after 2 seconds
+  const [forceVisible, setForceVisible] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setForceVisible(true), 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const anim = prefersReducedMotion || forceVisible
     ? { initial: undefined, whileInView: undefined, viewport: undefined }
     : {
         initial: "hidden" as const,
         whileInView: "visible" as const,
-        viewport: { once: true, margin: "-80px" },
+        viewport: { once: true, amount: 0.1 },
       };
 
   return (
