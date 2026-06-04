@@ -34,13 +34,12 @@ export async function GET(request: Request) {
   }
 
   // Path 2: code exchange flow (OAuth, magic links, PKCE)
+  // OAuth logins should NEVER redirect to reset-password — recovery
+  // is handled exclusively via tokenHash (Path 1) above.
   if (code) {
-    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
-      if (data.session?.user?.recovery_sent_at) {
-        return NextResponse.redirect(`${origin}/auth/reset-password`);
-      }
       return NextResponse.redirect(`${origin}${next}`);
     }
   }
