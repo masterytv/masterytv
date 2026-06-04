@@ -31,11 +31,12 @@ export default async function CompatibilityPage() {
     await claimPendingInvites(supabase, user.id, user.email);
   }
 
-  // Load invites sent BY this user
+  // Load invites sent BY this user (exclude broadcast invite used for share links)
   const { data: sentInvites } = await supabase
     .from("decoded_invites")
     .select("id, recipient_email, recipient_id, status, share_with_human, share_with_coach, compatibility_report, created_at, completed_at, consented_at, upgrade_requested_level, upgrade_requested_by")
     .eq("inviter_id", user.id)
+    .neq("recipient_email", "broadcast")
     .order("created_at", { ascending: false });
 
   // Load invites sent TO this user (requests to share)
