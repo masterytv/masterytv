@@ -598,6 +598,19 @@ body {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
+/* When embedded in nav center, render inline instead of fixed */
+.landing__nav-center .floating-theme-toggle {
+  position: static;
+  box-shadow: none;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+[data-theme="light"] .landing__nav--scrolled .landing__nav-center .floating-theme-toggle {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
 .floating-theme-toggle__btn {
   display: flex;
   align-items: center;

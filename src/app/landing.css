@@ -54,6 +54,12 @@
   padding: 1rem 1.5rem;
 }
 
+.landing__nav-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .landing__logo {
   font-family: var(--font-display);
   font-size: 1.25rem;

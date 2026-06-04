@@ -207,8 +207,6 @@ export default function LandingPage({ isLoggedIn, userName }: LandingPageProps) 
 
   return (
     <>
-      <FloatingThemeToggle />
-
       {/* ─── Navigation ─── */}
       <nav
         className={`landing__nav ${scrolled ? "landing__nav--scrolled" : ""}`}
@@ -219,6 +217,9 @@ export default function LandingPage({ isLoggedIn, userName }: LandingPageProps) 
           <div className="landing__logo">
             <Image src="/logo.png" alt="MasteryTV" width={36} height={36} />
             MasteryTV
+          </div>
+          <div className="landing__nav-center">
+            <FloatingThemeToggle />
           </div>
           <div className="landing__nav-actions">
             {isLoggedIn ? (
@@ -313,7 +314,7 @@ export default function LandingPage({ isLoggedIn, userName }: LandingPageProps) 
               </p>
               <div className="landing__hero-actions">
                 <Link href="/dashboard" className="landing__cta-gold" id="hero-cta">
-                  Go to Your Dashboard
+                  View Your Assessment &amp; Coach
                   <ArrowRight className="w-5 h-5" />
                 </Link>
                 <Link href="/decoded" className="landing__cta-ghost-light" id="hero-retake">
