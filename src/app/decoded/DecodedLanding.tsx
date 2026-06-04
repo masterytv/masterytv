@@ -152,6 +152,29 @@ export default function DecodedLanding({ inviteCode }: { inviteCode?: string }) 
     }
     setLoading(true);
     setError(null);
+
+    // Check if this email was registered via OAuth (Google, etc.)
+    try {
+      const providerRes = await fetch('/api/auth/check-provider', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      const { provider } = await providerRes.json();
+
+      if (provider && provider !== 'email') {
+        // OAuth user — don't send a password reset, show helpful message
+        const providerName = provider.charAt(0).toUpperCase() + provider.slice(1);
+        setError(
+          `This email was registered with ${providerName}. Please use "Continue with ${providerName}" to sign in.`
+        );
+        setLoading(false);
+        return;
+      }
+    } catch {
+      // If the check fails, fall through to normal reset flow
+    }
+
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/auth/callback`,
     });
