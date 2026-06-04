@@ -23,9 +23,10 @@ export default function DashboardLayout({
   const [assessmentCompleted, setAssessmentCompleted] = useState(false);
   const [reportId, setReportId] = useState<string | null>(null);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [broadcastInviteUrl, setBroadcastInviteUrl] = useState<string>('');
   const { user } = useUser();
 
-  // Check if user has a completed (non-superseded) assessment
+  // Check if user has a completed (non-superseded) assessment + fetch broadcast invite
   useEffect(() => {
     async function checkAssessment() {
       const supabase = createClient();
@@ -53,6 +54,19 @@ export default function DashboardLayout({
           .limit(1)
           .single();
         if (report) setReportId(report.id);
+      }
+
+      // Fetch broadcast invite for share URL
+      const { data: broadcast } = await supabase
+        .from("decoded_invites")
+        .select("id")
+        .eq("inviter_id", authUser.id)
+        .eq("recipient_email", "broadcast")
+        .limit(1)
+        .maybeSingle();
+
+      if (broadcast) {
+        setBroadcastInviteUrl(`${window.location.origin}/decoded/invite/${broadcast.id}`);
       }
     }
     checkAssessment();
@@ -88,7 +102,7 @@ export default function DashboardLayout({
         isOpen={showShareModal}
         onClose={() => setShowShareModal(false)}
         onUnlock={() => setShowShareModal(false)}
-        shareUrl={typeof window !== 'undefined' ? `${window.location.origin}/decoded` : 'https://masterytv.com/decoded'}
+        shareUrl={broadcastInviteUrl || `${typeof window !== 'undefined' ? window.location.origin : 'https://masterytv.com'}/decoded`}
       />
     </div>
   );

@@ -54,6 +54,8 @@ interface Props {
   hasInProgressRetake?: boolean;
   sentInvites?: SentInvite[];
   receivedInvites?: ReceivedInvite[];
+  /** Stable invite URL for copy/share (broadcast invite) */
+  inviteUrl: string;
 }
 
 /**
@@ -71,6 +73,7 @@ export default function DashboardHome({
   hasInProgressRetake = false,
   sentInvites = [],
   receivedInvites = [],
+  inviteUrl,
 }: Props) {
   const [copied, setCopied] = useState(false);
   const [resetting, setResetting] = useState(false);
@@ -105,13 +108,7 @@ export default function DashboardHome({
   }
 
   function handleCopyLink() {
-    // Use the most recent invite URL if available, otherwise fall back to /decoded
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://masterytv.com';
-    const latestInvite = sentInvites[0];
-    const shareUrl = latestInvite
-      ? `${origin}/decoded/invite/${latestInvite.id}`
-      : `${origin}/decoded`;
-    navigator.clipboard.writeText(shareUrl);
+    navigator.clipboard.writeText(inviteUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
@@ -473,7 +470,7 @@ export default function DashboardHome({
           setShowShareModal(false);
           router.refresh();
         }}
-        shareUrl={`${typeof window !== 'undefined' ? window.location.origin : 'https://masterytv.com'}/decoded${sentInvites[0] ? `/invite/${sentInvites[0].id}` : ''}`}
+        shareUrl={inviteUrl}
       />
     </div>
   );
