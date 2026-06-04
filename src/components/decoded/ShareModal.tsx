@@ -166,8 +166,8 @@ export default function ShareModal({ isOpen, onClose, onUnlock, shareUrl, archet
             <div className="share-modal__header">
               <h2 className="share-modal__title">Unlock Your Relationships</h2>
               <p className="share-modal__subtitle">
-                Share Decoded with someone and unlock &ldquo;Your Relationships&rdquo; &mdash; 
-                see how your attachment style shapes your love life, conflict patterns, and deepest needs.
+                Share Decoded with someone and unlock &ldquo;Your Relationships.&rdquo; See how your
+                attachment style shapes all your connections — intimate, family, friends, and work.
               </p>
             </div>
 
