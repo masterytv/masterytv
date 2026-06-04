@@ -11,7 +11,7 @@
  */
 
 import { useState, useEffect } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -27,19 +27,6 @@ import {
   Compass,
   Activity,
 } from "lucide-react";
-
-/* ═══════════════════════════════════════════
-   Animation variants (respects reduced motion)
-   ═══════════════════════════════════════════ */
-
-const fadeUp = {
-  hidden: { opacity: 0, y: 30 },
-  visible: { opacity: 1, y: 0 },
-};
-
-const stagger = {
-  visible: { transition: { staggerChildren: 0.12 } },
-};
 
 /* ═══════════════════════════════════════════
    Data
@@ -204,7 +191,6 @@ const PRICING_TIERS = [
 
 export default function DecodedMarketingLanding() {
   const [scrolled, setScrolled] = useState(false);
-  const prefersReducedMotion = useReducedMotion();
 
   useEffect(() => {
     function handleScroll() {
@@ -214,24 +200,6 @@ export default function DecodedMarketingLanding() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Fallback: if IntersectionObserver doesn't fire (iOS Chrome bug),
-  // force all sections visible after 2 seconds
-  const [forceVisible, setForceVisible] = useState(false);
-  useEffect(() => {
-    const timer = setTimeout(() => setForceVisible(true), 2000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Animation wrapper — returns static props when reduced motion is preferred
-  const anim = prefersReducedMotion
-    ? { initial: undefined, whileInView: undefined, viewport: undefined }
-    : forceVisible
-      ? { initial: "visible" as const, animate: "visible" as const }
-      : {
-          initial: "hidden" as const,
-          whileInView: "visible" as const,
-          viewport: { once: true, amount: 0.1 },
-        };
 
   return (
     <>
@@ -270,7 +238,7 @@ export default function DecodedMarketingLanding() {
 
         <motion.div
           className="dl__hero-content"
-          initial={prefersReducedMotion ? undefined : { opacity: 0, y: 40 }}
+          initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: [0.4, 0, 0.2, 1] }}
         >
@@ -314,29 +282,20 @@ export default function DecodedMarketingLanding() {
 
       {/* ─── Trust Bar ─── */}
       <section className="dl__trust" aria-label="Trust metrics">
-        <motion.div
-          className="dl__trust-inner"
-          variants={stagger}
-          {...anim}
-        >
+        <div className="dl__trust-inner">
           {TRUST_STATS.map((stat, i) => (
-            <motion.div
-              key={i}
-              className="dl__trust-item"
-              variants={fadeUp}
-              transition={{ duration: 0.5 }}
-            >
+            <div key={i} className="dl__trust-item">
               <div className="dl__trust-value">{stat.value}</div>
               <div className="dl__trust-label">{stat.label}</div>
-            </motion.div>
+            </div>
           ))}
-        </motion.div>
+        </div>
       </section>
 
       {/* ─── Problem Section ─── */}
       <section className="dl__section" id="the-problem">
-        <motion.div className="dl__section-inner" variants={stagger} {...anim}>
-          <motion.div variants={fadeUp} transition={{ duration: 0.5 }}>
+        <div className="dl__section-inner">
+          <div>
             <p className="dl__section-eyebrow">
               <Compass style={{ width: 16, height: 16 }} />
               The Problem
@@ -349,35 +308,25 @@ export default function DecodedMarketingLanding() {
               And you&apos;re left exactly where you started — with a label
               and no pathway forward.
             </p>
-          </motion.div>
+          </div>
 
           <div className="dl__problem-grid">
             {PROBLEMS.map((problem, i) => (
-              <motion.div
-                key={i}
-                className="dl__problem-card"
-                variants={fadeUp}
-                transition={{ duration: 0.5, delay: i * 0.1 }}
-                {...anim}
-              >
+              <div key={i} className="dl__problem-card">
                 <div className="dl__problem-number">{problem.number}</div>
                 <h3 className="dl__problem-title">{problem.title}</h3>
                 <p className="dl__problem-text">{problem.text}</p>
                 <p className="dl__problem-examples">{problem.examples}</p>
-              </motion.div>
+              </div>
             ))}
           </div>
-        </motion.div>
+        </div>
       </section>
 
       {/* ─── What You Get ─── */}
       <section className="dl__section dl__section--alt" id="what-you-get">
-        <motion.div className="dl__section-inner" variants={stagger} {...anim}>
-          <motion.div
-            variants={fadeUp}
-            transition={{ duration: 0.5 }}
-            style={{ textAlign: "center" }}
-          >
+        <div className="dl__section-inner">
+          <div style={{ textAlign: "center" }}>
             <p className="dl__section-eyebrow" style={{ justifyContent: "center" }}>
               <Activity style={{ width: 16, height: 16 }} />
               What You Get
@@ -390,42 +339,28 @@ export default function DecodedMarketingLanding() {
               leave you alone with a PDF. Your results flow directly
               into a coach who already knows you.
             </p>
-          </motion.div>
+          </div>
 
           <div className="dl__value-grid">
             {VALUE_PROPS.map((prop, i) => (
-              <motion.div
-                key={i}
-                className="dl__value-card"
-                variants={fadeUp}
-                transition={{ duration: 0.5, delay: i * 0.1 }}
-                {...anim}
-              >
-                <div
-                  className={`dl__value-icon ${
-                    prop.accent ? "dl__value-icon--accent" : ""
-                  }`}
-                >
+              <div key={i} className="dl__value-card">
+                <div className={`dl__value-icon ${prop.accent ? "dl__value-icon--accent" : ""}`}>
                   <prop.icon style={{ width: 20, height: 20 }} strokeWidth={1.5} />
                 </div>
                 <div className="dl__value-step">{prop.step}</div>
                 <h3 className="dl__value-title">{prop.title}</h3>
                 <p className="dl__value-text">{prop.text}</p>
                 <span className="dl__value-tag">{prop.tag}</span>
-              </motion.div>
+              </div>
             ))}
           </div>
-        </motion.div>
+        </div>
       </section>
 
       {/* ─── How It Works ─── */}
       <section className="dl__section" id="how-it-works">
-        <motion.div className="dl__section-inner" variants={stagger} {...anim}>
-          <motion.div
-            variants={fadeUp}
-            transition={{ duration: 0.5 }}
-            style={{ textAlign: "center" }}
-          >
+        <div className="dl__section-inner">
+          <div style={{ textAlign: "center" }}>
             <p className="dl__section-eyebrow" style={{ justifyContent: "center" }}>
               <Clock style={{ width: 16, height: 16 }} />
               How It Works
@@ -433,30 +368,24 @@ export default function DecodedMarketingLanding() {
             <h2 className="dl__section-title dl__section-title--center">
               From Start to Insight in Under 30 Minutes
             </h2>
-          </motion.div>
+          </div>
 
           <div className="dl__steps">
             {HOW_IT_WORKS.map((item, i) => (
-              <motion.div
-                key={i}
-                className="dl__step"
-                variants={fadeUp}
-                transition={{ duration: 0.5, delay: i * 0.15 }}
-                {...anim}
-              >
+              <div key={i} className="dl__step">
                 <div className="dl__step-number">{item.step}</div>
                 <h3 className="dl__step-title">{item.title}</h3>
                 <p className="dl__step-desc">{item.desc}</p>
-              </motion.div>
+              </div>
             ))}
           </div>
-        </motion.div>
+        </div>
       </section>
 
       {/* ─── Report Preview ─── */}
       <section className="dl__section dl__section--alt" id="the-report">
-        <motion.div className="dl__section-inner" variants={stagger} {...anim}>
-          <motion.div variants={fadeUp} transition={{ duration: 0.5 }}>
+        <div className="dl__section-inner">
+          <div>
             <p className="dl__section-eyebrow">
               <FileText style={{ width: 16, height: 16 }} />
               Your Report
@@ -469,18 +398,13 @@ export default function DecodedMarketingLanding() {
               not a template with your name dropped in. Each one ends with
               the question your coach would open your first session with.
             </p>
-          </motion.div>
+          </div>
 
           <div className="dl__report">
-            {REPORT_SECTIONS.map((section, i) => (
-              <motion.div
+            {REPORT_SECTIONS.map((section) => (
+              <div
                 key={section.id}
-                className={`dl__report-section ${
-                  !section.free ? "dl__report-section--locked" : ""
-                }`}
-                variants={fadeUp}
-                transition={{ duration: 0.3, delay: i * 0.05 }}
-                {...anim}
+                className={`dl__report-section ${!section.free ? "dl__report-section--locked" : ""}`}
               >
                 <span className="dl__report-num">{section.id.replace("RS", "")}</span>
                 <span className="dl__report-name">{section.name}</span>
@@ -495,16 +419,16 @@ export default function DecodedMarketingLanding() {
                     Insight+
                   </span>
                 )}
-              </motion.div>
+              </div>
             ))}
           </div>
-        </motion.div>
+        </div>
       </section>
 
       {/* ─── Coach Handoff ─── */}
       <section className="dl__section" id="the-coach">
-        <motion.div className="dl__section-inner" variants={stagger} {...anim}>
-          <motion.div variants={fadeUp} transition={{ duration: 0.5 }}>
+        <div className="dl__section-inner">
+          <div>
             <p className="dl__section-eyebrow">
               <MessageCircle style={{ width: 16, height: 16 }} />
               The Coach
@@ -517,27 +441,17 @@ export default function DecodedMarketingLanding() {
               Yours starts with this — because it already read your
               entire report before you typed a single word.
             </p>
-          </motion.div>
+          </div>
 
-          <motion.div
-            className="dl__coach"
-            variants={fadeUp}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            {...anim}
-          >
+          <div className="dl__coach">
             <div className="dl__coach-card">
               <div className="dl__coach-header">
                 <div className="dl__coach-avatar">
-                  <Fingerprint
-                    style={{ width: 16, height: 16 }}
-                    strokeWidth={1.5}
-                  />
+                  <Fingerprint style={{ width: 16, height: 16 }} strokeWidth={1.5} />
                 </div>
                 <div className="dl__coach-meta">
                   <span className="dl__coach-name">Mastery Coach</span>
-                  <span className="dl__coach-label">
-                    Based on your Decoded profile
-                  </span>
+                  <span className="dl__coach-label">Based on your Decoded profile</span>
                 </div>
               </div>
               <p className="dl__coach-message">
@@ -555,18 +469,14 @@ export default function DecodedMarketingLanding() {
                 assessment data. Your message will be specific to your results.
               </p>
             </div>
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
       </section>
 
       {/* ─── Pricing ─── */}
       <section className="dl__section dl__section--alt" id="pricing">
-        <motion.div className="dl__section-inner" variants={stagger} {...anim}>
-          <motion.div
-            variants={fadeUp}
-            transition={{ duration: 0.5 }}
-            style={{ textAlign: "center" }}
-          >
+        <div className="dl__section-inner">
+          <div style={{ textAlign: "center" }}>
             <p className="dl__section-eyebrow" style={{ justifyContent: "center" }}>
               <Layers style={{ width: 16, height: 16 }} />
               Pricing
@@ -578,18 +488,13 @@ export default function DecodedMarketingLanding() {
               The core assessment and 7-section report are free — forever.
               Upgrade when you want the full picture and unlimited coaching.
             </p>
-          </motion.div>
+          </div>
 
           <div className="dl__pricing-grid">
             {PRICING_TIERS.map((tier, i) => (
-              <motion.div
+              <div
                 key={i}
-                className={`dl__pricing-card ${
-                  tier.featured ? "dl__pricing-card--featured" : ""
-                }`}
-                variants={fadeUp}
-                transition={{ duration: 0.5, delay: i * 0.08 }}
-                {...anim}
+                className={`dl__pricing-card ${tier.featured ? "dl__pricing-card--featured" : ""}`}
               >
                 {tier.featured && (
                   <div className="dl__pricing-popular">Most Popular</div>
@@ -610,18 +515,16 @@ export default function DecodedMarketingLanding() {
                 </ul>
                 <Link
                   href="/decoded"
-                  className={`dl__pricing-cta ${
-                    tier.featured ? "dl__pricing-cta--primary" : ""
-                  }`}
+                  className={`dl__pricing-cta ${tier.featured ? "dl__pricing-cta--primary" : ""}`}
                   id={`pricing-cta-${tier.name.toLowerCase()}`}
                 >
                   {tier.cta}
                   <ArrowRight style={{ width: 14, height: 14 }} />
                 </Link>
-              </motion.div>
+              </div>
             ))}
           </div>
-        </motion.div>
+        </div>
       </section>
 
       {/* ─── Final CTA ─── */}
@@ -631,12 +534,7 @@ export default function DecodedMarketingLanding() {
           aria-hidden="true"
           style={{ position: "absolute", inset: 0, zIndex: 1, opacity: 0.08 }}
         />
-        <motion.div
-          initial={prefersReducedMotion || forceVisible ? undefined : { opacity: 0, y: 30 }}
-          {...(forceVisible ? { animate: { opacity: 1, y: 0 } } : { whileInView: { opacity: 1, y: 0 } })}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-        >
+        <div>
           <h2 className="dl__final-cta-title">
             The Most Honest Thing You&apos;ll Ever Read About Yourself.
           </h2>
@@ -648,7 +546,7 @@ export default function DecodedMarketingLanding() {
             Start Your Free Assessment
             <ArrowRight style={{ width: 18, height: 18 }} />
           </Link>
-        </motion.div>
+        </div>
       </section>
 
       {/* ─── Footer ─── */}

@@ -14,7 +14,7 @@
  */
 
 import { useState, useEffect } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   ArrowRight,
   Fingerprint,
@@ -38,19 +38,6 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { FloatingThemeToggle } from "@/components/floating-theme-toggle";
-
-/* ════════════════════════════════════════════
-   Animation variants
-   ════════════════════════════════════════════ */
-
-const fadeUp = {
-  hidden: { opacity: 0, y: 30 },
-  visible: { opacity: 1, y: 0 },
-};
-
-const stagger = {
-  visible: { transition: { staggerChildren: 0.12 } },
-};
 
 /* ════════════════════════════════════════════
    Data
@@ -176,7 +163,6 @@ interface LandingPageProps {
 export default function LandingPage({ isLoggedIn, userName }: LandingPageProps) {
   const [scrolled, setScrolled] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const prefersReducedMotion = useReducedMotion();
 
   // Nav scroll detection
   useEffect(() => {
@@ -197,24 +183,6 @@ export default function LandingPage({ isLoggedIn, userName }: LandingPageProps) 
     return () => document.removeEventListener("click", handleClick);
   }, [profileOpen]);
 
-  // Fallback: if IntersectionObserver doesn't fire (iOS Chrome bug),
-  // force all sections visible after 2 seconds by driving them to
-  // the "visible" variant state explicitly
-  const [forceVisible, setForceVisible] = useState(false);
-  useEffect(() => {
-    const timer = setTimeout(() => setForceVisible(true), 2000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  const anim = prefersReducedMotion
-    ? { initial: undefined, whileInView: undefined, viewport: undefined }
-    : forceVisible
-      ? { initial: "visible" as const, animate: "visible" as const }
-      : {
-          initial: "hidden" as const,
-          whileInView: "visible" as const,
-          viewport: { once: true, amount: 0.1 },
-        };
 
   return (
     <>
@@ -309,7 +277,7 @@ export default function LandingPage({ isLoggedIn, userName }: LandingPageProps) 
         />
         <motion.div
           className="landing__hero-content"
-          initial={prefersReducedMotion ? undefined : { opacity: 0, y: 40 }}
+          initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: [0.4, 0, 0.2, 1] }}
         >
@@ -347,30 +315,21 @@ export default function LandingPage({ isLoggedIn, userName }: LandingPageProps) 
 
       {/* ─── Social Proof ─── */}
       <section className="landing__social-proof">
-        <motion.div
-          className="landing__proof-inner"
-          variants={stagger}
-          {...anim}
-        >
+        <div className="landing__proof-inner">
           {TESTIMONIALS.map((item, i) => (
-            <motion.div
-              key={i}
-              className="landing__proof-card"
-              variants={fadeUp}
-              transition={{ duration: 0.5 }}
-            >
+            <div key={i} className="landing__proof-card">
               <p className="landing__proof-quote">&ldquo;{item.quote}&rdquo;</p>
               <p className="landing__proof-author">{item.author}</p>
               <p className="landing__proof-role">{item.role}</p>
-            </motion.div>
+            </div>
           ))}
-        </motion.div>
+        </div>
       </section>
 
       {/* ─── Feature Grid — Know Yourself. Grow Yourself. ─── */}
       <section className="landing__section" id="features">
-        <motion.div className="landing__section-inner" variants={stagger} {...anim}>
-          <motion.div variants={fadeUp} transition={{ duration: 0.5 }}>
+        <div className="landing__section-inner">
+          <div>
             <p className="landing__section-label">
               <Fingerprint className="w-4 h-4" />
               Features &amp; Benefits
@@ -383,17 +342,11 @@ export default function LandingPage({ isLoggedIn, userName }: LandingPageProps) 
               Not just another personality label. A complete system that maps who
               you are — and gives you an AI coach to help you grow.
             </p>
-          </motion.div>
+          </div>
 
           <div className="landing__feature-grid">
             {FEATURES.map((item, i) => (
-              <motion.div
-                key={i}
-                className="landing__feature-card"
-                variants={fadeUp}
-                transition={{ duration: 0.5, delay: i * 0.08 }}
-                {...anim}
-              >
+              <div key={i} className="landing__feature-card">
                 <div className="landing__feature-icon">
                   <item.icon className="w-5 h-5" />
                 </div>
@@ -401,10 +354,10 @@ export default function LandingPage({ isLoggedIn, userName }: LandingPageProps) 
                   <h3 className="landing__feature-title">{item.feature}</h3>
                   <p className="landing__feature-benefit">{item.benefit}</p>
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
-        </motion.div>
+        </div>
       </section>
 
       {/* ─── How It Works ─── */}
@@ -413,12 +366,8 @@ export default function LandingPage({ isLoggedIn, userName }: LandingPageProps) 
         style={{ background: "var(--color-surface-50)" }}
         id="how-it-works"
       >
-        <motion.div className="landing__section-inner" variants={stagger} {...anim}>
-          <motion.div
-            variants={fadeUp}
-            transition={{ duration: 0.5 }}
-            style={{ textAlign: "center" }}
-          >
+        <div className="landing__section-inner">
+          <div style={{ textAlign: "center" }}>
             <p
               className="landing__section-label"
               style={{ justifyContent: "center" }}
@@ -436,33 +385,27 @@ export default function LandingPage({ isLoggedIn, userName }: LandingPageProps) 
             >
               From Assessment to Coaching in Under an Hour
             </h2>
-          </motion.div>
+          </div>
 
           <div className="landing__steps">
             {HOW_IT_WORKS.map((item, i) => (
-              <motion.div
-                key={i}
-                className="landing__step"
-                variants={fadeUp}
-                transition={{ duration: 0.5, delay: i * 0.15 }}
-                {...anim}
-              >
+              <div key={i} className="landing__step">
                 <div className="landing__step-icon">
                   <item.icon className="w-6 h-6" />
                 </div>
                 <div className="landing__step-number">Step {item.step}</div>
                 <h3 className="landing__step-title">{item.title}</h3>
                 <p className="landing__step-desc">{item.description}</p>
-              </motion.div>
+              </div>
             ))}
           </div>
-        </motion.div>
+        </div>
       </section>
 
       {/* ─── Differentiator ─── */}
       <section className="landing__section" id="differentiator">
-        <motion.div className="landing__section-inner" variants={stagger} {...anim}>
-          <motion.div variants={fadeUp} transition={{ duration: 0.5 }}>
+        <div className="landing__section-inner">
+          <div>
             <p className="landing__section-label">
               <Brain className="w-4 h-4" />
               What Makes This Different
@@ -477,15 +420,10 @@ export default function LandingPage({ isLoggedIn, userName }: LandingPageProps) 
               Your coach knows your strengths, your blind spots, your attachment
               style, and your emotional patterns. From day one.
             </p>
-          </motion.div>
+          </div>
 
           <div className="landing__diff-grid">
-            <motion.div
-              className="landing__diff-card"
-              variants={fadeUp}
-              transition={{ duration: 0.5 }}
-              {...anim}
-            >
+            <div className="landing__diff-card">
               <div className="landing__diff-label">Other Tests</div>
               <ul className="landing__diff-list landing__diff-list--other">
                 <li>One personality framework</li>
@@ -494,13 +432,8 @@ export default function LandingPage({ isLoggedIn, userName }: LandingPageProps) 
                 <li>No coaching, no action plan</li>
                 <li>No relationship insight</li>
               </ul>
-            </motion.div>
-            <motion.div
-              className="landing__diff-card landing__diff-card--us"
-              variants={fadeUp}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              {...anim}
-            >
+            </div>
+            <div className="landing__diff-card landing__diff-card--us">
               <div className="landing__diff-label landing__diff-label--us">
                 MasteryTV Decoded
               </div>
@@ -511,9 +444,9 @@ export default function LandingPage({ isLoggedIn, userName }: LandingPageProps) 
                 <li>AI coach that knows you deeply</li>
                 <li>Relationship compatibility reports</li>
               </ul>
-            </motion.div>
+            </div>
           </div>
-        </motion.div>
+        </div>
       </section>
 
       {/* ─── Deeper Stories ─── */}
@@ -522,12 +455,8 @@ export default function LandingPage({ isLoggedIn, userName }: LandingPageProps) 
         style={{ background: "var(--color-surface-50)" }}
         id="stories"
       >
-        <motion.div className="landing__section-inner" variants={stagger} {...anim}>
-          <motion.div
-            variants={fadeUp}
-            transition={{ duration: 0.5 }}
-            style={{ textAlign: "center" }}
-          >
+        <div className="landing__section-inner">
+          <div style={{ textAlign: "center" }}>
             <p
               className="landing__section-label"
               style={{ justifyContent: "center" }}
@@ -545,17 +474,11 @@ export default function LandingPage({ isLoggedIn, userName }: LandingPageProps) 
             >
               A Better Entrepreneur. Partner. Parent. Leader. <em>Lover.</em>
             </h2>
-          </motion.div>
+          </div>
 
           <div className="landing__stories-grid">
             {STORIES.map((story, i) => (
-              <motion.div
-                key={i}
-                className="landing__story-card"
-                variants={fadeUp}
-                transition={{ duration: 0.5, delay: i * 0.1 }}
-                {...anim}
-              >
+              <div key={i} className="landing__story-card">
                 <p className="landing__story-context">{story.context}</p>
                 <blockquote className="landing__story-quote">
                   &ldquo;{story.quote}&rdquo;
@@ -564,20 +487,16 @@ export default function LandingPage({ isLoggedIn, userName }: LandingPageProps) 
                   <span className="landing__story-name">{story.author}</span>
                   <span className="landing__story-role">{story.role}</span>
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
-        </motion.div>
+        </div>
       </section>
 
       {/* ─── Privacy ─── */}
       <section className="landing__section" id="privacy">
-        <motion.div
-          className="landing__section-inner landing__privacy"
-          variants={stagger}
-          {...anim}
-        >
-          <motion.div variants={fadeUp} transition={{ duration: 0.5 }}>
+        <div className="landing__section-inner landing__privacy">
+          <div>
             <div className="landing__privacy-icon">
               <Shield className="w-7 h-7" />
             </div>
@@ -602,28 +521,19 @@ export default function LandingPage({ isLoggedIn, userName }: LandingPageProps) 
               Everything you share stays between you and your coach. Your data is
               never sold, never shared, and never used to train AI models.
             </p>
-          </motion.div>
+          </div>
 
-          <motion.div
-            className="landing__privacy-features"
-            variants={stagger}
-            {...anim}
-          >
+          <div className="landing__privacy-features">
             {PRIVACY_FEATURES.map((feature, i) => (
-              <motion.div
-                key={i}
-                className="landing__privacy-feature"
-                variants={fadeUp}
-                transition={{ duration: 0.4, delay: i * 0.08 }}
-              >
+              <div key={i} className="landing__privacy-feature">
                 <feature.icon className="landing__privacy-feature-icon" />
                 <span className="landing__privacy-feature-text">
                   {feature.text}
                 </span>
-              </motion.div>
+              </div>
             ))}
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
       </section>
 
       {/* ─── Final CTA ─── */}
@@ -633,12 +543,7 @@ export default function LandingPage({ isLoggedIn, userName }: LandingPageProps) 
           aria-hidden="true"
           style={{ position: "absolute", inset: 0, zIndex: 1, opacity: 0.08 }}
         />
-        <motion.div
-          className="landing__final-cta-content"
-          {...anim}
-          variants={fadeUp}
-          transition={{ duration: 0.6 }}
-        >
+        <div className="landing__final-cta-content">
           <h2 className="landing__final-cta-title">
             Personal Development, Decoded and Delivered.
           </h2>
@@ -655,7 +560,7 @@ export default function LandingPage({ isLoggedIn, userName }: LandingPageProps) 
             {isLoggedIn ? "Go to Dashboard" : "Take the Free Assessment"}
             <ArrowRight className="w-5 h-5" />
           </Link>
-        </motion.div>
+        </div>
       </section>
 
       {/* ─── Footer ─── */}

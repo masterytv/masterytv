@@ -12,7 +12,7 @@
  */
 
 import { useState, useEffect } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -29,19 +29,6 @@ import {
   Lock,
   Crosshair,
 } from "lucide-react";
-
-/* ═══════════════════════════════════════════
-   Animation variants (respects reduced motion)
-   ═══════════════════════════════════════════ */
-
-const fadeUp = {
-  hidden: { opacity: 0, y: 24 },
-  visible: { opacity: 1, y: 0 },
-};
-
-const stagger = {
-  visible: { transition: { staggerChildren: 0.1 } },
-};
 
 /* ═══════════════════════════════════════════
    Data (same content as /decoded/landing)
@@ -208,7 +195,6 @@ const PRICING_TIERS = [
 
 export default function DecodedNoirLanding() {
   const [scrolled, setScrolled] = useState(false);
-  const prefersReducedMotion = useReducedMotion();
 
   useEffect(() => {
     function handleScroll() {
@@ -217,25 +203,6 @@ export default function DecodedNoirLanding() {
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
-
-  // Fallback: if IntersectionObserver doesn't fire (iOS Chrome bug),
-  // force all sections visible after 2 seconds
-  const [forceVisible, setForceVisible] = useState(false);
-  useEffect(() => {
-    const timer = setTimeout(() => setForceVisible(true), 2000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Animation wrapper — returns static props when reduced motion is preferred
-  const anim = prefersReducedMotion
-    ? { initial: undefined, whileInView: undefined, viewport: undefined }
-    : forceVisible
-      ? { initial: "visible" as const, animate: "visible" as const }
-      : {
-          initial: "hidden" as const,
-          whileInView: "visible" as const,
-          viewport: { once: true, amount: 0.1 },
-        };
 
   return (
     <div className="dn__page">
@@ -283,7 +250,7 @@ export default function DecodedNoirLanding() {
 
         <motion.div
           className="dn__hero-content"
-          initial={prefersReducedMotion ? undefined : { opacity: 0, y: 40 }}
+          initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
         >
@@ -327,72 +294,52 @@ export default function DecodedNoirLanding() {
 
       {/* ─── Trust Bar ─── */}
       <section className="dn__trust" aria-label="Trust metrics">
-        <motion.div className="dn__trust-inner" variants={stagger} {...anim}>
+        <div className="dn__trust-inner">
           {TRUST_STATS.map((stat, i) => (
-            <motion.div
-              key={i}
-              className="dn__trust-item"
-              variants={fadeUp}
-              transition={{ duration: 0.5 }}
-            >
+            <div key={i} className="dn__trust-item">
               <div className="dn__trust-value">{stat.value}</div>
               <div className="dn__trust-label">{stat.label}</div>
-            </motion.div>
+            </div>
           ))}
-        </motion.div>
+        </div>
       </section>
 
       {/* ─── Problem Section ─── */}
       <section className="dn__section" id="noir-the-problem">
-        <motion.div className="dn__section-inner" variants={stagger} {...anim}>
-          <motion.div variants={fadeUp} transition={{ duration: 0.5 }}>
+        <div className="dn__section-inner">
+          <div>
             <p className="dn__section-label">
               <Compass style={{ width: 14, height: 14 }} />
               Situation Report
             </p>
-            <h2 className="dn__section-title">
-              Personality Tools Have Failed You
-            </h2>
+            <h2 className="dn__section-title">Personality Tools Have Failed You</h2>
             <p className="dn__section-desc">
               You&apos;ve taken the tests. You&apos;ve read the results.
               And you&apos;re left exactly where you started — with a label
               and no pathway forward.
             </p>
-          </motion.div>
+          </div>
 
           <div className="dn__problem-grid">
             {PROBLEMS.map((problem, i) => (
-              <motion.div
-                key={i}
-                className="dn__problem-card"
-                variants={fadeUp}
-                transition={{ duration: 0.5, delay: i * 0.1 }}
-                {...anim}
-              >
+              <div key={i} className="dn__problem-card">
                 <div className="dn__problem-number">{problem.number}</div>
                 <h3 className="dn__problem-title">{problem.title}</h3>
                 <p className="dn__problem-text">{problem.text}</p>
                 <p className="dn__problem-examples">{problem.examples}</p>
-              </motion.div>
+              </div>
             ))}
           </div>
-        </motion.div>
+        </div>
       </section>
 
       <hr className="dn__rule" />
 
       {/* ─── What You Get ─── */}
       <section className="dn__section dn__section--alt" id="noir-what-you-get">
-        <motion.div className="dn__section-inner" variants={stagger} {...anim}>
-          <motion.div
-            variants={fadeUp}
-            transition={{ duration: 0.5 }}
-            style={{ textAlign: "center" }}
-          >
-            <p
-              className="dn__section-label"
-              style={{ justifyContent: "center" }}
-            >
+        <div className="dn__section-inner">
+          <div style={{ textAlign: "center" }}>
+            <p className="dn__section-label" style={{ justifyContent: "center" }}>
               <Activity style={{ width: 14, height: 14 }} />
               Mission Briefing
             </p>
@@ -404,113 +351,73 @@ export default function DecodedNoirLanding() {
               leave you alone with a PDF. Your results flow directly
               into a coach who already knows you.
             </p>
-          </motion.div>
+          </div>
 
           <div className="dn__value-grid">
             {VALUE_PROPS.map((prop, i) => (
-              <motion.div
-                key={i}
-                className={`dn__value-card ${
-                  prop.featured ? "dn__value-card--featured" : ""
-                }`}
-                variants={fadeUp}
-                transition={{ duration: 0.5, delay: i * 0.1 }}
-                {...anim}
-              >
-                <div
-                  className={`dn__value-icon ${
-                    !prop.featured ? "dn__value-icon--blue" : ""
-                  }`}
-                >
-                  <prop.icon
-                    style={{ width: 18, height: 18 }}
-                    strokeWidth={1.5}
-                  />
+              <div key={i} className={`dn__value-card ${prop.featured ? "dn__value-card--featured" : ""}`}>
+                <div className={`dn__value-icon ${!prop.featured ? "dn__value-icon--blue" : ""}`}>
+                  <prop.icon style={{ width: 18, height: 18 }} strokeWidth={1.5} />
                 </div>
                 <div className="dn__value-step">{prop.step}</div>
                 <h3 className="dn__value-title">{prop.title}</h3>
                 <p className="dn__value-text">{prop.text}</p>
                 <span className="dn__value-tag">{prop.tag}</span>
-              </motion.div>
+              </div>
             ))}
           </div>
-        </motion.div>
+        </div>
       </section>
 
       <hr className="dn__rule" />
 
       {/* ─── How It Works ─── */}
       <section className="dn__section" id="noir-how-it-works">
-        <motion.div className="dn__section-inner" variants={stagger} {...anim}>
-          <motion.div
-            variants={fadeUp}
-            transition={{ duration: 0.5 }}
-            style={{ textAlign: "center" }}
-          >
-            <p
-              className="dn__section-label"
-              style={{ justifyContent: "center" }}
-            >
+        <div className="dn__section-inner">
+          <div style={{ textAlign: "center" }}>
+            <p className="dn__section-label" style={{ justifyContent: "center" }}>
               <Crosshair style={{ width: 14, height: 14 }} />
               Operations Protocol
             </p>
             <h2 className="dn__section-title dn__section-title--center">
               From Start to Insight in Under 30 Minutes
             </h2>
-          </motion.div>
+          </div>
 
           <div className="dn__steps">
             {HOW_IT_WORKS.map((item, i) => (
-              <motion.div
-                key={i}
-                className="dn__step"
-                variants={fadeUp}
-                transition={{ duration: 0.5, delay: i * 0.15 }}
-                {...anim}
-              >
+              <div key={i} className="dn__step">
                 <div className="dn__step-number">{item.step}</div>
                 <h3 className="dn__step-title">{item.title}</h3>
                 <p className="dn__step-desc">{item.desc}</p>
-              </motion.div>
+              </div>
             ))}
           </div>
-        </motion.div>
+        </div>
       </section>
 
       <hr className="dn__rule" />
 
       {/* ─── Report Preview ─── */}
       <section className="dn__section dn__section--alt" id="noir-the-report">
-        <motion.div className="dn__section-inner" variants={stagger} {...anim}>
-          <motion.div variants={fadeUp} transition={{ duration: 0.5 }}>
+        <div className="dn__section-inner">
+          <div>
             <p className="dn__section-label">
               <FileText style={{ width: 14, height: 14 }} />
               Intelligence File — Contents
             </p>
-            <h2 className="dn__section-title">
-              12 Sections. 7 Declassified. All Personalized.
-            </h2>
+            <h2 className="dn__section-title">12 Sections. 7 Declassified. All Personalized.</h2>
             <p className="dn__section-desc">
               Every section is AI-written specifically for your results —
               not a template with your name dropped in. Each one ends with
               the question your coach would open your first session with.
             </p>
-          </motion.div>
+          </div>
 
           <div className="dn__report">
-            {REPORT_SECTIONS.map((section, i) => (
-              <motion.div
-                key={section.id}
-                className={`dn__report-item ${
-                  !section.free ? "dn__report-item--locked" : ""
-                }`}
-                variants={fadeUp}
-                transition={{ duration: 0.3, delay: i * 0.04 }}
-                {...anim}
-              >
-                <span className="dn__report-num">
-                  {section.id.replace("RS", "")}
-                </span>
+            {REPORT_SECTIONS.map((section) => (
+              <div key={section.id} className={`dn__report-item ${!section.free ? "dn__report-item--locked" : ""}`}>
+                <span className="dn__report-num">{section.id.replace("RS", "")}</span>
                 <span className="dn__report-name">{section.name}</span>
                 {section.free ? (
                   <span className="dn__report-badge dn__report-badge--free">
@@ -523,51 +430,39 @@ export default function DecodedNoirLanding() {
                     Insight+
                   </span>
                 )}
-              </motion.div>
+              </div>
             ))}
           </div>
-        </motion.div>
+        </div>
       </section>
 
       <hr className="dn__rule" />
 
       {/* ─── Coach Handoff ─── */}
       <section className="dn__section" id="noir-the-coach">
-        <motion.div className="dn__section-inner" variants={stagger} {...anim}>
-          <motion.div variants={fadeUp} transition={{ duration: 0.5 }}>
+        <div className="dn__section-inner">
+          <div>
             <p className="dn__section-label">
               <MessageCircle style={{ width: 14, height: 14 }} />
               Handler Assignment
             </p>
-            <h2 className="dn__section-title">
-              A Coach That Already Knows You
-            </h2>
+            <h2 className="dn__section-title">A Coach That Already Knows You</h2>
             <p className="dn__section-desc">
               Most AI coaches start with &ldquo;Tell me about yourself.&rdquo;
               Yours starts with this — because it already read your
               entire report before you typed a single word.
             </p>
-          </motion.div>
+          </div>
 
-          <motion.div
-            className="dn__coach"
-            variants={fadeUp}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            {...anim}
-          >
+          <div className="dn__coach">
             <div className="dn__coach-card">
               <div className="dn__coach-header">
                 <div className="dn__coach-avatar">
-                  <Fingerprint
-                    style={{ width: 14, height: 14 }}
-                    strokeWidth={1.5}
-                  />
+                  <Fingerprint style={{ width: 14, height: 14 }} strokeWidth={1.5} />
                 </div>
                 <div className="dn__coach-meta">
                   <span className="dn__coach-name">Mastery Coach</span>
-                  <span className="dn__coach-label">
-                    Based on your Decoded profile
-                  </span>
+                  <span className="dn__coach-label">Based on your Decoded profile</span>
                 </div>
               </div>
               <p className="dn__coach-message">
@@ -586,24 +481,17 @@ export default function DecodedNoirLanding() {
                 results.
               </p>
             </div>
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
       </section>
 
       <hr className="dn__rule" />
 
       {/* ─── Pricing ─── */}
       <section className="dn__section dn__section--alt" id="noir-pricing">
-        <motion.div className="dn__section-inner" variants={stagger} {...anim}>
-          <motion.div
-            variants={fadeUp}
-            transition={{ duration: 0.5 }}
-            style={{ textAlign: "center" }}
-          >
-            <p
-              className="dn__section-label"
-              style={{ justifyContent: "center" }}
-            >
+        <div className="dn__section-inner">
+          <div style={{ textAlign: "center" }}>
+            <p className="dn__section-label" style={{ justifyContent: "center" }}>
               <Layers style={{ width: 14, height: 14 }} />
               Access Levels
             </p>
@@ -614,22 +502,12 @@ export default function DecodedNoirLanding() {
               The core assessment and 7-section report are free — forever.
               Upgrade when you want the full picture and unlimited coaching.
             </p>
-          </motion.div>
+          </div>
 
           <div className="dn__pricing-grid">
             {PRICING_TIERS.map((tier, i) => (
-              <motion.div
-                key={i}
-                className={`dn__pricing-card ${
-                  tier.featured ? "dn__pricing-card--featured" : ""
-                }`}
-                variants={fadeUp}
-                transition={{ duration: 0.5, delay: i * 0.08 }}
-                {...anim}
-              >
-                {tier.featured && (
-                  <div className="dn__pricing-popular">Recommended</div>
-                )}
+              <div key={i} className={`dn__pricing-card ${tier.featured ? "dn__pricing-card--featured" : ""}`}>
+                {tier.featured && <div className="dn__pricing-popular">Recommended</div>}
                 <div className="dn__pricing-name">{tier.name}</div>
                 <div className="dn__pricing-price">
                   {tier.price}
@@ -646,30 +524,22 @@ export default function DecodedNoirLanding() {
                 </ul>
                 <Link
                   href="/decoded"
-                  className={`dn__pricing-cta ${
-                    tier.featured ? "dn__pricing-cta--primary" : ""
-                  }`}
+                  className={`dn__pricing-cta ${tier.featured ? "dn__pricing-cta--primary" : ""}`}
                   id={`noir-pricing-${tier.name.toLowerCase()}`}
                 >
                   {tier.cta}
                   <ArrowRight style={{ width: 12, height: 12 }} />
                 </Link>
-              </motion.div>
+              </div>
             ))}
           </div>
-        </motion.div>
+        </div>
       </section>
 
       {/* ─── Final CTA ─── */}
       <section className="dn__final">
         <div className="dn__final-grid" aria-hidden="true" />
-        <motion.div
-          className="dn__final-content"
-          initial={prefersReducedMotion || forceVisible ? undefined : { opacity: 0, y: 24 }}
-          {...(forceVisible ? { animate: { opacity: 1, y: 0 } } : { whileInView: { opacity: 1, y: 0 } })}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-        >
+        <div className="dn__final-content">
           <h2 className="dn__final-title">
             The Most Honest Thing You&apos;ll Ever Read About Yourself.
           </h2>
@@ -681,7 +551,7 @@ export default function DecodedNoirLanding() {
             Begin Your Assessment
             <ArrowRight style={{ width: 16, height: 16 }} />
           </Link>
-        </motion.div>
+        </div>
       </section>
 
       {/* ─── Footer ─── */}
