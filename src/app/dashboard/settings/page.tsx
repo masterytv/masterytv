@@ -2,7 +2,7 @@
 
 import { useUser } from "@/hooks/useUser";
 import { useState, useEffect, useCallback, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { DECODED_TIERS, MESSAGE_LIMITS, isUpgrade } from "@/lib/decoded/billing/tiers";
@@ -87,9 +87,14 @@ const DELIVERY_DIMENSIONS = ["directness", "framing", "warmth", "pacing", "evide
 function SettingsContent() {
   const { user, loading, updateUser } = useUser();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [upgradingTier, setUpgradingTier] = useState<string | null>(null);
+
+  // Unsaved-changes guard
+  const [pendingNav, setPendingNav] = useState<string | null>(null);
+  const [showNavWarning, setShowNavWarning] = useState(false);
 
   // Data management state (TD-006)
   const [exporting, setExporting] = useState(false);
@@ -178,12 +183,44 @@ function SettingsContent() {
     briefingTime !== user.morning_briefing_time
   ));
 
-  // Warn before navigating away with unsaved changes
+  function handleDiscard() {
+    if (!user) return;
+    setName(user.name);
+    setTimezone(user.timezone);
+    setPreferredChannel(user.preferred_channel);
+    setBriefingTime(user.morning_briefing_time);
+  }
+
+  // Block browser refresh / tab close when dirty
   useEffect(() => {
     if (!isDirty) return;
     const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); };
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
+  }, [isDirty]);
+
+  // Intercept in-app <Link> clicks when dirty — capture phase catches them before Next.js router
+  useEffect(() => {
+    if (!isDirty) return;
+
+    const handleClick = (e: MouseEvent) => {
+      const anchor = (e.target as HTMLElement).closest("a[href]") as HTMLAnchorElement | null;
+      if (!anchor) return;
+
+      const href = anchor.getAttribute("href") ?? "";
+      // Let external links, hash-only links, and javascript: through unblocked
+      if (!href || href.startsWith("http") || href.startsWith("#") || href.startsWith("javascript")) return;
+      // Don't block the save/discard actions inside the modal
+      if (anchor.dataset.guardBypass) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+      setPendingNav(href);
+      setShowNavWarning(true);
+    };
+
+    document.addEventListener("click", handleClick, true);
+    return () => document.removeEventListener("click", handleClick, true);
   }, [isDirty]);
 
   async function handleSave() {
@@ -924,6 +961,64 @@ function SettingsContent() {
                     <Trash2 className="h-4 w-4" />
                   )}
                   {deleting ? "Deleting..." : "Delete Everything"}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ─── UNSAVED CHANGES NAVIGATION GUARD ─── */}
+      <AnimatePresence>
+        {showNavWarning && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="w-full max-w-sm rounded-2xl border border-surface-300 bg-surface-50 p-6 shadow-2xl"
+            >
+              <div className="flex items-start gap-3 mb-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[rgba(96,99,238,0.1)]">
+                  <AlertTriangle className="h-5 w-5 text-[#a3a6ff]" />
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-text-primary">Unsaved changes</h3>
+                  <p className="text-sm text-text-secondary mt-1">
+                    You have unsaved changes to your profile and preferences. Save them before leaving?
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-5">
+                <button
+                  onClick={() => {
+                    handleDiscard();
+                    setShowNavWarning(false);
+                    if (pendingNav) router.push(pendingNav);
+                    setPendingNav(null);
+                  }}
+                  className="flex-1 rounded-lg border border-surface-300 bg-surface-100 px-4 py-2.5 text-sm font-medium text-text-secondary hover:bg-surface-200 transition-colors"
+                >
+                  Discard
+                </button>
+                <button
+                  onClick={async () => {
+                    await handleSave();
+                    setShowNavWarning(false);
+                    if (pendingNav) router.push(pendingNav);
+                    setPendingNav(null);
+                  }}
+                  disabled={saving}
+                  className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+                >
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  {saving ? "Saving…" : "Save & Continue"}
                 </button>
               </div>
             </motion.div>
