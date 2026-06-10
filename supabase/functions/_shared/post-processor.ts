@@ -129,7 +129,7 @@ Extract the following as JSON:
     { "category": "business|personal|preference|goal|challenge|win|pattern|org_sop", "subject": "brief label", "content": "the fact", "importance": 0.1-1.0 }
   ],
   "commitments": [
-    { "type": "goal|action_item|habit", "description": "what the user committed to", "due_date": "YYYY-MM-DD or null" }
+    { "type": "goal|action_item|habit", "description": "what the user committed to", "due_date": "YYYY-MM-DD or null", "context_note": "1-sentence context: why they made this commitment or what challenge it addresses" }
   ],
   "challenge_detected": {
     "is_new": true/false,
@@ -262,11 +262,13 @@ Return ONLY valid JSON, no other text.`
           type: string;
           description: string;
           due_date: string | null;
+          context_note?: string | null;
         }) => ({
           user_id: userId,
           type: c.type,
           description: c.description,
           due_date: c.due_date || null,
+          context_note: c.context_note || null,
           status: "active",
           source_message_id: coachMessageId,
         })

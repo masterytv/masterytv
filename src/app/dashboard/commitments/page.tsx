@@ -38,6 +38,7 @@ interface Commitment {
   source_message_id: string | null;
   created_at: string;
   completed_at: string | null;
+  context_note: string | null;
 }
 
 type TabStatus = "active" | "completed" | "missed";
@@ -271,6 +272,11 @@ export default function CommitmentsPage() {
                     {/* Content */}
                     <div className="cm-card__body">
                       <p className="cm-card__desc">{commitment.description}</p>
+                      {commitment.context_note && (
+                        <p style={{ fontSize: "0.75rem", color: "var(--text-hint)", margin: "0.2rem 0 0.25rem", fontStyle: "italic", lineHeight: 1.45 }}>
+                          {commitment.context_note}
+                        </p>
+                      )}
                       <div className="cm-card__meta">
                         {commitment.due_date && (
                           <span className="cm-card__meta-item">

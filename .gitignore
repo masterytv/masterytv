@@ -44,3 +44,6 @@ logs/
 design-system/
 {output_folder}/
 test-coach.mjs
+
+# Migrated Antigravity session history (kept local, not tracked)
+docs/history/

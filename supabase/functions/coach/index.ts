@@ -378,6 +378,12 @@ Deno.serve(async (req: Request) => {
                     stopReason = event.delta?.stop_reason ?? "";
                     outputTokens += event.usage?.output_tokens ?? 0;
                     break;
+
+                  // GPT-4o primary: final usage correction (input tokens arrive last)
+                  case "_usage":
+                    if (event.input_tokens) inputTokens = event.input_tokens as number;
+                    if (event.output_tokens) outputTokens = event.output_tokens as number;
+                    break;
                 }
               } catch {
                 // Skip unparseable events

@@ -838,16 +838,22 @@
 }
 
 .cp-dimension__bar {
-  height: 8px;
-  background: var(--color-surface-200);
-  border-radius: 4px;
+  height: 10px;
+  background: var(--color-surface-300);
+  border-radius: 5px;
   overflow: hidden;
   position: relative;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="light"] .cp-dimension__bar {
+  background: #e2e2ea;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
 }
 
 .cp-dimension__fill {
   height: 100%;
-  border-radius: 4px;
+  border-radius: 5px;
   /* Signature gradient */
   background: linear-gradient(90deg, #6063ee, #a3a6ff);
   transition: width 0.5s var(--ease-smooth);

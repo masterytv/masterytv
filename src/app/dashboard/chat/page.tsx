@@ -261,6 +261,7 @@ function ChatPageInner() {
               isLoading={isLoading}
               streamingContent={streamingContent}
               onSendMessage={handleSendMessage}
+              userId={user?.id}
             />
           </div>
           <DebugPanel debugData={debugData} traceHistory={traceHistory} />
@@ -272,6 +273,7 @@ function ChatPageInner() {
           isLoading={isLoading}
           streamingContent={streamingContent}
           onSendMessage={handleSendMessage}
+          userId={user?.id}
         />
       )}
     </div>

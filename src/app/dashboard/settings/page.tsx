@@ -171,6 +171,21 @@ function SettingsContent() {
     }
   }, [toast]);
 
+  const isDirty = !!(user && (
+    name !== user.name ||
+    timezone !== user.timezone ||
+    preferredChannel !== user.preferred_channel ||
+    briefingTime !== user.morning_briefing_time
+  ));
+
+  // Warn before navigating away with unsaved changes
+  useEffect(() => {
+    if (!isDirty) return;
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [isDirty]);
+
   async function handleSave() {
     setSaving(true);
     setSaved(false);
@@ -648,6 +663,28 @@ function SettingsContent() {
             </div>
           </section>
 
+          {/* Save button — positioned under editable preferences, above read-only coach profile */}
+          <div className="flex items-center gap-4">
+            <motion.button
+              onClick={handleSave}
+              disabled={saving}
+              whileTap={{ scale: 0.98 }}
+              className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-6 py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+            >
+              {saving ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : saved ? (
+                <Check className="h-4 w-4" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              {saving ? "Saving..." : saved ? "Saved!" : "Save Changes"}
+            </motion.button>
+            {isDirty && !saving && !saved && (
+              <span className="text-xs text-text-muted">Unsaved changes</span>
+            )}
+          </div>
+
           {/* ─── Coach Profile (S6.4) ─── */}
           {coachProfile && (
             <section className="rounded-xl bg-surface-100 p-6">
@@ -655,7 +692,7 @@ function SettingsContent() {
                 Your Coach Profile
               </h2>
               <p className="text-sm text-text-muted mb-6">
-                How your coach adapts its style based on your interactions.
+                How your coach adapts its style based on your interactions. These shift as it learns from your conversations — you can flag any that feel off.
               </p>
 
               {/* Intervention Biases */}
@@ -775,23 +812,6 @@ function SettingsContent() {
               </div>
             </section>
           )}
-
-          {/* Save button */}
-          <motion.button
-            onClick={handleSave}
-            disabled={saving}
-            whileTap={{ scale: 0.98 }}
-            className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-6 py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
-          >
-            {saving ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : saved ? (
-              <Check className="h-4 w-4" />
-            ) : (
-              <Save className="h-4 w-4" />
-            )}
-            {saving ? "Saving..." : saved ? "Saved!" : "Save Changes"}
-          </motion.button>
 
           {/* ─── TD-006: DATA MANAGEMENT ─── */}
           <section className="mt-10 rounded-xl border border-surface-300 bg-surface-50 p-6">

@@ -163,6 +163,7 @@ interface ChatWindowProps {
   isLoading: boolean;
   streamingContent?: string;
   onSendMessage: (message: string) => void;
+  userId?: string;
 }
 
 export default function ChatWindow({
@@ -170,8 +171,10 @@ export default function ChatWindow({
   isLoading,
   streamingContent = "",
   onSendMessage,
+  userId,
 }: ChatWindowProps) {
   const [input, setInput] = useState("");
+  const [draftRestored, setDraftRestored] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -185,15 +188,39 @@ export default function ChatWindow({
     inputRef.current?.focus();
   }, []);
 
+  // Restore draft on mount — runs once after ChatWindow mounts (userId is stable by then)
+  useEffect(() => {
+    const key = userId ? `mastery_chat_draft_${userId}` : "mastery_chat_draft_anon";
+    const saved = localStorage.getItem(key);
+    if (saved) {
+      setInput(saved);
+      setDraftRestored(true);
+      setTimeout(() => setDraftRestored(false), 2500);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Persist draft on input change
+  useEffect(() => {
+    const key = userId ? `mastery_chat_draft_${userId}` : "mastery_chat_draft_anon";
+    if (input) {
+      localStorage.setItem(key, input);
+    } else {
+      localStorage.removeItem(key);
+    }
+  }, [input, userId]);
+
   const handleSubmit = useCallback(
     (e?: React.FormEvent) => {
       e?.preventDefault();
       const trimmed = input.trim();
       if (!trimmed || isLoading) return;
+      const key = userId ? `mastery_chat_draft_${userId}` : "mastery_chat_draft_anon";
+      localStorage.removeItem(key);
       onSendMessage(trimmed);
       setInput("");
     },
-    [input, isLoading, onSendMessage]
+    [input, isLoading, onSendMessage, userId]
   );
 
   // Handle Enter key (Shift+Enter for newline)
@@ -293,6 +320,11 @@ export default function ChatWindow({
             </svg>
           </button>
         </div>
+        {draftRestored && (
+          <p style={{ fontSize: "0.7rem", color: "var(--text-hint)", paddingLeft: "0.5rem", marginTop: "0.2rem" }}>
+            Draft restored
+          </p>
+        )}
         <p className="chat-disclaimer">
           Mastery Coach is AI-powered. It&apos;s not a licensed therapist, lawyer, or financial advisor.
         </p>

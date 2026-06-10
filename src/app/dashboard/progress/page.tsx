@@ -18,7 +18,7 @@
 import { useUser } from "@/hooks/useUser";
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Loader2, Trophy, CheckCircle2, Repeat, Star, TrendingUp } from "lucide-react";
+import { Loader2, Trophy, CheckCircle2, Repeat, Star, TrendingUp, Lock } from "lucide-react";
 import Link from "next/link";
 
 // ─── Types ───────────────────────────────────────────────────────────────
@@ -192,6 +192,25 @@ export default function ProgressPage() {
     );
   }
 
+  // Derive milestone unlock states from fetched timeline data
+  const hasJourneyStarted = items.some(i => i.type === "milestone");
+  const hasFirstCommitment = items.some(i => i.type === "commitment");
+  const hasFirstWin = items.some(i => i.type === "win");
+  const hasFirstPattern = items.some(i => i.type === "pattern");
+  const winCount = items.filter(i => i.type === "win").length;
+  const commitmentCount = items.filter(i => i.type === "commitment").length;
+  const patternCount = items.filter(i => i.type === "pattern").length;
+
+  const milestonePath = [
+    { id: "started", label: "Started journey", icon: Star, unlocked: hasJourneyStarted },
+    { id: "first-commitment", label: "First commitment", icon: CheckCircle2, unlocked: hasFirstCommitment },
+    { id: "first-win", label: "First win", icon: Trophy, unlocked: hasFirstWin },
+    { id: "first-pattern", label: "First pattern", icon: Repeat, unlocked: hasFirstPattern },
+    { id: "3-patterns", label: "3 patterns identified", icon: Repeat, unlocked: patternCount >= 3 },
+    { id: "5-wins", label: "5 wins logged", icon: Trophy, unlocked: winCount >= 5 },
+    { id: "10-commitments", label: "10 commitments", icon: CheckCircle2, unlocked: commitmentCount >= 10 },
+  ];
+
   return (
     <div className="db-page">
       <div className="db-page__inner">
@@ -201,14 +220,13 @@ export default function ProgressPage() {
             <div>
               <h1 className="db-header__title">Progress</h1>
               <p className="db-header__subtitle">
-                Your coaching journey — wins, completed commitments, and
-                patterns discovered
+                Your coaching journey, visualized — wins, breakthroughs, and patterns your coach has recognized. More appear as you keep talking.
               </p>
             </div>
 
             {items.length > 0 && (
               <div className="db-stat-chip">
-                <span className="db-stat-chip__label">Milestones</span>
+                <span className="db-stat-chip__label">Logged</span>
                 <span className="db-stat-chip__value">{items.length}</span>
               </div>
             )}
@@ -231,50 +249,82 @@ export default function ProgressPage() {
               </Link>
             </div>
           ) : (
-            /* Timeline */
-            <div className="pg-timeline">
-              {items.map((item) => {
-                const config = TYPE_CONFIG[item.type];
-                const Icon = config.icon;
-
-                return (
-                  <div key={item.id} className="pg-timeline__item">
-                    {/* Dot */}
-                    <div className={`pg-timeline__dot ${config.dotClass}`}>
+            <>
+              {/* Journey milestone path — shows locked/unlocked forward progress */}
+              <div style={{ marginBottom: "1.5rem" }}>
+                <p style={{ fontSize: "0.7rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-hint)", marginBottom: "0.6rem" }}>
+                  Journey Milestones
+                </p>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
+                  {milestonePath.map(({ id, label, icon: Icon, unlocked }) => (
+                    <div
+                      key={id}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.3rem",
+                        padding: "0.3rem 0.65rem",
+                        borderRadius: "100px",
+                        fontSize: "0.72rem",
+                        fontWeight: 500,
+                        opacity: unlocked ? 1 : 0.38,
+                        background: unlocked ? "var(--emerald-glow)" : "var(--color-surface-100)",
+                        color: unlocked ? "var(--success-hex)" : "var(--text-hint)",
+                      }}
+                    >
                       <Icon size={11} />
+                      {label}
+                      {!unlocked && <Lock size={9} style={{ opacity: 0.7, marginLeft: "0.1rem" }} />}
                     </div>
+                  ))}
+                </div>
+              </div>
 
-                    {/* Card */}
-                    <div className="pg-timeline__card">
-                      <span
-                        className={`pg-timeline__type ${config.typeClass}`}
-                      >
-                        {config.label}
-                      </span>
-                      <div className="pg-timeline__name">{item.title}</div>
-                      {item.description && (
-                        <div className="pg-timeline__desc">
-                          {item.description}
-                        </div>
-                      )}
-                      <div className="pg-timeline__footer">
-                        <span className="pg-timeline__date">
-                          {formatTimelineDate(item.timestamp)}
+              {/* Timeline */}
+              <div className="pg-timeline">
+                {items.map((item) => {
+                  const config = TYPE_CONFIG[item.type];
+                  const Icon = config.icon;
+
+                  return (
+                    <div key={item.id} className="pg-timeline__item">
+                      {/* Dot */}
+                      <div className={`pg-timeline__dot ${config.dotClass}`}>
+                        <Icon size={11} />
+                      </div>
+
+                      {/* Card */}
+                      <div className="pg-timeline__card">
+                        <span
+                          className={`pg-timeline__type ${config.typeClass}`}
+                        >
+                          {config.label}
                         </span>
-                        {item.sourceMessageId && (
-                          <Link
-                            href="/coachapp/dashboard/chat"
-                            className="pg-timeline__link"
-                          >
-                            View conversation →
-                          </Link>
+                        <div className="pg-timeline__name">{item.title}</div>
+                        {item.description && (
+                          <div className="pg-timeline__desc">
+                            {item.description}
+                          </div>
                         )}
+                        <div className="pg-timeline__footer">
+                          <span className="pg-timeline__date">
+                            {formatTimelineDate(item.timestamp)}
+                          </span>
+                          {item.sourceMessageId && (
+                            <Link
+                              href="/coachapp/dashboard/chat"
+                              className="pg-timeline__link"
+                            >
+                              View conversation →
+                            </Link>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            </>
           )}
         </div>
       </div>

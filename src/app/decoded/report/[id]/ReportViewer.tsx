@@ -696,6 +696,27 @@ export default function ReportViewer({ report: initialReport, scores, sharedOwne
           archetypeTagline={report.archetype_tagline}
         />
 
+        {/* Coach learning note — sets expectation that the coach grows beyond the static report */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: '0.75rem',
+          margin: '1.5rem 0',
+          padding: '1rem 1.25rem',
+          borderRadius: 'var(--radius-md)',
+          background: 'rgba(96, 99, 238, 0.06)',
+          border: '1px solid rgba(96, 99, 238, 0.15)',
+          fontSize: '0.8125rem',
+          color: 'var(--color-text-secondary)',
+          lineHeight: 1.6,
+        }}>
+          <MessageSquare size={16} style={{ color: 'var(--color-primary)', flexShrink: 0, marginTop: '0.125rem' }} />
+          <span>
+            <strong style={{ color: 'var(--color-text-primary)', fontWeight: 600 }}>This report is a snapshot, not your ceiling.</strong>{' '}
+            It reflects who you were when you took the assessment on {new Date(report.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}. Your Mastery Coach, however, is a living model — it learns from every conversation and deepens its understanding of you over time.
+          </span>
+        </div>
+
         {/* ═══════ NARRATIVE TRANSITION ═══════ */}
         <div className="narrative-divider">
           <div className="narrative-divider__label">Part II</div>
