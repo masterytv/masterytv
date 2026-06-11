@@ -17,6 +17,7 @@ import {
   X,
   Fingerprint,
   Lock,
+  ShieldCheck,
 } from "lucide-react";
 
 function getNavItems(reportId: string | null) {
@@ -166,6 +167,24 @@ export function Sidebar({ open, onClose, assessmentCompleted = false, reportId =
             <Share2 className="h-4.5 w-4.5 text-text-muted group-hover:text-text-secondary" />
             Share
           </button>
+
+          {/* Admin — only visible to admin/superadmin */}
+          {user?.role && ["admin", "superadmin"].includes(user.role) && (
+            <Link
+              href="/admin"
+              onClick={onClose}
+              className={`
+                group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all mt-2 border border-dashed
+                ${pathname.startsWith("/admin")
+                  ? "bg-[rgba(96,99,238,0.1)] text-[#a3a6ff] border-[rgba(96,99,238,0.3)]"
+                  : "text-text-muted border-surface-300 hover:bg-surface-200 hover:text-text-primary hover:border-surface-400"
+                }
+              `}
+            >
+              <ShieldCheck className={`h-4.5 w-4.5 ${pathname.startsWith("/admin") ? "text-[#a3a6ff]" : "text-text-muted/60 group-hover:text-text-muted"}`} />
+              Admin
+            </Link>
+          )}
         </nav>
 
         {/* Tier badge */}
