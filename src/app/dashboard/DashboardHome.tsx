@@ -133,7 +133,7 @@ export default function DashboardHome({
           <p className="mt-1 text-body-lg text-text-secondary">
             {state === "none" && "Ready to discover what makes you tick?"}
             {state === "in-progress" && "Pick up where you left off."}
-            {state === "completed" && "Your profile is ready. Explore your results."}
+            {state === "completed" && "Your profile is ready. Start a conversation with your coach."}
           </p>
         </motion.div>
 
