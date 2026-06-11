@@ -1,6 +1,7 @@
 /**
  * LLM client for Edge Functions.
- * Primary: GPT-4o (cost-effective). Fallback: Claude Sonnet (reliability).
+ * Primary: GPT-4o-mini ($0.15/$0.60 per MTok — 20x cheaper than Sonnet).
+ * Fallback: Claude Sonnet (reliability / complex tool calls).
  *
  * Public API is unchanged so all callers (coach, channel-router, crons, etc.)
  * keep working without modification:
@@ -9,14 +10,14 @@
  *   extractText()
  *   calculateCost()
  *
- * Internally, GPT-4o is called first. On any error (network, quota, 5xx),
+ * Internally, GPT-4o-mini is called first. On any error (network, quota, 5xx),
  * Claude Sonnet is used as the fallback. Tool definitions are translated
  * between Anthropic and OpenAI formats transparently.
  */
 
 // ─── MODELS ──────────────────────────────────────────────────────────────
 
-const GPT4O_MODEL = "gpt-4o";
+const GPT4O_MODEL = "gpt-4o-mini";
 const CLAUDE_MODEL = "claude-sonnet-4-6";
 
 const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
@@ -490,8 +491,8 @@ export function extractText(response: AnthropicResponse): string {
 
 /**
  * Calculates approximate cost for a call.
- * GPT-4o: $2.50/MTok input, $10/MTok output
- * Claude Sonnet: $3/MTok input, $15/MTok output
+ * GPT-4o-mini: $0.15/MTok input, $0.60/MTok output
+ * Claude Sonnet (fallback): $3/MTok input, $15/MTok output
  */
 export function calculateCost(
   usage: AnthropicResponse["usage"],
@@ -501,6 +502,6 @@ export function calculateCost(
     // Claude Sonnet rates
     return (usage.input_tokens / 1_000_000) * 3 + (usage.output_tokens / 1_000_000) * 15;
   }
-  // GPT-4o rates
-  return (usage.input_tokens / 1_000_000) * 2.5 + (usage.output_tokens / 1_000_000) * 10;
+  // GPT-4o-mini rates
+  return (usage.input_tokens / 1_000_000) * 0.15 + (usage.output_tokens / 1_000_000) * 0.60;
 }
