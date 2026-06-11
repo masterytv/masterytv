@@ -89,6 +89,7 @@ export default function DashboardLayout({
         <Topbar
           userName={user?.name ?? null}
           onMenuClick={() => setSidebarOpen(true)}
+          userRole={user?.role}
         />
 
         {/* Page content — each page controls its own padding/container */}
