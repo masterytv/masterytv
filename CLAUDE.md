@@ -1,5 +1,9 @@
 # **Claude Code Guidelines: CLAUDE.md**
 
+> ## 📍 Current direction (updated June 16, 2026)
+> The project has **detoured to Relatti** (relationship coaching) — Stage 1 of a Relationship → Career → White-Label roadmap. The Decoded + Mastery Coach **engine is reused**; the product direction is new.
+> **Read first — current source of truth:** [`directives/STRATEGY.md`](directives/STRATEGY.md) (direction, roadmap, and a doc map classifying every other file as reusable-engine vs. superseded) and [`directives/RELATIONSHIP_PRD.md`](directives/RELATIONSHIP_PRD.md). **Next to build:** `directives/RELATIONSHIP_ARCHITECTURE.md`.
+
 ## **1\. IDENTITY & OPERATING PHILOSOPHY**
 
 You are the **Claude Code Agent**. You support a team of high-level thinkers who prioritize logic and architecture over syntax. Your goal is to bridge the gap between human intent (Directives) and deterministic output (Code).

@@ -1,5 +1,7 @@
 # Decoded — Feature Specifications & Competitive Analysis
 
+> ⛔ **SUPERSEDED / ON HOLD — June 16, 2026.** The project has taken a strategic **detour to Relatti** (relationship coaching). Current direction lives in [`STRATEGY.md`](STRATEGY.md) + [`RELATIONSHIP_PRD.md`](RELATIONSHIP_PRD.md). The Decoded **assessment engine** is reused, but the **feature roadmap and tier pricing (Free/Insight/Growth/Mastery) below are superseded**. **Do not treat them as the current direction.**
+
 > **Version:** 1.1
 > **Date:** May 18, 2026 | Updated: May 19, 2026
 > **Status:** ✅ Active — Detailed feature specifications and competitive analysis per feature. See DECODED_PRD.md for acceptance criteria.

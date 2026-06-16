@@ -17,6 +17,12 @@
 
 import { createSupabaseClient } from "./supabase.ts";
 import { generateEmbedding, searchMemoryFacts } from "./embeddings.ts";
+import {
+  resolveDyadContext,
+  buildDyadCoachLayer,
+  buildMediatorPersona,
+  type DyadContext,
+} from "./dyad-context.ts";
 import type { PromptDebugTrace } from "./debug-types.ts";
 
 // Re-export for consumers that need the trace type
@@ -691,8 +697,23 @@ export async function assemblePrompt(
     }
   }
 
-  // ── Build Shared Relationship Profiles layer (Layer 4.6 — S0.5) ──
+  // ── Build Relationship Dyad layer (Layer 4.6) ──
+  // E4: prefer the engagement spine (flagged); else legacy decoded_invites fan-out.
   let relationshipLayer = "";
+  let mediatorPersona = "";
+  let dyad: DyadContext | null = null;
+  if ((Deno.env.get("RELATTI_DYAD_ENGINE") ?? "off").toLowerCase() === "on") {
+    try {
+      dyad = await resolveDyadContext(userId);
+    } catch (e) {
+      console.error("[prompt-assembler] Dyad context resolve failed:", (e as Error).message);
+    }
+  }
+  if (dyad) {
+    relationshipLayer = buildDyadCoachLayer(dyad);
+    mediatorPersona = buildMediatorPersona(dyad);
+    console.log(`[prompt-assembler] Dyad engine ON — engagement ${dyad.engagementId} (partner share: ${dyad.partnerShareLevel})`);
+  } else {
   try {
     // Load invites where someone shared with THIS user's coach
     // Case 1: User is the inviter and recipient shared with inviter's coach
@@ -778,9 +799,11 @@ IMPORTANT ACCESS RULES:
   } catch (e) {
     console.error("[prompt-assembler] Relationship profiles load failed:", (e as Error).message);
   }
+  }
 
   const layers: string[] = [
     buildBasePersona(),                                      // Layer 1
+    mediatorPersona,                                         // Layer 1.5 (dyad mediator — empty unless dyad)
     buildChallengesLayer(challenges),                        // Layer 2
     buildInterventionSelector(profile, challenges),          // Layer 3
     user ? buildUserProfile(user) : "",                      // Layer 4

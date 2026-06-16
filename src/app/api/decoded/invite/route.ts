@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { syncEngagementForInvite } from '@/lib/decoded/sync-engagement';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -70,6 +71,9 @@ export async function POST(req: NextRequest) {
     }, { onConflict: 'inviter_id,recipient_email' })
       .select('id')
       .single();
+
+    // E3 dual-write: mirror the invite into the engagement spine (non-fatal).
+    await syncEngagementForInvite(inviteRow?.id);
 
     // Build the personalized invite landing page URL
     const inviteUrl = inviteRow?.id

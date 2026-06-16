@@ -1,5 +1,7 @@
 # MasteryTV Coach App — Phase 0: Discovery
 
+> ⛔ **SUPERSEDED / ON HOLD — June 16, 2026.** The project has taken a strategic **detour to Relatti** (relationship coaching). Current direction lives in [`STRATEGY.md`](STRATEGY.md) + [`RELATIONSHIP_PRD.md`](RELATIONSHIP_PRD.md). This document describes the **prior B2C "Mastery Coach + Decoded" direction**; it is **paused, not deleted** (the engine it relies on is reused). **Do not treat the plan, roadmap, pricing, or features below as the current direction.**
+
 > **Version:** 1.0
 > **Date:** March 30, 2026
 > **Status:** ✅ Complete — Gate 0 passed

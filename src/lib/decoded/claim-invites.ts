@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { syncEngagementForInvite } from './sync-engagement';
 
 /**
  * Claim any pending invites that match the user's email.
@@ -51,5 +52,13 @@ export async function claimPendingInvites(
     console.log(`[claimPendingInvites] Claimed ${data.length} invite(s) for ${userEmail}`);
   }
 
-  return data?.map((row) => row.id) ?? [];
+  const claimedIds = data?.map((row) => row.id) ?? [];
+
+  // E3 dual-write: a claim sets recipient_id/report — mirror each into the spine
+  // so the partner participant gets linked (non-fatal).
+  for (const id of claimedIds) {
+    await syncEngagementForInvite(id);
+  }
+
+  return claimedIds;
 }

@@ -1,5 +1,7 @@
 # Product Requirements Document — Decoded
 
+> ⛔ **SUPERSEDED / ON HOLD — June 16, 2026.** The project has taken a strategic **detour to Relatti** (relationship coaching). Current direction lives in [`STRATEGY.md`](STRATEGY.md) + [`RELATIONSHIP_PRD.md`](RELATIONSHIP_PRD.md). The Decoded **assessment engine** is reused, but the **B2C product direction, tiers, and pricing below are superseded**. **Do not treat the plan/pricing/features below as the current direction.**
+
 > **Author:** Thomas Wood + Antigravity Orchestrator
 > **Date:** May 18, 2026 | Updated: May 19, 2026
 > **Version:** 1.1

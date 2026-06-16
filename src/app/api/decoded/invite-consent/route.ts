@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { syncEngagementForInvite } from '@/lib/decoded/sync-engagement';
 
 type ShareLevel = 'none' | 'compatibility' | 'type_compatibility' | 'full';
 
@@ -102,6 +103,9 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Failed to revoke' }, { status: 500 });
       }
 
+      // E3 dual-write: propagate the revoke (share_level → 'none') to the spine.
+      await syncEngagementForInvite(inviteId);
+
       return NextResponse.json({ success: true, status: 'revoked' });
     }
 
@@ -156,6 +160,9 @@ export async function POST(req: NextRequest) {
     // Compatibility report is generated on-demand when either user visits
     // the compatibility page — the Edge Function (decoded-compatibility-report)
     // handles generation. No fire-and-forget needed here.
+
+    // E3 dual-write: propagate consent (share_level + status) to the spine.
+    await syncEngagementForInvite(inviteId);
 
     return NextResponse.json({
       success: true,

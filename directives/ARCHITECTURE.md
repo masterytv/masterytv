@@ -1,5 +1,7 @@
 # Architecture Document — Mastery Coach App
 
+> ⚠️ **PARTIALLY SUPERSEDED — June 16, 2026.** The **engine & tech stack** here (Next.js + Supabase + RLS + Vercel, the coach Edge Function, the assessment pipeline) are **still valid and reused**. The **product framing, roadmap, and GTM are superseded** by the detour to **Relatti** — see [`STRATEGY.md`](STRATEGY.md). New data-model work lives in `RELATIONSHIP_ARCHITECTURE.md` (to be written). Read this as **engine reference**, not current product direction.
+
 > **Author:** Thomas Wood + Antigravity Orchestrator
 > **Date:** March 30, 2026 (updated March 31, 2026)
 > **Version:** 1.2
