@@ -18,7 +18,6 @@ import {
   Heart,
   Users,
   MessageCircle,
-  Sparkles,
   ArrowRight,
   ShieldCheck,
   ClipboardList,
@@ -100,7 +99,6 @@ export default function RelattiLanding() {
             color: "var(--color-primary)",
           }}
         >
-          <Sparkles className="h-3.5 w-3.5" />
           A coach that knows both of you
         </span>
 

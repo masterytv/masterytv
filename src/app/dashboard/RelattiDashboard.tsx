@@ -15,7 +15,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Heart, MessageCircle, Sparkles, ClipboardList, UserPlus, Copy, Check } from "lucide-react";
+import { Heart, MessageCircle, FileText, ClipboardList, UserPlus, Copy, Check } from "lucide-react";
 import type { DashboardDyad } from "@/lib/relatti/dashboard-dyad";
 import DyadPanel from "@/components/relatti/DyadPanel";
 
@@ -87,7 +87,7 @@ export default function RelattiDashboard({ userName, state, reportId, dyad = nul
               href={reportId ? `/decoded/report/${reportId}` : "/dashboard"}
               className="group rounded-2xl bg-surface-50 p-6 transition-colors hover:bg-surface-100"
             >
-              <Sparkles className="h-6 w-6" style={{ color: "var(--color-primary)" }} />
+              <FileText className="h-6 w-6" style={{ color: "var(--color-primary)" }} />
               <h3 className="mt-3 font-display text-lg font-semibold text-text-primary">
                 Your archetype &amp; Blueprint
               </h3>

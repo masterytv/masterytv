@@ -14,7 +14,7 @@
  */
 
 import Link from "next/link";
-import { Heart, MessageCircle, Sparkles, Clock, Check } from "lucide-react";
+import { Heart, MessageCircle, FileText, Clock, Check } from "lucide-react";
 import type { DashboardDyad } from "@/lib/relatti/dashboard-dyad";
 
 const STATUS_COPY: Record<string, string> = {
@@ -85,7 +85,7 @@ export default function DyadPanel({ dyad }: { dyad: DashboardDyad }) {
               href="/dashboard/compatibility"
               className="inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-medium text-text-secondary transition-colors hover:text-text-primary"
             >
-              <Sparkles className="h-4 w-4" />
+              <FileText className="h-4 w-4" />
               View your Blueprint
             </Link>
           )}
