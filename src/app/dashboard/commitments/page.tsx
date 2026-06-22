@@ -248,7 +248,7 @@ export default function CommitmentsPage() {
                     : "Missed deadlines will appear here for reflection."}
               </p>
               {activeTab === "active" && (
-                <a href="/coachapp/dashboard/chat" className="db-empty__cta">
+                <a href="/dashboard/chat" className="db-empty__cta">
                   Start a Coaching Session →
                 </a>
               )}

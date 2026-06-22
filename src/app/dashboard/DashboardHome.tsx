@@ -104,7 +104,7 @@ export default function DashboardHome({
         { onConflict: "user_id" }
       );
     }
-    router.push("/coachapp/onboarding?redo=1");
+    router.push("/onboarding?redo=1");
   }
 
   function handleCopyLink() {

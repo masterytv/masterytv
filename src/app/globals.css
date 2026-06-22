@@ -1,7 +1,6 @@
 @import "tailwindcss";
-@import "./coachapp/dashboard/chat/chat.css";
-@import "./coachapp/dashboard/dashboard.css";
-@import "./coachapp/admin/admin.css";
+@import "./dashboard/chat/chat.css";
+@import "./dashboard/dashboard.css";
 @import "./landing.css";
 @import "./decoded/landing/decoded-landing.css";
 @import "./decoded/landing-noir/decoded-noir.css";

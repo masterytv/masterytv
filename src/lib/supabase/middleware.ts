@@ -69,6 +69,18 @@ export async function updateSession(request: NextRequest) {
     url.pathname = "/decoded";
     return NextResponse.redirect(url);
   }
+  // /coachapp/onboarding relocated to /onboarding (PA1). Keeps search (?redo=1).
+  if (pathname.startsWith("/coachapp/onboarding")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/onboarding";
+    return NextResponse.redirect(url);
+  }
+  // /coachapp/admin/* consolidated into /admin (PA1: crisis + frameworks migrated).
+  if (pathname.startsWith("/coachapp/admin")) {
+    const url = request.nextUrl.clone();
+    url.pathname = pathname.replace("/coachapp/admin", "/admin");
+    return NextResponse.redirect(url);
+  }
   if (pathname === "/coachapp" || pathname === "/coachapp/") {
     const url = request.nextUrl.clone();
     url.pathname = user ? "/dashboard" : "/decoded";

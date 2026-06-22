@@ -25,7 +25,7 @@ export default function LegalLayout({
           <span className="text-xl font-semibold tracking-tight">Mastery Coach</span>
         </Link>
         <Link
-          href="/coachapp/login"
+          href="/decoded"
           className="rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-5 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity"
         >
           Get Started
