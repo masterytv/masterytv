@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { claimPendingInvites } from "@/lib/decoded/claim-invites";
+import { getActiveDyad } from "@/lib/relatti/dashboard-dyad";
 import DashboardHome from "./DashboardHome";
 
 export const metadata: Metadata = {
@@ -164,8 +165,12 @@ export default async function DashboardPage() {
     inviterEmail: inv.inviter_email || "",
   }));
 
+  // PB2: resolve the user's active relationship dyad (null for solo users).
+  const dyad = await getActiveDyad(supabase, user.id);
+
   return (
     <DashboardHome
+      dyad={dyad}
       userName={user.user_metadata?.display_name || user.user_metadata?.full_name || user.email?.split("@")[0] || "there"}
       state={state}
       answeredCount={answeredCount}
