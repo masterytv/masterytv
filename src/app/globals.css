@@ -100,7 +100,7 @@
    NOTE: the Relatti palette below is PROVISIONAL (warm rose) pending a
    Relatti brand spec in BRAND.md. The mechanism is the deliverable here.
    =========================================================== */
-:root[data-brand="relatti"] {
+[data-brand="relatti"] {
   /* Warm rose ramp (hue ~15) vs. MasteryTV indigo (hue 270) */
   --color-brand-50: oklch(0.95 0.02 15);
   --color-brand-100: oklch(0.90 0.04 15);

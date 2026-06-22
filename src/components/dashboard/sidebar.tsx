@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { useUser } from "@/hooks/useUser";
 import { useBrandModules } from "@/hooks/useBrandModules";
+import { useBrand } from "@/hooks/useBrand";
 import type { ModuleId } from "@/lib/platform/modules";
 import {
   Home,
@@ -67,6 +68,10 @@ export function Sidebar({ open, onClose, assessmentCompleted = false, reportId =
   const pathname = usePathname();
   const { user } = useUser();
   const enabledModules = useBrandModules();
+  const brand = useBrand();
+  const isRelatti = brand.id === "relatti";
+  const BrandIcon = isRelatti ? Heart : Fingerprint;
+  const brandLabel = isRelatti ? "Relatti" : "Mastery";
 
   // Map decoded_tier to display label
   const tierLabels: Record<string, string> = {
@@ -102,11 +107,14 @@ export function Sidebar({ open, onClose, assessmentCompleted = false, reportId =
         {/* Brand header */}
         <div className="flex h-16 items-center justify-between px-6">
           <Link href="/dashboard" className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[rgba(96,99,238,0.12)]">
-              <Fingerprint className="h-4 w-4 text-[#a3a6ff]" />
+            <div
+              className="flex h-8 w-8 items-center justify-center rounded-lg"
+              style={{ background: "color-mix(in oklch, var(--color-primary-container) 14%, transparent)" }}
+            >
+              <BrandIcon className="h-4 w-4" style={{ color: "var(--color-primary)" }} />
             </div>
             <span className="text-lg font-semibold tracking-tight text-text-primary">
-              Mastery
+              {brandLabel}
             </span>
           </Link>
           <button
@@ -148,25 +156,27 @@ export function Sidebar({ open, onClose, assessmentCompleted = false, reportId =
                 onClick={onClose}
                 className={`
                   group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all
-                  ${
-                    isActive
-                      ? "bg-[rgba(96,99,238,0.1)] text-[#a3a6ff]"
-                      : "text-text-secondary hover:bg-surface-200 hover:text-text-primary"
-                  }
+                  ${isActive ? "" : "text-text-secondary hover:bg-surface-200 hover:text-text-primary"}
                 `}
+                style={
+                  isActive
+                    ? {
+                        background: "color-mix(in oklch, var(--color-primary) 10%, transparent)",
+                        color: "var(--color-primary)",
+                      }
+                    : undefined
+                }
               >
                 <item.icon
-                  className={`h-4.5 w-4.5 ${
-                    isActive
-                      ? "text-[#a3a6ff]"
-                      : "text-text-muted group-hover:text-text-secondary"
-                  }`}
+                  className={`h-4.5 w-4.5 ${isActive ? "" : "text-text-muted group-hover:text-text-secondary"}`}
+                  style={isActive ? { color: "var(--color-primary)" } : undefined}
                 />
                 {item.label}
                 {isActive && (
                   <motion.div
                     layoutId="sidebar-active"
-                    className="absolute left-0 h-8 w-0.5 rounded-r-full bg-[#a3a6ff]"
+                    className="absolute left-0 h-8 w-0.5 rounded-r-full"
+                    style={{ background: "var(--color-primary)" }}
                     transition={{ type: "spring", stiffness: 350, damping: 30 }}
                   />
                 )}
@@ -191,12 +201,24 @@ export function Sidebar({ open, onClose, assessmentCompleted = false, reportId =
               className={`
                 group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all mt-2 border border-dashed
                 ${pathname.startsWith("/admin")
-                  ? "bg-[rgba(96,99,238,0.1)] text-[#a3a6ff] border-[rgba(96,99,238,0.3)]"
+                  ? ""
                   : "text-text-muted border-surface-300 hover:bg-surface-200 hover:text-text-primary hover:border-surface-400"
                 }
               `}
+              style={
+                pathname.startsWith("/admin")
+                  ? {
+                      background: "color-mix(in oklch, var(--color-primary) 10%, transparent)",
+                      color: "var(--color-primary)",
+                      borderColor: "color-mix(in oklch, var(--color-primary) 30%, transparent)",
+                    }
+                  : undefined
+              }
             >
-              <ShieldCheck className={`h-4.5 w-4.5 ${pathname.startsWith("/admin") ? "text-[#a3a6ff]" : "text-text-muted/60 group-hover:text-text-muted"}`} />
+              <ShieldCheck
+                className={`h-4.5 w-4.5 ${pathname.startsWith("/admin") ? "" : "text-text-muted/60 group-hover:text-text-muted"}`}
+                style={pathname.startsWith("/admin") ? { color: "var(--color-primary)" } : undefined}
+              />
               Admin
             </Link>
           )}
