@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { resolveBrand } from "@/lib/platform/brand";
+import { resolveBrand, isBrandId } from "@/lib/platform/brand";
 
 /**
  * Unified auth middleware for Mastery.
@@ -47,11 +47,23 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // PA2: resolve the brand for this host and expose it (informational header).
-  // Defaults to MasteryTV for every current host — no behavior change. Server
-  // components resolve the brand from the Host header via getBrand().
-  const brand = resolveBrand(request.headers.get("host"));
-  supabaseResponse.headers.set("x-brand", brand.id);
+  // PA2 + preview override: resolve the brand for this request.
+  // Precedence: ?brand= override (preview on any host) > brand cookie > host.
+  // The override persists via a cookie so previewing relatti on localhost/
+  // staging survives navigation. Production uses the host (no param/cookie).
+  const paramBrand = request.nextUrl.searchParams.get("brand");
+  const cookieBrand = request.cookies.get("brand")?.value;
+  let brandId = resolveBrand(request.headers.get("host")).id;
+  if (isBrandId(cookieBrand)) brandId = cookieBrand;
+  if (isBrandId(paramBrand)) {
+    brandId = paramBrand;
+    supabaseResponse.cookies.set("brand", paramBrand, {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 30,
+      sameSite: "lax",
+    });
+  }
+  supabaseResponse.headers.set("x-brand", brandId);
 
   const pathname = request.nextUrl.pathname;
 

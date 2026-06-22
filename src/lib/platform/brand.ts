@@ -56,6 +56,11 @@ export const BRANDS: Record<BrandId, Brand> = {
 
 export const DEFAULT_BRAND_ID: BrandId = "masterytv";
 
+/** Type guard for a known brand id (used for ?brand= override + cookie). */
+export function isBrandId(x?: string | null): x is BrandId {
+  return !!x && x in BRANDS;
+}
+
 /** Pure host -> brand lookup. Unknown / missing host falls back to the default. */
 export function resolveBrand(host?: string | null): Brand {
   if (!host) return BRANDS[DEFAULT_BRAND_ID];

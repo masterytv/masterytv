@@ -74,15 +74,23 @@ export default function RootLayout({
                   document.documentElement.setAttribute('data-theme', resolved);
                   document.documentElement.className = resolved;
                 } catch(e) {}
-                // PA3/PB1: brand by host OR Relatti route (FOUC-free, keeps pages
-                // static). Relatti paths let the brand preview before relatti.com
-                // DNS is pointed. Mirrors resolveBrand() in lib/platform/brand.ts.
+                // PA3/PB1: brand resolution (FOUC-free, keeps pages static).
+                // Precedence: ?brand= override > brand cookie > Relatti host/route
+                // > masterytv. Mirrors middleware + resolveBrand(); the override
+                // lets relatti preview on localhost/staging without the domain.
                 try {
                   var host = window.location.hostname;
                   var path = window.location.pathname;
+                  var urlBrand = new URLSearchParams(window.location.search).get('brand');
+                  var ck = document.cookie.match(/(?:^|; )brand=([^;]+)/);
+                  var cookieBrand = ck ? decodeURIComponent(ck[1]) : null;
                   var relattiHost = (host === 'relatti.com' || host === 'www.relatti.com' || host === 'staging.relatti.com');
                   var relattiPath = /^\/(relatti|couples|engaged|premarital)(\/|$)/.test(path);
-                  document.documentElement.setAttribute('data-brand', (relattiHost || relattiPath) ? 'relatti' : 'masterytv');
+                  var hostBrand = (relattiHost || relattiPath) ? 'relatti' : 'masterytv';
+                  var brand = (urlBrand === 'relatti' || urlBrand === 'masterytv') ? urlBrand
+                    : (cookieBrand === 'relatti' || cookieBrand === 'masterytv') ? cookieBrand
+                    : hostBrand;
+                  document.documentElement.setAttribute('data-brand', brand);
                 } catch(e) {}
               })();
             `,

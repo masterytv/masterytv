@@ -3,7 +3,10 @@ import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { claimPendingInvites } from "@/lib/decoded/claim-invites";
 import { getActiveDyad } from "@/lib/relatti/dashboard-dyad";
+import { getBrand } from "@/lib/platform/brand.server";
+import { isBrandId } from "@/lib/platform/brand";
 import DashboardHome from "./DashboardHome";
+import RelattiDashboard from "./RelattiDashboard";
 
 export const metadata: Metadata = {
   title: "Dashboard — Mastery",
@@ -20,7 +23,11 @@ export const metadata: Metadata = {
  *   2. In-progress → show "Continue Assessment" with progress info
  *   3. Completed → show Report, Coach, Share, Retake cards
  */
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ brand?: string }>;
+}) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -168,10 +175,33 @@ export default async function DashboardPage() {
   // PB2: resolve the user's active relationship dyad (null for solo users).
   const dyad = await getActiveDyad(supabase, user.id);
 
+  const userName =
+    user.user_metadata?.display_name ||
+    user.user_metadata?.full_name ||
+    user.email?.split("@")[0] ||
+    "there";
+
+  // PB2: pick the surface by active brand. ?brand= override (preview on any
+  // host) wins on the first request; otherwise cookie/host via getBrand().
+  const params = await searchParams;
+  const brandId = isBrandId(params.brand) ? params.brand : (await getBrand()).id;
+
+  if (brandId === "relatti") {
+    return (
+      <RelattiDashboard
+        userName={userName}
+        state={state}
+        reportId={reportId}
+        dyad={dyad}
+        inviteUrl={inviteUrl}
+      />
+    );
+  }
+
   return (
     <DashboardHome
       dyad={dyad}
-      userName={user.user_metadata?.display_name || user.user_metadata?.full_name || user.email?.split("@")[0] || "there"}
+      userName={userName}
       state={state}
       answeredCount={answeredCount}
       totalQuestions={totalQuestions}
