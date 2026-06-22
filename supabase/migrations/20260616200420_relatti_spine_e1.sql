@@ -3,9 +3,10 @@
 -- =====================================================================
 -- Source of truth : directives/RELATIONSHIP_ARCHITECTURE.md §5 (Gate-2 approved)
 -- Sprint          : directives/RELATIONSHIP_SPRINT.md → E1.1–E1.6
--- Status          : DRAFT — NOT applied to production. Test locally:
---                     supabase start && supabase db reset
---                   (replays the baseline + this migration on a fresh DB).
+-- Status          : APPLIED TO CLOUD 2026-06-16 (masterytv-website / lwmadssysqcwbsoiaokc).
+--                   Founder chose direct-to-cloud (no dev branch / no local Docker);
+--                   changes are additive + idempotent + reversible (clean FK pre-flight).
+--                   To replay on a fresh local DB: supabase start && supabase db reset.
 --
 -- Properties:
 --   • Additive / zero-downtime — only CREATE TABLE + nullable ALTER ADD COLUMN.
