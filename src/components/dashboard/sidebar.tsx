@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { useUser } from "@/hooks/useUser";
+import { useBrandModules } from "@/hooks/useBrandModules";
+import type { ModuleId } from "@/lib/platform/modules";
 import {
   Home,
   ClipboardCheck,
@@ -20,7 +22,16 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
-function getNavItems(reportId: string | null) {
+// `module` tags a gatable capability (PA4). Items without one are core and
+// always shown. Items whose module isn't enabled for the active brand are hidden.
+function getNavItems(reportId: string | null): Array<{
+  href: string;
+  label: string;
+  icon: typeof Home;
+  exact?: boolean;
+  requiresAssessment?: boolean;
+  module?: ModuleId;
+}> {
   return [
     { href: "/dashboard", label: "Home", icon: Home, exact: true },
     {
@@ -30,14 +41,15 @@ function getNavItems(reportId: string | null) {
       requiresAssessment: true,
     },
     { href: "/dashboard/chat", label: "Coach", icon: MessageSquare, requiresAssessment: true },
-    { href: "/dashboard/compatibility", label: "Compatibility", icon: Heart, requiresAssessment: true },
-    { href: "/dashboard/commitments", label: "Commitments", icon: Target, requiresAssessment: true },
-    { href: "/dashboard/progress", label: "Progress", icon: TrendingUp, requiresAssessment: true },
+    { href: "/dashboard/compatibility", label: "Compatibility", icon: Heart, requiresAssessment: true, module: "compatibility" },
+    { href: "/dashboard/commitments", label: "Commitments", icon: Target, requiresAssessment: true, module: "commitments" },
+    { href: "/dashboard/progress", label: "Progress", icon: TrendingUp, requiresAssessment: true, module: "progress" },
     {
       href: "/dashboard/coaching-letter",
       label: "Coaching Letter",
       icon: FileText,
       requiresAssessment: true,
+      module: "coaching_letters",
     },
     { href: "/dashboard/settings", label: "Settings", icon: Settings },
   ];
@@ -54,6 +66,7 @@ interface SidebarProps {
 export function Sidebar({ open, onClose, assessmentCompleted = false, reportId = null, onShareClick }: SidebarProps) {
   const pathname = usePathname();
   const { user } = useUser();
+  const enabledModules = useBrandModules();
 
   // Map decoded_tier to display label
   const tierLabels: Record<string, string> = {
@@ -106,7 +119,9 @@ export function Sidebar({ open, onClose, assessmentCompleted = false, reportId =
 
         {/* Navigation */}
         <nav className="mt-2 flex-1 space-y-1 px-3">
-          {getNavItems(reportId).map((item) => {
+          {getNavItems(reportId)
+            .filter((item) => !item.module || enabledModules.has(item.module))
+            .map((item) => {
             const isActive = item.exact
               ? pathname === item.href
               : pathname.startsWith(item.href);
