@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=$(jq -r '.tool_input.file_path // \"\"'); case \"$f\" in *.tsx|*.jsx|*.css) printf \"%s\" '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"BRAND.md design rules (full doc: directives/BRAND.md — read it before designing if you have not this session). (1) The Sparkles Lucide icon and ANY sparkle/magic-star is BANNED — absolute zero tolerance (BRAND.md section 14, the single most important visual rule). (2) Lucide React is the ONLY approved icon library — no emoji, no clipart. (3) Use semantic CSS tokens / custom properties var(--color-*), never hardcoded hex. (4) Both light AND dark mode must render correctly.\"}}' ;; esac",
+            "statusMessage": "Checking BRAND.md rules"
+          }
+        ]
+      }
+    ]
+  }
+}
