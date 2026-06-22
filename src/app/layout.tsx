@@ -45,7 +45,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="light" data-theme="light" suppressHydrationWarning>
+    <html lang="en" className="light" data-theme="light" data-brand="masterytv" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
@@ -73,6 +73,13 @@ export default function RootLayout({
                   }
                   document.documentElement.setAttribute('data-theme', resolved);
                   document.documentElement.className = resolved;
+                } catch(e) {}
+                // PA3: brand by host (FOUC-free, keeps pages static). Mirrors
+                // resolveBrand() in src/lib/platform/brand.ts — keep in sync.
+                try {
+                  var host = window.location.hostname;
+                  var brand = (host === 'relatti.com' || host === 'www.relatti.com' || host === 'staging.relatti.com') ? 'relatti' : 'masterytv';
+                  document.documentElement.setAttribute('data-brand', brand);
                 } catch(e) {}
               })();
             `,

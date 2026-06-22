@@ -87,6 +87,44 @@
 }
 
 /* ===========================================================
+   Brand theming (PA3 — PLATFORM_ARCHITECTURE.md §5)
+   The @theme block above is the DEFAULT brand (MasteryTV — indigo).
+   A brand is selected by data-brand on <html> (separate from data-theme,
+   which is light/dark). Each brand overrides only its IDENTITY tokens
+   (brand ramp + primary + glow); surfaces, text, radius, spacing and the
+   light/dark system are shared. This is the white-label mechanism (§5):
+   components keep using the same tokens — only the values change.
+   data-brand is set FOUC-free by the inline <head> script in layout.tsx,
+   so pages stay statically rendered (no server Host read).
+
+   NOTE: the Relatti palette below is PROVISIONAL (warm rose) pending a
+   Relatti brand spec in BRAND.md. The mechanism is the deliverable here.
+   =========================================================== */
+:root[data-brand="relatti"] {
+  /* Warm rose ramp (hue ~15) vs. MasteryTV indigo (hue 270) */
+  --color-brand-50: oklch(0.95 0.02 15);
+  --color-brand-100: oklch(0.90 0.04 15);
+  --color-brand-200: oklch(0.82 0.08 15);
+  --color-brand-300: oklch(0.72 0.13 15);
+  --color-brand-400: oklch(0.64 0.17 15);
+  --color-brand-500: oklch(0.56 0.19 15);
+  --color-brand-600: oklch(0.48 0.17 15);
+  --color-brand-700: oklch(0.40 0.15 15);
+  --color-brand-800: oklch(0.33 0.12 15);
+  --color-brand-900: oklch(0.26 0.09 15);
+  --color-brand-950: oklch(0.18 0.06 15);
+
+  --color-primary: #ff9db0;
+  --color-primary-container: #e75c79;
+  --color-primary-deep: #ff9db0;
+  --color-primary-darker: #c23e5b;
+  --color-primary-dim: #e75c79;
+
+  --color-info: #ff9db0;
+  --shadow-glow: 0 0 20px rgba(255, 157, 176, 0.15);
+}
+
+/* ===========================================================
    Semantic CSS Custom Properties (non-@theme)
    Dark mode defaults — "Midnight Executive"
    =========================================================== */
