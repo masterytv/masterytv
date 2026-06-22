@@ -1,12 +1,14 @@
 /**
  * CORS headers for Edge Functions.
- * Production: masterytv.com only.
+ * Production: masterytv.com (apex + www).
+ * Staging: staging.masterytv.com (shared Supabase project, separate Vercel deploy).
  * Development: also allows localhost.
  */
 
 const ALLOWED_ORIGINS = [
   "https://masterytv.com",
   "https://www.masterytv.com",
+  "https://staging.masterytv.com",
   "http://localhost:3000",
   "http://localhost:3001",
 ];
