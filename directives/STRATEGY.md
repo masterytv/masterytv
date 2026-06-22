@@ -108,7 +108,8 @@ The whole strategy hinges on **one polymorphic data spine** that serves all thre
 The repo predates this detour. Treat the existing docs as follows (each superseded doc also carries a banner at its top pointing back here):
 
 **🟢 Current (source of truth):**
-- `STRATEGY.md` (this doc), `RELATIONSHIP_PRD.md`, `RELATIONSHIP_ARCHITECTURE.md` (Phase 2 ✅ approved), `RELATIONSHIP_SPRINT.md` (Phase 3 draft, awaiting Gate 3)
+- `STRATEGY.md` (this doc), `RELATIONSHIP_PRD.md`, `RELATIONSHIP_ARCHITECTURE.md` (Phase 2 ✅ approved — the DB spine, LIVE), `RELATIONSHIP_SPRINT.md` (Phase 3 draft, awaiting Gate 3)
+- `PLATFORM_ARCHITECTURE.md` (Phase 2 ✅ approved June 22, 2026) — the **multi-vertical frontend + identity** layer on top of the spine: one modular app → many domains, verticals-as-config (5-layer model: workspace · program · surface · module · theme). Read this for how Relatti/career/white-label/future sites are built from one codebase. Build sequenced in `PLATFORM_SPRINT.md` (Phase 3 draft, awaiting Gate 3).
 
 **✅ Reusable engine reference (still valid — the engine is retained):**
 - `COACHING_BRAIN.md`, `COACHING_GUARDRAILS.md`
