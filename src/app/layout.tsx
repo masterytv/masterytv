@@ -74,12 +74,15 @@ export default function RootLayout({
                   document.documentElement.setAttribute('data-theme', resolved);
                   document.documentElement.className = resolved;
                 } catch(e) {}
-                // PA3: brand by host (FOUC-free, keeps pages static). Mirrors
-                // resolveBrand() in src/lib/platform/brand.ts — keep in sync.
+                // PA3/PB1: brand by host OR Relatti route (FOUC-free, keeps pages
+                // static). Relatti paths let the brand preview before relatti.com
+                // DNS is pointed. Mirrors resolveBrand() in lib/platform/brand.ts.
                 try {
                   var host = window.location.hostname;
-                  var brand = (host === 'relatti.com' || host === 'www.relatti.com' || host === 'staging.relatti.com') ? 'relatti' : 'masterytv';
-                  document.documentElement.setAttribute('data-brand', brand);
+                  var path = window.location.pathname;
+                  var relattiHost = (host === 'relatti.com' || host === 'www.relatti.com' || host === 'staging.relatti.com');
+                  var relattiPath = /^\/(relatti|couples|engaged|premarital)(\/|$)/.test(path);
+                  document.documentElement.setAttribute('data-brand', (relattiHost || relattiPath) ? 'relatti' : 'masterytv');
                 } catch(e) {}
               })();
             `,
