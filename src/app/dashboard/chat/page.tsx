@@ -21,6 +21,8 @@ import { sendMessageStream, loadConversationHistory, type ChatMessage, type Debu
 import { useUser } from "@/hooks/useUser";
 import { createClient } from "@/lib/supabase/client";
 import type { CoachVoiceId } from "@/lib/coach/voice-config";
+import { getActiveDyad, type DashboardDyad } from "@/lib/relatti/dashboard-dyad";
+import { Heart } from "lucide-react";
 
 // Lazy-load debug panel — only shipped to admin users who activate debug mode
 const DebugPanel = dynamic(() => import("@/components/debug/debug-panel"), {
@@ -50,6 +52,14 @@ function ChatPageInner() {
 
   // ── Voice style state ──
   const [activeVoiceId, setActiveVoiceId] = useState<CoachVoiceId | null>(null);
+
+  // ── Dyad context (PB2.2) — shows the couples-coach header when in a dyad ──
+  const [dyad, setDyad] = useState<DashboardDyad | null>(null);
+  useEffect(() => {
+    if (!user?.id) return;
+    const supabase = createClient();
+    getActiveDyad(supabase, user.id).then(setDyad).catch(() => {});
+  }, [user?.id]);
 
   const isAdmin = user?.is_admin === true;
 
@@ -244,8 +254,21 @@ function ChatPageInner() {
 
   return (
     <div style={{ position: "relative", height: "100%" }}>
-      {/* Chat header bar — voice selector */}
+      {/* Chat header bar — dyad indicator (PB2.2) + voice selector */}
       <div className="chat-header-bar">
+        {dyad && (
+          <span
+            className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium"
+            style={{
+              background: "color-mix(in oklch, var(--color-primary-container) 14%, transparent)",
+              color: "var(--color-primary)",
+            }}
+            title={`Coaching you and ${dyad.partnerName} as a couple`}
+          >
+            <Heart className="h-3.5 w-3.5" />
+            Couples coach · with {dyad.partnerName}
+          </span>
+        )}
         <CoachVoiceSelector
           activeVoiceId={activeVoiceId}
           onVoiceChanged={(voiceId) => setActiveVoiceId(voiceId)}
