@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { resolveBrand } from "@/lib/platform/brand";
 
 /**
  * Unified auth middleware for Mastery.
@@ -45,6 +46,12 @@ export async function updateSession(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  // PA2: resolve the brand for this host and expose it (informational header).
+  // Defaults to MasteryTV for every current host — no behavior change. Server
+  // components resolve the brand from the Host header via getBrand().
+  const brand = resolveBrand(request.headers.get("host"));
+  supabaseResponse.headers.set("x-brand", brand.id);
 
   const pathname = request.nextUrl.pathname;
 
