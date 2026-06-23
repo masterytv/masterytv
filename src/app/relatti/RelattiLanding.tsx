@@ -65,7 +65,23 @@ const STEPS = [
   },
 ];
 
-export default function RelattiLanding() {
+export interface LandingContent {
+  eyebrow: string;
+  headlineTop: string;
+  headlineAccent: string;
+  subhead: string;
+}
+
+const DEFAULT_CONTENT: LandingContent = {
+  eyebrow: "A coach that knows both of you",
+  headlineTop: "Stop having the same fight.",
+  headlineAccent: "Start having the last one.",
+  subhead:
+    "Not couples therapy. Not a journaling app. A relationship coach grounded in each partner’s real psychology — that mediates issues, runs gentle check-ins, and helps the moment a fight starts.",
+};
+
+export default function RelattiLanding({ content }: { content?: LandingContent }) {
+  const c = content ?? DEFAULT_CONTENT;
   return (
     <main className="min-h-screen bg-surface-0 text-text-primary font-sans">
       <FloatingThemeToggle />
@@ -99,19 +115,17 @@ export default function RelattiLanding() {
             color: "var(--color-primary)",
           }}
         >
-          A coach that knows both of you
+          {c.eyebrow}
         </span>
 
         <h1 className="font-display text-4xl font-bold leading-[1.1] tracking-tight sm:text-6xl">
-          Stop having the same fight.
+          {c.headlineTop}
           <br />
-          <span style={{ color: "var(--color-primary)" }}>Start having the last one.</span>
+          <span style={{ color: "var(--color-primary)" }}>{c.headlineAccent}</span>
         </h1>
 
         <p className="mx-auto mt-6 max-w-xl text-lg text-text-secondary">
-          Not couples therapy. Not a journaling app. A relationship coach grounded in
-          each partner&rsquo;s real psychology — that mediates issues, runs gentle
-          check-ins, and helps the moment a fight starts.
+          {c.subhead}
         </p>
 
         <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
