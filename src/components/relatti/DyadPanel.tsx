@@ -82,7 +82,7 @@ export default function DyadPanel({ dyad }: { dyad: DashboardDyad }) {
           </Link>
           {dyad.hasBlueprint && (
             <Link
-              href="/dashboard/compatibility"
+              href="/dashboard/blueprint"
               className="inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-medium text-text-secondary transition-colors hover:text-text-primary"
             >
               <FileText className="h-4 w-4" />

@@ -89,10 +89,10 @@ export default function RelattiDashboard({ userName, state, reportId, dyad = nul
             >
               <FileText className="h-6 w-6" style={{ color: "var(--color-primary)" }} />
               <h3 className="mt-3 font-display text-lg font-semibold text-text-primary">
-                Your archetype &amp; Blueprint
+                Your archetype
               </h3>
               <p className="mt-1 text-sm text-text-secondary">
-                Revisit who you are as a partner and your shared relationship dynamics.
+                Revisit who you are as a partner — your full personality report.
               </p>
             </Link>
           ) : (
