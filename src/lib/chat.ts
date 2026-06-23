@@ -110,6 +110,12 @@ export async function sendMessageStream(
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
+      // currentEvent MUST persist across reads: an SSE `event:`/`data:` pair can
+      // be split between two network chunks. Resetting it per-chunk dropped the
+      // event type (notably a missed `done`), leaving the UI stuck in loading
+      // (input disabled). doneCalled drives the safety net below.
+      let currentEvent = "";
+      let doneCalled = false;
 
       try {
         while (true) {
@@ -122,10 +128,9 @@ export async function sendMessageStream(
           const lines = buffer.split("\n");
           buffer = lines.pop() ?? "";
 
-          let currentEvent = "";
           for (const line of lines) {
             if (line.startsWith("event: ")) {
-              currentEvent = line.slice(7);
+              currentEvent = line.slice(7).trim();
             } else if (line.startsWith("data: ")) {
               const data = line.slice(6);
               try {
@@ -139,6 +144,7 @@ export async function sendMessageStream(
                     callbacks.onDelta(parsed.text);
                     break;
                   case "done":
+                    doneCalled = true;
                     callbacks.onDone(parsed);
                     break;
                   case "debug_summary":
@@ -154,6 +160,12 @@ export async function sendMessageStream(
               currentEvent = "";
             }
           }
+        }
+
+        // Safety net: the stream closed without a `done` event. Finalize anyway
+        // so isLoading resets and the input never stays permanently disabled.
+        if (!doneCalled) {
+          callbacks.onDone({} as Parameters<typeof callbacks.onDone>[0]);
         }
       } finally {
         // Release the reader lock to free the underlying TCP connection
