@@ -85,3 +85,39 @@ export async function getActiveDyad(
     hasBlueprint: (count ?? 0) > 0,
   };
 }
+
+export interface DyadConsent {
+  /** The dyad's invite row — the target for the invite-consent API (PB2.3). */
+  inviteId: string;
+  /** Current shared coach-visibility level: none | type_compatibility | full. */
+  shareLevel: string;
+}
+
+/**
+ * Resolve the consent target for a dyad (PB2.3): the source invite + its current
+ * shared coach-visibility level. Editing it goes through /api/decoded/invite-
+ * consent, which dual-writes to the participant spine. Readable via the user's
+ * own RLS (they're a party to the invite).
+ */
+export async function getDyadConsent(
+  supabase: SupabaseClient,
+  engagementId: string
+): Promise<DyadConsent | null> {
+  const { data: eng } = await supabase
+    .from("engagement")
+    .select("source_invite_id")
+    .eq("id", engagementId)
+    .maybeSingle();
+
+  const inviteId = eng?.source_invite_id as string | undefined;
+  if (!inviteId) return null;
+
+  const { data: invite } = await supabase
+    .from("decoded_invites")
+    .select("id, share_with_coach")
+    .eq("id", inviteId)
+    .maybeSingle();
+
+  if (!invite) return null;
+  return { inviteId: invite.id as string, shareLevel: (invite.share_with_coach as string) ?? "none" };
+}

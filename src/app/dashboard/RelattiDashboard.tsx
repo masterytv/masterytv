@@ -16,8 +16,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Heart, MessageCircle, FileText, ClipboardList, UserPlus, Copy, Check } from "lucide-react";
-import type { DashboardDyad } from "@/lib/relatti/dashboard-dyad";
+import type { DashboardDyad, DyadConsent } from "@/lib/relatti/dashboard-dyad";
 import DyadPanel from "@/components/relatti/DyadPanel";
+import ConsentControl from "@/components/relatti/ConsentControl";
 
 interface Props {
   userName: string;
@@ -25,9 +26,10 @@ interface Props {
   reportId: string | null;
   dyad?: DashboardDyad | null;
   inviteUrl: string;
+  consent?: DyadConsent | null;
 }
 
-export default function RelattiDashboard({ userName, state, reportId, dyad = null, inviteUrl }: Props) {
+export default function RelattiDashboard({ userName, state, reportId, dyad = null, inviteUrl, consent = null }: Props) {
   const [copied, setCopied] = useState(false);
   const assessed = state === "completed";
 
@@ -126,6 +128,11 @@ export default function RelattiDashboard({ userName, state, reportId, dyad = nul
             </p>
           </Link>
         </div>
+
+        {/* PB2.3: consent control — only when the dyad has an invite to govern */}
+        {consent && (
+          <ConsentControl inviteId={consent.inviteId} currentLevel={consent.shareLevel} />
+        )}
 
         <p className="mt-8 flex items-center justify-center gap-1.5 text-xs text-text-muted">
           <Heart className="h-3.5 w-3.5" style={{ color: "var(--color-primary)" }} />
