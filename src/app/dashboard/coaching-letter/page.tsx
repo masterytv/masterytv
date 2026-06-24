@@ -168,7 +168,7 @@ export default function CoachingLetterPage() {
         { onConflict: "user_id" }
       );
     }
-    router.push("/coachapp/onboarding?redo=1");
+    router.push("/onboarding?redo=1");
   }
 
   // Fetch data
@@ -253,7 +253,7 @@ export default function CoachingLetterPage() {
               <p className="db-empty__desc" style={{ marginTop: 0, fontSize: "0.8rem", color: "var(--text-hint)" }}>
                 This takes about 5 minutes.
               </p>
-              <Link href="/coachapp/onboarding" className="db-empty__cta">
+              <Link href="/onboarding" className="db-empty__cta">
                 Answer Coach&apos;s Questions →
               </Link>
             </div>

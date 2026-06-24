@@ -1,5 +1,7 @@
 # Mastery Coach — Marketing Content & Copy Bank
 
+> ⛔ **SUPERSEDED / ON HOLD — June 16, 2026.** The project has taken a strategic **detour to Relatti** (relationship coaching). Current direction lives in [`STRATEGY.md`](STRATEGY.md) + [`RELATIONSHIP_PRD.md`](RELATIONSHIP_PRD.md). This is **prior B2C "Mastery Coach + Decoded" marketing copy**; it is **paused, not deleted**. **Do not treat the messaging below as the current direction** — Relatti has its own positioning in `RELATIONSHIP_PRD.md`.
+
 > **Purpose:** Marketing-ready content, messaging angles, and feature copy for landing pages, ads, emails, and social media.
 > **Last Updated:** March 30, 2026
 > **Status:** Living document — add new angles as features evolve

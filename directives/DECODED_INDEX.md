@@ -1,5 +1,7 @@
 # Decoded — Document Map
 
+> ℹ️ **Scope note — June 16, 2026.** This index covers the **Decoded assessment engine**, which is **reused** under the new direction. For overall **project direction**, [`STRATEGY.md`](STRATEGY.md) + [`RELATIONSHIP_PRD.md`](RELATIONSHIP_PRD.md) are the source of truth and outrank the "DECODED_PRD.md wins" rule below for anything directional. (`DECODED_PRD.md` itself is on hold — see its banner.)
+
 > **Version:** 1.0
 > **Date:** May 19, 2026
 > **Purpose:** Master index of all Decoded product documentation. Use this to find the canonical source for any Decoded specification.

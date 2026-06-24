@@ -51,7 +51,7 @@ export async function sendMessageStream(
   message: string,
   conversationId: string | undefined,
   callbacks: StreamCallbacks,
-  options?: { debug?: boolean; context?: { type: string; section?: string; topic?: string; inviteId?: string } }
+  options?: { debug?: boolean; context?: { type: string; section?: string; topic?: string; inviteId?: string }; engagementId?: string | null; mode?: string | null }
 ): Promise<() => void> {
   const supabase = createClient();
   const {
@@ -77,6 +77,8 @@ export async function sendMessageStream(
       message,
       channel: "web",
       conversation_id: conversationId,
+      ...(options?.engagementId ? { engagement_id: options.engagementId } : {}),
+      ...(options?.mode ? { mode: options.mode } : {}),
       ...(options?.debug ? { debug: true } : {}),
       ...(options?.context ? { context: options.context } : {}),
     }),
@@ -110,6 +112,12 @@ export async function sendMessageStream(
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
+      // currentEvent MUST persist across reads: an SSE `event:`/`data:` pair can
+      // be split between two network chunks. Resetting it per-chunk dropped the
+      // event type (notably a missed `done`), leaving the UI stuck in loading
+      // (input disabled). doneCalled drives the safety net below.
+      let currentEvent = "";
+      let doneCalled = false;
 
       try {
         while (true) {
@@ -122,10 +130,9 @@ export async function sendMessageStream(
           const lines = buffer.split("\n");
           buffer = lines.pop() ?? "";
 
-          let currentEvent = "";
           for (const line of lines) {
             if (line.startsWith("event: ")) {
-              currentEvent = line.slice(7);
+              currentEvent = line.slice(7).trim();
             } else if (line.startsWith("data: ")) {
               const data = line.slice(6);
               try {
@@ -139,6 +146,7 @@ export async function sendMessageStream(
                     callbacks.onDelta(parsed.text);
                     break;
                   case "done":
+                    doneCalled = true;
                     callbacks.onDone(parsed);
                     break;
                   case "debug_summary":
@@ -155,6 +163,12 @@ export async function sendMessageStream(
             }
           }
         }
+
+        // Safety net: the stream closed without a `done` event. Finalize anyway
+        // so isLoading resets and the input never stays permanently disabled.
+        if (!doneCalled) {
+          callbacks.onDone({} as Parameters<typeof callbacks.onDone>[0]);
+        }
       } finally {
         // Release the reader lock to free the underlying TCP connection
         reader.releaseLock();
@@ -169,20 +183,53 @@ export async function sendMessageStream(
   return () => abortController.abort();
 }
 
+export interface ConversationSummary {
+  id: string;
+  title: string | null;
+  updated_at: string;
+}
+
+/**
+ * List the user's conversations in the active thread (PC1), most-recent first.
+ * Scoped per thread: the relationship dyad (engagement_id = engagementId) or the
+ * general thread (NULL). RLS scopes to the current user.
+ */
+export async function listConversations(
+  engagementId?: string | null
+): Promise<ConversationSummary[]> {
+  const supabase = createClient();
+  let q = supabase
+    .from("conversations")
+    .select("id, title, updated_at")
+    .eq("channel", "web")
+    .eq("archived", false);
+  q = engagementId ? q.eq("engagement_id", engagementId) : q.is("engagement_id", null);
+  const { data, error } = await q.order("updated_at", { ascending: false }).limit(50);
+  if (error) {
+    console.error("[listConversations]", error.message);
+    return [];
+  }
+  return (data ?? []) as ConversationSummary[];
+}
+
 /**
  * Loads conversation history for the current user.
  */
 export async function loadConversationHistory(
-  conversationId?: string
+  conversationId?: string,
+  engagementId?: string | null
 ): Promise<{ messages: ChatMessage[]; conversationId: string | null }> {
   const supabase = createClient();
 
-  // If no conversation_id, find the most recent one
+  // If no conversation_id, find the most recent one IN THIS THREAD (PA5):
+  // the relationship dyad (engagement_id = engagementId) or general (NULL).
   if (!conversationId) {
-    const { data: lastMsg } = await supabase
+    let q = supabase
       .from("messages")
       .select("conversation_id")
-      .eq("channel", "web")
+      .eq("channel", "web");
+    q = engagementId ? q.eq("engagement_id", engagementId) : q.is("engagement_id", null);
+    const { data: lastMsg } = await q
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();

@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { resolveBrand, isBrandId } from "@/lib/platform/brand";
 
 /**
  * Unified auth middleware for Mastery.
@@ -46,7 +47,34 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // PA2 + preview override: resolve the brand for this request.
+  // Precedence: ?brand= override (preview on any host) > brand cookie > host.
+  // The override persists via a cookie so previewing relatti on localhost/
+  // staging survives navigation. Production uses the host (no param/cookie).
+  const paramBrand = request.nextUrl.searchParams.get("brand");
+  const cookieBrand = request.cookies.get("brand")?.value;
+  let brandId = resolveBrand(request.headers.get("host")).id;
+  if (isBrandId(cookieBrand)) brandId = cookieBrand;
+  if (isBrandId(paramBrand)) {
+    brandId = paramBrand;
+    supabaseResponse.cookies.set("brand", paramBrand, {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 30,
+      sameSite: "lax",
+    });
+  }
+  supabaseResponse.headers.set("x-brand", brandId);
+
   const pathname = request.nextUrl.pathname;
+
+  // relatti.com root → the Relatti landing (host-based, so the cookie/override
+  // can't hijack the MasteryTV apex). Rewrite (not redirect): the URL stays
+  // relatti.com/ while serving the static /relatti landing.
+  if (pathname === "/" && resolveBrand(request.headers.get("host")).id === "relatti") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/relatti";
+    return NextResponse.rewrite(url);
+  }
 
   // ── Allow callback routes always ──
   if (
@@ -67,6 +95,18 @@ export async function updateSession(request: NextRequest) {
   if (pathname.startsWith("/coachapp/login")) {
     const url = request.nextUrl.clone();
     url.pathname = "/decoded";
+    return NextResponse.redirect(url);
+  }
+  // /coachapp/onboarding relocated to /onboarding (PA1). Keeps search (?redo=1).
+  if (pathname.startsWith("/coachapp/onboarding")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/onboarding";
+    return NextResponse.redirect(url);
+  }
+  // /coachapp/admin/* consolidated into /admin (PA1: crisis + frameworks migrated).
+  if (pathname.startsWith("/coachapp/admin")) {
+    const url = request.nextUrl.clone();
+    url.pathname = pathname.replace("/coachapp/admin", "/admin");
     return NextResponse.redirect(url);
   }
   if (pathname === "/coachapp" || pathname === "/coachapp/") {

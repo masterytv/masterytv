@@ -15,7 +15,8 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { UserStar } from "lucide-react";
+import { UserStar, Heart } from "lucide-react";
+import { useBrand } from "@/hooks/useBrand";
 import type { ChatMessage } from "@/lib/chat";
 
 // ─── MARKDOWN RENDERER ─────────────────────────────────────────────────
@@ -125,7 +126,37 @@ function MessageBubble({ message }: { message: ChatMessage }) {
 
 // ─── EMPTY STATE ────────────────────────────────────────────────────────
 
+// Brand-aware welcome + starter prompts. MasteryTV keeps the executive-coach
+// framing; Relatti gets a relationship-framed welcome (Heart icon — no star).
+const EMPTY_STATE = {
+  masterytv: {
+    icon: UserStar,
+    heading: "Welcome to Mastery Coach",
+    intro:
+      "I'm your AI executive coach. Tell me about a challenge you're facing, a goal you're working toward, or just what's on your mind.",
+    starters: [
+      "I'm a founder struggling to get my first customers",
+      "I need help preparing for a difficult conversation",
+      "I want to build better daily habits for focus",
+    ],
+  },
+  relatti: {
+    icon: Heart,
+    heading: "Your relationship coach",
+    intro:
+      "I know both of you. Tell me what's going on between you and your partner — a recurring fight, something you've been afraid to say, or just how things have felt lately.",
+    starters: [
+      "My partner and I keep having the same argument",
+      "Help me understand our dynamic",
+      "There's something I've been afraid to bring up",
+    ],
+  },
+} as const;
+
 function EmptyState() {
+  const brand = useBrand();
+  const c = EMPTY_STATE[brand.id] ?? EMPTY_STATE.masterytv;
+  const Icon = c.icon;
   return (
     <div className="chat-empty">
       <motion.div
@@ -134,18 +165,11 @@ function EmptyState() {
         transition={{ duration: 0.5 }}
         className="chat-empty-content"
       >
-        <div className="chat-empty-icon"><UserStar size={44} strokeWidth={1.5} /></div>
-        <h3>Welcome to Mastery Coach</h3>
-        <p>
-          I&apos;m your AI executive coach. Tell me about a challenge you&apos;re
-          facing, a goal you&apos;re working toward, or just what&apos;s on your mind.
-        </p>
+        <div className="chat-empty-icon"><Icon size={44} strokeWidth={1.5} /></div>
+        <h3>{c.heading}</h3>
+        <p>{c.intro}</p>
         <div className="chat-starters">
-          {[
-            "I'm a founder struggling to get my first customers",
-            "I need help preparing for a difficult conversation",
-            "I want to build better daily habits for focus",
-          ].map((starter) => (
+          {c.starters.map((starter) => (
             <button key={starter} className="chat-starter-btn" data-starter={starter}>
               {starter}
             </button>

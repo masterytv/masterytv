@@ -70,8 +70,11 @@ export function Topbar({ userName, onMenuClick, userRole }: TopbarProps) {
           onClick={() => setDropdownOpen(!dropdownOpen)}
           className="flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-surface-200 transition-colors"
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[rgba(96,99,238,0.12)]">
-            <span className="text-xs font-semibold text-[#a3a6ff]">
+          <div
+            className="flex h-8 w-8 items-center justify-center rounded-full"
+            style={{ background: "color-mix(in oklch, var(--color-primary-container) 14%, transparent)" }}
+          >
+            <span className="text-xs font-semibold" style={{ color: "var(--color-primary)" }}>
               {initials}
             </span>
           </div>
@@ -91,7 +94,7 @@ export function Topbar({ userName, onMenuClick, userRole }: TopbarProps) {
                   }}
                   className="flex w-full items-center gap-2 px-4 py-2 text-sm text-text-secondary hover:bg-surface-200 hover:text-text-primary transition-colors"
                 >
-                  <ShieldCheck className="h-4 w-4 text-[#a3a6ff]" />
+                  <ShieldCheck className="h-4 w-4" style={{ color: "var(--color-primary)" }} />
                   Admin
                 </button>
                 <div className="mx-3 my-1 h-px bg-surface-200" />

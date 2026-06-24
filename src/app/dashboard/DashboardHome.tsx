@@ -23,6 +23,8 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import InviteConsentBanner from "@/components/decoded/InviteConsentBanner";
 import ShareModal from "@/components/decoded/ShareModal";
+import DyadPanel from "@/components/relatti/DyadPanel";
+import type { DashboardDyad } from "@/lib/relatti/dashboard-dyad";
 
 interface SentInvite {
   id: string;
@@ -56,6 +58,8 @@ interface Props {
   receivedInvites?: ReceivedInvite[];
   /** Stable invite URL for copy/share (broadcast invite) */
   inviteUrl: string;
+  /** Active relationship dyad (PB2) — null for solo users. */
+  dyad?: DashboardDyad | null;
 }
 
 /**
@@ -74,6 +78,7 @@ export default function DashboardHome({
   sentInvites = [],
   receivedInvites = [],
   inviteUrl,
+  dyad = null,
 }: Props) {
   const [copied, setCopied] = useState(false);
   const [resetting, setResetting] = useState(false);
@@ -104,7 +109,7 @@ export default function DashboardHome({
         { onConflict: "user_id" }
       );
     }
-    router.push("/coachapp/onboarding?redo=1");
+    router.push("/onboarding?redo=1");
   }
 
   function handleCopyLink() {
@@ -120,6 +125,9 @@ export default function DashboardHome({
   return (
     <div className="h-full overflow-y-auto">
       <div className="mx-auto max-w-4xl px-6 py-8 lg:py-12">
+        {/* PB2: dyad surface — shown only when the user is in a relationship dyad */}
+        {dyad && <DyadPanel dyad={dyad} />}
+
         {/* Greeting */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}

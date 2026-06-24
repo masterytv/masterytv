@@ -86,26 +86,27 @@ export async function resolveConversation(
   supabase: ReturnType<typeof createSupabaseClient>,
   userId: string,
   channel: string,
-  providedConversationId?: string
+  providedConversationId?: string,
+  engagementId: string | null = null
 ): Promise<string> {
-  // If client provided a conversation_id, validate it
+  // PC1: when the client provides a conversation_id, TRUST it. The web client
+  // manages conversations explicitly (new = a fresh client-generated uuid), so
+  // a brand-new conversation has no messages AND no row yet — validating it
+  // here would fail and fall through to timeout-reuse, merging the message into
+  // the wrong conversation. Messages are RLS-scoped per user, so trusting a
+  // client uuid is safe. Timeout-reuse below only applies when NO id is given
+  // (channels without conversation management, e.g. email / telegram).
   if (providedConversationId) {
-    const { data } = await supabase
-      .from("messages")
-      .select("conversation_id")
-      .eq("user_id", userId)
-      .eq("conversation_id", providedConversationId)
-      .limit(1);
-
-    if (data && data.length > 0) return providedConversationId;
+    return providedConversationId;
   }
 
-  // Find the most recent message to check for timeout
-  // Cross-channel: check ALL channels for the user (not just current channel)
-  const { data: lastMsg } = await supabase
+  // Most recent message IN THIS THREAD, to check for timeout / reuse.
+  let lq = supabase
     .from("messages")
     .select("conversation_id, created_at")
-    .eq("user_id", userId)
+    .eq("user_id", userId);
+  lq = engagementId ? lq.eq("engagement_id", engagementId) : lq.is("engagement_id", null);
+  const { data: lastMsg } = await lq
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();

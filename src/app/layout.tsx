@@ -45,7 +45,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="light" data-theme="light" suppressHydrationWarning>
+    <html lang="en" className="light" data-theme="light" data-brand="masterytv" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
@@ -73,6 +73,24 @@ export default function RootLayout({
                   }
                   document.documentElement.setAttribute('data-theme', resolved);
                   document.documentElement.className = resolved;
+                } catch(e) {}
+                // PA3/PB1: brand resolution (FOUC-free, keeps pages static).
+                // Precedence: ?brand= override > brand cookie > Relatti host/route
+                // > masterytv. Mirrors middleware + resolveBrand(); the override
+                // lets relatti preview on localhost/staging without the domain.
+                try {
+                  var host = window.location.hostname;
+                  var path = window.location.pathname;
+                  var urlBrand = new URLSearchParams(window.location.search).get('brand');
+                  var ck = document.cookie.match(/(?:^|; )brand=([^;]+)/);
+                  var cookieBrand = ck ? decodeURIComponent(ck[1]) : null;
+                  var relattiHost = (host === 'relatti.com' || host === 'www.relatti.com' || host === 'staging.relatti.com');
+                  var relattiPath = /^\/(relatti|couples|engaged|premarital)(\/|$)/.test(path);
+                  var hostBrand = (relattiHost || relattiPath) ? 'relatti' : 'masterytv';
+                  var brand = (urlBrand === 'relatti' || urlBrand === 'masterytv') ? urlBrand
+                    : (cookieBrand === 'relatti' || cookieBrand === 'masterytv') ? cookieBrand
+                    : hostBrand;
+                  document.documentElement.setAttribute('data-brand', brand);
                 } catch(e) {}
               })();
             `,

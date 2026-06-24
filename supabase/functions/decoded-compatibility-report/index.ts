@@ -480,6 +480,14 @@ Profile Summary: ${JSON.stringify(recipientS1 || "No profile data")}`;
 
     console.log(`[decoded-compatibility-report] ✓ Saved both reports for invite ${invite_id}`);
 
+    // E3 dual-write: the dyad just connected + compat payload exists — sync the
+    // engagement spine so its status flips to 'active' and the Blueprint artifact
+    // is (re)built. Non-fatal: never block the report response on this.
+    const { error: syncError } = await admin.rpc("relatti_sync_invite", { p_invite_id: invite_id });
+    if (syncError) {
+      console.error("[decoded-compatibility-report] spine sync failed:", syncError.message);
+    }
+
     // Return the report for the requesting user
     const callerReport = isInviter ? inviterCompatReport : recipientCompatReport;
     return jsonResponse({ success: true, report: callerReport }, 200, headers);

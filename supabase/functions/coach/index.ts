@@ -69,6 +69,11 @@ Deno.serve(async (req: Request) => {
     const body = await req.json();
     const message = body.message?.trim();
     const channel = body.channel || "web";
+    // PA5: thread scope — the relationship dyad's engagement id, or null (the
+    // general MasteryTV thread). Keeps Relatti and MasteryTV coaching separate.
+    const engagementId = (body.engagement_id as string | null) ?? null;
+    // E9: optional coach mode (e.g. 'deescalate' = fight de-escalator overlay).
+    const mode = (body.mode as string | null) ?? null;
     // Sprint 0.4: Deep link context from report CTAs
     const context = body.context as { type?: string; section?: string; topic?: string; inviteId?: string } | undefined;
 
@@ -136,7 +141,8 @@ Deno.serve(async (req: Request) => {
       supabase,
       userId,
       channel,
-      body.conversation_id
+      body.conversation_id,
+      engagementId
     );
     const convMs = debugMode ? performance.now() - convStart : 0;
 
@@ -147,6 +153,7 @@ Deno.serve(async (req: Request) => {
         user_id: userId,
         conversation_id: conversationId,
         channel,
+        engagement_id: engagementId,
         role: "user",
         content: message,
         metadata: context?.type ? { context_type: context.type, section: context.section, invite_id: context.inviteId } : {},
@@ -156,6 +163,52 @@ Deno.serve(async (req: Request) => {
 
     if (insertError) {
       throw new Error(`Failed to store message: ${insertError.message}`);
+    }
+
+    // PC1: ensure a conversations row exists, auto-titled from the first message.
+    // SYNCHRONOUS (awaited before the reply streams) so the row is committed
+    // before the client refreshes its list — otherwise a just-started
+    // conversation goes missing from the switcher (a race). ignoreDuplicates
+    // preserves the title on later messages; updated_at bump keeps order.
+    // Non-fatal — a failure here never blocks the reply.
+    try {
+      await supabase.from("conversations").upsert(
+        {
+          id: conversationId,
+          user_id: userId,
+          engagement_id: engagementId,
+          channel,
+          title: message.slice(0, 60),
+        },
+        { onConflict: "id", ignoreDuplicates: true }
+      );
+      await supabase
+        .from("conversations")
+        .update({ updated_at: new Date().toISOString() })
+        .eq("id", conversationId);
+    } catch (e) {
+      console.error("[coach] conversations upsert failed:", (e as Error).message);
+    }
+
+    // E8: record shared dyad activity (one row per participant per day) so both
+    // partners see a shared streak. Background + non-fatal; dyad threads only.
+    if (engagementId) {
+      EdgeRuntime.waitUntil(
+        (async () => {
+          try {
+            await supabase.from("engagement_activity").upsert(
+              {
+                engagement_id: engagementId,
+                user_id: userId,
+                activity_date: new Date().toISOString().slice(0, 10),
+              },
+              { onConflict: "engagement_id,user_id,activity_date", ignoreDuplicates: true }
+            );
+          } catch (e) {
+            console.error("[coach] engagement_activity upsert failed:", (e as Error).message);
+          }
+        })()
+      );
     }
 
     // Embed user message asynchronously
@@ -195,7 +248,7 @@ Deno.serve(async (req: Request) => {
 
     // ── 5. Assemble prompt (11-layer architecture) ──
     const promptStart = debugMode ? performance.now() : 0;
-    const { system, conversationHistory, metadata, debugTrace } = await assemblePrompt(userId, message, debugMode);
+    const { system, conversationHistory, metadata, debugTrace } = await assemblePrompt(userId, message, debugMode, engagementId, mode);
     const promptMs = debugMode ? performance.now() - promptStart : 0;
 
     // Sprint 0.4: Inject deep link context instruction
@@ -545,6 +598,7 @@ Deno.serve(async (req: Request) => {
             user_id: streamUserId,
             conversation_id: conversationId,
             channel,
+            engagement_id: engagementId,
             role: "coach",
             content: fullContent,
             metadata: coachMetadata,

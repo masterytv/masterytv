@@ -244,7 +244,7 @@ export default function ProgressPage() {
                 As you work with your coach, milestones, completed commitments,
                 and recognized patterns will appear on your timeline.
               </p>
-              <Link href="/coachapp/dashboard/chat" className="db-empty__cta">
+              <Link href="/dashboard/chat" className="db-empty__cta">
                 Start a Session →
               </Link>
             </div>
@@ -312,7 +312,7 @@ export default function ProgressPage() {
                           </span>
                           {item.sourceMessageId && (
                             <Link
-                              href="/coachapp/dashboard/chat"
+                              href="/dashboard/chat"
                               className="pg-timeline__link"
                             >
                               View conversation →
