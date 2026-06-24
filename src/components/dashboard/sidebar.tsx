@@ -1,7 +1,9 @@
 "use client";
 
+import { Fragment } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import CoachConversations from "@/components/dashboard/CoachConversations";
 import { motion } from "framer-motion";
 import { useUser } from "@/hooks/useUser";
 import { useBrandModules } from "@/hooks/useBrandModules";
@@ -150,37 +152,40 @@ export function Sidebar({ open, onClose, assessmentCompleted = false, reportId =
             }
 
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={onClose}
-                className={`
-                  group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all
-                  ${isActive ? "" : "text-text-secondary hover:bg-surface-200 hover:text-text-primary"}
-                `}
-                style={
-                  isActive
-                    ? {
-                        background: "color-mix(in oklch, var(--color-primary) 10%, transparent)",
-                        color: "var(--color-primary)",
-                      }
-                    : undefined
-                }
-              >
-                <item.icon
-                  className={`h-4.5 w-4.5 ${isActive ? "" : "text-text-muted group-hover:text-text-secondary"}`}
-                  style={isActive ? { color: "var(--color-primary)" } : undefined}
-                />
-                {item.label}
-                {isActive && (
-                  <motion.div
-                    layoutId="sidebar-active"
-                    className="absolute left-0 h-8 w-0.5 rounded-r-full"
-                    style={{ background: "var(--color-primary)" }}
-                    transition={{ type: "spring", stiffness: 350, damping: 30 }}
+              <Fragment key={item.href}>
+                <Link
+                  href={item.href}
+                  onClick={onClose}
+                  className={`
+                    group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all
+                    ${isActive ? "" : "text-text-secondary hover:bg-surface-200 hover:text-text-primary"}
+                  `}
+                  style={
+                    isActive
+                      ? {
+                          background: "color-mix(in oklch, var(--color-primary) 10%, transparent)",
+                          color: "var(--color-primary)",
+                        }
+                      : undefined
+                  }
+                >
+                  <item.icon
+                    className={`h-4.5 w-4.5 ${isActive ? "" : "text-text-muted group-hover:text-text-secondary"}`}
+                    style={isActive ? { color: "var(--color-primary)" } : undefined}
                   />
-                )}
-              </Link>
+                  {item.label}
+                  {isActive && (
+                    <motion.div
+                      layoutId="sidebar-active"
+                      className="absolute left-0 h-8 w-0.5 rounded-r-full"
+                      style={{ background: "var(--color-primary)" }}
+                      transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                    />
+                  )}
+                </Link>
+                {/* PC1: conversation list nested under Coach */}
+                {item.href === "/dashboard/chat" && <CoachConversations />}
+              </Fragment>
             );
           })}
 

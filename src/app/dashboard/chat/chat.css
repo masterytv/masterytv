@@ -617,11 +617,6 @@
   border-bottom: 1px solid var(--ghost-border);
 }
 
-/* Conversation switcher pinned left; dyad badge + voice selector grouped right. */
-.chat-header-bar > :first-child {
-  margin-right: auto;
-}
-
 /* ═══════════════════════════════════════════════════════════════════════════
    COACH VOICE SELECTOR
    Popover-based voice style picker in the chat header
