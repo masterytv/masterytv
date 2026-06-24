@@ -89,29 +89,15 @@ export async function resolveConversation(
   providedConversationId?: string,
   engagementId: string | null = null
 ): Promise<string> {
-  // Scope conversation lookup to the active thread (PA5): the relationship
-  // dyad (engagement_id = engagementId) or the general thread (NULL).
-  // If client provided a conversation_id, validate it within the thread.
+  // PC1: when the client provides a conversation_id, TRUST it. The web client
+  // manages conversations explicitly (new = a fresh client-generated uuid), so
+  // a brand-new conversation has no messages AND no row yet — validating it
+  // here would fail and fall through to timeout-reuse, merging the message into
+  // the wrong conversation. Messages are RLS-scoped per user, so trusting a
+  // client uuid is safe. Timeout-reuse below only applies when NO id is given
+  // (channels without conversation management, e.g. email / telegram).
   if (providedConversationId) {
-    let vq = supabase
-      .from("messages")
-      .select("conversation_id")
-      .eq("user_id", userId)
-      .eq("conversation_id", providedConversationId);
-    vq = engagementId ? vq.eq("engagement_id", engagementId) : vq.is("engagement_id", null);
-    const { data } = await vq.limit(1);
-
-    if (data && data.length > 0) return providedConversationId;
-
-    // PC1: a brand-new conversation has no messages yet — accept it if the user
-    // owns the conversations row (web multi-conversation; client-created).
-    const { data: conv } = await supabase
-      .from("conversations")
-      .select("id")
-      .eq("id", providedConversationId)
-      .eq("user_id", userId)
-      .limit(1);
-    if (conv && conv.length > 0) return providedConversationId;
+    return providedConversationId;
   }
 
   // Most recent message IN THIS THREAD, to check for timeout / reuse.
