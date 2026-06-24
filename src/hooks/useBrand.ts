@@ -14,7 +14,8 @@
 import { useEffect, useState } from "react";
 import { resolveBrand, isBrandId, BRANDS, DEFAULT_BRAND_ID, type Brand } from "@/lib/platform/brand";
 
-function resolveClient(): Brand {
+/** Synchronous client-side brand resolution (URL > cookie > data-brand > host). */
+export function resolveBrandClient(): Brand {
   if (typeof window === "undefined") return BRANDS[DEFAULT_BRAND_ID];
   const url = new URLSearchParams(window.location.search).get("brand");
   if (isBrandId(url)) return BRANDS[url];
@@ -29,7 +30,7 @@ function resolveClient(): Brand {
 export function useBrand(): Brand {
   const [brand, setBrand] = useState<Brand>(BRANDS[DEFAULT_BRAND_ID]);
   useEffect(() => {
-    setBrand(resolveClient());
+    setBrand(resolveBrandClient());
   }, []);
   return brand;
 }

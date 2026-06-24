@@ -22,6 +22,7 @@ import { useUser } from "@/hooks/useUser";
 import { createClient } from "@/lib/supabase/client";
 import type { CoachVoiceId } from "@/lib/coach/voice-config";
 import { getActiveDyad, type DashboardDyad } from "@/lib/relatti/dashboard-dyad";
+import { resolveBrandClient } from "@/hooks/useBrand";
 import { Heart } from "lucide-react";
 
 // Lazy-load debug panel — only shipped to admin users who activate debug mode
@@ -53,32 +54,57 @@ function ChatPageInner() {
   // ── Voice style state ──
   const [activeVoiceId, setActiveVoiceId] = useState<CoachVoiceId | null>(null);
 
-  // ── Dyad context (PB2.2) — shows the couples-coach header when in a dyad ──
+  // ── Dyad + thread scope (PB2.2 + PA5) ──
+  // The active thread is the dyad's engagement on the Relatti brand, else the
+  // general thread (null). Resolved before loading history so Relatti and
+  // MasteryTV keep separate conversations. engagementId === undefined = still
+  // resolving (don't load history yet).
   const [dyad, setDyad] = useState<DashboardDyad | null>(null);
+  const [engagementId, setEngagementId] = useState<string | null | undefined>(undefined);
   useEffect(() => {
     if (!user?.id) return;
-    const supabase = createClient();
-    getActiveDyad(supabase, user.id).then(setDyad).catch(() => {});
+    let cancelled = false;
+    (async () => {
+      const supabase = createClient();
+      let d: DashboardDyad | null = null;
+      try {
+        d = await getActiveDyad(supabase, user.id);
+      } catch {
+        /* non-fatal */
+      }
+      if (cancelled) return;
+      setDyad(d);
+      const isRelatti = resolveBrandClient().id === "relatti";
+      setEngagementId(isRelatti && d ? d.engagementId : null);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [user?.id]);
 
   const isAdmin = user?.is_admin === true;
 
-  // Load conversation history on mount
+  // Load conversation history once the thread (engagementId) is resolved
   useEffect(() => {
-    async function loadHistory() {
+    if (engagementId === undefined) return; // wait for thread resolution
+    let cancelled = false;
+    (async () => {
       try {
         const { messages: history, conversationId: convId } =
-          await loadConversationHistory();
+          await loadConversationHistory(undefined, engagementId);
+        if (cancelled) return;
         setMessages(history);
         setConversationId(convId);
       } catch (error) {
         console.error("Failed to load conversation history:", error);
       } finally {
-        setIsInitialLoad(false);
+        if (!cancelled) setIsInitialLoad(false);
       }
-    }
-    loadHistory();
-  }, []);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [engagementId]);
 
   // Cleanup abort on unmount
   useEffect(() => {
@@ -197,6 +223,7 @@ function ChatPageInner() {
           // Sprint 0.4: Pass deep link context on first message
           {
             debug: debugMode && isAdmin,
+            engagementId: engagementId ?? null,
             ...(deepLinkContext.current ? { context: deepLinkContext.current } : {}),
           }
         );
@@ -221,7 +248,7 @@ function ChatPageInner() {
         setMessages((prev) => [...prev, errorMessage]);
       }
     },
-    [conversationId, debugMode, isAdmin]
+    [conversationId, debugMode, isAdmin, engagementId]
   );
 
   // ── Load active voice on mount ──

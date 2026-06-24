@@ -489,7 +489,8 @@ function buildSafetyGuardrails(): string {
 export async function assemblePrompt(
   userId: string,
   userMessage: string,
-  includeDebugTrace = false
+  includeDebugTrace = false,
+  engagementId: string | null = null
 ): Promise<{
   system: string;
   conversationHistory: { role: "user" | "assistant"; content: string }[];
@@ -512,6 +513,21 @@ export async function assemblePrompt(
     .limit(1)
     .maybeSingle();
   const latestAssessmentId = latestAssessmentResult.data?.id ?? null;
+
+  // Recent messages scoped to the active thread (PA5 conversation scoping):
+  // the relationship dyad (engagement_id = engagementId) or the general thread
+  // (engagement_id IS NULL). Keeps Relatti and MasteryTV coaching separate.
+  const baseRecentMessages = supabase
+    .from("messages")
+    .select("role, content, created_at")
+    .eq("user_id", userId);
+  const recentMessagesQuery = (
+    engagementId
+      ? baseRecentMessages.eq("engagement_id", engagementId)
+      : baseRecentMessages.is("engagement_id", null)
+  )
+    .order("created_at", { ascending: false })
+    .limit(20);
 
   // ── Parallel data loading (minimize latency) ──
   const [
@@ -537,13 +553,8 @@ export async function assemblePrompt(
       .eq("user_id", userId)
       .eq("status", "active")
       .order("created_at", { ascending: false }),
-    // Recent messages (short-term memory — last 20)
-    supabase
-      .from("messages")
-      .select("role, content, created_at")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(20),
+    // Recent messages (short-term memory — last 20), scoped to the thread
+    recentMessagesQuery,
     // Memory facts — hybrid approach:
     // 1. Top facts by importance (always relevant)
     // 2. Semantically similar facts (contextually relevant to this message)

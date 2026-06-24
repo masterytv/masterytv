@@ -51,7 +51,7 @@ export async function sendMessageStream(
   message: string,
   conversationId: string | undefined,
   callbacks: StreamCallbacks,
-  options?: { debug?: boolean; context?: { type: string; section?: string; topic?: string; inviteId?: string } }
+  options?: { debug?: boolean; context?: { type: string; section?: string; topic?: string; inviteId?: string }; engagementId?: string | null }
 ): Promise<() => void> {
   const supabase = createClient();
   const {
@@ -77,6 +77,7 @@ export async function sendMessageStream(
       message,
       channel: "web",
       conversation_id: conversationId,
+      ...(options?.engagementId ? { engagement_id: options.engagementId } : {}),
       ...(options?.debug ? { debug: true } : {}),
       ...(options?.context ? { context: options.context } : {}),
     }),
@@ -185,16 +186,20 @@ export async function sendMessageStream(
  * Loads conversation history for the current user.
  */
 export async function loadConversationHistory(
-  conversationId?: string
+  conversationId?: string,
+  engagementId?: string | null
 ): Promise<{ messages: ChatMessage[]; conversationId: string | null }> {
   const supabase = createClient();
 
-  // If no conversation_id, find the most recent one
+  // If no conversation_id, find the most recent one IN THIS THREAD (PA5):
+  // the relationship dyad (engagement_id = engagementId) or general (NULL).
   if (!conversationId) {
-    const { data: lastMsg } = await supabase
+    let q = supabase
       .from("messages")
       .select("conversation_id")
-      .eq("channel", "web")
+      .eq("channel", "web");
+    q = engagementId ? q.eq("engagement_id", engagementId) : q.is("engagement_id", null);
+    const { data: lastMsg } = await q
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();

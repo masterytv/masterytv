@@ -86,26 +86,31 @@ export async function resolveConversation(
   supabase: ReturnType<typeof createSupabaseClient>,
   userId: string,
   channel: string,
-  providedConversationId?: string
+  providedConversationId?: string,
+  engagementId: string | null = null
 ): Promise<string> {
-  // If client provided a conversation_id, validate it
+  // Scope conversation lookup to the active thread (PA5): the relationship
+  // dyad (engagement_id = engagementId) or the general thread (NULL).
+  // If client provided a conversation_id, validate it within the thread.
   if (providedConversationId) {
-    const { data } = await supabase
+    let vq = supabase
       .from("messages")
       .select("conversation_id")
       .eq("user_id", userId)
-      .eq("conversation_id", providedConversationId)
-      .limit(1);
+      .eq("conversation_id", providedConversationId);
+    vq = engagementId ? vq.eq("engagement_id", engagementId) : vq.is("engagement_id", null);
+    const { data } = await vq.limit(1);
 
     if (data && data.length > 0) return providedConversationId;
   }
 
-  // Find the most recent message to check for timeout
-  // Cross-channel: check ALL channels for the user (not just current channel)
-  const { data: lastMsg } = await supabase
+  // Most recent message IN THIS THREAD, to check for timeout / reuse.
+  let lq = supabase
     .from("messages")
     .select("conversation_id, created_at")
-    .eq("user_id", userId)
+    .eq("user_id", userId);
+  lq = engagementId ? lq.eq("engagement_id", engagementId) : lq.is("engagement_id", null);
+  const { data: lastMsg } = await lq
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();

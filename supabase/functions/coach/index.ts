@@ -69,6 +69,9 @@ Deno.serve(async (req: Request) => {
     const body = await req.json();
     const message = body.message?.trim();
     const channel = body.channel || "web";
+    // PA5: thread scope — the relationship dyad's engagement id, or null (the
+    // general MasteryTV thread). Keeps Relatti and MasteryTV coaching separate.
+    const engagementId = (body.engagement_id as string | null) ?? null;
     // Sprint 0.4: Deep link context from report CTAs
     const context = body.context as { type?: string; section?: string; topic?: string; inviteId?: string } | undefined;
 
@@ -136,7 +139,8 @@ Deno.serve(async (req: Request) => {
       supabase,
       userId,
       channel,
-      body.conversation_id
+      body.conversation_id,
+      engagementId
     );
     const convMs = debugMode ? performance.now() - convStart : 0;
 
@@ -147,6 +151,7 @@ Deno.serve(async (req: Request) => {
         user_id: userId,
         conversation_id: conversationId,
         channel,
+        engagement_id: engagementId,
         role: "user",
         content: message,
         metadata: context?.type ? { context_type: context.type, section: context.section, invite_id: context.inviteId } : {},
@@ -195,7 +200,7 @@ Deno.serve(async (req: Request) => {
 
     // ── 5. Assemble prompt (11-layer architecture) ──
     const promptStart = debugMode ? performance.now() : 0;
-    const { system, conversationHistory, metadata, debugTrace } = await assemblePrompt(userId, message, debugMode);
+    const { system, conversationHistory, metadata, debugTrace } = await assemblePrompt(userId, message, debugMode, engagementId);
     const promptMs = debugMode ? performance.now() - promptStart : 0;
 
     // Sprint 0.4: Inject deep link context instruction
@@ -545,6 +550,7 @@ Deno.serve(async (req: Request) => {
             user_id: streamUserId,
             conversation_id: conversationId,
             channel,
+            engagement_id: engagementId,
             role: "coach",
             content: fullContent,
             metadata: coachMetadata,
