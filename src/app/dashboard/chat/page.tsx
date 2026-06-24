@@ -185,6 +185,20 @@ function ChatPageInner() {
       setStreamingContent("");
       streamedTextRef.current = "";
 
+      // PC1: optimistically surface this conversation in the switcher now (the
+      // server row is created on this send; this avoids it briefly missing).
+      if (conversationId) {
+        const cid = conversationId;
+        setConversations((prev) => {
+          const existing = prev.find((c) => c.id === cid);
+          const title = existing?.title ?? message.trim().slice(0, 60);
+          return [
+            { id: cid, title, updated_at: new Date().toISOString() },
+            ...prev.filter((c) => c.id !== cid),
+          ];
+        });
+      }
+
       try {
         const abort = await sendMessageStream(
           message,
