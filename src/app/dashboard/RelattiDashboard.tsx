@@ -15,7 +15,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Heart, MessageCircle, FileText, ClipboardList, UserPlus, Copy, Check } from "lucide-react";
+import { Heart, MessageCircle, FileText, ClipboardList, UserPlus, Copy, Check, Waves } from "lucide-react";
 import type { DashboardDyad, DyadConsent, DyadStreak } from "@/lib/relatti/dashboard-dyad";
 import DyadPanel from "@/components/relatti/DyadPanel";
 import ConsentControl from "@/components/relatti/ConsentControl";
@@ -126,6 +126,21 @@ export default function RelattiDashboard({ userName, state, reportId, dyad = nul
               {dyad
                 ? `Work through what's happening between you and ${dyad.partnerName}.`
                 : "Start a conversation — your coach is here for the relationship."}
+            </p>
+          </Link>
+
+          {/* E9: fight de-escalator — in-the-moment, regulation-first */}
+          <Link
+            href="/dashboard/chat?mode=deescalate&c=new"
+            className="group rounded-2xl bg-surface-50 p-6 transition-colors hover:bg-surface-100 sm:col-span-2"
+          >
+            <Waves className="h-6 w-6" style={{ color: "var(--color-primary)" }} />
+            <h3 className="mt-3 font-display text-lg font-semibold text-text-primary">
+              In a fight right now?
+            </h3>
+            <p className="mt-1 text-sm text-text-secondary">
+              Open the de-escalator — get a calm next step, or paste what you want to say
+              and I&rsquo;ll help you say it without making it worse.
             </p>
           </Link>
         </div>

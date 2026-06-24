@@ -72,6 +72,8 @@ Deno.serve(async (req: Request) => {
     // PA5: thread scope — the relationship dyad's engagement id, or null (the
     // general MasteryTV thread). Keeps Relatti and MasteryTV coaching separate.
     const engagementId = (body.engagement_id as string | null) ?? null;
+    // E9: optional coach mode (e.g. 'deescalate' = fight de-escalator overlay).
+    const mode = (body.mode as string | null) ?? null;
     // Sprint 0.4: Deep link context from report CTAs
     const context = body.context as { type?: string; section?: string; topic?: string; inviteId?: string } | undefined;
 
@@ -246,7 +248,7 @@ Deno.serve(async (req: Request) => {
 
     // ── 5. Assemble prompt (11-layer architecture) ──
     const promptStart = debugMode ? performance.now() : 0;
-    const { system, conversationHistory, metadata, debugTrace } = await assemblePrompt(userId, message, debugMode, engagementId);
+    const { system, conversationHistory, metadata, debugTrace } = await assemblePrompt(userId, message, debugMode, engagementId, mode);
     const promptMs = debugMode ? performance.now() - promptStart : 0;
 
     // Sprint 0.4: Inject deep link context instruction

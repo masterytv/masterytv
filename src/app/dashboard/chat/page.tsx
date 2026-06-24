@@ -29,7 +29,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { CoachVoiceId } from "@/lib/coach/voice-config";
 import { getActiveDyad, type DashboardDyad } from "@/lib/relatti/dashboard-dyad";
 import { resolveBrandClient } from "@/hooks/useBrand";
-import { Heart } from "lucide-react";
+import { Heart, Waves } from "lucide-react";
 
 // Lazy-load debug panel — only shipped to admin users who activate debug mode
 const DebugPanel = dynamic(() => import("@/components/debug/debug-panel"), {
@@ -95,6 +95,7 @@ function ChatPageInner() {
   // real id in the URL); no ?c lands on the most-recent (or a fresh draft).
   // The conversation LIST lives in the sidebar (CoachConversations).
   const requestedC = searchParams.get("c");
+  const mode = searchParams.get("mode"); // E9: 'deescalate' = fight de-escalator
   useEffect(() => {
     if (engagementId === undefined) return; // wait for thread resolution
     let cancelled = false;
@@ -255,6 +256,7 @@ function ChatPageInner() {
           {
             debug: debugMode && isAdmin,
             engagementId: engagementId ?? null,
+            mode: mode ?? null,
             ...(deepLinkContext.current ? { context: deepLinkContext.current } : {}),
           }
         );
@@ -279,7 +281,7 @@ function ChatPageInner() {
         setMessages((prev) => [...prev, errorMessage]);
       }
     },
-    [conversationId, debugMode, isAdmin, engagementId]
+    [conversationId, debugMode, isAdmin, engagementId, mode]
   );
 
   // ── Load active voice on mount ──
@@ -312,8 +314,21 @@ function ChatPageInner() {
 
   return (
     <div style={{ position: "relative", height: "100%" }}>
-      {/* Chat header bar — dyad indicator + voice (conversations live in the sidebar) */}
+      {/* Chat header bar — de-escalation mode + dyad indicator + voice */}
       <div className="chat-header-bar">
+        {mode === "deescalate" && (
+          <span
+            className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium"
+            style={{
+              background: "color-mix(in oklch, var(--color-primary-container) 14%, transparent)",
+              color: "var(--color-primary)",
+            }}
+            title="Regulation-first coaching for in-the-moment conflict"
+          >
+            <Waves className="h-3.5 w-3.5" />
+            De-escalation mode
+          </span>
+        )}
         {dyad && (
           <span
             className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium"
