@@ -67,6 +67,15 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
+  // relatti.com root → the Relatti landing (host-based, so the cookie/override
+  // can't hijack the MasteryTV apex). Rewrite (not redirect): the URL stays
+  // relatti.com/ while serving the static /relatti landing.
+  if (pathname === "/" && resolveBrand(request.headers.get("host")).id === "relatti") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/relatti";
+    return NextResponse.rewrite(url);
+  }
+
   // ── Allow callback routes always ──
   if (
     pathname.startsWith("/auth/callback") ||
