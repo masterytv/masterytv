@@ -121,3 +121,62 @@ export async function getDyadConsent(
   if (!invite) return null;
   return { inviteId: invite.id as string, shareLevel: (invite.share_with_coach as string) ?? "none" };
 }
+
+export interface DyadStreak {
+  /** Consecutive weeks (current run) the couple has been active. 0 = none/broken. */
+  streakWeeks: number;
+  /** ISO date of the partner's most recent activity, or null. */
+  partnerLastActive: string | null;
+}
+
+/**
+ * Shared dyad streak (E8). Reads engagement_activity (both partners' rows, via
+ * the engagement-shared RLS) and computes a current weekly streak + the
+ * partner's last-active date. Privacy-safe — activity dates only, no content.
+ */
+export async function getDyadStreak(
+  supabase: SupabaseClient,
+  engagementId: string,
+  userId: string
+): Promise<DyadStreak> {
+  const { data } = await supabase
+    .from("engagement_activity")
+    .select("user_id, activity_date")
+    .eq("engagement_id", engagementId)
+    .order("activity_date", { ascending: false })
+    .limit(400);
+
+  const rows = data ?? [];
+  if (rows.length === 0) return { streakWeeks: 0, partnerLastActive: null };
+
+  const partnerLastActive =
+    (rows.find((r) => r.user_id !== userId)?.activity_date as string | undefined) ?? null;
+
+  const WEEK = 7 * 24 * 60 * 60 * 1000;
+  const weekStart = (d: string): number => {
+    const dt = new Date(d + "T00:00:00Z");
+    const mondayOffset = (dt.getUTCDay() + 6) % 7; // Mon = 0
+    dt.setUTCDate(dt.getUTCDate() - mondayOffset);
+    dt.setUTCHours(0, 0, 0, 0);
+    return dt.getTime();
+  };
+
+  const weeks = [...new Set(rows.map((r) => weekStart(r.activity_date as string)))].sort(
+    (a, b) => b - a
+  );
+  const nowWeek = weekStart(new Date().toISOString().slice(0, 10));
+  // Streak is "current" only if the latest active week is this or last week.
+  if (weeks[0] < nowWeek - WEEK) return { streakWeeks: 0, partnerLastActive };
+
+  let streak = 0;
+  let cursor = weeks[0];
+  for (const w of weeks) {
+    if (w === cursor) {
+      streak++;
+      cursor -= WEEK;
+    } else {
+      break;
+    }
+  }
+  return { streakWeeks: streak, partnerLastActive };
+}

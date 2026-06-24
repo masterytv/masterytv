@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { claimPendingInvites } from "@/lib/decoded/claim-invites";
-import { getActiveDyad, getDyadConsent } from "@/lib/relatti/dashboard-dyad";
+import { getActiveDyad, getDyadConsent, getDyadStreak } from "@/lib/relatti/dashboard-dyad";
 import { getBrand } from "@/lib/platform/brand.server";
 import { isBrandId } from "@/lib/platform/brand";
 import DashboardHome from "./DashboardHome";
@@ -188,6 +188,7 @@ export default async function DashboardPage({
 
   if (brandId === "relatti") {
     const consent = dyad ? await getDyadConsent(supabase, dyad.engagementId) : null;
+    const streak = dyad ? await getDyadStreak(supabase, dyad.engagementId, user.id) : null;
     return (
       <RelattiDashboard
         userName={userName}
@@ -196,6 +197,7 @@ export default async function DashboardPage({
         dyad={dyad}
         inviteUrl={inviteUrl}
         consent={consent}
+        streak={streak}
       />
     );
   }

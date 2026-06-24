@@ -16,7 +16,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Heart, MessageCircle, FileText, ClipboardList, UserPlus, Copy, Check } from "lucide-react";
-import type { DashboardDyad, DyadConsent } from "@/lib/relatti/dashboard-dyad";
+import type { DashboardDyad, DyadConsent, DyadStreak } from "@/lib/relatti/dashboard-dyad";
 import DyadPanel from "@/components/relatti/DyadPanel";
 import ConsentControl from "@/components/relatti/ConsentControl";
 
@@ -27,9 +27,10 @@ interface Props {
   dyad?: DashboardDyad | null;
   inviteUrl: string;
   consent?: DyadConsent | null;
+  streak?: DyadStreak | null;
 }
 
-export default function RelattiDashboard({ userName, state, reportId, dyad = null, inviteUrl, consent = null }: Props) {
+export default function RelattiDashboard({ userName, state, reportId, dyad = null, inviteUrl, consent = null, streak = null }: Props) {
   const [copied, setCopied] = useState(false);
   const assessed = state === "completed";
 
@@ -54,7 +55,7 @@ export default function RelattiDashboard({ userName, state, reportId, dyad = nul
 
         {/* Dyad panel when linked, else an invite-your-partner prompt */}
         {dyad ? (
-          <DyadPanel dyad={dyad} />
+          <DyadPanel dyad={dyad} streak={streak} />
         ) : (
           <section className="mb-8 rounded-2xl bg-surface-50 p-6">
             <span

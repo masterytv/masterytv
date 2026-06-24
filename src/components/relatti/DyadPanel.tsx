@@ -14,8 +14,8 @@
  */
 
 import Link from "next/link";
-import { Heart, MessageCircle, FileText, Clock, Check } from "lucide-react";
-import type { DashboardDyad } from "@/lib/relatti/dashboard-dyad";
+import { Heart, MessageCircle, FileText, Clock, Check, Flame } from "lucide-react";
+import type { DashboardDyad, DyadStreak } from "@/lib/relatti/dashboard-dyad";
 
 const STATUS_COPY: Record<string, string> = {
   forming: "Getting set up",
@@ -24,7 +24,22 @@ const STATUS_COPY: Record<string, string> = {
   ended: "Ended",
 };
 
-export default function DyadPanel({ dyad }: { dyad: DashboardDyad }) {
+function relativeDay(iso: string): string {
+  const days = Math.floor((Date.now() - new Date(iso + "T00:00:00Z").getTime()) / 86400000);
+  if (days <= 0) return "today";
+  if (days === 1) return "yesterday";
+  if (days < 7) return `${days} days ago`;
+  const weeks = Math.floor(days / 7);
+  return weeks === 1 ? "a week ago" : `${weeks} weeks ago`;
+}
+
+export default function DyadPanel({
+  dyad,
+  streak = null,
+}: {
+  dyad: DashboardDyad;
+  streak?: DyadStreak | null;
+}) {
   const partner = dyad.partnerName;
   const partnerJoined = dyad.partnerClaimed;
 
@@ -59,13 +74,28 @@ export default function DyadPanel({ dyad }: { dyad: DashboardDyad }) {
                 )}
                 {STATUS_COPY[dyad.status] ?? dyad.status}
               </span>
+              {streak && streak.streakWeeks >= 1 && (
+                <span
+                  className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.68rem] font-medium"
+                  style={{
+                    background: "color-mix(in oklch, var(--color-primary) 12%, transparent)",
+                    color: "var(--color-primary)",
+                  }}
+                  title="Weeks in a row you've both shown up"
+                >
+                  <Flame className="h-3 w-3" />
+                  {streak.streakWeeks}-week streak
+                </span>
+              )}
             </div>
             <h2 className="font-display text-xl font-semibold text-text-primary">
               You &amp; {partner}
             </h2>
             <p className="mt-0.5 text-sm text-text-secondary">
               {partnerJoined
-                ? `${partner} has joined. Your coach understands you both.`
+                ? streak?.partnerLastActive
+                  ? `${partner} was here ${relativeDay(streak.partnerLastActive)}.`
+                  : `${partner} has joined. Your coach understands you both.`
                 : `Waiting for ${partner} to take their quiz and join.`}
             </p>
           </div>

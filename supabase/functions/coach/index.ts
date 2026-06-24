@@ -188,6 +188,27 @@ Deno.serve(async (req: Request) => {
       console.error("[coach] conversations upsert failed:", (e as Error).message);
     }
 
+    // E8: record shared dyad activity (one row per participant per day) so both
+    // partners see a shared streak. Background + non-fatal; dyad threads only.
+    if (engagementId) {
+      EdgeRuntime.waitUntil(
+        (async () => {
+          try {
+            await supabase.from("engagement_activity").upsert(
+              {
+                engagement_id: engagementId,
+                user_id: userId,
+                activity_date: new Date().toISOString().slice(0, 10),
+              },
+              { onConflict: "engagement_id,user_id,activity_date", ignoreDuplicates: true }
+            );
+          } catch (e) {
+            console.error("[coach] engagement_activity upsert failed:", (e as Error).message);
+          }
+        })()
+      );
+    }
+
     // Embed user message asynchronously
     if (userMsg?.id) {
       EdgeRuntime.waitUntil(
