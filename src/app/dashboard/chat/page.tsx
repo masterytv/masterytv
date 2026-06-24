@@ -17,7 +17,15 @@ import dynamic from "next/dynamic";
 import { useSearchParams, useRouter } from "next/navigation";
 import ChatWindow from "@/components/chat/chat-window";
 import CoachVoiceSelector from "@/components/chat/CoachVoiceSelector";
-import { sendMessageStream, loadConversationHistory, type ChatMessage, type DebugSummary } from "@/lib/chat";
+import ConversationSwitcher from "@/components/chat/ConversationSwitcher";
+import {
+  sendMessageStream,
+  loadConversationHistory,
+  listConversations,
+  type ChatMessage,
+  type DebugSummary,
+  type ConversationSummary,
+} from "@/lib/chat";
 import { useUser } from "@/hooks/useUser";
 import { createClient } from "@/lib/supabase/client";
 import type { CoachVoiceId } from "@/lib/coach/voice-config";
@@ -37,6 +45,7 @@ function ChatPageInner() {
   const router = useRouter();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [streamingContent, setStreamingContent] = useState<string>("");
   const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -84,19 +93,28 @@ function ChatPageInner() {
 
   const isAdmin = user?.is_admin === true;
 
-  // Load conversation history once the thread (engagementId) is resolved
+  // Load the conversation list + most-recent thread once engagementId resolves (PC1)
   useEffect(() => {
     if (engagementId === undefined) return; // wait for thread resolution
     let cancelled = false;
     (async () => {
       try {
-        const { messages: history, conversationId: convId } =
-          await loadConversationHistory(undefined, engagementId);
+        const list = await listConversations(engagementId);
         if (cancelled) return;
-        setMessages(history);
-        setConversationId(convId);
+        setConversations(list);
+        if (list.length > 0) {
+          const activeId = list[0].id;
+          setConversationId(activeId);
+          const { messages: history } = await loadConversationHistory(activeId, engagementId);
+          if (!cancelled) setMessages(history);
+        } else {
+          // Fresh thread — start a new (draft) conversation; its row is created
+          // server-side on the first message.
+          setConversationId(crypto.randomUUID());
+          setMessages([]);
+        }
       } catch (error) {
-        console.error("Failed to load conversation history:", error);
+        console.error("Failed to load conversations:", error);
       } finally {
         if (!cancelled) setIsInitialLoad(false);
       }
@@ -198,6 +216,9 @@ function ChatPageInner() {
               setStreamingContent("");
               streamedTextRef.current = "";
               setIsLoading(false);
+              // PC1: a new conversation may have been created + auto-titled
+              // server-side — refresh the list so it appears / re-sorts.
+              listConversations(engagementId).then(setConversations).catch(() => {});
             },
             onDebugTrace: (trace) => {
               // Capture debug trace from the pipeline (admin debug mode only)
@@ -251,6 +272,36 @@ function ChatPageInner() {
     [conversationId, debugMode, isAdmin, engagementId]
   );
 
+  // PC1: start a fresh conversation (draft id; row created on first message).
+  const handleNewConversation = useCallback(() => {
+    abortRef.current?.();
+    setConversationId(crypto.randomUUID());
+    setMessages([]);
+    setStreamingContent("");
+    streamedTextRef.current = "";
+    setIsLoading(false);
+  }, []);
+
+  // PC1: switch to an existing conversation + load its messages.
+  const handleSelectConversation = useCallback(
+    async (id: string) => {
+      if (id === conversationId) return;
+      abortRef.current?.();
+      setConversationId(id);
+      setMessages([]);
+      setStreamingContent("");
+      streamedTextRef.current = "";
+      setIsLoading(false);
+      try {
+        const { messages: history } = await loadConversationHistory(id, engagementId);
+        setMessages(history);
+      } catch (e) {
+        console.error("Failed to load conversation:", e);
+      }
+    },
+    [conversationId, engagementId]
+  );
+
   // ── Load active voice on mount ──
   useEffect(() => {
     if (!user?.id) return;
@@ -281,8 +332,14 @@ function ChatPageInner() {
 
   return (
     <div style={{ position: "relative", height: "100%" }}>
-      {/* Chat header bar — dyad indicator (PB2.2) + voice selector */}
+      {/* Chat header bar — conversation switcher (PC1) + dyad indicator + voice */}
       <div className="chat-header-bar">
+        <ConversationSwitcher
+          conversations={conversations}
+          activeId={conversationId}
+          onSelect={handleSelectConversation}
+          onNew={handleNewConversation}
+        />
         {dyad && (
           <span
             className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium"

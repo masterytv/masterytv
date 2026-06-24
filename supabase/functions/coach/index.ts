@@ -163,6 +163,32 @@ Deno.serve(async (req: Request) => {
       throw new Error(`Failed to store message: ${insertError.message}`);
     }
 
+    // PC1: ensure a conversations row exists, auto-titled from the first message.
+    // ignoreDuplicates preserves the title on later messages; updated_at bump
+    // keeps the list ordered. Background + non-fatal — never blocks the reply.
+    EdgeRuntime.waitUntil(
+      (async () => {
+        try {
+          await supabase.from("conversations").upsert(
+            {
+              id: conversationId,
+              user_id: userId,
+              engagement_id: engagementId,
+              channel,
+              title: message.slice(0, 60),
+            },
+            { onConflict: "id", ignoreDuplicates: true }
+          );
+          await supabase
+            .from("conversations")
+            .update({ updated_at: new Date().toISOString() })
+            .eq("id", conversationId);
+        } catch (e) {
+          console.error("[coach] conversations upsert failed:", (e as Error).message);
+        }
+      })()
+    );
+
     // Embed user message asynchronously
     if (userMsg?.id) {
       EdgeRuntime.waitUntil(

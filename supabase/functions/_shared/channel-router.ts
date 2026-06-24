@@ -102,6 +102,16 @@ export async function resolveConversation(
     const { data } = await vq.limit(1);
 
     if (data && data.length > 0) return providedConversationId;
+
+    // PC1: a brand-new conversation has no messages yet — accept it if the user
+    // owns the conversations row (web multi-conversation; client-created).
+    const { data: conv } = await supabase
+      .from("conversations")
+      .select("id")
+      .eq("id", providedConversationId)
+      .eq("user_id", userId)
+      .limit(1);
+    if (conv && conv.length > 0) return providedConversationId;
   }
 
   // Most recent message IN THIS THREAD, to check for timeout / reuse.

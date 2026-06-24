@@ -182,6 +182,35 @@ export async function sendMessageStream(
   return () => abortController.abort();
 }
 
+export interface ConversationSummary {
+  id: string;
+  title: string | null;
+  updated_at: string;
+}
+
+/**
+ * List the user's conversations in the active thread (PC1), most-recent first.
+ * Scoped per thread: the relationship dyad (engagement_id = engagementId) or the
+ * general thread (NULL). RLS scopes to the current user.
+ */
+export async function listConversations(
+  engagementId?: string | null
+): Promise<ConversationSummary[]> {
+  const supabase = createClient();
+  let q = supabase
+    .from("conversations")
+    .select("id, title, updated_at")
+    .eq("channel", "web")
+    .eq("archived", false);
+  q = engagementId ? q.eq("engagement_id", engagementId) : q.is("engagement_id", null);
+  const { data, error } = await q.order("updated_at", { ascending: false }).limit(50);
+  if (error) {
+    console.error("[listConversations]", error.message);
+    return [];
+  }
+  return (data ?? []) as ConversationSummary[];
+}
+
 /**
  * Loads conversation history for the current user.
  */
