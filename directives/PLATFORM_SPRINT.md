@@ -146,6 +146,33 @@ These are the remaining Relatti product epics (details in RELATIONSHIP_SPRINT.md
 | **E8** Shared ritual / streak | The partner-as-nudge; visible to both. | |
 | **E9** Fight De-Escalator | In-the-moment coach mode. | |
 
+### Track P — platform epics (Sprint 3, shared across all verticals)
+
+Added 2026-06-24. Both are platform-wide (every vertical benefits) and pair naturally — they're "organize the coaching space."
+
+#### PC1 — Multiple conversations  🟥  *(was: one thread per user per domain)*
+*Goal: users manage multiple named conversations per thread (like Claude's chat), instead of one timeout-based thread.*
+> Foundation exists: `messages.conversation_id` + the 4-hour timeout already create separate conversations; what's missing is naming + a management UI. Layers on the engagement-scoping already shipped (conversations live within a thread).
+
+| Story | Done |
+|:--|:--|
+| **PC1.1** `conversations` table (`id, user_id, engagement_id, title, created_at, updated_at, archived`); messages FK to it. | Schema + RLS (owner-scoped). |
+| **PC1.2** Auto-title from first message; `resolveConversation` becomes explicit (client picks/creates) not timeout-based. | New chats get a name; switching works. |
+| **PC1.3** Conversation list UI: New, switch, list within the active brand/thread. | User can run several conversations. |
+| **PC1.4** Rename. | Phase 2. |
+| **PC1.5** Search + group/archive. | Phase 3. |
+
+#### PC2 — Per-domain data isolation 🟥🔒  *(implements the revised ADR-P02)*
+*Goal: scope intake/profile + long-term memory by program, so each domain is its own world (shared identity only). Conversation + short-term-memory scoping already shipped (PA5).*
+
+| Story | Done |
+|:--|:--|
+| **PC2.1** Add `program_id` to `assessments`/`assessment_reports` (+ scores); reads scoped by program; backfill existing rows to the general program. 🔒 | A domain only sees its own intake/profile. 🧪 |
+| **PC2.2** Scope long-term `memory_facts` + `coach_profiles` by program in the prompt-assembler (extends PA5). 🔒 | Coach memory doesn't cross domains. 🧪 |
+| **PC2.3** Per-domain intake routing: each program runs its own questionnaire (config-driven). | New domain → its own intake, no reuse. |
+
+> ⚠️ Touches the live coach + assessment data; needs careful backfill (existing rows → general program) so MasteryTV is unaffected.
+
 ---
 
 ## 4. Sprint slicing (proposed)
@@ -154,7 +181,7 @@ These are the remaining Relatti product epics (details in RELATIONSHIP_SPRINT.md
 |:--|:--|:--|
 | **Sprint 1** | PA1 → PA5 | **Platform foundation.** One tree; brand resolver; theming; module gating; scoped coach. MasteryTV unchanged. |
 | **Sprint 2** | PB1 → PB4 | **Relatti is a real branded vertical** on `relatti.com` — learn, buy-path, share, use, dyad-coached. |
-| **Sprint 3** | E7, E10, E6, E8, E9 | Safety (launch blocker), dual-seat billing, SMS/proactive, retention mechanics → ready for the founding-couples cohort. |
+| **Sprint 3** | PC1, PC2, E7, E10, E6, E8, E9 | Platform: multiple conversations + per-domain data isolation. Relatti: safety (launch blocker), dual-seat billing, SMS/proactive, retention mechanics → ready for the founding-couples cohort. |
 
 > Public Relatti funnels wait on **E7 (safety)**. GTM choices (entry segments, cohort, pricing) are out of scope here and don't change build order.
 

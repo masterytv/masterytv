@@ -57,16 +57,21 @@ Everything that "varies per vertical" is exactly one of these five orthogonal la
 
 ---
 
-## 3. Identity & cross-vertical data model (decision P2)
+## 3. Identity & cross-vertical data model (decision P2 — REVISED 2026-06-24)
 
 **One account, many programs** — a single `public.users` identity. A person can hold engagements in multiple programs (Relatti + MasteryTV + career) under one login.
 
-**Shared profile, separate coaching** (founder choice, June 22):
-- **Shared across verticals:** identity (`users`), and the **assessment/personality layer** — `assessment_scores`, `assessment_reports`, archetype. You take the relevant battery once; overlapping instruments (e.g. Big Five) are reused, not re-collected. A new vertical may *add* its own battery items (career RIASEC, sport-mindset intake) without re-taking shared ones.
-- **Scoped per program/engagement:** all *coaching* data — `messages`, `memory_facts`, `conversation_summaries`, `commitments`, `coach_profiles` — stays in its program/engagement context. Your Relatti coach and your career coach share your *personality*, never your *conversations*. This reuses the existing per-user RLS + the engagement-scoping already added (`engagement_id` columns); the new rule is that the coach **prompt-assembler filters coaching context to the active program/engagement**.
-- **Why:** privacy (Relatti's intimate/partner context must not bleed into career coaching), correct context (a career question shouldn't be answered with relationship memory), and no redundant intake. It's the same "privacy by assembly" discipline (ADR-R02) extended from partner-isolation to vertical-isolation.
+> **REVISION (founder, 2026-06-24):** the original P2 was *"shared profile, separate coaching."* On reflection it's revised to **full per-domain isolation: shared identity, but everything domain-specific is separate.** Same database, one login — but each domain is its own world. Rationale: privacy (Relatti's intimate data must never sit near career/employer coaching), purpose-built intake/profile per vertical (the batteries genuinely differ — attachment vs RIASEC vs sport-mindset, so there's little to reuse), white-label tenancy (each coach's client data siloed), and user expectation (a new product starts fresh). The cross-sell convenience of a shared profile loses to these.
 
-> **Implication:** the coach runtime gains a **program/engagement scope parameter** that bounds which memory/commitments/messages it loads. The shared profile layer (Decoded archetype) is loaded regardless; the coaching context is scoped.
+**Shared (identity layer):** `users` (login, name, email, billing/subscription). One account.
+
+**Separate per domain/program (everything else):**
+- **Intake / profile / assessment** — `assessments`, `assessment_scores`, `assessment_reports`, archetype: scoped per program. Each domain runs its own intake; nothing is reused across domains by default. *(Build: tag these with `program_id`; reads scoped by program.)*
+- **Coaching data** — `messages`, `conversation_summaries`, `commitments`, `coach_profiles`, and long-term `memory_facts`: scoped per program/engagement.
+
+**Status:** the *conversation thread + short-term memory* slice is DONE (PA5 conversation-scoping, 2026-06-24 — `messages` carry `engagement_id`; the assembler scopes recent-message context). **Still TODO (Sprint 3 epic):** scope `assessments`/`assessment_reports` and long-term `memory_facts`/`coach_profiles` by program + backfill existing rows. See [PLATFORM_SPRINT.md](file:///Users/thomaswood/Documents/Antigravity/MasteryTV/directives/PLATFORM_SPRINT.md) "Per-domain data isolation."
+
+> **Implication:** the coach runtime + intake flow take a **program scope** that bounds *all* per-user data they read/write. Identity is the only cross-domain layer.
 
 ---
 
@@ -200,7 +205,7 @@ Additive and ordered so nothing breaks:
 ## 11. ADRs (proposed)
 
 - **ADR-P01 — One modular platform app, many domains.** Verticals are configuration over a shared core, not separate codebases. *Rationale:* the only model that scales to "many verticals, 1–2 devs + AI"; white-label makes per-brand codebases impossible anyway.
-- **ADR-P02 — One identity, shared profile, per-program coaching.** One account spans products; personality is reused; coaching data is program-scoped. *Rationale:* privacy + correct context + no redundant intake; extends the proven privacy-by-assembly rule.
+- **ADR-P02 — One identity, full per-domain data isolation** *(revised 2026-06-24; supersedes the original "shared profile" form).* One account (identity/billing) spans products; **intake, profile/assessment, memory, and coaching are all scoped per domain/program** — each domain is its own world on a shared database. *Rationale:* privacy (intimate Relatti data never near career/employer coaching), purpose-built per-vertical intake, white-label tenant siloing, and user expectation of a fresh start; the batteries differ enough that a shared profile bought little. Conversation + short-term-memory scoping shipped; profile + long-term-memory scoping is a Sprint-3 epic.
 - **ADR-P03 — Pluggable surfaces.** Verticals register a primary screen; default = coach-chat. *Rationale:* founder confirmed some verticals need bespoke main screens; avoids both a rigid single shell and N forks.
 - **ADR-P04 — Token-based theming = white-label.** One design system, per-brand token sets. *Rationale:* brands stay distinct yet cheap; the same mechanism powers Stage-3 white-label with no component changes.
 - **ADR-P05 — Capabilities are config-gated modules.** Features toggle via `program.config.modules`. *Rationale:* the discipline that keeps one codebase from rotting; makes the vertical matrix declarative.
