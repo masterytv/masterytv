@@ -133,7 +133,11 @@ export async function updateSession(request: NextRequest) {
 
   if (!user && isProtected) {
     const url = request.nextUrl.clone();
+    // Preserve where they were headed (e.g. /assess) so auth returns them there
+    // instead of dumping everyone on /dashboard. Generic for every brand/route.
+    const intended = pathname + (request.nextUrl.search || "");
     url.pathname = "/decoded";
+    url.search = `?next=${encodeURIComponent(intended)}`;
     return NextResponse.redirect(url);
   }
 

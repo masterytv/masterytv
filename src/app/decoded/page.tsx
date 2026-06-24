@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 };
 
 interface PageProps {
-  searchParams: Promise<{ invite?: string }>;
+  searchParams: Promise<{ invite?: string; next?: string }>;
 }
 
 /**
@@ -28,15 +28,19 @@ interface PageProps {
  * invite context through the auth flow.
  */
 export default async function DecodedPage({ searchParams }: PageProps) {
-  const { invite } = await searchParams;
+  const { invite, next } = await searchParams;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Already authenticated → go to unified dashboard (preserve invite if present)
+  // Open-redirect guard: only honor internal paths (must start with a single "/").
+  const safeNext = next && next.startsWith("/") && !next.startsWith("//") ? next : undefined;
+
+  // Already authenticated → honor the intended destination (e.g. /assess),
+  // else the dashboard (preserving invite context if present).
   if (user) {
-    const redirectUrl = invite ? `/dashboard?invite=${invite}` : "/dashboard";
+    const redirectUrl = safeNext ?? (invite ? `/dashboard?invite=${invite}` : "/dashboard");
     redirect(redirectUrl);
   }
 
-  return <DecodedLanding inviteCode={invite} />;
+  return <DecodedLanding inviteCode={invite} next={safeNext} />;
 }

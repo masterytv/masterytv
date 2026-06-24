@@ -50,7 +50,7 @@ const FEATURES = [
   },
 ];
 
-export default function DecodedLanding({ inviteCode }: { inviteCode?: string }) {
+export default function DecodedLanding({ inviteCode, next }: { inviteCode?: string; next?: string }) {
   const [mode, setMode] = useState<"signup" | "signin">("signup");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -63,7 +63,12 @@ export default function DecodedLanding({ inviteCode }: { inviteCode?: string }) 
 
   const supabase = createClient();
 
-  const redirectTo = inviteCode ? `/dashboard?invite=${inviteCode}` : "/dashboard";
+  // Post-auth destination: the intended `next` (e.g. /assess from a "Get started"
+  // CTA) wins, else dashboard (preserving invite context). Used directly for
+  // password auth, and passed to /auth/callback for OAuth + email confirmation.
+  const redirectTo = next ?? (inviteCode ? `/dashboard?invite=${inviteCode}` : "/dashboard");
+  const callbackUrl = (origin: string) =>
+    `${origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -86,7 +91,7 @@ export default function DecodedLanding({ inviteCode }: { inviteCode?: string }) 
             display_name: name || undefined,
             full_name: name || undefined,
           },
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: callbackUrl(window.location.origin),
         },
       });
 
@@ -197,7 +202,7 @@ export default function DecodedLanding({ inviteCode }: { inviteCode?: string }) 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: callbackUrl(window.location.origin),
       },
     });
     if (error) setError(error.message);
