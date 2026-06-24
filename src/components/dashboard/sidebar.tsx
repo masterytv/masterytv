@@ -140,7 +140,7 @@ export function Sidebar({ open, onClose, assessmentCompleted = false, reportId =
             if (isLocked) {
               return (
                 <div
-                  key={item.href}
+                  key={item.label}
                   className="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-text-muted/50 cursor-not-allowed"
                   title="Complete the assessment to unlock"
                 >
@@ -152,7 +152,7 @@ export function Sidebar({ open, onClose, assessmentCompleted = false, reportId =
             }
 
             return (
-              <Fragment key={item.href}>
+              <Fragment key={item.label}>
                 <Link
                   href={item.href}
                   onClick={onClose}
