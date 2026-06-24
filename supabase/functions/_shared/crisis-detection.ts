@@ -31,46 +31,68 @@ const CRISIS_PATTERNS = {
     /\bharm\s+(myself|others|someone)\b/i,
     /\bbetter\s+off\s+(dead|without\s+me)\b/i,
   ],
+  // E7 — intimate-partner abuse / coercive control. Coarse filter; the LLM
+  // confirms intimate-partner context (a strict boss / figurative use is not abuse).
+  abuse: [
+    /\b(afraid|scared|terrified|frightened)\s+of\s+(my|him|her|them|hi[ms]|my\s+(partner|husband|wife|boyfriend|girlfriend|spouse|ex))\b/i,
+    /\b(hits?|hit|beats?|beat|punch|slaps?|chok(e|ed|es|ing)|strangl|shoves?|grab(s|bed)?)\s+me\b/i,
+    /\b(threaten(s|ed)?|threat)\b.{0,40}\b(me|kill|hurt|leave|kids|children)\b/i,
+    /\bwon'?t\s+(let|allow)\s+me\b/i,
+    /\b(not\s+allowed|forbids?\s+me|forbidden)\s+to\b/i,
+    /\bcontrols?\s+(my|who\s+I|where\s+I|what\s+I|the\s+money|all\s+the\s+money|everything|my\s+phone)\b/i,
+    /\b(isolat(e|ed|es|ing)\s+me|cut\s+me\s+off\s+from)\b/i,
+    /\b(monitors?|tracks?|checks?)\s+(my|me|my\s+phone|where\s+I)\b/i,
+    /\btakes?\s+my\s+(phone|money|keys|passport|car)\b/i,
+    /\b(coerc|forced?\s+me|made\s+me)\b.{0,30}\b(sex|do|stay|sign)\b/i,
+    /\bif\s+I\s+(leave|try\s+to\s+leave|tell|call)\b.{0,40}\b(he|she|they|kill|hurt|take)\b/i,
+  ],
 };
+
+export type CrisisCategory = "self_harm" | "abuse" | "none";
 
 export interface CrisisResult {
   isCrisis: boolean;
   severity: "high" | "moderate" | "none";
+  category: CrisisCategory;
   matchedKeywords: string[];
 }
 
 /**
  * Layer 1: Fast keyword scan (<1ms). Runs on every message.
- * Returns severity: high (immediate danger), moderate (concerning), none.
+ * Checks self-harm (high → moderate) then abuse / coercive control.
  */
 export function detectCrisisKeywords(message: string): CrisisResult {
-  const matchedKeywords: string[] = [];
-
-  // Check high-severity patterns first
+  // Self-harm — high severity first
+  const high: string[] = [];
   for (const pattern of CRISIS_PATTERNS.high) {
     const match = message.match(pattern);
-    if (match) {
-      matchedKeywords.push(match[0]);
-    }
+    if (match) high.push(match[0]);
+  }
+  if (high.length > 0) {
+    return { isCrisis: true, severity: "high", category: "self_harm", matchedKeywords: high };
   }
 
-  if (matchedKeywords.length > 0) {
-    return { isCrisis: true, severity: "high", matchedKeywords };
-  }
-
-  // Check moderate patterns
+  // Self-harm — moderate
+  const moderate: string[] = [];
   for (const pattern of CRISIS_PATTERNS.moderate) {
     const match = message.match(pattern);
-    if (match) {
-      matchedKeywords.push(match[0]);
-    }
+    if (match) moderate.push(match[0]);
+  }
+  if (moderate.length > 0) {
+    return { isCrisis: true, severity: "moderate", category: "self_harm", matchedKeywords: moderate };
   }
 
-  if (matchedKeywords.length > 0) {
-    return { isCrisis: true, severity: "moderate", matchedKeywords };
+  // Abuse / coercive control — always high; LLM confirms intimate-partner context.
+  const abuse: string[] = [];
+  for (const pattern of CRISIS_PATTERNS.abuse) {
+    const match = message.match(pattern);
+    if (match) abuse.push(match[0]);
+  }
+  if (abuse.length > 0) {
+    return { isCrisis: true, severity: "high", category: "abuse", matchedKeywords: abuse };
   }
 
-  return { isCrisis: false, severity: "none", matchedKeywords: [] };
+  return { isCrisis: false, severity: "none", category: "none", matchedKeywords: [] };
 }
 
 /**
@@ -118,6 +140,68 @@ Is this a genuine expression of suicidal ideation, self-harm, or intent to harm 
 }
 
 /**
+ * Abuse confirmation (Layer 2 for the abuse category). Filters false positives:
+ * a strict boss, figurative language, or control unrelated to an intimate
+ * partner is NOT abuse. Safety-first fallback to flagged if the LLM is down.
+ */
+export async function confirmAbuseWithLLM(
+  message: string,
+  matchedKeywords: string[]
+): Promise<boolean> {
+  try {
+    const response = await callClaude({
+      system:
+        "You are a safety classifier for intimate-partner abuse. Determine if the message discloses intimate-partner abuse, coercive control, or fear for one's safety in a relationship — physical violence, threats, intimidation, or control over money/movement/contact/communication (isolation, monitoring). Respond with ONLY 'ABUSE' or 'NOT_ABUSE'. Figurative/casual language, or control by a non-partner (e.g. a strict boss or parent of an adult), is NOT_ABUSE.",
+      messages: [
+        {
+          role: "user",
+          content: `Message: "${message.slice(0, 500)}"
+
+Keywords flagged: ${matchedKeywords.join(", ")}
+
+Does this disclose intimate-partner abuse or coercive control?`,
+        },
+      ],
+      maxTokens: 10,
+    });
+
+    const text = response.content
+      .filter((b) => b.type === "text")
+      .map((b) => b.text ?? "")
+      .join("")
+      .trim()
+      .toUpperCase();
+
+    return text.includes("ABUSE") && !text.includes("NOT");
+  } catch (e) {
+    console.warn(
+      "[abuse-l2] LLM check failed, defaulting to flag:",
+      (e as Error).message
+    );
+    return true; // safety-first
+  }
+}
+
+/**
+ * Build the DV / abuse response — routes to specialist resources and makes
+ * clear the coach will NOT coach or mediate an unsafe/controlling relationship.
+ */
+export function buildAbuseResponse(): string {
+  return `Thank you for trusting me with this. What you're describing — feeling unsafe, controlled, or afraid in your relationship — matters, and you deserve support from people trained specifically for it.
+
+**I'm an AI coach, and this is beyond what I can help with. I won't try to coach or mediate a relationship where you feel unsafe — that's not something to "work on," and your safety comes first.**
+
+Please reach out to people who can help, free and confidential, 24/7:
+
+📞 **National Domestic Violence Hotline** — call **1-800-799-7233**, or text **START** to **88788**
+💬 **Online chat & international resources** — https://www.thehotline.org
+
+If you're in immediate danger, please call **911** or your local emergency number.
+
+None of this is your fault, and you don't have to figure it out alone. I'm here for other things whenever you're ready. 💛`;
+}
+
+/**
  * Build the crisis response message.
  * Same response regardless of channel — formatted as markdown.
  */
@@ -161,12 +245,14 @@ export async function logCrisisFlag(
   severity: "high" | "moderate",
   matchedKeywords: string[],
   llmConfirmed: boolean,
-  message: string
+  message: string,
+  category: CrisisCategory = "self_harm"
 ): Promise<void> {
   try {
     await supabase.from("crisis_flags").insert({
       user_id: userId,
       severity,
+      category,
       matched_keywords: matchedKeywords,
       llm_confirmed: llmConfirmed,
       message_excerpt: message.slice(0, 200),
@@ -200,30 +286,37 @@ export async function runCrisisDetection(
     return { isCrisis: false };
   }
 
-  // High severity → immediate response. Moderate → LLM context check.
-  let confirmedCrisis = true;
-  if (keywords.severity === "moderate") {
-    confirmedCrisis = await confirmCrisisWithLLM(
-      message,
-      keywords.matchedKeywords
-    );
+  // Severity is always high|moderate when isCrisis (abuse is high).
+  const severity: "high" | "moderate" =
+    keywords.severity === "moderate" ? "moderate" : "high";
+
+  // Abuse + moderate self-harm get an LLM context check (false-positive prone).
+  // High-severity self-harm responds immediately.
+  let confirmed = true;
+  if (keywords.category === "abuse") {
+    confirmed = await confirmAbuseWithLLM(message, keywords.matchedKeywords);
+  } else if (keywords.severity === "moderate") {
+    confirmed = await confirmCrisisWithLLM(message, keywords.matchedKeywords);
   }
 
-  if (confirmedCrisis) {
-    // Log confirmed crisis
+  if (confirmed) {
     await logCrisisFlag(
       supabase,
       userId,
-      keywords.severity,
+      severity,
       keywords.matchedKeywords,
       true,
-      message
+      message,
+      keywords.category
     );
 
     return {
       isCrisis: true,
-      response: buildCrisisResponse(keywords.severity),
-      severity: keywords.severity,
+      response:
+        keywords.category === "abuse"
+          ? buildAbuseResponse()
+          : buildCrisisResponse(severity),
+      severity,
     };
   }
 
@@ -231,10 +324,11 @@ export async function runCrisisDetection(
   await logCrisisFlag(
     supabase,
     userId,
-    keywords.severity,
+    severity,
     keywords.matchedKeywords,
     false,
-    message
+    message,
+    keywords.category
   );
   console.log(
     `[crisis] False positive cleared by LLM: "${keywords.matchedKeywords.join(", ")}"`
