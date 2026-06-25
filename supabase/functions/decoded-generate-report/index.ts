@@ -812,9 +812,17 @@ async function generateReport(
   userId: string,
   classifiedZScores: Record<string, number> = {},
 ): Promise<void> {
-  const openaiKey = Deno.env.get("OPENAI_API_KEY");
+  // Per-brand OpenAI account: a relationship report (Relatti's short battery —
+  // no career measures) uses the Relatti key; everything else uses the main key.
+  // Falls back to the main key if the brand key isn't set, mirroring Resend.
+  const isRelationshipReport = !scoreRows.some(
+    (s) => s.instrument_id === "riasec" || s.instrument_id === "weims",
+  );
+  const openaiKey =
+    (isRelationshipReport && Deno.env.get("OPENAI_API_KEY_RELATTI")) ||
+    Deno.env.get("OPENAI_API_KEY");
   if (!openaiKey) {
-    console.error("[decoded-generate-report] OPENAI_API_KEY not set");
+    console.error("[decoded-generate-report] No OpenAI API key set");
     return;
   }
 
