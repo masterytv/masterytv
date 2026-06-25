@@ -19,6 +19,8 @@ interface SendEmailParams {
   text?: string;
   replyTo?: string;
   headers?: Record<string, string>;
+  /** Override the default sender (e.g. a per-brand from address). */
+  from?: string;
 }
 
 interface SendEmailResult {
@@ -36,7 +38,7 @@ export async function sendEmail(
   if (!apiKey) throw new Error("RESEND_API_KEY not set");
 
   const body: Record<string, unknown> = {
-    from: FROM_ADDRESS,
+    from: params.from ?? FROM_ADDRESS,
     to: [params.to],
     subject: params.subject,
     html: params.html,
