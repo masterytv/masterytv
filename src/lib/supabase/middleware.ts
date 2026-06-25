@@ -67,10 +67,11 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
-  // relatti.com root → the Relatti landing (host-based, so the cookie/override
-  // can't hijack the MasteryTV apex). Rewrite (not redirect): the URL stays
-  // relatti.com/ while serving the static /relatti landing.
-  if (pathname === "/" && resolveBrand(request.headers.get("host")).id === "relatti") {
+  // Root → the Relatti landing whenever the effective brand is Relatti — by
+  // host (relatti.com) in prod, or by ?brand= / cookie preview on localhost +
+  // staging. Uses the same resolved brandId as theming so the landing, surface,
+  // and theme stay consistent. Rewrite (not redirect): the URL stays "/".
+  if (pathname === "/" && brandId === "relatti") {
     const url = request.nextUrl.clone();
     url.pathname = "/relatti";
     return NextResponse.rewrite(url);
