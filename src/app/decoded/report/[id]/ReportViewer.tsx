@@ -477,12 +477,15 @@ export default function ReportViewer({ report: initialReport, scores, sharedOwne
   // trims older Relatti reports that were generated before the generator skip,
   // so their empty Career/Wellbeing/Emotions sections never render.
   const RELATIONSHIP_SECTION_IDS = ['S1', 'S2', 'S3', 'S5', 'S8'];
-  const renderConfigs = isRelationshipReport
-    ? SECTION_CONFIGS.filter((c) => RELATIONSHIP_SECTION_IDS.includes(c.id) && sections[c.id])
-    : SECTION_CONFIGS;
+  // The sections this report is EXPECTED to have (drives progress + the
+  // auto-retrigger/poll). Relationship reports expect only the allow-list.
+  const expectedSectionIds = isRelationshipReport
+    ? RELATIONSHIP_SECTION_IDS
+    : SECTION_CONFIGS.map((c) => c.id);
+  const renderConfigs = SECTION_CONFIGS.filter((c) => expectedSectionIds.includes(c.id));
 
-  const totalSections = renderConfigs.length;
-  const generatedCount = Object.keys(sections).length;
+  const totalSections = expectedSectionIds.length;
+  const generatedCount = expectedSectionIds.filter((id) => sections[id]).length;
   const isGenerating = generatedCount < totalSections;
 
   // Voice change handler
