@@ -472,8 +472,13 @@ export default function ReportViewer({ report: initialReport, scores, sharedOwne
   const isRelationshipReport =
     reportVersion === 2 &&
     !scores.some((s) => s.instrument_id === 'riasec' || s.instrument_id === 'weims');
+  // Relationship reports show only the relationship-relevant sections that were
+  // generated. The explicit allow-list (not just "what's in sections") also
+  // trims older Relatti reports that were generated before the generator skip,
+  // so their empty Career/Wellbeing/Emotions sections never render.
+  const RELATIONSHIP_SECTION_IDS = ['S1', 'S2', 'S3', 'S5', 'S8'];
   const renderConfigs = isRelationshipReport
-    ? SECTION_CONFIGS.filter((c) => sections[c.id])
+    ? SECTION_CONFIGS.filter((c) => RELATIONSHIP_SECTION_IDS.includes(c.id) && sections[c.id])
     : SECTION_CONFIGS;
 
   const totalSections = renderConfigs.length;
