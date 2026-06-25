@@ -577,7 +577,14 @@ Return valid JSON with exactly this structure:
 RULES:
 - how_you_fight: exactly 5 stages
 - what_you_need_to_hear: exactly 5 phrases
-- This section should feel deeply personal. Generic relationship advice is unacceptable.`,
+- This section should feel deeply personal. Generic relationship advice is unacceptable.
+- ATTACHMENT FRAMING (critical — people reject clinical labels): refer to their
+  attachment style by its WARM name, never the clinical term. Map:
+  Secure → "Anchored", Anxious-Preoccupied → "The Devoted",
+  Dismissive-Avoidant → "The Independent", Fearful-Avoidant → "The Guarded Heart".
+  Frame it as a strategy they learned to stay safe and loved — a starting point
+  that can grow toward secure — never a flaw or diagnosis. Describe it through what
+  they NEED (closeness, reassurance, space), not what they "fear" or "avoid".`,
   },
   {
     sectionId: "S6",
