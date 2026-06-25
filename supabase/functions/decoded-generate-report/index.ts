@@ -404,6 +404,7 @@ CRITICAL RULES:
 - End every section with agency: what the user CAN do, not what's wrong
 - If scores indicate clinical-level distress, recommend professional support gently
 - The coaching question at the end must be specific to THIS person's data, not generic
+- Phrase every coach_question in the FIRST PERSON, as the user would ask their own coach ("How can I…", "Why do I…", "What would help me…") — never second person ("How can you…")
 
 WRITING RULES (apply to every voice):
 - Separate clauses with commas, colons, semicolons, or parentheses. Do not use em dashes.
@@ -923,11 +924,14 @@ async function generateReport(
       continue;
     }
     try {
+      const relationshipBlock = isRelationshipReport
+        ? `\n\nRELATIONSHIP REPORT (Relatti): this person is here to understand their ROMANTIC RELATIONSHIP. Frame the coach_question — and the section's relevance — around their relationship, partner, closeness, and connection. Never about career, work, or generic self-improvement.`
+        : '';
       const systemPrompt = `${V2_SAFETY_RULES}
 
 ${voiceBlock}
 
-${template.sectionInstructions}`;
+${template.sectionInstructions}${relationshipBlock}`;
 
       const userPrompt = `Here is the assessment data for this person:
 
