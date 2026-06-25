@@ -15,6 +15,8 @@
  * Sprint 0.4 — S0.4.1
  */
 
+import { attachmentNaming } from './attachment-style';
+
 // ─── Assessment Profile Schema ────────────────────────────
 
 export interface AssessmentProfile {
@@ -343,7 +345,7 @@ function deriveCoachingPriorities(
   const ecr = scoreMap.get('ecr_r_short');
   const attachStyle = ecr?.interpretation?.attachmentStyle as string | undefined;
   if (attachStyle && attachStyle !== 'secure') {
-    priorities.push({ priority: `Explore ${attachStyle} attachment patterns in relationships`, weight: 6 });
+    priorities.push({ priority: `Explore how their "${attachmentNaming(attachStyle).name}" attachment pattern shapes closeness and trust`, weight: 6 });
   }
 
   // Low self-compassion
