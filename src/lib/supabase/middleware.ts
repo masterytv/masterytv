@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { resolveBrand, isBrandId } from "@/lib/platform/brand";
+import { resolveBrandId, isBrandId } from "@/lib/platform/brand";
 
 /**
  * Unified auth middleware for Mastery.
@@ -53,10 +53,14 @@ export async function updateSession(request: NextRequest) {
   // staging survives navigation. Production uses the host (no param/cookie).
   const paramBrand = request.nextUrl.searchParams.get("brand");
   const cookieBrand = request.cookies.get("brand")?.value;
-  let brandId = resolveBrand(request.headers.get("host")).id;
-  if (isBrandId(cookieBrand)) brandId = cookieBrand;
+  const brandId = resolveBrandId({
+    host: request.headers.get("host"),
+    param: paramBrand,
+    cookie: cookieBrand,
+  });
+  // Persist a ?brand= override so it survives navigation (preview on the default
+  // host). On a dedicated brand host the host wins anyway, so this is harmless.
   if (isBrandId(paramBrand)) {
-    brandId = paramBrand;
     supabaseResponse.cookies.set("brand", paramBrand, {
       path: "/",
       maxAge: 60 * 60 * 24 * 30,

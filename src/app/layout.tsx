@@ -88,8 +88,9 @@ export default function RootLayout({
                   var relattiPath = /^\/(relatti|couples|engaged|premarital)(\/|$)/.test(path);
                   var hostBrand = (relattiHost || relattiPath) ? 'relatti' : 'masterytv';
                   var brand = (urlBrand === 'relatti' || urlBrand === 'masterytv') ? urlBrand
+                    : (relattiHost || relattiPath) ? 'relatti'
                     : (cookieBrand === 'relatti' || cookieBrand === 'masterytv') ? cookieBrand
-                    : hostBrand;
+                    : 'masterytv';
                   document.documentElement.setAttribute('data-brand', brand);
                 } catch(e) {}
               })();
