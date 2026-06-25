@@ -24,7 +24,6 @@ import {
   Flame,
   Users,
   BarChart3,
-  Sparkles,
   MessageSquare,
   FileText,
   ChevronRight,
@@ -113,7 +112,7 @@ const HOW_IT_WORKS = [
   },
   {
     step: 3,
-    icon: Sparkles,
+    icon: MessageSquare,
     title: "Meet Your Coach",
     description:
       "An AI coach that has read your entire report. It knows your strengths, blind spots, and how you communicate.",
@@ -251,11 +250,11 @@ export default function LandingPage({ isLoggedIn, userName }: LandingPageProps) 
               </div>
             ) : (
               <>
-                <Link href="/decoded" className="landing__cta-ghost" id="nav-sign-in">
+                <Link href="/login" className="landing__cta-ghost" id="nav-sign-in">
                   Sign In
                 </Link>
                 <Link
-                  href="/decoded"
+                  href="/assess"
                   className="landing__cta-primary landing__cta-primary--sm"
                   id="nav-get-started"
                 >
@@ -302,7 +301,7 @@ export default function LandingPage({ isLoggedIn, userName }: LandingPageProps) 
                   <ArrowRight className="w-5 h-5" />
                 </Link>
               ) : (
-                <Link href="/decoded" className="landing__cta-gold" id="hero-cta">
+                <Link href="/assess" className="landing__cta-gold" id="hero-cta">
                   Take the Free Assessment
                   <ArrowRight className="w-5 h-5" />
                 </Link>
@@ -372,7 +371,6 @@ export default function LandingPage({ isLoggedIn, userName }: LandingPageProps) 
               className="landing__section-label"
               style={{ justifyContent: "center" }}
             >
-              <Sparkles className="w-4 h-4" />
               How It Works
             </p>
             <h2
@@ -553,7 +551,7 @@ export default function LandingPage({ isLoggedIn, userName }: LandingPageProps) 
               : "Know yourself. Grow yourself. Start today — it's free."}
           </p>
           <Link
-            href={isLoggedIn ? "/dashboard" : "/decoded"}
+            href={isLoggedIn ? "/dashboard" : "/assess"}
             className="landing__cta-gold"
             id="final-cta"
           >

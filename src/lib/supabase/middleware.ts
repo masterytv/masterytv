@@ -95,7 +95,7 @@ export async function updateSession(request: NextRequest) {
   }
   if (pathname.startsWith("/coachapp/login")) {
     const url = request.nextUrl.clone();
-    url.pathname = "/decoded";
+    url.pathname = "/login";
     return NextResponse.redirect(url);
   }
   // /coachapp/onboarding relocated to /onboarding (PA1). Keeps search (?redo=1).
@@ -112,7 +112,7 @@ export async function updateSession(request: NextRequest) {
   }
   if (pathname === "/coachapp" || pathname === "/coachapp/") {
     const url = request.nextUrl.clone();
-    url.pathname = user ? "/dashboard" : "/decoded";
+    url.pathname = user ? "/dashboard" : "/login";
     return NextResponse.redirect(url);
   }
 
@@ -137,7 +137,7 @@ export async function updateSession(request: NextRequest) {
     // Preserve where they were headed (e.g. /assess) so auth returns them there
     // instead of dumping everyone on /dashboard. Generic for every brand/route.
     const intended = pathname + (request.nextUrl.search || "");
-    url.pathname = "/decoded";
+    url.pathname = "/login";
     url.search = `?next=${encodeURIComponent(intended)}`;
     return NextResponse.redirect(url);
   }
