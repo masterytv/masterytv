@@ -76,6 +76,21 @@ function brandForHost(host: string): EmailBrand {
   return host.toLowerCase().includes("relatti") ? BRANDS.relatti : BRANDS.masterytv;
 }
 
+/**
+ * Resolve the brand for an email. Prefers an explicit ?brand= in redirect_to
+ * (so localhost/staging preview works), else infers from the host (production).
+ */
+function brandForRequest(redirectTo: string): EmailBrand {
+  try {
+    const url = new URL(redirectTo);
+    const param = url.searchParams.get("brand");
+    if (param && BRANDS[param]) return BRANDS[param];
+    return brandForHost(url.hostname);
+  } catch {
+    return BRANDS.masterytv;
+  }
+}
+
 interface HookPayload {
   user: { email: string };
   email_data: {
@@ -218,14 +233,7 @@ Deno.serve(async (req: Request) => {
   try {
     const { user, email_data } = data;
 
-    let host = "";
-    try {
-      host = new URL(email_data.redirect_to || email_data.site_url).hostname;
-    } catch {
-      // Fall back to default brand below
-    }
-
-    const brand = brandForHost(host);
+    const brand = brandForRequest(email_data.redirect_to || email_data.site_url);
     const copy = actionCopy(email_data.email_action_type, brand.name);
     const link = buildLink(email_data);
     const html = buildHtml(brand, copy, link);
@@ -233,7 +241,7 @@ Deno.serve(async (req: Request) => {
 
     await sendResendEmail({ to: user.email, subject: copy.subject, html, text, from: brand.from });
 
-    console.log(`[${FUNCTION_NAME}] sent ${email_data.email_action_type} for ${brand.name} → ${host}`);
+    console.log(`[${FUNCTION_NAME}] sent ${email_data.email_action_type} for ${brand.name}`);
     return new Response(JSON.stringify({}), {
       status: 200,
       headers: { "Content-Type": "application/json" },

@@ -152,7 +152,9 @@ export default function LoginPanel({
     }
 
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/callback`,
+      // Carry the brand so the Send Email Hook can brand the reset email even
+      // on localhost/staging (where the host alone resolves to the default).
+      redirectTo: `${window.location.origin}/auth/callback?brand=${brandId}`,
     });
     setLoading(false);
     if (resetError) {
