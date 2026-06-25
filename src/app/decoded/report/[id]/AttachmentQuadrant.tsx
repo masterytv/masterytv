@@ -13,6 +13,7 @@
  */
 
 import { useState, useCallback } from 'react';
+import { attachmentDisplay } from '@/lib/decoded/report/attachment-style';
 
 interface AttachmentQuadrantProps {
   anxiety: number;    // ECR-R anxiety score (1-7)
@@ -92,10 +93,10 @@ export default function AttachmentQuadrant({
   const dotY = padding + (1 - normY) * plotSize;
 
   const quadrantLabels = [
-    { label: 'Dismissive-\nAvoidant', key: 'Dismissive-Avoidant', x: padding + plotSize * 0.25, y: padding + plotSize * 0.25 },
-    { label: 'Fearful-\nAvoidant', key: 'Fearful-Avoidant', x: padding + plotSize * 0.75, y: padding + plotSize * 0.25 },
-    { label: 'Secure', key: 'Secure', x: padding + plotSize * 0.25, y: padding + plotSize * 0.75 },
-    { label: 'Anxious-\nPreoccupied', key: 'Anxious-Preoccupied', x: padding + plotSize * 0.75, y: padding + plotSize * 0.75 },
+    { label: 'The\nIndependent', key: 'Dismissive-Avoidant', x: padding + plotSize * 0.25, y: padding + plotSize * 0.25 },
+    { label: 'The Guarded\nHeart', key: 'Fearful-Avoidant', x: padding + plotSize * 0.75, y: padding + plotSize * 0.25 },
+    { label: 'Anchored', key: 'Secure', x: padding + plotSize * 0.25, y: padding + plotSize * 0.75 },
+    { label: 'The Devoted', key: 'Anxious-Preoccupied', x: padding + plotSize * 0.75, y: padding + plotSize * 0.75 },
   ];
 
   // Clickable quadrant regions (for hover/tap)
@@ -114,6 +115,7 @@ export default function AttachmentQuadrant({
     'disorganized': 'Fearful-Avoidant',
   };
   const normalizedStyle = legacyMap[style] ?? style;
+  const display = attachmentDisplay(normalizedStyle);
 
   const styleColors: Record<string, string> = {
     'Secure': 'var(--color-accent-emerald)',
@@ -207,7 +209,7 @@ export default function AttachmentQuadrant({
           fontWeight={600}
           fontFamily="var(--font-sans)"
         >
-          Anxiety →
+          Need for Reassurance →
         </text>
         <text
           x={18}
@@ -219,24 +221,23 @@ export default function AttachmentQuadrant({
           fontFamily="var(--font-sans)"
           transform={`rotate(-90, 18, ${size / 2})`}
         >
-          Avoidance →
+          Need for Space →
         </text>
 
         {/* User dot with glow */}
         <circle cx={dotX} cy={dotY} r={16} fill={dotColor} opacity={0.15} />
         <circle cx={dotX} cy={dotY} r={9} fill={dotColor} stroke="var(--color-surface-0)" strokeWidth={2.5} />
 
-        {/* Style label on dot */}
+        {/* Style label on dot — friendly name leads, clinical term as a small ref */}
         <text
           x={dotX}
-          y={dotY - 22}
+          y={dotY - 26}
           textAnchor="middle"
           fill={dotColor}
-          fontSize={14}
-          fontWeight={700}
           fontFamily="var(--font-display)"
         >
-          {normalizedStyle}
+          <tspan x={dotX} fontSize={14} fontWeight={700}>{display.name}</tspan>
+          <tspan x={dotX} dy={13} fontSize={10} fontWeight={500} fill="var(--text-label)" fontFamily="var(--font-sans)">{display.clinical}</tspan>
         </text>
       </svg>
 
@@ -254,7 +255,10 @@ export default function AttachmentQuadrant({
           transition: 'all 0.15s ease',
         }}>
           <div style={{ fontWeight: 600, color: 'var(--text-heading)', marginBottom: '0.125rem' }}>
-            {activeQuadrant}
+            {attachmentDisplay(activeQuadrant).name}
+            <span style={{ fontWeight: 500, fontSize: '0.6875rem', color: 'var(--text-label)', marginLeft: '0.4rem' }}>
+              in research: {attachmentDisplay(activeQuadrant).clinical}
+            </span>
           </div>
           <div style={{ fontStyle: 'italic', color: 'var(--text-label)', marginBottom: '0.5rem', fontSize: '0.8125rem' }}>
             {QUADRANT_INFO[activeQuadrant].tagline}

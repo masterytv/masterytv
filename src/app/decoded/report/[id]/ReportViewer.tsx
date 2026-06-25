@@ -463,8 +463,29 @@ export default function ReportViewer({ report: initialReport, scores, sharedOwne
     : (report.sections ?? {});
 
   const sections = displaySections;
-  const totalSections = SECTION_CONFIGS.length;
-  const generatedCount = Object.keys(sections).length;
+
+  // Relationship report (Relatti's short battery): detected from the scored
+  // instruments (no career measures) — stable across generation. Such reports
+  // render only the sections that were generated (no empty Career/Wellbeing/
+  // Emotions), and everything is unlocked (the relationship section is the core
+  // value, and there's no paywall for the relationship product yet).
+  const isRelationshipReport =
+    reportVersion === 2 &&
+    !scores.some((s) => s.instrument_id === 'riasec' || s.instrument_id === 'weims');
+  // Relationship reports show only the relationship-relevant sections that were
+  // generated. The explicit allow-list (not just "what's in sections") also
+  // trims older Relatti reports that were generated before the generator skip,
+  // so their empty Career/Wellbeing/Emotions sections never render.
+  const RELATIONSHIP_SECTION_IDS = ['S1', 'S2', 'S3', 'S5', 'S8'];
+  // The sections this report is EXPECTED to have (drives progress + the
+  // auto-retrigger/poll). Relationship reports expect only the allow-list.
+  const expectedSectionIds = isRelationshipReport
+    ? RELATIONSHIP_SECTION_IDS
+    : SECTION_CONFIGS.map((c) => c.id);
+  const renderConfigs = SECTION_CONFIGS.filter((c) => expectedSectionIds.includes(c.id));
+
+  const totalSections = expectedSectionIds.length;
+  const generatedCount = expectedSectionIds.filter((id) => sections[id]).length;
   const isGenerating = generatedCount < totalSections;
 
   // Voice change handler
@@ -772,11 +793,12 @@ export default function ReportViewer({ report: initialReport, scores, sharedOwne
         )}
 
         {/* ═══════ AI NARRATIVE SECTIONS ═══════ */}
-        {SECTION_CONFIGS.map((config, index) => {
+        {renderConfigs.map((config, index) => {
           const section = sections[config.id];
-          const isUnlocked = isSectionUnlocked(config.minTier, userTier)
+          const isUnlocked = isRelationshipReport
+            || isSectionUnlocked(config.minTier, userTier)
             || (config.id === 'S5' && shareUnlocked);
-          const showUpgradeGate = config.id === UPGRADE_GATE_AFTER;
+          const showUpgradeGate = !isRelationshipReport && config.id === UPGRADE_GATE_AFTER;
 
           return (
             <div key={config.id}>

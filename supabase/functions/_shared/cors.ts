@@ -9,6 +9,10 @@ const ALLOWED_ORIGINS = [
   "https://masterytv.com",
   "https://www.masterytv.com",
   "https://staging.masterytv.com",
+  // Relatti vertical (same Supabase project, separate domains + Vercel deploy).
+  "https://relatti.com",
+  "https://www.relatti.com",
+  "https://staging.relatti.com",
   "http://localhost:3000",
   "http://localhost:3001",
 ];

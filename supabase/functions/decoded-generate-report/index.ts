@@ -398,11 +398,13 @@ const V2_SAFETY_RULES = `You are a senior personality coach writing a section of
 CRITICAL RULES:
 - Never use diagnostic language ("you have", "you suffer from", "disorder", "condition")
 - Frame all findings as patterns, not pathologies
+- ATTACHMENT NAMING (critical): never use clinical attachment labels in the narrative. Use the warm name — Secure→"Anchored", Anxious-Preoccupied→"The Devoted", Dismissive-Avoidant→"The Independent", Fearful-Avoidant→"The Guarded Heart". Frame attachment as a strategy learned to stay safe and loved (a starting point that can grow toward secure), described through what they need (closeness, reassurance, space), never what they "fear" or "avoid".
 - Always use growth-oriented framing ("an area for exploration", not "a problem")
 - Never expose raw numerical scores in the narrative (use "above average", "notably high", etc.)
 - End every section with agency: what the user CAN do, not what's wrong
 - If scores indicate clinical-level distress, recommend professional support gently
 - The coaching question at the end must be specific to THIS person's data, not generic
+- Phrase every coach_question in the FIRST PERSON, as the user would ask their own coach ("How can I…", "Why do I…", "What would help me…") — never second person ("How can you…")
 
 WRITING RULES (apply to every voice):
 - Separate clauses with commas, colons, semicolons, or parentheses. Do not use em dashes.
@@ -577,7 +579,14 @@ Return valid JSON with exactly this structure:
 RULES:
 - how_you_fight: exactly 5 stages
 - what_you_need_to_hear: exactly 5 phrases
-- This section should feel deeply personal. Generic relationship advice is unacceptable.`,
+- This section should feel deeply personal. Generic relationship advice is unacceptable.
+- ATTACHMENT FRAMING (critical — people reject clinical labels): refer to their
+  attachment style by its WARM name, never the clinical term. Map:
+  Secure → "Anchored", Anxious-Preoccupied → "The Devoted",
+  Dismissive-Avoidant → "The Independent", Fearful-Avoidant → "The Guarded Heart".
+  Frame it as a strategy they learned to stay safe and loved — a starting point
+  that can grow toward secure — never a flaw or diagnosis. Describe it through what
+  they NEED (closeness, reassurance, space), not what they "fear" or "avoid".`,
   },
   {
     sectionId: "S6",
@@ -812,9 +821,17 @@ async function generateReport(
   userId: string,
   classifiedZScores: Record<string, number> = {},
 ): Promise<void> {
-  const openaiKey = Deno.env.get("OPENAI_API_KEY");
+  // Per-brand OpenAI account: a relationship report (Relatti's short battery —
+  // no career measures) uses the Relatti key; everything else uses the main key.
+  // Falls back to the main key if the brand key isn't set, mirroring Resend.
+  const isRelationshipReport = !scoreRows.some(
+    (s) => s.instrument_id === "riasec" || s.instrument_id === "weims",
+  );
+  const openaiKey =
+    (isRelationshipReport && Deno.env.get("OPENAI_API_KEY_RELATTI")) ||
+    Deno.env.get("OPENAI_API_KEY");
   if (!openaiKey) {
-    console.error("[decoded-generate-report] OPENAI_API_KEY not set");
+    console.error("[decoded-generate-report] No OpenAI API key set");
     return;
   }
 
@@ -886,13 +903,35 @@ async function generateReport(
   const sections: Record<string, unknown> = {};
   let completedCount = 0;
 
+  // Program-aware trim: skip sections whose instruments weren't administered, so
+  // a short battery (e.g. Relatti: Big Five + attachment + satisfaction) doesn't
+  // produce empty Career / Wellbeing / Emotions sections. Sections with no entry
+  // here (S1 glance, S8 growth) always generate from whatever data is present.
+  const present = new Set(scoreRows.map((s) => s.instrument_id));
+  const REQUIRED_INSTRUMENTS: Record<string, string[]> = {
+    S2: ["ipip50"],
+    S3: ["ipip50"],
+    S4: ["ders16", "ders18", "scs_sf"],
+    S5: ["ecr_r_short"],
+    S6: ["riasec", "weims"],
+    S7: ["wellness_check", "swls", "flourishing"],
+  };
+
   for (const template of V2_SECTION_TEMPLATES) {
+    const required = REQUIRED_INSTRUMENTS[template.sectionId];
+    if (required && !required.some((id) => present.has(id))) {
+      console.log(`[decoded-generate-report] skip ${template.sectionId} — no instruments (${required.join("/")})`);
+      continue;
+    }
     try {
+      const relationshipBlock = isRelationshipReport
+        ? `\n\nRELATIONSHIP REPORT (Relatti): this person is here to understand their ROMANTIC RELATIONSHIP. Frame the coach_question — and the section's relevance — around their relationship, partner, closeness, and connection. Never about career, work, or generic self-improvement.`
+        : '';
       const systemPrompt = `${V2_SAFETY_RULES}
 
 ${voiceBlock}
 
-${template.sectionInstructions}`;
+${template.sectionInstructions}${relationshipBlock}`;
 
       const userPrompt = `Here is the assessment data for this person:
 

@@ -70,3 +70,27 @@ export function resolveBrand(host?: string | null): Brand {
   }
   return BRANDS[DEFAULT_BRAND_ID];
 }
+
+/**
+ * Unified brand resolution — the single rule for middleware, server, and client.
+ *
+ * Precedence:
+ *   1. explicit ?brand= override (dev/preview on any host)
+ *   2. a DEDICATED brand host (relatti.com) — the domain is authoritative, so a
+ *      stale cookie or a stale inline script can never make it render as another
+ *      brand. This is the key invariant that keeps host + chrome consistent.
+ *   3. brand cookie — only on the default host (localhost / masterytv.com), which
+ *      is how relatti previews there without owning the domain.
+ *   4. default.
+ */
+export function resolveBrandId(opts: {
+  host?: string | null;
+  param?: string | null;
+  cookie?: string | null;
+}): BrandId {
+  if (isBrandId(opts.param)) return opts.param;
+  const hostId = resolveBrand(opts.host).id;
+  if (hostId !== DEFAULT_BRAND_ID) return hostId; // dedicated brand domain wins
+  if (isBrandId(opts.cookie)) return opts.cookie; // preview override on default host
+  return hostId;
+}

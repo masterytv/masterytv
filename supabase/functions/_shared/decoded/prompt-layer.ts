@@ -14,6 +14,7 @@
  */
 
 import type { AssessmentProfile } from './assessment-profile';
+import { attachmentNaming } from './attachment-style.ts';
 
 /**
  * Build the Decoded Assessment context block for the coaching system prompt.
@@ -52,10 +53,12 @@ export function buildDecodedProfileLayer(profile: AssessmentProfile): string {
   parts.push('');
 
   // ── Attachment ──
-  parts.push(`ATTACHMENT STYLE: ${capitalize(profile.attachment.style)}`);
+  const att = attachmentNaming(profile.attachment.style);
+  parts.push(`ATTACHMENT STYLE: ${att.name} (clinically: ${att.clinical})`);
+  parts.push(`  LANGUAGE: call this "${att.name}" with the user — never the clinical label. Frame it as a strategy they learned to stay safe and loved (a starting point, not a flaw or diagnosis), described through what they need — not what they "fear" or "avoid".`);
   if (profile.attachment.style !== 'secure') {
-    parts.push(`  Anxiety: ${profile.attachment.anxietyLevel.toFixed(1)}/7 | Avoidance: ${profile.attachment.avoidanceLevel.toFixed(1)}/7`);
-    parts.push(`  Note: Be aware of this in how you build trust and handle challenge/withdrawal patterns.`);
+    parts.push(`  Need for reassurance: ${profile.attachment.anxietyLevel.toFixed(1)}/7 | Need for space: ${profile.attachment.avoidanceLevel.toFixed(1)}/7`);
+    parts.push(`  Note: Be aware of this in how you build trust and handle closeness/withdrawal patterns.`);
   }
   parts.push('');
 

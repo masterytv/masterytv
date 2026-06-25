@@ -1,42 +1,21 @@
-import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import type { Metadata } from "next";
-import DecodedLanding from "./DecodedLanding";
-
-export const metadata: Metadata = {
-  title: "Decoded — Know Yourself. Master Everything.",
-  description:
-    "A 30-minute personality assessment that reveals your Big Five traits, attachment style, emotional regulation, career interests, and more. Get a personalized coaching report powered by AI.",
-  openGraph: {
-    title: "Decoded — Deep Personality Assessment",
-    description:
-      "Discover your personality across 13 scientifically-validated dimensions. Free Core assessment.",
-    type: "website",
-  },
-};
 
 interface PageProps {
-  searchParams: Promise<{ invite?: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
 /**
- * /decoded — Landing page with auth gate.
- * Authenticated users are redirected to /decoded/assess.
- * Unauthenticated users see the landing + login form.
- *
- * Accepts ?invite=[code] from invite landing page to preserve
- * invite context through the auth flow.
+ * /decoded — retired as a marketing/auth page (its copy duplicated the home
+ * page). It now forwards to the clean, brand-aware /login, preserving context
+ * (invite / next / error / ref). Every historical /decoded link keeps working;
+ * /login handles the authed-user case.
  */
 export default async function DecodedPage({ searchParams }: PageProps) {
-  const { invite } = await searchParams;
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  // Already authenticated → go to unified dashboard (preserve invite if present)
-  if (user) {
-    const redirectUrl = invite ? `/dashboard?invite=${invite}` : "/dashboard";
-    redirect(redirectUrl);
+  const params = await searchParams;
+  const qs = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (typeof value === "string") qs.set(key, value);
   }
-
-  return <DecodedLanding inviteCode={invite} />;
+  const query = qs.toString();
+  redirect(`/login${query ? `?${query}` : ""}`);
 }

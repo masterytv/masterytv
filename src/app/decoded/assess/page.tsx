@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import AssessmentEngine from "./AssessmentEngine";
 import CompletedAssessment from "./CompletedAssessment";
+import { getBrand } from "@/lib/platform/brand.server";
+import { getBattery } from "@/lib/decoded/instruments/batteries";
 
 export const metadata: Metadata = {
   title: "Decoded — Assessment",
@@ -75,7 +77,11 @@ export default async function AssessPage() {
     }
   }
 
-  // 3. Render engine (either resuming or fresh)
+  // 3. Render engine (either resuming or fresh) with the program-aware battery
+  const brand = await getBrand();
+  const { instruments, enableAddons, estimatedMinutes, relationshipMode } =
+    getBattery(brand.programSlug);
+
   return (
     <AssessmentEngine
       userId={user.id}
@@ -83,6 +89,10 @@ export default async function AssessPage() {
       savedProgress={savedProgress}
       resumeInstrument={existingAssessment?.current_instrument ?? null}
       resumeItemIndex={existingAssessment?.current_item_index ?? 0}
+      battery={instruments}
+      enableAddons={enableAddons}
+      estimatedMinutes={estimatedMinutes}
+      relationshipMode={relationshipMode}
     />
   );
 }

@@ -12,19 +12,20 @@
  * SSR + first client render use the default, then it re-resolves on mount.
  */
 import { useEffect, useState } from "react";
-import { resolveBrand, isBrandId, BRANDS, DEFAULT_BRAND_ID, type Brand } from "@/lib/platform/brand";
+import { resolveBrandId, BRANDS, DEFAULT_BRAND_ID, type Brand } from "@/lib/platform/brand";
 
-/** Synchronous client-side brand resolution (URL > cookie > data-brand > host). */
+/**
+ * Synchronous client-side brand resolution via the shared rule. Reads the host
+ * directly (not the data-brand attribute, which defaults to "masterytv" in SSR
+ * and would mislead the chrome if the inline script lagged), so a dedicated
+ * brand host is always authoritative.
+ */
 export function resolveBrandClient(): Brand {
   if (typeof window === "undefined") return BRANDS[DEFAULT_BRAND_ID];
-  const url = new URLSearchParams(window.location.search).get("brand");
-  if (isBrandId(url)) return BRANDS[url];
+  const param = new URLSearchParams(window.location.search).get("brand");
   const m = document.cookie.match(/(?:^|; )brand=([^;]+)/);
   const cookie = m ? decodeURIComponent(m[1]) : null;
-  if (isBrandId(cookie)) return BRANDS[cookie];
-  const attr = document.documentElement.dataset.brand;
-  if (isBrandId(attr)) return BRANDS[attr];
-  return resolveBrand(window.location.hostname);
+  return BRANDS[resolveBrandId({ host: window.location.hostname, param, cookie })];
 }
 
 export function useBrand(): Brand {
