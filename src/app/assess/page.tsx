@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import AssessmentEngine from "@/app/decoded/assess/AssessmentEngine";
+import { getBrand } from "@/lib/platform/brand.server";
+import { getBattery } from "@/lib/decoded/instruments/batteries";
 
 export const metadata: Metadata = {
   title: "Decoded — Assessment",
@@ -76,6 +78,13 @@ export default async function AssessPage({
     }
   }
 
+  // Program-aware battery: Relatti (relationship) gets the short relationship
+  // set; MasteryTV (general) the full Core + adaptive add-ons. Resolved from the
+  // active brand's program (by host in prod, ?brand= override on staging).
+  const brand = await getBrand();
+  const { instruments, enableAddons, estimatedMinutes, relationshipMode } =
+    getBattery(brand.programSlug);
+
   return (
     <AssessmentEngine
       userId={user.id}
@@ -83,6 +92,10 @@ export default async function AssessPage({
       savedProgress={savedProgress}
       resumeInstrument={existingAssessment?.current_instrument ?? null}
       resumeItemIndex={existingAssessment?.current_item_index ?? 0}
+      battery={instruments}
+      enableAddons={enableAddons}
+      estimatedMinutes={estimatedMinutes}
+      relationshipMode={relationshipMode}
     />
   );
 }

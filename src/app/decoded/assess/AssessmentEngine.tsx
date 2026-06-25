@@ -9,9 +9,9 @@ import {
   Leaf, Link2, Loader2, Mail, Save, Shield, User, Users, X, Zap,
 } from "lucide-react";
 import {
-  CORE_INSTRUMENTS,
   ADDON_INSTRUMENTS,
   WELLNESS_CHECK_SCALES,
+  type InstrumentDef,
 } from "@/lib/decoded/instruments";
 import { scoreAssessment, type ScoringResult } from "./actions";
 import { generateReport } from "@/lib/decoded/report/generate";
@@ -23,6 +23,14 @@ interface Props {
   savedProgress: Record<string, Record<string, number>> | null;
   resumeInstrument: string | null;
   resumeItemIndex: number;
+  /** The instruments to administer (program-aware; see batteries.ts). */
+  battery: InstrumentDef[];
+  /** Whether the adaptive add-on phase runs after the core battery. */
+  enableAddons: boolean;
+  /** Completion estimate for the welcome screen (e.g. "8–12"). */
+  estimatedMinutes: string;
+  /** Relationship-framed intro copy (dimensions, consent). */
+  relationshipMode: boolean;
 }
 
 type Phase = "welcome" | "invite" | "primer" | "profile" | "core" | "addon_selection" | "addons" | "complete";
@@ -42,6 +50,14 @@ const EXPLORE_DIMENSIONS = [
   { icon: Briefcase, label: "Career & Values", desc: "What drives and fulfills you" },
 ];
 
+// Relatti (relationship program): a focused, relationship-framed set.
+const RELATIONSHIP_DIMENSIONS = [
+  { icon: Fingerprint, label: "Your Personality", desc: "How you think and connect" },
+  { icon: Heart, label: "Attachment Style", desc: "How you bond and seek closeness" },
+  { icon: Activity, label: "Emotional Patterns", desc: "How you handle conflict and stress" },
+  { icon: Users, label: "Relationship Fit", desc: "What you need from a partner" },
+];
+
 const RELATIONSHIP_TYPES = [
   { icon: Heart, label: "Your partner" },
   { icon: Users, label: "A close friend" },
@@ -55,6 +71,10 @@ export default function AssessmentEngine({
   savedProgress,
   resumeInstrument,
   resumeItemIndex,
+  battery,
+  enableAddons,
+  estimatedMinutes,
+  relationshipMode,
 }: Props) {
   const supabase = createClient();
 
@@ -131,7 +151,7 @@ export default function AssessmentEngine({
   // All instruments being presented in current phase
   const currentInstruments = phase === "addons"
     ? ADDON_INSTRUMENTS.filter(i => selectedAddons.includes(i.id))
-    : CORE_INSTRUMENTS;
+    : battery;
 
   const currentInst = phase === "addons"
     ? currentInstruments[addonInstrumentIndex]
@@ -140,8 +160,8 @@ export default function AssessmentEngine({
   const currentItem = currentInst?.items[itemIndex];
 
   // Total items for progress calculation
-  const totalCoreItems = CORE_INSTRUMENTS.reduce((s, i) => s + i.itemCount, 0);
-  const completedCoreItems = CORE_INSTRUMENTS.slice(0, instrumentIndex).reduce(
+  const totalCoreItems = battery.reduce((s, i) => s + i.itemCount, 0);
+  const completedCoreItems = battery.slice(0, instrumentIndex).reduce(
     (s, i) => s + i.itemCount, 0
   ) + itemIndex;
   const progressPercent = phase === "core"
@@ -152,7 +172,7 @@ export default function AssessmentEngine({
   // ── Resume logic ──
   useEffect(() => {
     if (resumeInstrument && savedProgress) {
-      const idx = CORE_INSTRUMENTS.findIndex(i => i.id === resumeInstrument);
+      const idx = battery.findIndex(i => i.id === resumeInstrument);
       if (idx >= 0) {
         setInstrumentIndex(idx);
         setItemIndex(resumeItemIndex);
@@ -195,7 +215,7 @@ export default function AssessmentEngine({
       .insert({
         user_id: userId,
         current_layer: "core",
-        current_instrument: CORE_INSTRUMENTS[0].id,
+        current_instrument: battery[0].id,
         current_item_index: 0,
       })
       .select("id")
@@ -207,7 +227,7 @@ export default function AssessmentEngine({
       await supabase.from("assessment_progress").insert({
         assessment_id: data.id,
         user_id: userId,
-        current_instrument: CORE_INSTRUMENTS[0].id,
+        current_instrument: battery[0].id,
         current_item_index: 0,
         responses: {},
       });
@@ -289,18 +309,21 @@ export default function AssessmentEngine({
     } else {
       // End of instrument
       if (phase === "core") {
-        if (instrumentIndex < CORE_INSTRUMENTS.length - 1) {
+        if (instrumentIndex < battery.length - 1) {
           // Next Core instrument
           const nextInstIdx = instrumentIndex + 1;
           setInstrumentIndex(nextInstIdx);
           setItemIndex(0);
           setShowSectionIntro(true);
           itemStartTime.current = Date.now();
-          saveProgress(newResponses, CORE_INSTRUMENTS[nextInstIdx].id, 0);
-        } else {
-          // Core complete → addon selection
+          saveProgress(newResponses, battery[nextInstIdx].id, 0);
+        } else if (enableAddons) {
+          // Core complete → adaptive add-on selection (MasteryTV)
           setPhase("addon_selection");
           saveProgress(newResponses, "addon_selection", 0);
+        } else {
+          // Fixed battery (e.g. Relatti): no add-ons → score + report now
+          completeAssessment(newResponses);
         }
       } else if (phase === "addons") {
         const addonInsts = ADDON_INSTRUMENTS.filter(i => selectedAddons.includes(i.id));
@@ -334,8 +357,8 @@ export default function AssessmentEngine({
   function handleBack() {
     if (phase === "addon_selection") {
       setPhase("core");
-      setInstrumentIndex(CORE_INSTRUMENTS.length - 1);
-      setItemIndex(CORE_INSTRUMENTS[CORE_INSTRUMENTS.length - 1].items.length - 1);
+      setInstrumentIndex(battery.length - 1);
+      setItemIndex(battery[battery.length - 1].items.length - 1);
       return;
     }
 
@@ -346,7 +369,7 @@ export default function AssessmentEngine({
     } else if (phase === "core" && instrumentIndex > 0) {
       const prevIdx = instrumentIndex - 1;
       setInstrumentIndex(prevIdx);
-      setItemIndex(CORE_INSTRUMENTS[prevIdx].items.length - 1);
+      setItemIndex(battery[prevIdx].items.length - 1);
       itemStartTime.current = Date.now();
     }
   }
@@ -455,17 +478,23 @@ export default function AssessmentEngine({
           </div>
 
           <h1 className="text-headline-lg text-text-primary mb-3">
-            Finally Understand Your Patterns
+            {relationshipMode ? "Discover What Kind of Partner You Are" : "Finally Understand Your Patterns"}
           </h1>
           <p className="mx-auto max-w-sm text-sm text-text-secondary leading-relaxed">
-            In 25&ndash;35 minutes, you&apos;ll understand why you react the way you do,
-            why some relationships feel harder than others, and what you actually
-            need to feel fulfilled. Save anytime and come back later.
+            {relationshipMode ? (
+              <>In about {estimatedMinutes} minutes, you&apos;ll discover your relationship
+              archetype and attachment style &mdash; the first step to being understood
+              by your partner. Save anytime and come back later.</>
+            ) : (
+              <>In {estimatedMinutes} minutes, you&apos;ll understand why you react the way you do,
+              why some relationships feel harder than others, and what you actually
+              need to feel fulfilled. Save anytime and come back later.</>
+            )}
           </p>
 
           <div className="mx-auto mt-6 flex items-center justify-center gap-2 text-xs text-text-muted">
             <Clock className="h-3.5 w-3.5 flex-shrink-0" />
-            <span>Most finish in 25&ndash;35 min &middot; Save anytime &middot; Pick up where you left off</span>
+            <span>Most finish in {estimatedMinutes} min &middot; Save anytime &middot; Pick up where you left off</span>
           </div>
 
           <button
@@ -628,7 +657,7 @@ export default function AssessmentEngine({
 
           {/* Dimensions grid */}
           <div className="grid grid-cols-2 gap-3 mb-6">
-            {EXPLORE_DIMENSIONS.map((dim) => (
+            {(relationshipMode ? RELATIONSHIP_DIMENSIONS : EXPLORE_DIMENSIONS).map((dim) => (
               <div
                 key={dim.label}
                 className="flex items-start gap-3 rounded-xl bg-surface-100/50 p-3"
@@ -713,7 +742,9 @@ export default function AssessmentEngine({
                 {[
                   <>I confirm I am <strong>18 years or older</strong></>,
                   <>I understand this is a <strong>screening tool, not a clinical diagnosis</strong>. Results suggest areas to explore with qualified professionals.</>,
-                  <>I consent to complete <strong>psychological assessments</strong> including personality, mental health screening, and interpersonal patterns.</>,
+                  relationshipMode
+                    ? <>I consent to complete a <strong>psychological assessment</strong> covering personality, attachment, and relationship patterns.</>
+                    : <>I consent to complete <strong>psychological assessments</strong> including personality, mental health screening, and interpersonal patterns.</>,
                 ].map((label, i) => (
                   <label key={i} className="flex items-start gap-3 cursor-pointer group">
                     <input
@@ -1032,7 +1063,7 @@ export default function AssessmentEngine({
               {/* Quick score summary */}
               <div className="mt-6 space-y-2 text-left">
                 {scoringResult.scores.map((score) => {
-                  const label = CORE_INSTRUMENTS.find(i => i.id === score.instrumentId)?.shortName
+                  const label = battery.find(i => i.id === score.instrumentId)?.shortName
                     ?? ADDON_INSTRUMENTS.find(i => i.id === score.instrumentId)?.shortName
                     ?? score.instrumentId;
                   const summary = score.totalScore !== undefined
