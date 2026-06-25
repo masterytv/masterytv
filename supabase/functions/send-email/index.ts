@@ -78,18 +78,6 @@ const BRANDS: Record<string, EmailBrand> = {
   },
 };
 
-/**
- * Resolve which Resend account + from-address to use for a brand. Prefers the
- * brand's own account (apiKeyEnv set); falls back to the shared MasteryTV
- * account so emails still send before a brand's Resend account is configured.
- */
-function resolveSender(brand: EmailBrand): { apiKey: string; from: string } {
-  const ownKey = Deno.env.get(brand.apiKeyEnv);
-  if (ownKey) return { apiKey: ownKey, from: brand.from };
-  const shared = Deno.env.get("RESEND_API_KEY");
-  if (!shared) throw new Error("No Resend API key configured");
-  return { apiKey: shared, from: brand.fallbackFrom };
-}
 
 function brandForHost(host: string): EmailBrand {
   return host.toLowerCase().includes("relatti") ? BRANDS.relatti : BRANDS.masterytv;
@@ -253,15 +241,31 @@ Deno.serve(async (req: Request) => {
     const { user, email_data } = data;
 
     const brand = brandForRequest(email_data.redirect_to || email_data.site_url);
-    const { apiKey, from } = resolveSender(brand);
     const copy = actionCopy(email_data.email_action_type, brand.name);
     const link = buildLink(email_data);
     const html = buildHtml(brand, copy, link);
     const text = `${copy.heading}\n\n${copy.body}\n\n${link}\n\nIf you didn't request this, you can safely ignore this email.`;
+    const to = user.email;
 
-    await sendResendEmail(apiKey, { to: user.email, subject: copy.subject, html, text, from });
+    const ownKey = Deno.env.get(brand.apiKeyEnv);
+    const sharedKey = Deno.env.get("RESEND_API_KEY");
 
-    console.log(`[${FUNCTION_NAME}] sent ${email_data.email_action_type} for ${brand.name} (from ${from})`);
+    if (ownKey) {
+      try {
+        await sendResendEmail(ownKey, { to, subject: copy.subject, html, text, from: brand.from });
+        console.log(`[${FUNCTION_NAME}] sent ${email_data.email_action_type} for ${brand.name} via own account`);
+      } catch (ownErr) {
+        // The brand's own account couldn't send (e.g. its domain isn't verified
+        // yet) → fall back to the shared account so the email still goes out.
+        if (!sharedKey) throw ownErr;
+        console.warn(`[${FUNCTION_NAME}] ${brand.name} own account failed (${(ownErr as Error).message}); falling back to shared`);
+        await sendResendEmail(sharedKey, { to, subject: copy.subject, html, text, from: brand.fallbackFrom });
+      }
+    } else {
+      if (!sharedKey) throw new Error("No Resend API key configured");
+      await sendResendEmail(sharedKey, { to, subject: copy.subject, html, text, from: brand.fallbackFrom });
+      console.log(`[${FUNCTION_NAME}] sent ${email_data.email_action_type} for ${brand.name} via shared account`);
+    }
     return new Response(JSON.stringify({}), {
       status: 200,
       headers: { "Content-Type": "application/json" },
