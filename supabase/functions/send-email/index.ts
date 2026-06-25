@@ -23,17 +23,14 @@ import { Webhook } from "https://esm.sh/standardwebhooks@1.0.0";
 
 const FUNCTION_NAME = "send-email";
 
-/** Send an email via Resend (inlined so this hook has no local dependencies). */
-async function sendResendEmail(params: {
+/** Send an email via Resend with the given account API key (per-brand). */
+async function sendResendEmail(apiKey: string, params: {
   from: string;
   to: string;
   subject: string;
   html: string;
   text: string;
 }): Promise<void> {
-  const apiKey = Deno.env.get("RESEND_API_KEY");
-  if (!apiKey) throw new Error("RESEND_API_KEY not set");
-
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
@@ -45,14 +42,19 @@ async function sendResendEmail(params: {
   }
 }
 
-// Email-only brand config. Email clients don't support CSS custom properties,
-// so brand colors are inline hex here — a deliberate, email-scoped exception to
-// the no-hardcoded-hex rule (the app's token system can't apply in an inbox).
-// `from` uses the Resend-verified mail.masterytv.com domain with a per-brand
-// display name until a brand's own sending domain is verified in Resend.
+// Per-brand email config. Each brand has its OWN Resend account (separate key +
+// verified sending domain). `apiKeyEnv` names the brand's key; `from` is used
+// once that account is live. Until then we fall back to the shared MasteryTV
+// account + `fallbackFrom` (same brand display name, MasteryTV-verified domain),
+// so a brand's emails keep working before its Resend account is wired up.
+//
+// Brand colors are inline hex — email clients can't use CSS tokens (scoped
+// exception to the no-hardcoded-hex rule).
 interface EmailBrand {
   name: string;
-  from: string;
+  apiKeyEnv: string;     // env var holding this brand's Resend API key
+  from: string;          // sender once the brand's own Resend account is used
+  fallbackFrom: string;  // sender when falling back to the shared account
   color: string;
   soft: string;
 }
@@ -60,17 +62,34 @@ interface EmailBrand {
 const BRANDS: Record<string, EmailBrand> = {
   masterytv: {
     name: "MasteryTV",
+    apiKeyEnv: "RESEND_API_KEY",
     from: "MasteryTV <donotreply@mail.masterytv.com>",
+    fallbackFrom: "MasteryTV <donotreply@mail.masterytv.com>",
     color: "#6063EE",
     soft: "#EEF0FF",
   },
   relatti: {
     name: "Relatti",
-    from: "Relatti <donotreply@mail.masterytv.com>",
+    apiKeyEnv: "RESEND_API_KEY_RELATTI",
+    from: "Relatti <donotreply@mail.relatti.com>",
+    fallbackFrom: "Relatti <donotreply@mail.masterytv.com>",
     color: "#E11D48",
     soft: "#FFF1F4",
   },
 };
+
+/**
+ * Resolve which Resend account + from-address to use for a brand. Prefers the
+ * brand's own account (apiKeyEnv set); falls back to the shared MasteryTV
+ * account so emails still send before a brand's Resend account is configured.
+ */
+function resolveSender(brand: EmailBrand): { apiKey: string; from: string } {
+  const ownKey = Deno.env.get(brand.apiKeyEnv);
+  if (ownKey) return { apiKey: ownKey, from: brand.from };
+  const shared = Deno.env.get("RESEND_API_KEY");
+  if (!shared) throw new Error("No Resend API key configured");
+  return { apiKey: shared, from: brand.fallbackFrom };
+}
 
 function brandForHost(host: string): EmailBrand {
   return host.toLowerCase().includes("relatti") ? BRANDS.relatti : BRANDS.masterytv;
@@ -234,14 +253,15 @@ Deno.serve(async (req: Request) => {
     const { user, email_data } = data;
 
     const brand = brandForRequest(email_data.redirect_to || email_data.site_url);
+    const { apiKey, from } = resolveSender(brand);
     const copy = actionCopy(email_data.email_action_type, brand.name);
     const link = buildLink(email_data);
     const html = buildHtml(brand, copy, link);
     const text = `${copy.heading}\n\n${copy.body}\n\n${link}\n\nIf you didn't request this, you can safely ignore this email.`;
 
-    await sendResendEmail({ to: user.email, subject: copy.subject, html, text, from: brand.from });
+    await sendResendEmail(apiKey, { to: user.email, subject: copy.subject, html, text, from });
 
-    console.log(`[${FUNCTION_NAME}] sent ${email_data.email_action_type} for ${brand.name}`);
+    console.log(`[${FUNCTION_NAME}] sent ${email_data.email_action_type} for ${brand.name} (from ${from})`);
     return new Response(JSON.stringify({}), {
       status: 200,
       headers: { "Content-Type": "application/json" },
