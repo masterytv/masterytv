@@ -15,7 +15,7 @@
  * Sprint 0.4 — S0.4.1
  */
 
-import { attachmentNaming } from './attachment-style';
+import { attachmentNaming } from './attachment-style.ts';
 
 // ─── Assessment Profile Schema ────────────────────────────
 

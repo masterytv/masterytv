@@ -14,7 +14,7 @@
  */
 
 import type { AssessmentProfile } from './assessment-profile';
-import { attachmentNaming } from './attachment-style';
+import { attachmentNaming } from './attachment-style.ts';
 
 /**
  * Build the Decoded Assessment context block for the coaching system prompt.
