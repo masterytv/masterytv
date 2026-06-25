@@ -886,7 +886,26 @@ async function generateReport(
   const sections: Record<string, unknown> = {};
   let completedCount = 0;
 
+  // Program-aware trim: skip sections whose instruments weren't administered, so
+  // a short battery (e.g. Relatti: Big Five + attachment + satisfaction) doesn't
+  // produce empty Career / Wellbeing / Emotions sections. Sections with no entry
+  // here (S1 glance, S8 growth) always generate from whatever data is present.
+  const present = new Set(scoreRows.map((s) => s.instrument_id));
+  const REQUIRED_INSTRUMENTS: Record<string, string[]> = {
+    S2: ["ipip50"],
+    S3: ["ipip50"],
+    S4: ["ders16", "ders18", "scs_sf"],
+    S5: ["ecr_r_short"],
+    S6: ["riasec", "weims"],
+    S7: ["wellness_check", "swls", "flourishing"],
+  };
+
   for (const template of V2_SECTION_TEMPLATES) {
+    const required = REQUIRED_INSTRUMENTS[template.sectionId];
+    if (required && !required.some((id) => present.has(id))) {
+      console.log(`[decoded-generate-report] skip ${template.sectionId} — no instruments (${required.join("/")})`);
+      continue;
+    }
     try {
       const systemPrompt = `${V2_SAFETY_RULES}
 

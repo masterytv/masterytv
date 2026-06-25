@@ -463,7 +463,20 @@ export default function ReportViewer({ report: initialReport, scores, sharedOwne
     : (report.sections ?? {});
 
   const sections = displaySections;
-  const totalSections = SECTION_CONFIGS.length;
+
+  // Relationship report (Relatti's short battery): detected from the scored
+  // instruments (no career measures) — stable across generation. Such reports
+  // render only the sections that were generated (no empty Career/Wellbeing/
+  // Emotions), and everything is unlocked (the relationship section is the core
+  // value, and there's no paywall for the relationship product yet).
+  const isRelationshipReport =
+    reportVersion === 2 &&
+    !scores.some((s) => s.instrument_id === 'riasec' || s.instrument_id === 'weims');
+  const renderConfigs = isRelationshipReport
+    ? SECTION_CONFIGS.filter((c) => sections[c.id])
+    : SECTION_CONFIGS;
+
+  const totalSections = renderConfigs.length;
   const generatedCount = Object.keys(sections).length;
   const isGenerating = generatedCount < totalSections;
 
@@ -772,11 +785,12 @@ export default function ReportViewer({ report: initialReport, scores, sharedOwne
         )}
 
         {/* ═══════ AI NARRATIVE SECTIONS ═══════ */}
-        {SECTION_CONFIGS.map((config, index) => {
+        {renderConfigs.map((config, index) => {
           const section = sections[config.id];
-          const isUnlocked = isSectionUnlocked(config.minTier, userTier)
+          const isUnlocked = isRelationshipReport
+            || isSectionUnlocked(config.minTier, userTier)
             || (config.id === 'S5' && shareUnlocked);
-          const showUpgradeGate = config.id === UPGRADE_GATE_AFTER;
+          const showUpgradeGate = !isRelationshipReport && config.id === UPGRADE_GATE_AFTER;
 
           return (
             <div key={config.id}>
