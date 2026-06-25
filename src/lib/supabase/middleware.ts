@@ -120,6 +120,13 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Legacy: the invite landing moved off /decoded → /invite/[code].
+  if (pathname.startsWith("/decoded/invite/")) {
+    const url = request.nextUrl.clone();
+    url.pathname = pathname.replace("/decoded/invite/", "/invite/");
+    return NextResponse.redirect(url);
+  }
+
   // ── Catch auth codes landing on wrong routes ──
   const code = request.nextUrl.searchParams.get("code");
   if (code && !pathname.startsWith("/auth/callback")) {

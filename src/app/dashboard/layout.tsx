@@ -66,7 +66,7 @@ export default function DashboardLayout({
         .maybeSingle();
 
       if (broadcast) {
-        setBroadcastInviteUrl(`${window.location.origin}/decoded/invite/${broadcast.id}`);
+        setBroadcastInviteUrl(`${window.location.origin}/invite/${broadcast.id}`);
       }
     }
     checkAssessment();

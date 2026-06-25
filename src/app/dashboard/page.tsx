@@ -155,8 +155,8 @@ export default async function DashboardPage({
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://masterytv.com";
   const inviteUrl = broadcastInvite
-    ? `${appUrl}/decoded/invite/${broadcastInvite.id}`
-    : `${appUrl}/decoded`;
+    ? `${appUrl}/invite/${broadcastInvite.id}`
+    : `${appUrl}/login`;
 
   // Load invites sent TO this user that need consent (for consent banner)
   const { data: receivedInvites } = await supabase
