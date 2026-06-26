@@ -2,7 +2,7 @@
 
 > **Author:** Thomas Wood + Claude Code (Orchestrator)
 > **Date:** June 26, 2026
-> **Status:** 🟢 Direction approved — research synthesized, spec proposed, **founder decisions resolved June 26, 2026 (§8)**. Ready to build V1 (§7). No code changed yet.
+> **Status:** 🟢 Building V1 (§7). Done June 26, 2026: **report** (§5.4 — order, hero, normalize/influence, partner section), **coach** (§5.6 — relationship persona, solo + dyad, deployed), **dashboard + assessment copy** (§5.3/§5.5). **NEXT: the daily connection ritual full MVP (§5.9).** Then Blueprint-as-centerpiece (§5.7), then E6 SMS (needs founder SMS-provider pick). Founder decisions resolved in §8.
 > **Scope:** Every Relatti-facing surface — marketing, onboarding, assessment, report, dashboard, coach, shared artifacts, rituals, email/SMS.
 > **Supersedes (for Relatti surfaces only):** the Decoded "discover your personality type" experience framing. The Decoded **engine** (assessment, scoring, archetypes, coach, report generator) is retained; this doc changes what the user *experiences and feels*, not the engine.
 > **Read alongside:** `STRATEGY.md` (the pivot), `PLATFORM_ARCHITECTURE.md` (verticals-as-config), `RELATIONSHIP_ARCHITECTURE.md` (the dyad spine), `BRAND.md` (visual system).
@@ -177,10 +177,20 @@ This is the worst offender and the highest emotional-stakes moment.
 - **Target:** fold into the Blueprint / dyad surface; retire the Decoded chrome. (Nav still says "Compatibility" under Relatti — should become "Blueprint.")
 - Principles: 1, 10.
 
-### 5.9 Daily connection ritual (NEW — the retention spine)
+### 5.9 Daily connection ritual (NEW — the retention spine) — **NEXT BUILD: full MVP (founder approved June 26, 2026)**
 - **Current:** none (streak table exists; no daily mechanic feeds it).
-- **Target:** a **2-minute shared question, default 3×/week (user can switch to daily)** (blind reveal): both answer independently, reveal together, optional coach follow-up. This is the bid-manufacturing, curiosity-loop, neutral-third-voice engine validated in §2.5. Questions personalized by where the couple needs work (from the Blueprint). Mixes lighthearted + meaningful.
+- **Target:** a **2-minute shared question, default 3×/week (user can switch to daily)** (blind reveal): both answer independently, reveal together, optional coach follow-up. This is the bid-manufacturing, curiosity-loop, neutral-third-voice engine validated in §2.5. Questions personalized by where the couple needs work (from the Blueprint) — *later*; curated bank for MVP. Mixes lighthearted + meaningful.
 - Principles: 2, 3, 4, 5, 7.
+
+#### Full MVP build spec
+- **Surface:** a **"Today's Question"** card on the Relatti dashboard (`RelattiDashboard.tsx`) — the primary recurring action, above/with the dyad panel.
+- **Dyad flow (blind reveal):** both partners answer the same question independently → neither sees the other's answer until **both** have answered → on reveal, show both side-by-side + a *"Talk to your coach about this"* deep-link. The unanswered-partner state shows *"You answered — [partner] hasn't yet"* (the curiosity hook).
+- **Solo flow (partner not joined):** single reflection — answer + a short coach reflection + *"Do this together — invite your partner."* Real value now; primes the invite. (Founder rule: solo users get full value, never gated.)
+- **Cadence:** default **3×/week**, user-toggle to **daily** (store on the engagement or a user/engagement setting). A new question unlocks per cadence; don't nag.
+- **Streak:** writes `engagement_activity` (E8) so it feeds the existing `getDyadStreak` Flame pill.
+- **Data (propose; confirm in build):** `ritual_prompts` (curated bank: id, text, depth light|medium|deep, program, active, sort) + `ritual_responses` (id, engagement_id nullable, user_id, prompt_id, answer, created_at, workspace_id). Seed ~24 curated questions (light↔deep mix). **Blind-reveal gating** is the key design call: a partner must not read the other's answer until they've answered — do it via a SECURITY DEFINER RPC / server action that returns the reveal only when both have answered (pure RLS can't express "reveal once I've also answered" cleanly). "Current question" = next unanswered in sequence, gated by cadence.
+- **Scope:** relationship program only (gate like the rest); MasteryTV unaffected. Migration applied to the cloud DB (ref `lwmadssysqcwbsoiaokc`) — confirm with founder before applying. No edge-function change required unless the coach-follow-up needs context (the existing deep-link to `/dashboard/chat` is enough for MVP).
+- Verify with `npx tsc --noEmit` (never `npm run build` while `next dev` runs); the user tests on localhost with `?brand=relatti`.
 
 ### 5.10 Email / SMS (`_shared/resend.ts`, future E6)
 - **Current:** brand-aware transactional email; the coaching-email HTML still has a ✦ sparkle (BRAND.md §14 violation, flagged).
