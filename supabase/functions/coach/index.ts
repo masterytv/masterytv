@@ -74,6 +74,9 @@ Deno.serve(async (req: Request) => {
     const engagementId = (body.engagement_id as string | null) ?? null;
     // E9: optional coach mode (e.g. 'deescalate' = fight de-escalator overlay).
     const mode = (body.mode as string | null) ?? null;
+    // Program/vertical (e.g. 'relationship') — selects the coach persona so every
+    // Relatti user gets a relationship coach, solo or dyad. Absent → executive.
+    const program = (body.program as string | null) ?? null;
     // Sprint 0.4: Deep link context from report CTAs
     const context = body.context as { type?: string; section?: string; topic?: string; inviteId?: string } | undefined;
 
@@ -248,7 +251,7 @@ Deno.serve(async (req: Request) => {
 
     // ── 5. Assemble prompt (11-layer architecture) ──
     const promptStart = debugMode ? performance.now() : 0;
-    const { system, conversationHistory, metadata, debugTrace } = await assemblePrompt(userId, message, debugMode, engagementId, mode);
+    const { system, conversationHistory, metadata, debugTrace } = await assemblePrompt(userId, message, debugMode, engagementId, mode, program);
     const promptMs = debugMode ? performance.now() - promptStart : 0;
 
     // Sprint 0.4: Inject deep link context instruction
