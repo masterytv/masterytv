@@ -1116,7 +1116,7 @@ export default function AssessmentEngine({
                   : 'Your full personalized report will be available in your dashboard.'}
               </p>
               <a
-                href={generatedReportId ? `/decoded/report/${generatedReportId}` : '/dashboard'}
+                href={generatedReportId ? `/report/${generatedReportId}` : '/dashboard'}
                 className="mt-4 inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-6 py-2.5 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
               >
                 {generatedReportId ? 'View Report' : 'Go to Dashboard'}

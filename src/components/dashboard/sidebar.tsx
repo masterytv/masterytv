@@ -38,7 +38,7 @@ function getNavItems(reportId: string | null): Array<{
   return [
     { href: "/dashboard", label: "Home", icon: Home, exact: true },
     {
-      href: reportId ? `/decoded/report/${reportId}` : "/dashboard",
+      href: reportId ? `/report/${reportId}` : "/dashboard",
       label: "Assessment Report",
       icon: ClipboardCheck,
       requiresAssessment: true,

@@ -15,7 +15,7 @@ interface PageProps {
 }
 
 /**
- * /decoded/compatibility/[inviteId]
+ * /compatibility/[inviteId]
  * Server component that loads the per-user compatibility report and verifies access.
  * Each user sees their own voice-personalized version.
  * If no per-user report exists, falls back to shared, then triggers generation.

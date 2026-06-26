@@ -60,7 +60,7 @@ export default function CompletedAssessment({ assessmentId, scores: initialScore
     try {
       const result = await generateReport(assessmentId);
       if (result.success && result.reportId) {
-        router.push(`/decoded/report/${result.reportId}`);
+        router.push(`/report/${result.reportId}`);
         return;
       }
     } catch {

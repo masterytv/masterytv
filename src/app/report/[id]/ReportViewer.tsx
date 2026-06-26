@@ -29,7 +29,7 @@ import { createClient } from '@/lib/supabase/client';
 import ShareModal from '@/components/decoded/ShareModal';
 import ArchetypeCard from './ArchetypeCard';
 import { attachmentDisplay } from '@/lib/decoded/report/attachment-style';
-import DecodedNav from '../../DecodedNav';
+import DecodedNav from '@/app/decoded/DecodedNav';
 import { getSectionConfigs, getUpgradeGateAfter, isSectionUnlocked } from '@/lib/decoded/report/sections/section-config';
 import { REPORT_DISCLAIMER, evaluateSafetyFlags, CRISIS_RESOURCES } from '@/lib/decoded/report/safety';
 import type { InstrumentScore } from '@/lib/decoded/scoring/types';

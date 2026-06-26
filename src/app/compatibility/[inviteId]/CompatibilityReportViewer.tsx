@@ -324,7 +324,7 @@ export default function CompatibilityReportViewer({
           {/* View Full Report link — only when full access is shared */}
           {shareWithHuman === 'full' && otherReportId && (
             <Link
-              href={`/decoded/report/${otherReportId}?shared=true`}
+              href={`/report/${otherReportId}?shared=true`}
               className="compat-sharing__full-report-link"
             >
               <FileText className="h-4 w-4" />

@@ -341,7 +341,7 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
                         {isConnected ? (
                           <div className="flex items-center gap-2">
                             <Link
-                              href={`/decoded/compatibility/${inv.id}`}
+                              href={`/compatibility/${inv.id}`}
                               className="flex items-center gap-1.5 rounded-lg bg-[rgba(96,99,238,0.1)] px-3 py-1.5 text-sm font-medium text-[#a3a6ff] hover:bg-[rgba(96,99,238,0.15)] transition-colors"
                             >
                               View Report <ArrowRight className="h-3.5 w-3.5" />
@@ -503,7 +503,7 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
                           </div>
                           <div className="flex items-center gap-2">
                             <Link
-                              href={`/decoded/compatibility/${inv.id}`}
+                              href={`/compatibility/${inv.id}`}
                               className="flex items-center gap-1.5 rounded-lg bg-[rgba(96,99,238,0.1)] px-3 py-1.5 text-sm font-medium text-[#a3a6ff] hover:bg-[rgba(96,99,238,0.15)] transition-colors"
                             >
                               View Report <ArrowRight className="h-3.5 w-3.5" />

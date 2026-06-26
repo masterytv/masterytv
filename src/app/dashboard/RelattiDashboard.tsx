@@ -87,7 +87,7 @@ export default function RelattiDashboard({ userName, state, reportId, dyad = nul
           {/* Assessment / archetype */}
           {assessed ? (
             <Link
-              href={reportId ? `/decoded/report/${reportId}` : "/dashboard"}
+              href={reportId ? `/report/${reportId}` : "/dashboard"}
               className="group rounded-2xl bg-surface-50 p-6 transition-colors hover:bg-surface-100"
             >
               <FileText className="h-6 w-6" style={{ color: "var(--color-primary)" }} />

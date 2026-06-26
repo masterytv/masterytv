@@ -4,10 +4,10 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { CheckCircle, ArrowRight, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import DecodedNav from '../DecodedNav';
+import DecodedNav from '@/app/decoded/DecodedNav';
 
 /**
- * /decoded/upgrade-success
+ * /upgrade-success
  *
  * Shown after Stripe checkout completes. The webhook may take
  * a few seconds to process, so we poll the user's decoded_tier
@@ -26,7 +26,7 @@ export default function UpgradeSuccessPage() {
 
   return (
     <>
-      <DecodedNav backHref="/decoded/assess" backLabel="Dashboard" />
+      <DecodedNav backHref="/dashboard" backLabel="Dashboard" />
       <div style={{
         minHeight: '80vh',
         display: 'flex',
@@ -77,7 +77,7 @@ export default function UpgradeSuccessPage() {
                 including your Growth Map and deeper personality insights.
               </p>
               <Link
-                href="/decoded/assess"
+                href="/dashboard"
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
