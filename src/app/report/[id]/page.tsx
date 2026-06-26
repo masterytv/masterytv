@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { redirect, notFound } from 'next/navigation';
 import ReportViewer from './ReportViewer';
+import { getBrand } from '@/lib/platform/brand.server';
 import type { Metadata } from 'next';
 
 interface PageProps {
@@ -17,6 +18,13 @@ interface PageProps {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
 
+  // Brand-aware: title/description must not leak "Decoded" on a relationship
+  // domain. Resolved by domain (relatti.com → Relatti), matching every other
+  // brand-aware surface. brand.name drives the suffix so it's generic for any
+  // future vertical.
+  const brand = await getBrand();
+  const isRelationship = brand.programSlug === 'relationship';
+
   // Try to load the report for metadata (using admin to bypass RLS)
   const admin = createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -29,10 +37,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     .single();
 
   if (!report?.archetype_base) {
-    return {
-      title: 'Your Decoded Report | Mastery',
-      description: 'Your personalized personality report powered by 13 validated instruments.',
-    };
+    return isRelationship
+      ? {
+          title: `Your Relationship Profile | ${brand.name}`,
+          description: 'Your attachment style, how you love and connect, and what you need to feel close.',
+        }
+      : {
+          title: 'Your Decoded Report | Mastery',
+          description: 'Your personalized personality report powered by 13 validated instruments.',
+        };
   }
 
   // Get display name for the OG card
@@ -54,27 +67,39 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (report.archetype_sublabel) ogParams.set('sublabel', report.archetype_sublabel);
   if (report.archetype_tagline) ogParams.set('tagline', report.archetype_tagline);
 
-  const title = report.archetype_sublabel
-    ? `The ${report.archetype_base} — ${report.archetype_sublabel} | Decoded`
-    : `The ${report.archetype_base} | Decoded`;
+  const title = isRelationship
+    ? `Your Relationship Profile | ${brand.name}`
+    : report.archetype_sublabel
+      ? `The ${report.archetype_base} — ${report.archetype_sublabel} | Decoded`
+      : `The ${report.archetype_base} | Decoded`;
+
+  const description = isRelationship
+    ? 'Your attachment style, how you love and connect, and what you need to feel close.'
+    : (report.archetype_tagline ?? 'Your personalized personality report powered by 13 validated instruments.');
+
+  const ogDescription = isRelationship
+    ? `${displayName ? `${displayName}’s` : 'A'} relationship profile on ${brand.name}.`
+    : (report.archetype_tagline ?? 'Decoded by MasteryTV — personality assessment');
 
   return {
     title,
-    description: report.archetype_tagline ?? 'Your personalized personality report powered by 13 validated instruments.',
+    description,
     openGraph: {
       title,
-      description: report.archetype_tagline ?? 'Decoded by MasteryTV — personality assessment',
+      description: ogDescription,
       images: [{
         url: `/api/decoded/card?${ogParams.toString()}`,
         width: 1200,
         height: 630,
-        alt: `The ${report.archetype_base} personality card`,
+        alt: isRelationship
+          ? `${report.archetype_base} — relationship type card`
+          : `The ${report.archetype_base} personality card`,
       }],
     },
     twitter: {
       card: 'summary_large_image',
       title,
-      description: report.archetype_tagline ?? 'Decoded by MasteryTV',
+      description: ogDescription,
       images: [`/api/decoded/card?${ogParams.toString()}`],
     },
   };
