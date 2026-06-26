@@ -228,16 +228,15 @@ export default function AttachmentQuadrant({
         <circle cx={dotX} cy={dotY} r={16} fill={dotColor} opacity={0.15} />
         <circle cx={dotX} cy={dotY} r={9} fill={dotColor} stroke="var(--color-surface-0)" strokeWidth={2.5} />
 
-        {/* Style label on dot — friendly name leads, clinical term as a small ref */}
+        {/* Style label on dot — warm name only (no clinical label on the graph). */}
         <text
           x={dotX}
-          y={dotY - 26}
+          y={dotY - 20}
           textAnchor="middle"
           fill={dotColor}
           fontFamily="var(--font-display)"
         >
           <tspan x={dotX} fontSize={14} fontWeight={700}>{display.name}</tspan>
-          <tspan x={dotX} dy={13} fontSize={10} fontWeight={500} fill="var(--text-label)" fontFamily="var(--font-sans)">{display.clinical}</tspan>
         </text>
       </svg>
 

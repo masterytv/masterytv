@@ -29,6 +29,11 @@ import { createClient } from '@/lib/supabase/client';
 import ShareModal from '@/components/decoded/ShareModal';
 import ArchetypeCard from './ArchetypeCard';
 import { attachmentDisplay } from '@/lib/decoded/report/attachment-style';
+import {
+  RELATIONSHIP_RENDER_ORDER,
+  RELATIONSHIP_SECTION_META,
+  relationshipChallenges,
+} from '@/lib/relatti/report-content';
 import DecodedNav from '@/app/decoded/DecodedNav';
 import { getSectionConfigs, getUpgradeGateAfter, isSectionUnlocked } from '@/lib/decoded/report/sections/section-config';
 import { REPORT_DISCLAIMER, evaluateSafetyFlags, CRISIS_RESOURCES } from '@/lib/decoded/report/safety';
@@ -77,21 +82,9 @@ interface ReportViewerProps {
   sharedOwnerName?: string;
 }
 
-// ─────────────────────────────────────────────────────
-// Relatti — relationship-first profile (RELATTI_EXPERIENCE.md §5.4)
-// ─────────────────────────────────────────────────────
-// A relationship report renders the SAME generated section data (the S-IDs),
-// but reordered to LEAD with the relationship and reframed so personality is
-// described as what you bring to a relationship — not as the hero. Gated on
-// isRelationshipReport so the MasteryTV/Decoded report is unchanged.
-const RELATIONSHIP_RENDER_ORDER = ['S5', 'S1', 'S2', 'S3', 'S8'] as const;
-const RELATIONSHIP_SECTION_META: Record<string, { title: string; subtitle: string }> = {
-  S5: { title: 'How You Love & Connect', subtitle: 'Your attachment, your conflict pattern, and what you need to feel close' },
-  S1: { title: 'You at a Glance', subtitle: 'A quick snapshot of who you are' },
-  S2: { title: 'What You Bring to the Relationship', subtitle: 'How your personality shapes the way you connect' },
-  S3: { title: 'Your Protective Patterns', subtitle: 'What shows up when you feel hurt — and why' },
-  S8: { title: 'Growing Closer', subtitle: 'Small, specific steps to feel more connected' },
-};
+// Relationship-report content (order, titles, normalize copy) lives in
+// @/lib/relatti/report-content — a Relatti-scoped module so future verticals get
+// their OWN report content, never this one (founder rule; see VERTICAL_PLAYBOOK).
 
 // ─────────────────────────────────────────────────────
 // V2 Structured Section Renderer
@@ -135,6 +128,8 @@ interface V2SectionContentProps {
   attachmentAnxiety: number;
   attachmentAvoidance: number;
   attachmentStyle: string;
+  /** Relationship report — enables relationship-only blocks (e.g. normalize). */
+  isRelationship: boolean;
 }
 
 /**
@@ -145,6 +140,7 @@ interface V2SectionContentProps {
 function V2SectionContent({
   sectionId, data, scores,
   bigFivePercentiles, attachmentAnxiety, attachmentAvoidance, attachmentStyle,
+  isRelationship,
 }: V2SectionContentProps) {
   // Parse structured content from v2 sections
   // v2 stores JSON in content_markdown instead of raw markdown
@@ -318,6 +314,62 @@ function V2SectionContent({
             subtitle="The words that help your partner feel secure — so you know exactly what to say."
             emptyMessage="We’ll fill this in once your partner takes their own relationship profile. Then you’ll see exactly what helps them feel safe and loved. Invite them from your dashboard to unlock this together."
           />
+
+          {/* Normalize + influence — "the challenges you may face & what helps".
+              Relationship-only, templated per style (from the Relatti-scoped
+              report-content module). Makes the reader feel known, normalizes the
+              pattern, and leaves them with hope + small steps. */}
+          {isRelationship && (() => {
+            const ch = relationshipChallenges(attachmentStyle);
+            if (!ch) return null;
+            return (
+              <div style={{ marginTop: '1.75rem' }}>
+                <h4 className="v2-subsection-title">The Challenges You May Face — and What Helps</h4>
+                <p style={{ fontSize: '0.9375rem', lineHeight: 1.75, color: 'var(--text-body)', margin: '0 0 1.125rem' }}>
+                  {ch.intro}
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  {ch.challenges.map((c, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        padding: '0.875rem 1rem',
+                        borderRadius: 'var(--radius-md)',
+                        background: 'var(--color-surface-100)',
+                      }}
+                    >
+                      <div style={{ fontWeight: 600, color: 'var(--text-heading)', marginBottom: '0.25rem' }}>{c.title}</div>
+                      <p style={{ fontSize: '0.875rem', lineHeight: 1.65, color: 'var(--text-body)', margin: 0 }}>{c.why}</p>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ marginTop: '1.125rem' }}>
+                  <div style={{ fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-primary)', marginBottom: '0.5rem' }}>
+                    What Helps
+                  </div>
+                  <ul style={{ margin: 0, paddingLeft: '1.1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {ch.whatHelps.map((h, i) => (
+                      <li key={i} style={{ fontSize: '0.875rem', lineHeight: 1.65, color: 'var(--text-body)' }}>{h}</li>
+                    ))}
+                  </ul>
+                </div>
+                <p
+                  style={{
+                    marginTop: '1.25rem',
+                    padding: '1rem 1.125rem',
+                    borderRadius: 'var(--radius-md)',
+                    background: 'color-mix(in oklch, var(--color-primary) 7%, transparent)',
+                    fontSize: '0.9375rem',
+                    lineHeight: 1.7,
+                    color: 'var(--text-heading)',
+                    fontWeight: 500,
+                  }}
+                >
+                  None of this is fixed. These patterns were learned — which means they can soften. With small, repeated steps, and your coach in your corner, the relationship you want is genuinely within reach.
+                </p>
+              </div>
+            );
+          })()}
         </div>
       );
     }
@@ -897,6 +949,7 @@ export default function ReportViewer({ report: initialReport, scores, sharedOwne
                             attachmentAnxiety={attachmentAnxiety}
                             attachmentAvoidance={attachmentAvoidance}
                             attachmentStyle={attachmentStyle}
+                            isRelationship={isRelationshipReport}
                           />
                         ) : (
                           /* ═══ V1 MARKDOWN RENDERING (backward compat) ═══ */
