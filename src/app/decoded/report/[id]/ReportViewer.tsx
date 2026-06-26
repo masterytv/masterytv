@@ -10,7 +10,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Lock, ArrowRight, ArrowUpRight, Loader2, Printer, MessageSquare, Share2 } from 'lucide-react';
+import { Lock, ArrowRight, ArrowUpRight, Loader2, Printer, MessageSquare, Share2, User, Heart } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import BigFiveRadar from './BigFiveRadar';
 import BigFiveContext from './BigFiveContext';
@@ -28,6 +28,7 @@ import {
 import { createClient } from '@/lib/supabase/client';
 import ShareModal from '@/components/decoded/ShareModal';
 import ArchetypeCard from './ArchetypeCard';
+import { attachmentDisplay } from '@/lib/decoded/report/attachment-style';
 import DecodedNav from '../../DecodedNav';
 import { getSectionConfigs, getUpgradeGateAfter, isSectionUnlocked } from '@/lib/decoded/report/sections/section-config';
 import { REPORT_DISCLAIMER, evaluateSafetyFlags, CRISIS_RESOURCES } from '@/lib/decoded/report/safety';
@@ -75,6 +76,22 @@ interface ReportViewerProps {
   /** When viewing someone else's shared report, their name or email */
   sharedOwnerName?: string;
 }
+
+// ─────────────────────────────────────────────────────
+// Relatti — relationship-first profile (RELATTI_EXPERIENCE.md §5.4)
+// ─────────────────────────────────────────────────────
+// A relationship report renders the SAME generated section data (the S-IDs),
+// but reordered to LEAD with the relationship and reframed so personality is
+// described as what you bring to a relationship — not as the hero. Gated on
+// isRelationshipReport so the MasteryTV/Decoded report is unchanged.
+const RELATIONSHIP_RENDER_ORDER = ['S5', 'S1', 'S2', 'S3', 'S8'] as const;
+const RELATIONSHIP_SECTION_META: Record<string, { title: string; subtitle: string }> = {
+  S5: { title: 'How You Love & Connect', subtitle: 'Your attachment, your conflict pattern, and what you need to feel close' },
+  S1: { title: 'You at a Glance', subtitle: 'A quick snapshot of who you are' },
+  S2: { title: 'What You Bring to the Relationship', subtitle: 'How your personality shapes the way you connect' },
+  S3: { title: 'Your Protective Patterns', subtitle: 'What shows up when you feel hurt — and why' },
+  S8: { title: 'Growing Closer', subtitle: 'Small, specific steps to feel more connected' },
+};
 
 // ─────────────────────────────────────────────────────
 // V2 Structured Section Renderer
@@ -482,7 +499,15 @@ export default function ReportViewer({ report: initialReport, scores, sharedOwne
   const expectedSectionIds = isRelationshipReport
     ? RELATIONSHIP_SECTION_IDS
     : SECTION_CONFIGS.map((c) => c.id);
-  const renderConfigs = SECTION_CONFIGS.filter((c) => expectedSectionIds.includes(c.id));
+  // Relationship reports render the relationship-first order with reframed
+  // titles; everyone else gets the standard section order.
+  const renderConfigs = isRelationshipReport
+    ? RELATIONSHIP_RENDER_ORDER.map((id) => {
+        const base = SECTION_CONFIGS.find((c) => c.id === id)!;
+        const meta = RELATIONSHIP_SECTION_META[id];
+        return meta ? { ...base, title: meta.title, subtitle: meta.subtitle } : base;
+      })
+    : SECTION_CONFIGS.filter((c) => expectedSectionIds.includes(c.id));
 
   const totalSections = expectedSectionIds.length;
   const generatedCount = expectedSectionIds.filter((id) => sections[id]).length;
@@ -591,6 +616,24 @@ export default function ReportViewer({ report: initialReport, scores, sharedOwne
   const attachmentAnxiety = (ecr?.subscale_scores?.anxiety as number) ?? 3.5;
   const attachmentAvoidance = (ecr?.subscale_scores?.avoidance as number) ?? 3.5;
   const attachmentStyle = (ecr?.interpretation?.attachmentStyle as string) ?? 'secure';
+  // Warm, relationship-first attachment naming for the relationship-report hero.
+  const attach = attachmentDisplay(attachmentStyle);
+
+  // Top 3 strengths from S1 — feeds the collectible card (the personality
+  // header for Decoded, or the demoted "your type, to share" block for Relatti).
+  const topStrengths: string[] = (() => {
+    const s1 = displaySections?.['S1'];
+    if (!s1) return [];
+    try {
+      const parsed = JSON.parse(s1.content_markdown);
+      return ((parsed.top_strengths ?? []) as Array<{ label: string }>)
+        .slice(0, 3)
+        .map((s) => s.label);
+    } catch {
+      return [];
+    }
+  })();
+  const displayName = sharedOwnerName ?? userName;
 
   return (
     <>
@@ -604,8 +647,9 @@ export default function ReportViewer({ report: initialReport, scores, sharedOwne
         {/* Shared report banner */}
         {sharedOwnerName && (
           <div className="shared-report-banner">
-            <span className="shared-report-banner__icon">👤</span>
-            You&apos;re viewing <strong>{sharedOwnerName}&apos;s</strong> Decoded Report
+            <User size={15} className="shared-report-banner__icon" strokeWidth={1.75} />
+            You&apos;re viewing <strong>{sharedOwnerName}&apos;s</strong>{' '}
+            {isRelationshipReport ? 'Relationship Profile' : 'Decoded Report'}
           </div>
         )}
 
@@ -616,55 +660,58 @@ export default function ReportViewer({ report: initialReport, scores, sharedOwne
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          {report.archetype_base && (
-            <div className="report-header__archetype">
-              The {report.archetype_base}
-            </div>
-          )}
-          <h1 className="report-header__sublabel">
-            {report.archetype_sublabel
-              ? `${report.archetype_base} — ${report.archetype_sublabel}`
-              : 'Your Decoded Report'}
-          </h1>
-          {report.archetype_tagline && (
-            <p className="report-header__tagline">{report.archetype_tagline}</p>
-          )}
+          {isRelationshipReport ? (
+            /* Relatti — relationship-first hero: lead with HOW YOU CONNECT
+               (warm attachment identity), not the personality archetype. The
+               collectible archetype card is demoted to a shareable block at the
+               end of the profile (see below). */
+            <>
+              <div className="report-header__archetype">
+                {sharedOwnerName ? `${sharedOwnerName}'s Relationship Profile` : 'Your Relationship Profile'}
+              </div>
+              <h1 className="report-header__sublabel">{attach.name}</h1>
+              {attach.tagline && (
+                <p className="report-header__tagline">{attach.tagline}</p>
+              )}
+            </>
+          ) : (
+            <>
+              {report.archetype_base && (
+                <div className="report-header__archetype">
+                  The {report.archetype_base}
+                </div>
+              )}
+              <h1 className="report-header__sublabel">
+                {report.archetype_sublabel
+                  ? `${report.archetype_base} — ${report.archetype_sublabel}`
+                  : 'Your Decoded Report'}
+              </h1>
+              {report.archetype_tagline && (
+                <p className="report-header__tagline">{report.archetype_tagline}</p>
+              )}
 
-          {/* Collectible archetype card — dynamically composited with user data */}
-          {report.archetype_base && (() => {
-            // Extract top 3 strengths from S1 section (if available)
-            const s1 = displaySections?.['S1'];
-            let topStrengths: string[] = [];
-            if (s1) {
-              try {
-                const parsed = JSON.parse(s1.content_markdown);
-                const strengths = (parsed.top_strengths ?? []) as Array<{ label: string }>;
-                topStrengths = strengths.slice(0, 3).map(s => s.label);
-              } catch { /* S1 not JSON — skip strengths */ }
-            }
+              {/* Collectible archetype card — dynamically composited with user data */}
+              {report.archetype_base && (
+                <ArchetypeCard
+                  archetype={report.archetype_base}
+                  sublabel={report.archetype_sublabel}
+                  tagline={report.archetype_tagline}
+                  userName={displayName}
+                  strengths={topStrengths}
+                />
+              )}
 
-            const displayName = sharedOwnerName ?? userName;
-
-            return (
-              <ArchetypeCard
-                archetype={report.archetype_base!}
-                sublabel={report.archetype_sublabel}
-                tagline={report.archetype_tagline}
-                userName={displayName}
-                strengths={topStrengths}
-              />
-            );
-          })()}
-
-          {/* S0.5.4: Share Your Type prompt — inline after archetype card */}
-          {!sharedOwnerName && report.archetype_base && (
-            <button
-              className="share-type-prompt"
-              onClick={() => setShowShareModal(true)}
-            >
-              <Share2 size={15} className="share-type-prompt__icon" />
-              Know someone who&apos;d recognize you from this? Share your type.
-            </button>
+              {/* S0.5.4: Share Your Type prompt — inline after archetype card */}
+              {!sharedOwnerName && report.archetype_base && (
+                <button
+                  className="share-type-prompt"
+                  onClick={() => setShowShareModal(true)}
+                >
+                  <Share2 size={15} className="share-type-prompt__icon" />
+                  Know someone who&apos;d recognize you from this? Share your type.
+                </button>
+              )}
+            </>
           )}
 
         </motion.div>
@@ -690,7 +737,7 @@ export default function ReportViewer({ report: initialReport, scores, sharedOwne
           return (
             <div className="crisis-resources">
               <div className="crisis-resources__header">
-                <span className="crisis-resources__icon">💛</span>
+                <Heart size={16} className="crisis-resources__icon" strokeWidth={1.75} />
                 <strong>You&apos;re not alone.</strong> Some of your responses suggest you may be going through a difficult time. Help is available.
               </div>
               <div className="crisis-resources__list">
@@ -733,8 +780,13 @@ export default function ReportViewer({ report: initialReport, scores, sharedOwne
         }}>
           <MessageSquare size={16} style={{ color: 'var(--color-primary)', flexShrink: 0, marginTop: '0.125rem' }} />
           <span>
-            <strong style={{ color: 'var(--color-text-primary)', fontWeight: 600 }}>This report is a snapshot, not your ceiling.</strong>{' '}
-            It reflects who you were when you took the assessment on {new Date(report.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}. Your Mastery Coach, however, is a living model — it learns from every conversation and deepens its understanding of you over time.
+            <strong style={{ color: 'var(--color-text-primary)', fontWeight: 600 }}>
+              This {isRelationshipReport ? 'profile' : 'report'} is a snapshot, not your ceiling.
+            </strong>{' '}
+            It reflects who you were on {new Date(report.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}.{' '}
+            {isRelationshipReport
+              ? 'Your coach, though, grows with you — it learns from every conversation and understands you and your relationship more over time.'
+              : 'Your Mastery Coach, however, is a living model — it learns from every conversation and deepens its understanding of you over time.'}
           </span>
         </div>
 
@@ -742,7 +794,9 @@ export default function ReportViewer({ report: initialReport, scores, sharedOwne
         <div className="narrative-divider">
           <div className="narrative-divider__label">Part II</div>
           <div className="narrative-divider__title">
-            {isGenerating ? 'Your Report is Generating' : 'Your Full Report'}
+            {isGenerating
+              ? (isRelationshipReport ? 'Your Profile is Generating' : 'Your Report is Generating')
+              : (isRelationshipReport ? 'Your Relationship Profile' : 'Your Full Report')}
           </div>
           <div className="narrative-divider__subtitle">
             {isGenerating
@@ -969,6 +1023,38 @@ export default function ReportViewer({ report: initialReport, scores, sharedOwne
             </div>
           );
         })}
+
+        {/* Relatti — the collectible type card, DEMOTED from the hero to a
+            shareable artifact at the end of the profile (RELATTI_EXPERIENCE.md
+            §5.4). Kept (it's a real identity anchor + acquisition loop), just
+            no longer the first thing a relationship user sees. */}
+        {isRelationshipReport && !isGenerating && generatedCount > 0 && report.archetype_base && (
+          <div className="report-section">
+            <div className="report-section__header">
+              <h2 className="report-section__title">Your Type, to Share</h2>
+              <p className="report-section__subtitle">
+                A snapshot of who you are — share it, or invite your partner to find theirs.
+              </p>
+            </div>
+            <ArchetypeCard
+              archetype={report.archetype_base}
+              sublabel={report.archetype_sublabel}
+              tagline={report.archetype_tagline}
+              userName={displayName}
+              strengths={topStrengths}
+            />
+            {!sharedOwnerName && (
+              <button
+                className="share-type-prompt"
+                onClick={() => setShowShareModal(true)}
+                style={{ marginTop: '1rem' }}
+              >
+                <Heart size={15} className="share-type-prompt__icon" />
+                Share your type, or invite your partner
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Print / Save as PDF — only when generation is complete */}
@@ -983,8 +1069,9 @@ export default function ReportViewer({ report: initialReport, scores, sharedOwne
         </button>
       )}
 
-      {/* S0.5.4: Share Your Type — footer card */}
-      {!isGenerating && generatedCount > 0 && !sharedOwnerName && report.archetype_base && (
+      {/* S0.5.4: Share Your Type — footer card (Decoded only; Relatti uses the
+          demoted "Your Type, to Share" block above instead). */}
+      {!isGenerating && generatedCount > 0 && !sharedOwnerName && report.archetype_base && !isRelationshipReport && (
         <div className="share-type-footer no-print">
           <div className="share-type-footer__content">
             <div className="share-type-footer__label">YOUR TYPE</div>
@@ -1014,17 +1101,23 @@ export default function ReportViewer({ report: initialReport, scores, sharedOwne
             <div className="coach-cta__icon">
               <MessageSquare size={28} strokeWidth={1.5} />
             </div>
-            <h3 className="coach-cta__title">Ready to put this into action?</h3>
+            <h3 className="coach-cta__title">
+              {isRelationshipReport ? 'Ready to work on this together?' : 'Ready to put this into action?'}
+            </h3>
             <p className="coach-cta__text">
-              Your AI coach has already read your full assessment. No awkward introductions — 
-              they know your personality, patterns, and priorities from day one.
+              {isRelationshipReport
+                ? 'Your coach has already read your profile. No awkward introductions — they understand how you love, connect, and handle conflict from day one.'
+                : 'Your AI coach has already read your full assessment. No awkward introductions — they know your personality, patterns, and priorities from day one.'}
             </p>
             <a
-              href={buildCoachDeepLink('Your Full Report', 'my assessment results and what they mean for me')}
+              href={buildCoachDeepLink(
+                isRelationshipReport ? 'Your Relationship Profile' : 'Your Full Report',
+                isRelationshipReport ? 'my relationship profile and what it means for us' : 'my assessment results and what they mean for me',
+              )}
               className="coach-cta__button"
-              onClick={() => trackDeepLinkClick('Your Full Report', 'meet-your-coach')}
+              onClick={() => trackDeepLinkClick(isRelationshipReport ? 'Your Relationship Profile' : 'Your Full Report', 'meet-your-coach')}
             >
-              Meet Your Coach <ArrowRight className="h-4 w-4" />
+              {isRelationshipReport ? 'Talk to Your Coach' : 'Meet Your Coach'} <ArrowRight className="h-4 w-4" />
             </a>
           </div>
         </div>

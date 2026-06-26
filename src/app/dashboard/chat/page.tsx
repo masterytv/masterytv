@@ -156,10 +156,12 @@ function ChatPageInner() {
       deepLinkProcessed.current = true;
       deepLinkContext.current = { type: contextType, section, topic: topic ?? undefined };
 
-      // Build a natural opening message from the deep link context
+      // Build a natural opening message from the deep link context. Brand-aware:
+      // Relatti users read a "relationship profile," not a "Decoded report."
+      const profileLabel = resolveBrandClient().id === "relatti" ? "relationship profile" : "report";
       const openingMessage = topic
-        ? `I was just reading my Decoded report — the ${section} section about ${topic}. Can we dig into this?`
-        : `I was just reading my Decoded report — the ${section} section. I'd love to explore this with you.`;
+        ? `I was just reading my ${profileLabel} — the ${section} section about ${topic}. Can we dig into this?`
+        : `I was just reading my ${profileLabel} — the ${section} section. I'd love to explore this with you.`;
 
       // Auto-send after a brief delay to let UI settle
       setTimeout(() => handleSendMessage(openingMessage), 300);
