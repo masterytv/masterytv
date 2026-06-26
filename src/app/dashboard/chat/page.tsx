@@ -168,6 +168,16 @@ function ChatPageInner() {
 
       // Clean URL to prevent re-triggering on refresh
       router.replace('/dashboard/chat', { scroll: false });
+    } else if (contextType === 'ritual' && topic) {
+      // Daily connection ritual hand-off (§5.9): seed a conversation about the
+      // shared question. `topic` carries the prompt text.
+      deepLinkProcessed.current = true;
+      deepLinkContext.current = { type: contextType, topic };
+
+      const openingMessage = `Our connection question was: "${topic}" — I'd like to talk about it.`;
+
+      setTimeout(() => handleSendMessage(openingMessage), 300);
+      router.replace('/dashboard/chat', { scroll: false });
     } else if (contextType === 'compatibility' && inviteId) {
       deepLinkProcessed.current = true;
       const otherName = topic ? topic.replace('my relationship with ', '') : 'them';

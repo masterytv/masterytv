@@ -17,8 +17,10 @@ import { useState } from "react";
 import Link from "next/link";
 import { Heart, MessageCircle, FileText, ClipboardList, UserPlus, Copy, Check, Waves } from "lucide-react";
 import type { DashboardDyad, DyadConsent, DyadStreak } from "@/lib/relatti/dashboard-dyad";
+import type { RitualView } from "@/lib/relatti/ritual";
 import DyadPanel from "@/components/relatti/DyadPanel";
 import ConsentControl from "@/components/relatti/ConsentControl";
+import RitualCard from "@/components/relatti/RitualCard";
 
 interface Props {
   userName: string;
@@ -28,9 +30,10 @@ interface Props {
   inviteUrl: string;
   consent?: DyadConsent | null;
   streak?: DyadStreak | null;
+  ritual?: RitualView | null;
 }
 
-export default function RelattiDashboard({ userName, state, reportId, dyad = null, inviteUrl, consent = null, streak = null }: Props) {
+export default function RelattiDashboard({ userName, state, reportId, dyad = null, inviteUrl, consent = null, streak = null, ritual = null }: Props) {
   const [copied, setCopied] = useState(false);
   const assessed = state === "completed";
 
@@ -52,6 +55,11 @@ export default function RelattiDashboard({ userName, state, reportId, dyad = nul
             Hi {userName}
           </h1>
         </div>
+
+        {/* Daily connection ritual — the primary recurring action (§5.9).
+            Shown once the user has their relationship profile; before that the
+            assessment card below is the call to action. */}
+        {assessed && ritual && <RitualCard view={ritual} />}
 
         {/* Dyad panel when linked, else an invite-your-partner prompt */}
         {dyad ? (
