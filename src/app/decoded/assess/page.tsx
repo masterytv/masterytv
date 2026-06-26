@@ -84,7 +84,7 @@ export default async function AssessPage() {
     getBattery(brand.programSlug);
 
   // Invitees skip the "invite someone" screen (they're the invited partner).
-  const invitee = await isUserInvitee(supabase, user.id).catch(() => false);
+  const invitee = await isUserInvitee(supabase, user.id, user.email).catch(() => false);
 
   return (
     <AssessmentEngine

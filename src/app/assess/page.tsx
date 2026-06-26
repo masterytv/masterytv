@@ -47,7 +47,7 @@ export default async function AssessPage({
   // Invitees (the invited partner in a dyad) skip the "invite someone" screen —
   // they were the one invited. Resolved after the claim so a fresh invitee is
   // already linked.
-  const invitee = await isUserInvitee(supabase, user.id).catch(() => false);
+  const invitee = await isUserInvitee(supabase, user.id, user.email).catch(() => false);
 
   // Check for IN-PROGRESS assessment first — user may be resuming
   const { data: existingAssessment } = await supabase
