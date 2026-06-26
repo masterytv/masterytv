@@ -304,7 +304,20 @@ function V2SectionContent({
             </>
           )}
           <FightStagesComponent stages={fightStages} />
-          <NeedToHearComponent phrases={needToHear} />
+          {/* What YOU need to hear — these are for your partner to say to you. */}
+          <NeedToHearComponent
+            phrases={needToHear}
+            title="What You Need to Hear"
+            subtitle="The words that help you feel secure and loved — share these with your partner."
+          />
+          {/* The reciprocal — what to say to THEM. Fills in once the partner has a
+              profile; until then, an honest empty state (RELATTI_EXPERIENCE.md §5.4). */}
+          <NeedToHearComponent
+            phrases={[]}
+            title="What Your Partner Needs to Hear"
+            subtitle="The words that help your partner feel secure — so you know exactly what to say."
+            emptyMessage="We’ll fill this in once your partner takes their own relationship profile. Then you’ll see exactly what helps them feel safe and loved. Invite them from your dashboard to unlock this together."
+          />
         </div>
       );
     }
@@ -762,6 +775,7 @@ export default function ReportViewer({ report: initialReport, scores, sharedOwne
           archetypeBase={report.archetype_base}
           archetypeSublabel={report.archetype_sublabel}
           archetypeTagline={report.archetype_tagline}
+          isRelationship={isRelationshipReport}
         />
 
         {/* Coach learning note — sets expectation that the coach grows beyond the static report */}

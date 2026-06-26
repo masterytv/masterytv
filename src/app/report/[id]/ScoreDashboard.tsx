@@ -26,6 +26,7 @@ import {
 import BigFiveRadar from './BigFiveRadar';
 import AttachmentQuadrant from './AttachmentQuadrant';
 import WellnessRadar from './WellnessRadar';
+import { attachmentDisplay } from '@/lib/decoded/report/attachment-style';
 
 interface ScoreRow {
   instrument_id: string;
@@ -40,6 +41,8 @@ interface ScoreDashboardProps {
   archetypeBase?: string;
   archetypeSublabel?: string;
   archetypeTagline?: string;
+  /** Relationship report: lead the results with Relationship Style, reframe copy. */
+  isRelationship?: boolean;
 }
 
 import type { Easing } from 'framer-motion';
@@ -131,7 +134,7 @@ const RIASEC_INFO: Record<string, { tagline: string; desc: string; careers: stri
   },
 };
 
-export default function ScoreDashboard({ scores, archetypeBase, archetypeSublabel, archetypeTagline }: ScoreDashboardProps) {
+export default function ScoreDashboard({ scores, archetypeBase, archetypeSublabel, archetypeTagline, isRelationship = false }: ScoreDashboardProps) {
   // Extract instrument data
   const ipip = scores.find(s => s.instrument_id === 'ipip50');
   const ecr = scores.find(s => s.instrument_id === 'ecr_r_short');
@@ -177,9 +180,13 @@ export default function ScoreDashboard({ scores, archetypeBase, archetypeSublabe
     >
       <div className="dashboard-header">
         <div className="dashboard-header__label">Your Results</div>
-        <h2 className="dashboard-header__title">Assessment Complete</h2>
+        <h2 className="dashboard-header__title">
+          {isRelationship ? 'Here’s What We Found' : 'Assessment Complete'}
+        </h2>
         <p className="dashboard-header__subtitle">
-          Your scored data across all instruments — explore while your personalized narrative generates below.
+          {isRelationship
+            ? 'Starting with how you connect — explore your results while your personalized read generates below.'
+            : 'Your scored data across all instruments — explore while your personalized narrative generates below.'}
         </p>
       </div>
 
@@ -291,7 +298,7 @@ export default function ScoreDashboard({ scores, archetypeBase, archetypeSublabe
           </motion.div>
         )}
 
-        {/* ── Attachment Style ── */}
+        {/* ── Relationship / Attachment Style ── */}
         {ecr && (() => {
           const rawStyle = (ecr.interpretation?.attachmentStyle as string) ?? 'secure';
           const legacyMap: Record<string, string> = {
@@ -299,21 +306,47 @@ export default function ScoreDashboard({ scores, archetypeBase, archetypeSublabe
             avoidant: 'Dismissive-Avoidant', disorganized: 'Fearful-Avoidant',
           };
           const displayStyle = legacyMap[rawStyle] ?? rawStyle;
-          const styleTaglines: Record<string, string> = {
-            'Secure': 'Comfortable with closeness and independence',
-            'Anxious-Preoccupied': 'Deeply attuned to relationships',
-            'Dismissive-Avoidant': 'Self-reliant and emotionally independent',
-            'Fearful-Avoidant': 'Complex emotional depth',
-          };
-          const tagline = styleTaglines[displayStyle] ?? '';
+          // Warm, non-clinical naming — leads with "The Guarded Heart", never the
+          // clinical "Fearful-Avoidant" (the quadrant keeps it as a tiny ref).
+          const warm = attachmentDisplay(displayStyle);
           return (
-          <motion.div className="dashboard-card dashboard-card--wide" custom={cardIndex++} variants={cardVariants} initial="hidden" animate="visible">
+          <motion.div
+            className="dashboard-card dashboard-card--wide"
+            custom={cardIndex++}
+            variants={cardVariants}
+            initial="hidden"
+            animate="visible"
+            // Relationship reports LEAD the results with relationship style.
+            style={isRelationship ? { order: -1 } : undefined}
+          >
             <div className="dashboard-card__header">
               <Link2 className="dashboard-card__icon" size={20} style={{ color: 'var(--color-primary)' }} />
               <div>
-                <h3 className="dashboard-card__title">Attachment Style</h3>
-                <p className="dashboard-card__subtitle">ECR-R Short</p>
+                <h3 className="dashboard-card__title">{isRelationship ? 'Relationship Style' : 'Attachment Style'}</h3>
+                <p className="dashboard-card__subtitle">How you bond and connect</p>
               </div>
+            </div>
+            {/* Result — warm name leads, at the TOP of the card */}
+            <div style={{ textAlign: 'center', margin: '0.25rem 0 1rem' }}>
+              <div style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: '1.5rem',
+                fontWeight: 700,
+                color: 'var(--text-heading)',
+                lineHeight: 1.2,
+              }}>
+                {warm.name}
+              </div>
+              {warm.tagline && (
+                <div style={{
+                  fontSize: '0.875rem',
+                  color: 'var(--text-label)',
+                  marginTop: '0.25rem',
+                  fontStyle: 'italic',
+                }}>
+                  {warm.tagline}
+                </div>
+              )}
             </div>
             {/* Intro context */}
             <p style={{
@@ -326,35 +359,14 @@ export default function ScoreDashboard({ scores, archetypeBase, archetypeSublabe
               border: '1px solid rgba(96, 99, 238, 0.1)',
               borderRadius: 'var(--radius-md)',
             }}>
-              Your attachment style describes <strong style={{ color: 'var(--text-heading)' }}>how you connect in close relationships</strong>. No style is &ldquo;broken&rdquo; — each reflects strategies you developed to stay safe and loved. Hover over any quadrant to understand its strengths.
+              {isRelationship ? 'Your relationship style describes' : 'Your attachment style describes'}{' '}
+              <strong style={{ color: 'var(--text-heading)' }}>how you bond and connect in close relationships</strong>. No style is &ldquo;broken&rdquo; — each reflects strategies you developed to stay safe and loved. Tap any quadrant to understand its strengths.
             </p>
             <AttachmentQuadrant
               anxiety={ecr.subscale_scores?.anxiety ?? 3.5}
               avoidance={ecr.subscale_scores?.avoidance ?? 3.5}
               style={displayStyle}
             />
-            {/* Result — smaller headline with tagline */}
-            <div style={{ marginTop: '0.75rem', textAlign: 'center' }}>
-              <div style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: '1.25rem',
-                fontWeight: 700,
-                color: 'var(--text-heading)',
-                lineHeight: 1.2,
-              }}>
-                {displayStyle}
-              </div>
-              {tagline && (
-                <div style={{
-                  fontSize: '0.8125rem',
-                  color: 'var(--text-label)',
-                  marginTop: '0.25rem',
-                  fontStyle: 'italic',
-                }}>
-                  {tagline}
-                </div>
-              )}
-            </div>
           </motion.div>
           );
         })()}

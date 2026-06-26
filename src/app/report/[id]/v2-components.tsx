@@ -225,31 +225,63 @@ export function FightStagesComponent({ stages, title = 'How You Fight' }: FightS
 
 interface NeedToHearProps {
   phrases: Array<{ phrase: string; why: string }>;
+  /** Heading (defaults to the reader's own needs). */
+  title?: string;
+  /** One-line context under the heading. */
+  subtitle?: string;
+  /** Shown instead of the list when there are no phrases yet (e.g. the partner
+   *  hasn't completed their profile). */
+  emptyMessage?: string;
 }
 
-export function NeedToHearComponent({ phrases }: NeedToHearProps) {
+export function NeedToHearComponent({
+  phrases,
+  title = 'What You Need to Hear',
+  subtitle,
+  emptyMessage,
+}: NeedToHearProps) {
   return (
     <div className="v2-need-to-hear">
       <h4 className="v2-need-to-hear__title">
         <Heart size={16} />
-        What You Need to Hear
+        {title}
       </h4>
-      <ul className="v2-need-to-hear__list">
-        {phrases.map((item, i) => (
-          <motion.li
-            key={i}
-            className="v2-need-to-hear__item"
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.08, duration: 0.2 }}
-          >
-            <blockquote className="v2-need-to-hear__phrase">
-              "{item.phrase}"
-            </blockquote>
-            <p className="v2-need-to-hear__why">{item.why}</p>
-          </motion.li>
-        ))}
-      </ul>
+      {subtitle && (
+        <p style={{ fontSize: '0.8125rem', color: 'var(--text-label)', margin: '-0.25rem 0 0.75rem', lineHeight: 1.6 }}>
+          {subtitle}
+        </p>
+      )}
+      {phrases.length === 0 && emptyMessage ? (
+        <p style={{
+          fontSize: '0.875rem',
+          lineHeight: 1.7,
+          color: 'var(--text-body)',
+          margin: 0,
+          padding: '1rem 1.125rem',
+          background: 'color-mix(in oklch, var(--color-primary) 5%, transparent)',
+          border: '1px solid color-mix(in oklch, var(--color-primary) 12%, transparent)',
+          borderRadius: 'var(--radius-md)',
+        }}>
+          {emptyMessage}
+        </p>
+      ) : (
+        <ul className="v2-need-to-hear__list">
+          {phrases.map((item, i) => (
+            <motion.li
+              key={i}
+              className="v2-need-to-hear__item"
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.08, duration: 0.2 }}
+            >
+              <blockquote className="v2-need-to-hear__phrase">
+                "{item.phrase}"
+              </blockquote>
+              <p className="v2-need-to-hear__why">{item.why}</p>
+            </motion.li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
