@@ -31,6 +31,13 @@ interface Props {
   estimatedMinutes: string;
   /** Relationship-framed intro copy (dimensions, consent). */
   relationshipMode: boolean;
+  /**
+   * True when this user arrived via someone else's invitation (they are the
+   * invited partner in a dyad). Invitees skip the "invite someone" screen —
+   * they're the one who was invited, so asking them to invite a partner is
+   * wrong. Organic signups still see it (the viral/partner loop).
+   */
+  isInvitee: boolean;
 }
 
 type Phase = "welcome" | "invite" | "primer" | "profile" | "core" | "addon_selection" | "addons" | "complete";
@@ -75,6 +82,7 @@ export default function AssessmentEngine({
   enableAddons,
   estimatedMinutes,
   relationshipMode,
+  isInvitee,
 }: Props) {
   const supabase = createClient();
 
@@ -498,7 +506,7 @@ export default function AssessmentEngine({
           </div>
 
           <button
-            onClick={() => setPhase("invite")}
+            onClick={() => setPhase(isInvitee ? "primer" : "invite")}
             className="mt-8 w-full rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-6 py-3 text-sm font-medium text-white hover:opacity-90 transition-opacity"
           >
             Get Started

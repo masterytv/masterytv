@@ -33,15 +33,21 @@ export default function LoginPanel({
   brandName,
   next,
   inviteCode,
+  prefilledEmail,
 }: {
   brandId: BrandId;
   brandName: string;
   next?: string;
   inviteCode?: string;
+  prefilledEmail?: string;
 }) {
   const [mode, setMode] = useState<"signup" | "signin">("signup");
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(prefilledEmail ?? "");
+  // When the email came from an invite, lock it so the dyad link can't be broken
+  // by a typo or a mismatched address. The invitee can still opt out (e.g. their
+  // account is under a different email) via "Use a different email".
+  const [emailLocked, setEmailLocked] = useState(!!prefilledEmail);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -271,17 +277,34 @@ export default function LoginPanel({
                     />
                   </div>
                 )}
-                <div className="relative">
-                  <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Email address"
-                    className="w-full rounded-xl bg-surface-0 py-2.5 pl-9 pr-3 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2"
-                    style={{ ["--tw-ring-color" as string]: "color-mix(in oklch, var(--color-primary) 35%, transparent)" }}
-                  />
+                <div>
+                  <div className="relative">
+                    <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
+                    <input
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      readOnly={emailLocked}
+                      aria-readonly={emailLocked}
+                      placeholder="Email address"
+                      className={`w-full rounded-xl py-2.5 pl-9 pr-3 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 ${emailLocked ? "bg-surface-100 cursor-default" : "bg-surface-0"}`}
+                      style={{ ["--tw-ring-color" as string]: "color-mix(in oklch, var(--color-primary) 35%, transparent)" }}
+                    />
+                  </div>
+                  {emailLocked && (
+                    <p className="mt-1.5 pl-1 text-xs text-text-muted">
+                      You were invited as <strong className="text-text-secondary">{email}</strong>.{" "}
+                      <button
+                        type="button"
+                        onClick={() => setEmailLocked(false)}
+                        className="font-medium"
+                        style={{ color: "var(--color-primary)" }}
+                      >
+                        Use a different email
+                      </button>
+                    </p>
+                  )}
                 </div>
                 <div className="relative">
                   <input

@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import AssessmentEngine from "@/app/decoded/assess/AssessmentEngine";
 import { getBrand } from "@/lib/platform/brand.server";
 import { getBattery } from "@/lib/decoded/instruments/batteries";
-import { claimPendingInvites } from "@/lib/decoded/claim-invites";
+import { claimPendingInvites, isUserInvitee } from "@/lib/decoded/claim-invites";
 
 export const metadata: Metadata = {
   title: "Decoded — Assessment",
@@ -43,6 +43,11 @@ export default async function AssessPage({
   if (user.email) {
     await claimPendingInvites(supabase, user.id, user.email).catch(() => []);
   }
+
+  // Invitees (the invited partner in a dyad) skip the "invite someone" screen —
+  // they were the one invited. Resolved after the claim so a fresh invitee is
+  // already linked.
+  const invitee = await isUserInvitee(supabase, user.id).catch(() => false);
 
   // Check for IN-PROGRESS assessment first — user may be resuming
   const { data: existingAssessment } = await supabase
@@ -104,6 +109,7 @@ export default async function AssessPage({
       enableAddons={enableAddons}
       estimatedMinutes={estimatedMinutes}
       relationshipMode={relationshipMode}
+      isInvitee={invitee}
     />
   );
 }

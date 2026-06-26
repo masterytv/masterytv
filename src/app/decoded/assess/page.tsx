@@ -5,6 +5,7 @@ import AssessmentEngine from "./AssessmentEngine";
 import CompletedAssessment from "./CompletedAssessment";
 import { getBrand } from "@/lib/platform/brand.server";
 import { getBattery } from "@/lib/decoded/instruments/batteries";
+import { isUserInvitee } from "@/lib/decoded/claim-invites";
 
 export const metadata: Metadata = {
   title: "Decoded — Assessment",
@@ -82,6 +83,9 @@ export default async function AssessPage() {
   const { instruments, enableAddons, estimatedMinutes, relationshipMode } =
     getBattery(brand.programSlug);
 
+  // Invitees skip the "invite someone" screen (they're the invited partner).
+  const invitee = await isUserInvitee(supabase, user.id).catch(() => false);
+
   return (
     <AssessmentEngine
       userId={user.id}
@@ -93,6 +97,7 @@ export default async function AssessPage() {
       enableAddons={enableAddons}
       estimatedMinutes={estimatedMinutes}
       relationshipMode={relationshipMode}
+      isInvitee={invitee}
     />
   );
 }

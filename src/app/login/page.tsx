@@ -1,3 +1,4 @@
+import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
@@ -31,5 +32,36 @@ export default async function LoginPage({ searchParams }: PageProps) {
 
   const brand = await getBrand();
 
-  return <LoginPanel brandId={brand.id} brandName={brand.name} next={safeNext} inviteCode={invite} />;
+  // When arriving from an invite, the dyad link is keyed on an EXACT match
+  // between the invitee's signup email and the invite's recipient_email. If we
+  // let them free-type the email, a typo (or a different address) silently
+  // breaks the dyad with no feedback. So we look up the intended recipient and
+  // prefill + lock it. Skip "broadcast" share-links (no specific recipient).
+  let prefilledEmail: string | undefined;
+  if (invite) {
+    const admin = createServiceClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } },
+    );
+    const { data: inviteRow } = await admin
+      .from("decoded_invites")
+      .select("recipient_email")
+      .eq("id", invite)
+      .maybeSingle();
+    const email = inviteRow?.recipient_email?.trim().toLowerCase();
+    if (email && email !== "broadcast" && email.includes("@")) {
+      prefilledEmail = email;
+    }
+  }
+
+  return (
+    <LoginPanel
+      brandId={brand.id}
+      brandName={brand.name}
+      next={safeNext}
+      inviteCode={invite}
+      prefilledEmail={prefilledEmail}
+    />
+  );
 }
