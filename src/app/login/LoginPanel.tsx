@@ -53,7 +53,9 @@ export default function LoginPanel({
 
   // Post-auth destination: intended `next` (e.g. /assess) wins, else dashboard
   // (preserving invite context). Passed to /auth/callback for OAuth + email.
-  const redirectTo = next ?? (inviteCode ? `/dashboard?invite=${inviteCode}` : "/dashboard");
+  // Invitees go straight to the assessment (the dyad links there by email);
+  // everyone else to the dashboard. An explicit `next` still wins.
+  const redirectTo = next ?? (inviteCode ? "/assess" : "/dashboard");
   const callbackUrl = (origin: string) =>
     `${origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`;
 

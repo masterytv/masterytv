@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import AssessmentEngine from "@/app/decoded/assess/AssessmentEngine";
 import { getBrand } from "@/lib/platform/brand.server";
 import { getBattery } from "@/lib/decoded/instruments/batteries";
+import { claimPendingInvites } from "@/lib/decoded/claim-invites";
 
 export const metadata: Metadata = {
   title: "Decoded — Assessment",
@@ -33,7 +34,14 @@ export default async function AssessPage({
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/decoded");
+    redirect("/login");
+  }
+
+  // Invitees are sent straight here after sign-up. Claim any pending invite for
+  // their email so the dyad links now (idempotent, email-based) — they don't
+  // need to detour through the dashboard for the partner link to form.
+  if (user.email) {
+    await claimPendingInvites(supabase, user.id, user.email).catch(() => []);
   }
 
   // Check for IN-PROGRESS assessment first — user may be resuming
