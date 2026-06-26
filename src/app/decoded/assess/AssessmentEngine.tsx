@@ -528,29 +528,34 @@ export default function AssessmentEngine({
           className="glass w-full max-w-lg rounded-2xl p-8"
         >
           <h2 className="text-headline-md text-text-primary text-center mb-2">
-            Invite someone to take it too
+            {relationshipMode ? "Bring your partner in" : "Invite someone to take it too"}
           </h2>
           <p className="text-sm text-text-secondary text-center mb-6">
-            The assessment is free &mdash; share it with someone you know
+            {relationshipMode
+              ? "This works best with the two of you — invite your partner to take their relationship profile too."
+              : <>The assessment is free &mdash; share it with someone you know</>}
           </p>
 
-          {/* Relationship chips */}
-          <div className="flex flex-wrap justify-center gap-2 mb-6">
-            {RELATIONSHIP_TYPES.map((rel) => (
-              <button
-                key={rel.label}
-                onClick={() => setSelectedRelationship(rel.label === selectedRelationship ? null : rel.label)}
-                className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm transition-all ${
-                  selectedRelationship === rel.label
-                    ? "bg-[rgba(96,99,238,0.15)] ring-1 ring-[rgba(96,99,238,0.3)] text-text-primary"
-                    : "bg-surface-100/50 text-text-secondary hover:bg-surface-200/50"
-                }`}
-              >
-                <rel.icon className="h-4 w-4" />
-                {rel.label}
-              </button>
-            ))}
-          </div>
+          {/* Relationship chips — generic "who are you inviting" picker; omitted in
+              relationship mode where it's always the partner. */}
+          {!relationshipMode && (
+            <div className="flex flex-wrap justify-center gap-2 mb-6">
+              {RELATIONSHIP_TYPES.map((rel) => (
+                <button
+                  key={rel.label}
+                  onClick={() => setSelectedRelationship(rel.label === selectedRelationship ? null : rel.label)}
+                  className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm transition-all ${
+                    selectedRelationship === rel.label
+                      ? "bg-[rgba(96,99,238,0.15)] ring-1 ring-[rgba(96,99,238,0.3)] text-text-primary"
+                      : "bg-surface-100/50 text-text-secondary hover:bg-surface-200/50"
+                  }`}
+                >
+                  <rel.icon className="h-4 w-4" />
+                  {rel.label}
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Copy invite link */}
           <button
@@ -616,11 +621,20 @@ export default function AssessmentEngine({
           )}
 
           {/* Value prop */}
-          <div className="mt-6 rounded-xl bg-[rgba(96,99,238,0.05)] p-4 ring-1 ring-[rgba(96,99,238,0.1)]">
-            <p className="text-sm font-medium text-text-primary">Unlock a Comparison Report</p>
+          <div
+            className="mt-6 rounded-xl p-4"
+            style={{
+              background: "color-mix(in oklch, var(--color-primary) 5%, transparent)",
+              boxShadow: "inset 0 0 0 1px color-mix(in oklch, var(--color-primary) 12%, transparent)",
+            }}
+          >
+            <p className="text-sm font-medium text-text-primary">
+              {relationshipMode ? "See your relationship Blueprint together" : "Unlock a Comparison Report"}
+            </p>
             <p className="mt-1 text-xs text-text-secondary">
-              When you both complete the assessment, you can compare your profiles &mdash;
-              see your compatibility, communication styles, and blind spots together.
+              {relationshipMode
+                ? "When you both complete your profiles, you’ll see how you fit — your chemistry, your friction, and the small things that bring you closer."
+                : <>When you both complete the assessment, you can compare your profiles &mdash; see your compatibility, communication styles, and blind spots together.</>}
             </p>
           </div>
 

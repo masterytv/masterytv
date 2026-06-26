@@ -92,10 +92,10 @@ export default function RelattiDashboard({ userName, state, reportId, dyad = nul
             >
               <FileText className="h-6 w-6" style={{ color: "var(--color-primary)" }} />
               <h3 className="mt-3 font-display text-lg font-semibold text-text-primary">
-                Your archetype
+                Your relationship profile
               </h3>
               <p className="mt-1 text-sm text-text-secondary">
-                Revisit who you are as a partner — your full personality report.
+                Revisit your relationship style, conflict patterns, and what you need to feel close.
               </p>
             </Link>
           ) : (
@@ -105,10 +105,10 @@ export default function RelattiDashboard({ userName, state, reportId, dyad = nul
             >
               <ClipboardList className="h-6 w-6" style={{ color: "var(--color-primary)" }} />
               <h3 className="mt-3 font-display text-lg font-semibold text-text-primary">
-                {state === "in-progress" ? "Continue your quiz" : "Take your quiz"}
+                {state === "in-progress" ? "Continue your relationship profile" : "Start your relationship profile"}
               </h3>
               <p className="mt-1 text-sm text-text-secondary">
-                Discover what kind of partner you are — the first step to being understood.
+                Discover how you love and connect — the first step to being understood by your partner.
               </p>
             </Link>
           )}
