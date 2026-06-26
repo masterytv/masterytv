@@ -185,6 +185,20 @@ Added 2026-06-24. Both are platform-wide (every vertical benefits) and pair natu
 
 > Not urgent — runs before the *next* vertical, not Relatti. Relatti's own experience overhaul is tracked in `RELATTI_EXPERIENCE.md` (§7 sequencing).
 
+#### PD1 — Decoded-namespace teardown (internal hygiene)  🟦  *(added 2026-06-26)*
+*Goal: finish getting everything off the `decoded` namespace. User-facing **URLs are already neutral** (commit dd26445 — PA1.2); this epic is the remaining **code locations**, the **API namespace**, and dead files. No user-facing behavior change — pure organization, so it can wait and should be done as one tested batch (not piecemeal).*
+> Why batched, not now: zero user benefit (URLs done), and the API move has real external blast radius (Stripe webhook URL, the OG `/api/decoded/card` image baked into already-shared/cached social links). Better careful than quick.
+
+| Story | Done |
+|:--|:--|
+| **PD1.1** Relocate the assessment components out of `src/app/decoded/assess/` (`AssessmentEngine`, `CompletedAssessment`, `actions.ts`) to a neutral home; update the `/assess` import; retire the redirected `/decoded/assess` route husk. | No assessment code under `/decoded`. |
+| **PD1.2** Rename + relocate `src/app/decoded/DecodedNav.tsx` → a neutral `SiteNav`/`ReportNav` (e.g. `src/components/`); update its 3 importers (report, upgrade-success, CompletedAssessment). | No "DecodedNav" symbol; neutral shared nav. |
+| **PD1.3** Neutralize `/api/decoded/*` → `/api/*` (or `/api/assessment/*`), updating every caller. ⚠️ **Keep long-lived aliases/redirects** for `/api/decoded/card` (cached in shared social links) and reconfigure the **Stripe webhook URL** in the Stripe dashboard. 🧪 | Generic API namespace; no broken webhooks/OG images. |
+| **PD1.4** Delete dead `src/app/decoded/landing*` variants (folds in PA1.3) + orphaned `DecodedLanding.tsx`; confirm/remove `decoded/admin/backfill-v2` if spent. | `src/app/decoded/` holds only the legacy landing redirect + `/auth/callback` (intentionally kept). |
+| **PD1.5** Fix the report OG **image** asset: `/api/decoded/card` still renders "DECODED" on the card art — make it brand-aware (the title/description already are, commit 8fa304a). | The shared card image isn't Decoded-branded on Relatti. |
+
+> All non-urgent, non-user-facing. Sequence after the Relatti experience slices.
+
 ---
 
 ## 4. Sprint slicing (proposed)
