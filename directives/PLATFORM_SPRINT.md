@@ -173,6 +173,18 @@ Added 2026-06-24. Both are platform-wide (every vertical benefits) and pair natu
 
 > ⚠️ Touches the live coach + assessment data; needs careful backfill (existing rows → general program) so MasteryTV is unaffected.
 
+#### PV1 — New-Vertical Playbook + Experience Discovery (process)  🟦  *(added 2026-06-26)*
+*Goal: institutionalize "research the experience FIRST" so every new domain gets a vertical-first flow/assessment/results/coach-voice — not the engine's defaults re-themed. Lesson from Relatti: plumbing is ~80% reusable, the felt experience is ~80% custom (`RELATTI_EXPERIENCE.md`).*
+> Seed already written: `directives/VERTICAL_PLAYBOOK.md` (the standard) — adds a mandatory **Phase 0.5 — Experience Discovery** before a vertical's surfaces are built, producing `{VERTICAL}_EXPERIENCE.md`.
+
+| Story | Done |
+|:--|:--|
+| **PV1.1** Formalize `VERTICAL_PLAYBOOK.md` from seed → standard (templates for `{VERTICAL}_EXPERIENCE.md`, the Gate-0.5 checklist, the reuse-vs-custom budget). | A repeatable SOP any vertical can follow. |
+| **PV1.2** Wire Gate 0.5 into the methodology: cross-link from `CLAUDE.md §8` (BMAD phases) + `PLATFORM_ARCHITECTURE.md`; advisory gate "no surface build before `{VERTICAL}_EXPERIENCE.md` is founder-approved." | The gate is discoverable where work starts. |
+| **PV1.3** First application — run Phase 0.5 for the **career** vertical *before* building it: produce `CAREER_EXPERIENCE.md` (research job-transition psychology; hero = the job search/deadline; battery = personality + RIASEC). | Career vertical starts from an experience spec, not a re-theme. |
+
+> Not urgent — runs before the *next* vertical, not Relatti. Relatti's own experience overhaul is tracked in `RELATTI_EXPERIENCE.md` (§7 sequencing).
+
 ---
 
 ## 4. Sprint slicing (proposed)
