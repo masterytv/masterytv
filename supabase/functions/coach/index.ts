@@ -79,7 +79,8 @@ Deno.serve(async (req: Request) => {
     const program = (body.program as string | null) ?? null;
     // E14: the relationship coach should reply short and conversational (reflect +
     // ask, not essays). A tighter token cap backstops the persona's length rules.
-    const coachMaxTokens = (program ?? "").toLowerCase() === "relationship" ? 700 : 1024;
+    const isRelationship = (program ?? "").toLowerCase() === "relationship";
+    const coachMaxTokens = isRelationship ? 700 : 1024;
     // Sprint 0.4: Deep link context from report CTAs
     const context = body.context as { type?: string; section?: string; topic?: string; inviteId?: string } | undefined;
 
@@ -254,7 +255,7 @@ Deno.serve(async (req: Request) => {
 
     // ── 5. Assemble prompt (11-layer architecture) ──
     const promptStart = debugMode ? performance.now() : 0;
-    const { system, conversationHistory, metadata, debugTrace } = await assemblePrompt(userId, message, debugMode, engagementId, mode, program);
+    const { system, conversationHistory, metadata, debugTrace } = await assemblePrompt(userId, message, debugMode, engagementId, mode, program, conversationId);
     const promptMs = debugMode ? performance.now() - promptStart : 0;
 
     // Sprint 0.4: Inject deep link context instruction
@@ -328,6 +329,7 @@ Deno.serve(async (req: Request) => {
       messages: claudeMessages,
       tools: [SEARCH_FACTS_TOOL, LOOKUP_ASSESSMENT_TOOL, LOOKUP_RELATIONSHIP_TOOL],
       maxTokens: coachMaxTokens,
+      forceClaude: isRelationship,
     });
 
     if (!anthropicResponse.body) {
@@ -529,6 +531,7 @@ Deno.serve(async (req: Request) => {
               messages: toolUseMessages,
               tools: [SEARCH_FACTS_TOOL, LOOKUP_ASSESSMENT_TOOL, LOOKUP_RELATIONSHIP_TOOL],
               maxTokens: coachMaxTokens,
+              forceClaude: isRelationship,
             });
 
             stopReason = "";
