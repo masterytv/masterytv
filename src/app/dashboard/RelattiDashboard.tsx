@@ -17,9 +17,10 @@ import { useState } from "react";
 import Link from "next/link";
 import { Heart, MessageCircle, FileText, ClipboardList, UserPlus, Copy, Check, Waves } from "lucide-react";
 import type { DashboardDyad, DyadConsent, DyadStreak } from "@/lib/relatti/dashboard-dyad";
+import type { Relationship } from "@/lib/relatti/relationships";
 import type { RitualView } from "@/lib/relatti/ritual";
-import DyadPanel from "@/components/relatti/DyadPanel";
 import ConsentControl from "@/components/relatti/ConsentControl";
+import RelationshipCard from "@/components/relatti/RelationshipCard";
 import RitualCard from "@/components/relatti/RitualCard";
 
 interface Props {
@@ -27,13 +28,14 @@ interface Props {
   state: "none" | "in-progress" | "completed";
   reportId: string | null;
   dyad?: DashboardDyad | null;
+  relationships?: Relationship[];
   inviteUrl: string;
   consent?: DyadConsent | null;
   streak?: DyadStreak | null;
   ritual?: RitualView | null;
 }
 
-export default function RelattiDashboard({ userName, state, reportId, dyad = null, inviteUrl, consent = null, streak = null, ritual = null }: Props) {
+export default function RelattiDashboard({ userName, state, reportId, relationships = [], inviteUrl, consent = null, ritual = null }: Props) {
   const [copied, setCopied] = useState(false);
   const assessed = state === "completed";
 
@@ -61,9 +63,10 @@ export default function RelattiDashboard({ userName, state, reportId, dyad = nul
             assessment card below is the call to action. */}
         {assessed && ritual && <RitualCard view={ritual} />}
 
-        {/* Dyad panel when linked, else an invite-your-partner prompt */}
-        {dyad ? (
-          <DyadPanel dyad={dyad} streak={streak} />
+        {/* One card per relationship (symmetric for inviter & invitee); the
+            invite-your-partner prompt only shows when there are none yet. */}
+        {relationships.length > 0 ? (
+          relationships.map((r) => <RelationshipCard key={r.engagementId} relationship={r} />)
         ) : (
           <section className="mb-8 rounded-2xl bg-surface-50 p-6">
             <span
@@ -131,8 +134,8 @@ export default function RelattiDashboard({ userName, state, reportId, dyad = nul
               Talk to your coach
             </h3>
             <p className="mt-1 text-sm text-text-secondary">
-              {dyad
-                ? `Work through what's happening between you and ${dyad.partnerName}.`
+              {relationships[0]?.partnerJoined
+                ? `Work through what's happening between you and ${relationships[0].partner.name}.`
                 : "Start a conversation — your coach is here for the relationship."}
             </p>
           </Link>

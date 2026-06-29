@@ -2,7 +2,9 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { claimPendingInvites } from "@/lib/decoded/claim-invites";
-import { getActiveDyad, getDyadConsent, getDyadStreak } from "@/lib/relatti/dashboard-dyad";
+import { getActiveDyad, getDyadConsent } from "@/lib/relatti/dashboard-dyad";
+import { getRelationships } from "@/lib/relatti/relationships";
+import { syncMyReportToSpine } from "@/lib/relatti/sync-my-report";
 import { getTodaysRitual } from "@/lib/relatti/ritual";
 import { getBrand } from "@/lib/platform/brand.server";
 import { isBrandId } from "@/lib/platform/brand";
@@ -188,8 +190,17 @@ export default async function DashboardPage({
   const brandId = isBrandId(params.brand) ? params.brand : (await getBrand()).id;
 
   if (brandId === "relatti") {
-    const consent = dyad ? await getDyadConsent(supabase, dyad.engagementId) : null;
-    const streak = dyad ? await getDyadStreak(supabase, dyad.engagementId, user.id) : null;
+    // Keep the dyad spine current so each partner's status is visible to the
+    // other (the recipient_report_id backfill gap), then resolve all of the
+    // user's relationships for the dashboard cards.
+    await syncMyReportToSpine(user.id, reportId);
+    const assessmentStatus =
+      state === "completed" ? "completed" : state === "in-progress" ? "in_progress" : "not_started";
+    const relationships = await getRelationships(supabase, user.id, assessmentStatus);
+
+    // Consent control + ritual hang off the primary (most active) relationship.
+    const primaryEngagementId = relationships[0]?.engagementId ?? dyad?.engagementId ?? null;
+    const consent = primaryEngagementId ? await getDyadConsent(supabase, primaryEngagementId) : null;
     // Daily connection ritual (§5.9) — only meaningful once they have a profile.
     const ritual =
       state === "completed" ? await getTodaysRitual(supabase, user.id, dyad) : null;
@@ -199,9 +210,9 @@ export default async function DashboardPage({
         state={state}
         reportId={reportId}
         dyad={dyad}
+        relationships={relationships}
         inviteUrl={inviteUrl}
         consent={consent}
-        streak={streak}
         ritual={ritual}
       />
     );
