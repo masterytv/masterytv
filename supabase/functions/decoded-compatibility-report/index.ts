@@ -395,6 +395,17 @@ ACCURACY — NON-NEGOTIABLE (this is what makes the report trustworthy):
 - The title and headline describe the RELATIONSHIP, not a mash-up of the two personality archetype names.
 - If a data point is "not available," do not invent it.
 
+READING LEVEL (important):
+- Write so a 9th grader reads it easily — aim for a Flesch-Kincaid grade of about 8-9.
+- Keep most sentences under 18 words. Vary length, but break up long, multi-clause sentences.
+- Prefer plain, warm words over clinical terms. If you use a concept like "the cycle" or "a bid for connection," say it in everyday language. Keep the warmth and your voice — just make it simpler and more direct.
+
+ILLUSTRATIVE EXAMPLES (the *_example fields):
+- For the cycle, the challenges, loving well, and repair, include ONE short, concrete everyday scene (2-4 sentences) that shows the pattern in action, grounded in YOUR actual dynamic.
+- Open each with "It might look like this:" so it reads as an illustration, never an assumption about their life.
+- Keep examples nearly universal. Do NOT assume the couple lives together, is married, has kids, their genders, their finances, religion, or culture. Lean on near-universal moments: a message left unanswered, going quiet after a disagreement, needing an evening alone, a plan that falls through.
+- Make the scene specific and human (a real moment), but small. No melodrama.
+
 Return JSON with EXACTLY this structure:
 {
   "headline": "A warm, specific one-line portrait of the two of you, framed for ${readerName} (e.g., 'Your steadiness gives their worry a place to rest')",
@@ -417,12 +428,16 @@ Return JSON with EXACTLY this structure:
   "couples_report": {
     "title": "An evocative, warm title for the two of you together (a short phrase, not a sentence)",
     "intro": "2 short paragraphs. A vivid, specific portrait of this relationship that makes ${readerName} feel deeply seen. Set up who these two people are together. Separate paragraphs with a blank line.",
-    "dynamic": "2-3 paragraphs naming THE CYCLE between you: when stress hits, how you reach or protect (from your reassurance/space needs), how ${otherName} reaches or protects, and how those moves feed each other. Externalize the pattern as the shared challenge. This is the heart of the report.",
-    "empathy": "2 paragraphs helping you genuinely understand what it is like to be ${otherName}: their inner world, what they fear, what they need to feel safe and close. Build compassion, not a fix-list.",
-    "strengths": "2 paragraphs on what the two of you build together that neither could alone. Specific and earned, not flattery.",
-    "challenges": "2-3 paragraphs on the real growth edges: where it gets hard and why, the Four-Horsemen risks specific to your dynamic, named with care and zero blame.",
-    "loving_well": "2-3 paragraphs of concrete, attachment-aware ways to love each other well: small bids, specific reassurance or space, turning-toward moves tuned to each person's actual needs.",
-    "repair": "1-2 paragraphs on how to find your way back after a rupture: your repair language, de-escalation, how to answer 'are you there for me?' for each other.",
+    "dynamic": "2-3 short paragraphs naming THE CYCLE between you: when stress hits, how you reach or protect (from your reassurance/space needs), how ${otherName} reaches or protects, and how those moves feed each other. Externalize the pattern as the shared challenge. This is the heart of the report.",
+    "dynamic_example": "It might look like this: a short, hypothetical everyday scene (2-4 sentences) showing this cycle in motion. Near-universal, no life assumptions.",
+    "empathy": "2 short paragraphs helping you genuinely understand what it is like to be ${otherName}: their inner world, what they fear, what they need to feel safe and close. Build compassion, not a fix-list.",
+    "strengths": "2 short paragraphs on what the two of you build together that neither could alone. Specific and earned, not flattery.",
+    "challenges": "2 short paragraphs on the real growth edges: where it gets hard and why, the Four-Horsemen risks specific to your dynamic, named with care and zero blame.",
+    "challenges_example": "It might look like this: a short, hypothetical everyday scene (2-4 sentences) showing a hard moment between you. Near-universal, no life assumptions.",
+    "loving_well": "2 short paragraphs of concrete, attachment-aware ways to love each other well: small bids, specific reassurance or space, turning-toward moves tuned to each person's actual needs.",
+    "loving_well_example": "It might look like this: a short, hypothetical everyday scene (2-4 sentences) showing one of you turning toward the other well. Near-universal, no life assumptions.",
+    "repair": "1-2 short paragraphs on how to find your way back after a rupture: your repair language, de-escalation, how to answer 'are you there for me?' for each other.",
+    "repair_example": "It might look like this: a short, hypothetical everyday scene (2-4 sentences) showing a repair after a rough moment. Near-universal, no life assumptions.",
     "closing": "1 short paragraph: an honest, hopeful close that leaves you believing in the relationship and clear on the one thing that matters most."
   }
 }

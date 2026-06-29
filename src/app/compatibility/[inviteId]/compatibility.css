@@ -675,6 +675,48 @@
   margin-bottom: 0.875rem;
 }
 
+.couples-report__example {
+  margin-top: 0.875rem;
+  padding: 1rem 1.25rem;
+  border-radius: 0.875rem;
+  background: var(--color-surface-100);
+}
+
+.couples-report__example-label {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  margin-bottom: 0.4rem;
+}
+
+.couples-report__example-text {
+  font-size: 0.9375rem;
+  line-height: 1.65;
+  color: var(--text-body);
+  margin-bottom: 0.625rem;
+}
+
+.couples-report__example-text:last-child {
+  margin-bottom: 0;
+}
+
+.couples-report__example-coach {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.couples-report__example-coach:hover {
+  opacity: 0.85;
+}
+
 .couples-report__closing {
   margin-top: 2.25rem;
   padding: 1.5rem 1.75rem;

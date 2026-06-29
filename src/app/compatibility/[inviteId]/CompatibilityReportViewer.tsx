@@ -47,11 +47,15 @@ interface CouplesReportData {
   title?: string;
   intro?: string;
   dynamic?: string;
+  dynamic_example?: string;
   empathy?: string;
   strengths?: string;
   challenges?: string;
+  challenges_example?: string;
   loving_well?: string;
+  loving_well_example?: string;
   repair?: string;
+  repair_example?: string;
   closing?: string;
 }
 
@@ -480,7 +484,7 @@ export default function CompatibilityReportViewer({
 
       {/* ═══ Couples Report — the long-form, science-grounded analysis ═══ */}
       {report.couples_report && (
-        <CouplesReport data={report.couples_report} otherName={otherPersonName} />
+        <CouplesReport data={report.couples_report} otherName={otherPersonName} inviteId={inviteId} />
       )}
 
       {/* ═══ Coach Deep Link CTA ═══ */}
@@ -527,17 +531,48 @@ function Paragraphs({ text, className }: { text: string; className?: string }) {
   );
 }
 
-function CouplesSection({ heading, text }: { heading: string; text?: string }) {
+function CouplesSection({
+  heading,
+  text,
+  example,
+  coachHref,
+}: {
+  heading: string;
+  text?: string;
+  example?: string;
+  coachHref?: string;
+}) {
   if (!text || !text.trim()) return null;
   return (
     <div className="couples-report__section">
       <h3 className="couples-report__heading">{heading}</h3>
       <Paragraphs text={text} className="couples-report__body" />
+      {example && example.trim() && (
+        <div className="couples-report__example">
+          <div className="couples-report__example-label">For example</div>
+          <Paragraphs text={example} className="couples-report__example-text" />
+          {coachHref && (
+            <Link href={coachHref} className="couples-report__example-coach">
+              Not quite your situation? Bring it to your coach
+              <ArrowUpRight className="h-3.5 w-3.5" />
+            </Link>
+          )}
+        </div>
+      )}
     </div>
   );
 }
 
-function CouplesReport({ data, otherName }: { data: CouplesReportData; otherName: string }) {
+function CouplesReport({
+  data,
+  otherName,
+  inviteId,
+}: {
+  data: CouplesReportData;
+  otherName: string;
+  inviteId: string;
+}) {
+  const coachHref = buildCoachDeepLink(otherName, inviteId);
   return (
     <motion.section
       className="couples-report"
@@ -549,12 +584,12 @@ function CouplesReport({ data, otherName }: { data: CouplesReportData; otherName
       {data.title && <h2 className="couples-report__title">{data.title}</h2>}
       {data.intro && <Paragraphs text={data.intro} className="couples-report__lead" />}
 
-      <CouplesSection heading="The dance between you" text={data.dynamic} />
+      <CouplesSection heading="The dance between you" text={data.dynamic} example={data.dynamic_example} coachHref={coachHref} />
       <CouplesSection heading={`Understanding ${otherName}`} text={data.empathy} />
       <CouplesSection heading="What you build together" text={data.strengths} />
-      <CouplesSection heading="Where it gets hard" text={data.challenges} />
-      <CouplesSection heading="How to love each other well" text={data.loving_well} />
-      <CouplesSection heading="Finding your way back" text={data.repair} />
+      <CouplesSection heading="Where it gets hard" text={data.challenges} example={data.challenges_example} coachHref={coachHref} />
+      <CouplesSection heading="How to love each other well" text={data.loving_well} example={data.loving_well_example} coachHref={coachHref} />
+      <CouplesSection heading="Finding your way back" text={data.repair} example={data.repair_example} coachHref={coachHref} />
 
       {data.closing && (
         <div className="couples-report__closing">
