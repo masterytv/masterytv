@@ -170,11 +170,30 @@ function ChatPageInner() {
       router.replace('/dashboard/chat', { scroll: false });
     } else if (contextType === 'ritual' && topic) {
       // Daily connection ritual hand-off (§5.9): seed a conversation about the
-      // shared question. `topic` carries the prompt text.
+      // shared question, carrying the actual answers so the coach can respond to
+      // the content and reason from both partners' profiles.
       deepLinkProcessed.current = true;
       deepLinkContext.current = { type: contextType, topic };
 
-      const openingMessage = `Our connection question was: "${topic}" — I'd like to talk about it.`;
+      const mine = searchParams.get('mine');
+      const theirs = searchParams.get('theirs');
+      const partner = searchParams.get('partner') || 'my partner';
+
+      let openingMessage: string;
+      if (theirs) {
+        // Dyad reveal — both answered.
+        openingMessage =
+          `Our connection question was: "${topic}" I answered: "${mine}". ${partner} answered: "${theirs}". ` +
+          `Based on our relationship styles and personality types, what do our answers say about how we each give and receive love, ` +
+          `and what's one small thing we could try this week to feel closer?`;
+      } else if (mine) {
+        // Solo reflection.
+        openingMessage =
+          `Our connection question was: "${topic}" I answered: "${mine}". ` +
+          `Based on my relationship style and personality, help me reflect on this, and on how I might open it up with ${partner}.`;
+      } else {
+        openingMessage = `Our connection question was: "${topic}" I'd like to talk about it.`;
+      }
 
       setTimeout(() => handleSendMessage(openingMessage), 300);
       router.replace('/dashboard/chat', { scroll: false });

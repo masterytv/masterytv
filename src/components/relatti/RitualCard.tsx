@@ -32,8 +32,17 @@ const DEPTH_LABEL: Record<string, string> = {
   deep: "Heart to heart",
 };
 
-function coachLink(promptText: string): string {
-  return `/dashboard/chat?context=ritual&topic=${encodeURIComponent(promptText)}`;
+/**
+ * Build the coach deep-link for a ritual prompt. Carries the answers (capped for
+ * URL safety) + partner name so the coach can respond with the actual content
+ * and reason from both profiles. The chat page composes the opening message.
+ */
+function coachLink(promptText: string, mine?: string | null, theirs?: string | null, partner?: string | null): string {
+  const p = new URLSearchParams({ context: "ritual", topic: promptText });
+  if (mine) p.set("mine", mine.slice(0, 500));
+  if (theirs) p.set("theirs", theirs.slice(0, 500));
+  if (partner) p.set("partner", partner);
+  return `/dashboard/chat?${p.toString()}`;
 }
 
 export default function RitualCard({ view }: { view: RitualView }) {
@@ -299,7 +308,7 @@ function RevealPanel({
         </div>
       </div>
       <Link
-        href={coachLink(promptText)}
+        href={coachLink(promptText, myAnswer, partnerAnswer, partnerName)}
         className="mt-4 inline-flex items-center gap-2 text-sm font-semibold transition-colors"
         style={{ color: "var(--color-primary)" }}
       >
@@ -338,7 +347,7 @@ function SoloReflectionPanel({
       </p>
       <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2">
         <Link
-          href={coachLink(promptText)}
+          href={coachLink(promptText, myAnswer)}
           className="inline-flex items-center gap-2 text-sm font-semibold transition-colors"
           style={{ color: "var(--color-primary)" }}
         >

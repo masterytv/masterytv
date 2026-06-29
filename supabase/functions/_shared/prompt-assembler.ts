@@ -21,6 +21,7 @@ import {
   resolveDyadContext,
   buildDyadCoachLayer,
   buildMediatorPersona,
+  loadRelationshipStyle,
   type DyadContext,
 } from "./dyad-context.ts";
 import type { PromptDebugTrace } from "./debug-types.ts";
@@ -825,6 +826,13 @@ Full profile summary: ${JSON.stringify(partnerReport.sections?.S1?.content_markd
               partnerContext = `Archetype: ${partnerReport.archetype_base} (${partnerReport.archetype_sublabel || ""})`;
             }
           }
+
+          // Relationship style (attachment) — lets the coach speak to how the
+          // partner reaches/protects, not just their personality archetype.
+          const partnerStyle = await loadRelationshipStyle(supabase, partnerId);
+          if (partnerStyle) {
+            partnerContext += `\nRelationship style: ${partnerStyle.name} (need for reassurance: ${partnerStyle.needForReassurance}, need for space: ${partnerStyle.needForSpace}) — ${partnerStyle.summary}`;
+          }
         }
 
         // Add compatibility report if available
@@ -848,8 +856,14 @@ You can discuss this relationship naturally. Ask about their dynamic, offer insi
       }
 
       if (relationshipParts.length > 0) {
+        // The user's own relationship style — always available, anchors advice to
+        // how THEY reach/protect alongside each partner's style above.
+        const userStyle = await loadRelationshipStyle(supabase, userId);
+        const userStyleLine = userStyle
+          ? `\nThe user's own relationship style: ${userStyle.name} (need for reassurance: ${userStyle.needForReassurance}, need for space: ${userStyle.needForSpace}) — ${userStyle.summary}.\n`
+          : "";
         relationshipLayer = `# LAYER 4.6 — SHARED RELATIONSHIP PROFILES
-
+${userStyleLine}
 The user has personality profile connections with the following people:
 
 ${relationshipParts.join("\n\n---\n\n")}
