@@ -244,15 +244,124 @@ Return JSON with this structure:
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Relationship style (attachment quadrant) — derived from ECR-R anxiety/avoidance
+// Mirrors the warm naming used across Relatti (Anchored / Devoted / Independent /
+// Guarded Heart). Axes are on the 1–7 ECR-R scale; ~4 is the practical midpoint.
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface RelationshipStyle {
+  name: string;
+  needForReassurance: string; // low | moderate | high (anxiety)
+  needForSpace: string; // low | moderate | high (avoidance)
+  summary: string;
+}
+
+function band(v: number | null | undefined): "low" | "moderate" | "high" {
+  if (v == null) return "moderate";
+  if (v >= 4.5) return "high";
+  if (v <= 3) return "low";
+  return "moderate";
+}
+
+function deriveRelationshipStyle(
+  anxiety: number | null | undefined,
+  avoidance: number | null | undefined,
+): RelationshipStyle {
+  const a = band(anxiety);
+  const v = band(avoidance);
+  const highA = a === "high";
+  const highV = v === "high";
+  let name = "Anchored";
+  let summary = "tends to feel secure reaching for closeness and giving space";
+  if (highA && highV) {
+    name = "The Guarded Heart";
+    summary = "longs for closeness and fears it at once, so they protect themselves even when they want to draw near";
+  } else if (highA && !highV) {
+    name = "The Devoted";
+    summary = "loves deeply and needs reassurance that the bond is safe; distance can read as danger";
+  } else if (!highA && highV) {
+    name = "The Independent";
+    summary = "values autonomy and steadies under pressure by stepping back; closeness can feel like a loss of self";
+  } else {
+    name = "Anchored";
+    summary = "generally trusts the bond, can ask for what they need, and offers steadiness in return";
+  }
+  return { name, needForReassurance: a, needForSpace: v, summary };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Relationship (Relatti) system prompt — a deep couples analysis grounded in
+// Gottman, EFT (Sue Johnson), and Self-Determination Theory. Produces the brief
+// intimate cards + dimensions AND a long-form, compelling "couples report."
+// ─────────────────────────────────────────────────────────────────────────────
+
+function buildRelationshipSystemPrompt(
+  readerName: string,
+  otherName: string,
+  voiceBlock: string,
+): string {
+  return `You are a couples coach and relationship writer for Relatti. You write a deep, warm, specific analysis of a real relationship between two people, grounded in established relationship science. This is NOT a personality quiz result. The relationship is the subject. The reader should feel "wow, that's us" and come away understanding their partner with more compassion.
+
+${GLOBAL_VOICE_RULES}
+
+${voiceBlock}
+
+GROUND YOUR ANALYSIS IN THE SCIENCE (use the ideas, never the jargon unless it helps the reader):
+- Attachment / EFT (Sue Johnson): underneath conflict are attachment needs. Externalize "the cycle" (the pattern is the enemy, not the partner). Every fight is really asking: Are you there for me? Will you respond? Am I worth it? (Accessible, Responsive, Engaged). Use each person's reassurance/space needs to explain how they reach and how they protect.
+- Gottman: relationships are built in small bids for connection and turning toward them. Name the Four Horsemen risks (criticism, contempt, defensiveness, stonewalling) without lecturing, and point to their antidotes. Stable couples repair faster, they are not conflict-free.
+- Self-Determination Theory: people change through autonomy, competence, and relatedness, never shame. Offer choices, make steps small and winnable, frame everything as moving toward each other.
+
+PERSPECTIVE RULES:
+- You are writing FOR ${readerName}. They are "you" throughout. ${otherName} is their partner, referred to by name.
+- Be specific to the ACTUAL data provided (attachment needs, Big Five, relationship satisfaction, profile summaries). No generic horoscope lines. No "communication is key."
+- Never take sides or villainize ${otherName}. Hold both people with empathy. Name patterns, not blame.
+- Honest about challenges, but always leave the reader believing the relationship can grow.
+
+Return JSON with EXACTLY this structure:
+{
+  "headline": "A warm, specific one-line portrait of the two of you, framed for ${readerName} (e.g., 'Your steadiness gives their worry a place to rest')",
+  "intimate": {
+    "label": "Intimate / Partnership",
+    "chemistry": "What naturally clicks between you and ${otherName} (2-3 sentences, specific to the data)",
+    "friction": "Where the two of you tend to clash and WHY, in attachment terms (2-3 sentences)",
+    "superpower": "What you are powerful at as a couple (2 sentences)",
+    "watch_out": "The quiet pattern that could erode this bond if unattended (2 sentences)",
+    "advice_for_reader": "One specific, small, do-able move for you (1-2 sentences, use 'you')",
+    "advice_for_other": "What to understand about how ${otherName} loves and protects themselves (1-2 sentences)"
+  },
+  "compatibility_dimensions": [
+    { "dimension": "Communication", "score": 1-10, "insight": "one sentence grounded in their data" },
+    { "dimension": "Emotional Attunement", "score": 1-10, "insight": "one sentence" },
+    { "dimension": "Conflict & Repair", "score": 1-10, "insight": "one sentence" },
+    { "dimension": "Closeness & Space", "score": 1-10, "insight": "one sentence" },
+    { "dimension": "Shared Vision", "score": 1-10, "insight": "one sentence" }
+  ],
+  "couples_report": {
+    "title": "An evocative, warm title for the two of you together (a short phrase, not a sentence)",
+    "intro": "2 short paragraphs. A vivid, specific portrait of this relationship that makes ${readerName} feel deeply seen. Set up who these two people are together. Separate paragraphs with a blank line.",
+    "dynamic": "2-3 paragraphs naming THE CYCLE between you: when stress hits, how you reach or protect (from your reassurance/space needs), how ${otherName} reaches or protects, and how those moves feed each other. Externalize the pattern as the shared challenge. This is the heart of the report.",
+    "empathy": "2 paragraphs helping you genuinely understand what it is like to be ${otherName}: their inner world, what they fear, what they need to feel safe and close. Build compassion, not a fix-list.",
+    "strengths": "2 paragraphs on what the two of you build together that neither could alone. Specific and earned, not flattery.",
+    "challenges": "2-3 paragraphs on the real growth edges: where it gets hard and why, the Four-Horsemen risks specific to your dynamic, named with care and zero blame.",
+    "loving_well": "2-3 paragraphs of concrete, attachment-aware ways to love each other well: small bids, specific reassurance or space, turning-toward moves tuned to each person's actual needs.",
+    "repair": "1-2 paragraphs on how to find your way back after a rupture: your repair language, de-escalation, how to answer 'are you there for me?' for each other.",
+    "closing": "1 short paragraph: an honest, hopeful close that leaves you believing in the relationship and clear on the one thing that matters most."
+  }
+}
+
+The couples_report is the centerpiece. Make it genuinely compelling to read, paragraphed, human, and unmistakably about THESE two people.`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // OpenAI Helper (raw fetch with retry — same pattern as decoded-generate-report)
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function callOpenAI(
   systemPrompt: string,
   userPrompt: string,
+  apiKey: string,
 ): Promise<Record<string, unknown>> {
-  const apiKey = Deno.env.get("OPENAI_API_KEY");
-  if (!apiKey) throw new Error("OPENAI_API_KEY not configured in Supabase secrets");
+  if (!apiKey) throw new Error("OpenAI API key not configured in Supabase secrets");
 
   const response = await withRetry(
     async () => {
@@ -321,7 +430,8 @@ Deno.serve(async (req: Request) => {
     }
 
     const body = await req.json();
-    const { invite_id, force_regenerate } = body;
+    const { invite_id, force_regenerate, program } = body;
+    const isRelationship = program === "relationship";
 
     if (!invite_id) {
       return errorResponse("INVALID_INPUT", "invite_id required", 400, headers);
@@ -386,13 +496,13 @@ Deno.serve(async (req: Request) => {
     const [inviterReportResult, recipientReportResult] = await Promise.all([
       invite.inviter_report_id
         ? admin.from("assessment_reports")
-            .select("sections, archetype_base, voice_profile")
+            .select("sections, archetype_base, voice_profile, assessment_id")
             .eq("id", invite.inviter_report_id)
             .single()
         : null,
       invite.recipient_report_id
         ? admin.from("assessment_reports")
-            .select("sections, archetype_base, voice_profile")
+            .select("sections, archetype_base, voice_profile, assessment_id")
             .eq("id", invite.recipient_report_id)
             .single()
         : null,
@@ -422,6 +532,53 @@ Deno.serve(async (req: Request) => {
     const inviterArchetype = inviterReportResult.data.archetype_base as string | null;
     const recipientArchetype = recipientReportResult.data.archetype_base as string | null;
 
+    // ── Load the real instrument scores (relationship reports lean on these) ──
+    // ECR-R attachment (anxiety/avoidance), Big Five percentiles (ipip50), and
+    // relationship satisfaction (csi4) — the substance of a grounded analysis.
+    const inviterAssessmentId = inviterReportResult.data.assessment_id as string | null;
+    const recipientAssessmentId = recipientReportResult.data.assessment_id as string | null;
+
+    interface ScoreRow {
+      instrument_id: string;
+      subscale_scores: Record<string, number> | null;
+      percentile_scores: Record<string, number> | null;
+      total_score: number | string | null;
+    }
+    async function loadScores(assessmentId: string | null): Promise<ScoreRow[]> {
+      if (!assessmentId) return [];
+      const { data } = await admin
+        .from("assessment_scores")
+        .select("instrument_id, subscale_scores, percentile_scores, total_score")
+        .eq("assessment_id", assessmentId);
+      return (data ?? []) as ScoreRow[];
+    }
+    const [inviterScores, recipientScores] = await Promise.all([
+      loadScores(inviterAssessmentId),
+      loadScores(recipientAssessmentId),
+    ]);
+
+    function profileFacts(scores: ScoreRow[]): {
+      style: RelationshipStyle;
+      bigFive: Record<string, number> | null;
+      satisfaction: number | null;
+    } {
+      const ecr = scores.find((s) => s.instrument_id === "ecr_r_short");
+      const ipip = scores.find((s) => s.instrument_id === "ipip50");
+      const csi = scores.find((s) => s.instrument_id === "csi4");
+      const anxiety = ecr?.subscale_scores?.anxiety ?? null;
+      const avoidance = ecr?.subscale_scores?.avoidance ?? null;
+      const sat = csi?.total_score != null ? Number(csi.total_score) : null;
+      return {
+        style: deriveRelationshipStyle(anxiety, avoidance),
+        bigFive: ipip?.percentile_scores && Object.keys(ipip.percentile_scores).length > 0
+          ? ipip.percentile_scores
+          : ipip?.subscale_scores ?? null,
+        satisfaction: sat,
+      };
+    }
+    const inviterFacts = profileFacts(inviterScores);
+    const recipientFacts = profileFacts(recipientScores);
+
     // ── Resolve names ──
     const inviterName = invite.inviter_name || "Person A";
     const recipientName = invite.recipient_email?.split("@")[0] || "Person B";
@@ -440,24 +597,58 @@ Deno.serve(async (req: Request) => {
       `${recipientName} (${recipientArchetype}/${recipientVoiceId})`,
     );
 
-    // ── Build shared data payload ──
-    const userDataPayload = `## ${inviterName}
-Archetype: ${inviterArchetype || "Unknown"}
-Profile Summary: ${JSON.stringify(inviterS1 || "No profile data")}
+    // ── Build the data payload ──
+    function personBlock(
+      name: string,
+      archetype: string | null,
+      facts: { style: RelationshipStyle; bigFive: Record<string, number> | null; satisfaction: number | null },
+      s1: unknown,
+      sections: Record<string, unknown> | null,
+    ): string {
+      if (!isRelationship) {
+        return `## ${name}
+Archetype: ${archetype || "Unknown"}
+Profile Summary: ${JSON.stringify(s1 || "No profile data")}`;
+      }
+      const bf = facts.bigFive
+        ? Object.entries(facts.bigFive).map(([k, v]) => `${k} ${v}${v <= 100 ? "%ile" : ""}`).join(", ")
+        : "not available";
+      return `## ${name}
+Relationship style: ${facts.style.name} (need for reassurance: ${facts.style.needForReassurance}, need for space: ${facts.style.needForSpace}) — ${facts.style.summary}
+Big Five: ${bf}
+Relationship satisfaction (CSI-4, 0-21): ${facts.satisfaction ?? "not available"}
+Personality archetype: ${archetype || "Unknown"}
+At-a-glance: ${JSON.stringify(s1 || "n/a")}
+How they relate (relationship section): ${JSON.stringify(sections?.S5 ?? "n/a")}`;
+    }
 
-## ${recipientName}
-Archetype: ${recipientArchetype || "Unknown"}
-Profile Summary: ${JSON.stringify(recipientS1 || "No profile data")}`;
+    const inviterDataPayload = `${personBlock(inviterName, inviterArchetype, inviterFacts, inviterS1, inviterSections)}
+
+${personBlock(recipientName, recipientArchetype, recipientFacts, recipientS1, recipientSections)}`;
+    // Same facts, ordered with the reader first (keeps "you" grounded in their own data).
+    const recipientDataPayload = `${personBlock(recipientName, recipientArchetype, recipientFacts, recipientS1, recipientSections)}
+
+${personBlock(inviterName, inviterArchetype, inviterFacts, inviterS1, inviterSections)}`;
+
+    const promptFor = isRelationship ? buildRelationshipSystemPrompt : buildSystemPrompt;
+    const taskWord = isRelationship ? "couples report" : "compatibility report";
+    // Relationship reports bill to the Relatti OpenAI account; fall back to main.
+    const apiKey =
+      (isRelationship ? Deno.env.get("OPENAI_API_KEY_RELATTI") : null) ||
+      Deno.env.get("OPENAI_API_KEY") ||
+      "";
 
     // ── Generate both reports in parallel (each in their own voice) ──
     const [inviterCompatReport, recipientCompatReport] = await Promise.all([
       callOpenAI(
-        buildSystemPrompt(inviterName, recipientName, VOICE_PROMPT_BLOCKS[inviterVoiceId]),
-        `Generate a compatibility report for ${inviterName}, written in your assigned voice.\n\n${userDataPayload}`,
+        promptFor(inviterName, recipientName, VOICE_PROMPT_BLOCKS[inviterVoiceId]),
+        `Generate a ${taskWord} for ${inviterName}, written in your assigned voice.\n\n${inviterDataPayload}`,
+        apiKey,
       ),
       callOpenAI(
-        buildSystemPrompt(recipientName, inviterName, VOICE_PROMPT_BLOCKS[recipientVoiceId]),
-        `Generate a compatibility report for ${recipientName}, written in your assigned voice.\n\n${userDataPayload}`,
+        promptFor(recipientName, inviterName, VOICE_PROMPT_BLOCKS[recipientVoiceId]),
+        `Generate a ${taskWord} for ${recipientName}, written in your assigned voice.\n\n${recipientDataPayload}`,
+        apiKey,
       ),
     ]);
 

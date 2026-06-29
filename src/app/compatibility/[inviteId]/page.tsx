@@ -3,12 +3,19 @@ import { redirect, notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import CompatibilityReportViewer from './CompatibilityReportViewer';
 import GenerateReport from './GenerateReport';
+import { getBrand } from '@/lib/platform/brand.server';
 
-export const metadata: Metadata = {
-  title: 'Compatibility Report — Decoded by MasteryTV',
-  description: 'See how two personalities interact — what clicks, where you clash, and your superpower together.',
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const brand = await getBrand();
+  const isRelatti = brand.id === 'relatti';
+  return {
+    title: isRelatti ? 'Your Connection — Relatti' : 'Compatibility Report — Decoded by MasteryTV',
+    description: isRelatti
+      ? 'A deep look at the two of you — what clicks, where it gets hard, and how to love each other well.'
+      : 'See how two personalities interact — what clicks, where you clash, and your superpower together.',
+    robots: { index: false, follow: false },
+  };
+}
 
 interface PageProps {
   params: Promise<{ inviteId: string }>;

@@ -11,6 +11,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { resolveBrandClient } from '@/hooks/useBrand';
 import { Loader2, RefreshCw } from 'lucide-react';
 import './compatibility.css';
 
@@ -57,7 +58,7 @@ export default function GenerateReport({ inviteId }: Props) {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${accessToken}`,
           },
-          body: JSON.stringify({ invite_id: inviteId }),
+          body: JSON.stringify({ invite_id: inviteId, program: resolveBrandClient().programSlug }),
         },
       );
 
@@ -82,10 +83,10 @@ export default function GenerateReport({ inviteId }: Props) {
           <>
             <Loader2 className="h-8 w-8 text-[#a3a6ff] animate-spin" />
             <p className="compat-loading__text">
-              Generating your personalized compatibility report...
+              Writing your couples report...
             </p>
             <p className="compat-loading__text" style={{ opacity: 0.5, maxWidth: '24rem', textAlign: 'center', lineHeight: 1.6 }}>
-              Your report is being written in your unique Decoded voice, based on both of your complete profiles.
+              We&apos;re reading both of your profiles closely to write something that actually sounds like the two of you. This takes a moment.
             </p>
           </>
         ) : (

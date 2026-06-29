@@ -19,6 +19,7 @@ import {
   Handshake, Flame, Zap, ShieldAlert,
   MessageSquare, ArrowUpRight, FileText,
 } from 'lucide-react';
+import { useBrand } from '@/hooks/useBrand';
 import './compatibility.css';
 
 interface CompatDimension {
@@ -41,8 +42,22 @@ interface ContextInsights {
   advice_for_b?: string;
 }
 
+/** Long-form couples analysis (Relatti) — generated after the cards + chart. */
+interface CouplesReportData {
+  title?: string;
+  intro?: string;
+  dynamic?: string;
+  empathy?: string;
+  strengths?: string;
+  challenges?: string;
+  loving_well?: string;
+  repair?: string;
+  closing?: string;
+}
+
 interface CompatReport {
   headline: string;
+  couples_report?: CouplesReportData;
   intimate?: ContextInsights;
   family_friendship?: ContextInsights;
   work?: ContextInsights;
@@ -114,6 +129,8 @@ export default function CompatibilityReportViewer({
   upgradeRequestedLevel, upgradeRequestedBy, userId,
   otherReportId,
 }: Props) {
+  const brand = useBrand();
+  const isRelatti = brand.id === 'relatti';
   const isMultiContext = !!report.intimate || !!report.family_friendship || !!report.work;
   const [activeTab, setActiveTab] = useState<TabId>('intimate');
   const [requestingUpgrade, setRequestingUpgrade] = useState(false);
@@ -229,7 +246,7 @@ export default function CompatibilityReportViewer({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <div className="compat-header__label">Compatibility Report</div>
+        <div className="compat-header__label">{isRelatti ? 'Your Connection' : 'Compatibility Report'}</div>
         <h1 className="compat-header__headline">{report.headline}</h1>
         <p className="compat-header__names">
           <span>{inviterName}</span> × <span>{recipientName}</span>
@@ -328,7 +345,7 @@ export default function CompatibilityReportViewer({
               className="compat-sharing__full-report-link"
             >
               <FileText className="h-4 w-4" />
-              View {otherPersonName}&apos;s Full Decoded Report
+              View {otherPersonName}&apos;s {isRelatti ? 'relationship profile' : 'Full Decoded Report'}
               <ArrowUpRight className="h-3.5 w-3.5" />
             </Link>
           )}
@@ -344,8 +361,8 @@ export default function CompatibilityReportViewer({
         </motion.div>
       )}
 
-      {/* Tabs */}
-      {isMultiContext && (
+      {/* Tabs — hidden for Relatti (a couples product centers the intimate lens) */}
+      {isMultiContext && !isRelatti && (
         <motion.div
           className="compat-tabs"
           initial={{ opacity: 0 }}
@@ -461,6 +478,11 @@ export default function CompatibilityReportViewer({
         </motion.div>
       )}
 
+      {/* ═══ Couples Report — the long-form, science-grounded analysis ═══ */}
+      {report.couples_report && (
+        <CouplesReport data={report.couples_report} otherName={otherPersonName} />
+      )}
+
       {/* ═══ Coach Deep Link CTA ═══ */}
       <motion.div
         className="compat-coach-cta"
@@ -483,5 +505,62 @@ export default function CompatibilityReportViewer({
         </Link>
       </motion.div>
     </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Couples Report — the long-form analysis (Relatti). Fixed, on-brand section
+ * headings carry the structure; the model fills the prose. Paragraphs split on
+ * blank lines. Themed entirely with semantic tokens (light + dark safe).
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+function Paragraphs({ text, className }: { text: string; className?: string }) {
+  const paras = text.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+  return (
+    <>
+      {paras.map((p, i) => (
+        <p key={i} className={className}>
+          {p}
+        </p>
+      ))}
+    </>
+  );
+}
+
+function CouplesSection({ heading, text }: { heading: string; text?: string }) {
+  if (!text || !text.trim()) return null;
+  return (
+    <div className="couples-report__section">
+      <h3 className="couples-report__heading">{heading}</h3>
+      <Paragraphs text={text} className="couples-report__body" />
+    </div>
+  );
+}
+
+function CouplesReport({ data, otherName }: { data: CouplesReportData; otherName: string }) {
+  return (
+    <motion.section
+      className="couples-report"
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.35 }}
+    >
+      <div className="couples-report__eyebrow">Your couples report</div>
+      {data.title && <h2 className="couples-report__title">{data.title}</h2>}
+      {data.intro && <Paragraphs text={data.intro} className="couples-report__lead" />}
+
+      <CouplesSection heading="The dance between you" text={data.dynamic} />
+      <CouplesSection heading={`Understanding ${otherName}`} text={data.empathy} />
+      <CouplesSection heading="What you build together" text={data.strengths} />
+      <CouplesSection heading="Where it gets hard" text={data.challenges} />
+      <CouplesSection heading="How to love each other well" text={data.loving_well} />
+      <CouplesSection heading="Finding your way back" text={data.repair} />
+
+      {data.closing && (
+        <div className="couples-report__closing">
+          <Paragraphs text={data.closing} className="couples-report__closing-text" />
+        </div>
+      )}
+    </motion.section>
   );
 }
