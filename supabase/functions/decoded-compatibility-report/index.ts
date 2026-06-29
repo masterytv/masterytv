@@ -289,6 +289,77 @@ function deriveRelationshipStyle(
   return { name, needForReassurance: a, needForSpace: v, summary };
 }
 
+interface ProfileFacts {
+  style: RelationshipStyle;
+  anxiety: number | null; // ECR-R, 1–7
+  avoidance: number | null; // ECR-R, 1–7
+  bigFive: Record<string, number> | null;
+  satisfaction: number | null;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Dyad dynamic — computed DETERMINISTICALLY from the two ECR-R profiles so the
+// model can't invent (or reverse) who reaches and who withdraws. The model is
+// told to treat this as ground truth and never contradict it. This is what
+// prevents the two per-person reports from disagreeing about who is "the steady
+// one." A higher anxiety score = stronger pull to reach for reassurance; a
+// higher avoidance score = stronger pull to need space.
+// ─────────────────────────────────────────────────────────────────────────────
+
+function compareAxis(
+  aVal: number | null,
+  bVal: number | null,
+  aName: string,
+  bName: string,
+  axis: string,
+): string {
+  if (aVal == null || bVal == null) return `${axis}: not enough data to compare.`;
+  const diff = aVal - bVal;
+  const mag = Math.abs(diff);
+  if (mag < 0.5) return `${axis}: about the same for both of you (${aName} ${aVal.toFixed(1)}, ${bName} ${bVal.toFixed(1)}).`;
+  const higher = diff > 0 ? aName : bName;
+  const word = mag >= 1.5 ? "notably" : "somewhat";
+  return `${axis}: ${higher}'s is ${word} higher (${aName} ${aVal.toFixed(1)}, ${bName} ${bVal.toFixed(1)}).`;
+}
+
+function buildDyadDynamic(
+  reader: ProfileFacts,
+  other: ProfileFacts,
+  readerName: string,
+  otherName: string,
+): string {
+  const lines: string[] = [];
+  lines.push(`${readerName}'s relationship style: ${reader.style.name} (need for reassurance: ${reader.style.needForReassurance}, need for space: ${reader.style.needForSpace}).`);
+  lines.push(`${otherName}'s relationship style: ${other.style.name} (need for reassurance: ${other.style.needForReassurance}, need for space: ${other.style.needForSpace}).`);
+  lines.push(compareAxis(reader.anxiety, other.anxiety, readerName, otherName, "Need for reassurance"));
+  lines.push(compareAxis(reader.avoidance, other.avoidance, readerName, otherName, "Need for space"));
+
+  if (reader.style.name === other.style.name) {
+    lines.push(`SHARED STYLE: you both have the same relationship style (${reader.style.name}). Write this as "you're both…". You tend toward the SAME moves under stress, so neither of you is automatically the calm anchor — say that plainly and explain what sharing this style means, rather than casting one of you as the steady one and the other as the anxious one.`);
+  }
+
+  // The likely cycle, by who carries the stronger pull on each axis.
+  const rA = reader.anxiety, oA = other.anxiety, rV = reader.avoidance, oV = other.avoidance;
+  if (rA != null && oA != null && rV != null && oV != null) {
+    const sameAnx = Math.abs(rA - oA) < 0.5;
+    const sameAvo = Math.abs(rV - oV) < 0.5;
+    const pursuer = rA >= oA ? readerName : otherName; // higher anxiety reaches
+    const distancer = rV >= oV ? readerName : otherName; // higher avoidance withdraws
+    const steadier = (rA + rV) <= (oA + oV) ? readerName : otherName; // lower overall = more anchored
+    const guarded = steadier === readerName ? otherName : readerName;
+
+    if (sameAnx && sameAvo) {
+      lines.push(`LIKELY CYCLE: you respond to stress in very similar ways. The risk is that you both reach (or both pull back) at the same time, with neither of you steady enough in that moment to anchor the other. Do NOT portray one of you as calm and the other as anxious.`);
+    } else if (pursuer === distancer) {
+      lines.push(`LIKELY CYCLE: ${guarded} carries the stronger pull on both sides — more likely to reach for reassurance AND to need space, so ${guarded} tends to protest-then-retreat under stress. ${steadier} runs lower on both and is the more anchored, steadying presence. Be accurate about this direction: ${steadier} is the steadier one, ${guarded} is the more guarded one.`);
+    } else {
+      lines.push(`LIKELY CYCLE: under stress ${pursuer} tends to reach for reassurance while ${distancer} tends to need space. Left unmanaged, ${pursuer}'s reaching can increase ${distancer}'s need to withdraw, which in turn increases ${pursuer}'s anxiety — the classic pursue-withdraw loop. Keep this direction exactly; do not reverse it.`);
+    }
+  }
+
+  return lines.join("\n");
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Relationship (Relatti) system prompt — a deep couples analysis grounded in
 // Gottman, EFT (Sue Johnson), and Self-Determination Theory. Produces the brief
@@ -316,6 +387,13 @@ PERSPECTIVE RULES:
 - Be specific to the ACTUAL data provided (attachment needs, Big Five, relationship satisfaction, profile summaries). No generic horoscope lines. No "communication is key."
 - Never take sides or villainize ${otherName}. Hold both people with empathy. Name patterns, not blame.
 - Honest about challenges, but always leave the reader believing the relationship can grow.
+
+ACCURACY — NON-NEGOTIABLE (this is what makes the report trustworthy):
+- A "RELATIONSHIP DYNAMIC (GROUND TRUTH)" block is provided in the user message. It states each person's relationship style, who has the higher need for reassurance, who has the higher need for space, and the likely cycle. Treat it as fact. Do NOT contradict it or reverse its direction.
+- Derive who reaches, who withdraws, and who is the steadier/anchoring presence ONLY from that ground truth — NEVER from personality archetype, voice, or vibe. (For example, do not assume the more "empathetic" archetype is the anxious one.)
+- Do NOT cast one partner as "the steady/calm one" and the other as "the anxious one" unless the ground truth's reassurance/space comparison actually shows that asymmetry. When the two of you are similar, say so ("you're both…").
+- The title and headline describe the RELATIONSHIP, not a mash-up of the two personality archetype names.
+- If a data point is "not available," do not invent it.
 
 Return JSON with EXACTLY this structure:
 {
@@ -360,6 +438,7 @@ async function callOpenAI(
   systemPrompt: string,
   userPrompt: string,
   apiKey: string,
+  temperature = 0.7,
 ): Promise<Record<string, unknown>> {
   if (!apiKey) throw new Error("OpenAI API key not configured in Supabase secrets");
 
@@ -373,7 +452,7 @@ async function callOpenAI(
         },
         body: JSON.stringify({
           model: MODEL,
-          temperature: 0.7,
+          temperature,
           response_format: { type: "json_object" },
           messages: [
             { role: "system", content: systemPrompt },
@@ -557,11 +636,7 @@ Deno.serve(async (req: Request) => {
       loadScores(recipientAssessmentId),
     ]);
 
-    function profileFacts(scores: ScoreRow[]): {
-      style: RelationshipStyle;
-      bigFive: Record<string, number> | null;
-      satisfaction: number | null;
-    } {
+    function profileFacts(scores: ScoreRow[]): ProfileFacts {
       const ecr = scores.find((s) => s.instrument_id === "ecr_r_short");
       const ipip = scores.find((s) => s.instrument_id === "ipip50");
       const csi = scores.find((s) => s.instrument_id === "csi4");
@@ -570,6 +645,8 @@ Deno.serve(async (req: Request) => {
       const sat = csi?.total_score != null ? Number(csi.total_score) : null;
       return {
         style: deriveRelationshipStyle(anxiety, avoidance),
+        anxiety,
+        avoidance,
         bigFive: ipip?.percentile_scores && Object.keys(ipip.percentile_scores).length > 0
           ? ipip.percentile_scores
           : ipip?.subscale_scores ?? null,
@@ -622,11 +699,20 @@ At-a-glance: ${JSON.stringify(s1 || "n/a")}
 How they relate (relationship section): ${JSON.stringify(sections?.S5 ?? "n/a")}`;
     }
 
-    const inviterDataPayload = `${personBlock(inviterName, inviterArchetype, inviterFacts, inviterS1, inviterSections)}
+    // Authoritative, code-computed dynamic per reader — prevents the two reports
+    // from disagreeing about who reaches / who is steadier (relationship only).
+    const inviterDynamic = isRelationship
+      ? `RELATIONSHIP DYNAMIC (GROUND TRUTH — do not contradict):\n${buildDyadDynamic(inviterFacts, recipientFacts, inviterName, recipientName)}\n\n`
+      : "";
+    const recipientDynamic = isRelationship
+      ? `RELATIONSHIP DYNAMIC (GROUND TRUTH — do not contradict):\n${buildDyadDynamic(recipientFacts, inviterFacts, recipientName, inviterName)}\n\n`
+      : "";
+
+    const inviterDataPayload = `${inviterDynamic}${personBlock(inviterName, inviterArchetype, inviterFacts, inviterS1, inviterSections)}
 
 ${personBlock(recipientName, recipientArchetype, recipientFacts, recipientS1, recipientSections)}`;
     // Same facts, ordered with the reader first (keeps "you" grounded in their own data).
-    const recipientDataPayload = `${personBlock(recipientName, recipientArchetype, recipientFacts, recipientS1, recipientSections)}
+    const recipientDataPayload = `${recipientDynamic}${personBlock(recipientName, recipientArchetype, recipientFacts, recipientS1, recipientSections)}
 
 ${personBlock(inviterName, inviterArchetype, inviterFacts, inviterS1, inviterSections)}`;
 
@@ -644,11 +730,13 @@ ${personBlock(inviterName, inviterArchetype, inviterFacts, inviterS1, inviterSec
         promptFor(inviterName, recipientName, VOICE_PROMPT_BLOCKS[inviterVoiceId]),
         `Generate a ${taskWord} for ${inviterName}, written in your assigned voice.\n\n${inviterDataPayload}`,
         apiKey,
+        isRelationship ? 0.4 : 0.7,
       ),
       callOpenAI(
         promptFor(recipientName, inviterName, VOICE_PROMPT_BLOCKS[recipientVoiceId]),
         `Generate a ${taskWord} for ${recipientName}, written in your assigned voice.\n\n${recipientDataPayload}`,
         apiKey,
+        isRelationship ? 0.4 : 0.7,
       ),
     ]);
 
