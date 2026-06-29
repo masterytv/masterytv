@@ -77,6 +77,9 @@ Deno.serve(async (req: Request) => {
     // Program/vertical (e.g. 'relationship') — selects the coach persona so every
     // Relatti user gets a relationship coach, solo or dyad. Absent → executive.
     const program = (body.program as string | null) ?? null;
+    // E14: the relationship coach should reply short and conversational (reflect +
+    // ask, not essays). A tighter token cap backstops the persona's length rules.
+    const coachMaxTokens = (program ?? "").toLowerCase() === "relationship" ? 700 : 1024;
     // Sprint 0.4: Deep link context from report CTAs
     const context = body.context as { type?: string; section?: string; topic?: string; inviteId?: string } | undefined;
 
@@ -324,7 +327,7 @@ Deno.serve(async (req: Request) => {
       system: contextualSystem,
       messages: claudeMessages,
       tools: [SEARCH_FACTS_TOOL, LOOKUP_ASSESSMENT_TOOL, LOOKUP_RELATIONSHIP_TOOL],
-      maxTokens: 1024,
+      maxTokens: coachMaxTokens,
     });
 
     if (!anthropicResponse.body) {
@@ -525,7 +528,7 @@ Deno.serve(async (req: Request) => {
               system: contextualSystem,
               messages: toolUseMessages,
               tools: [SEARCH_FACTS_TOOL, LOOKUP_ASSESSMENT_TOOL, LOOKUP_RELATIONSHIP_TOOL],
-              maxTokens: 1024,
+              maxTokens: coachMaxTokens,
             });
 
             stopReason = "";

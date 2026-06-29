@@ -181,16 +181,16 @@ function ChatPageInner() {
 
       let openingMessage: string;
       if (theirs) {
-        // Dyad reveal — both answered.
+        // Dyad reveal — both answered. Open-ended on purpose: invite the coach to
+        // reflect and ask, not to pre-order an analysis + tip-list (E14 stance).
         openingMessage =
           `Our connection question was: "${topic}" I answered: "${mine}". ${partner} answered: "${theirs}". ` +
-          `Based on our relationship styles and personality types, what do our answers say about how we each give and receive love, ` +
-          `and what's one small thing we could try this week to feel closer?`;
+          `What do you make of that?`;
       } else if (mine) {
-        // Solo reflection.
+        // Solo reflection — open, reflective; let the coach lead with curiosity.
         openingMessage =
           `Our connection question was: "${topic}" I answered: "${mine}". ` +
-          `Based on my relationship style and personality, help me reflect on this, and on how I might open it up with ${partner}.`;
+          `What stands out to you about that?`;
       } else {
         openingMessage = `Our connection question was: "${topic}" I'd like to talk about it.`;
       }

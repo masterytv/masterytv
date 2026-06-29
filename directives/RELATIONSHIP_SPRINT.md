@@ -217,6 +217,8 @@ Target: [`supabase/functions/_shared/prompt-assembler.ts`](supabase/functions/_s
 ### E14 — Refine / revamp the relationship coaching STYLE  🧠  *(added 2026-06-29, founder)*
 *Goal: the coach currently coaches like a generally-good advice-giver. Define the actual **counselling stance** for Relatti and rebuild the persona + response patterns around it. Founder instinct: it should probably NOT lead with advice. Needs research into how good couples counselling actually works before rewriting prompts.*
 > Current state: relationship persona exists (`buildRelationshipCoachPersona` in `prompt-assembler.ts`, EFT/Gottman/SDT-grounded) + dyad context (archetypes + now relationship styles) + de-escalation mode (E9). But the *moment-to-moment style* (does it ask vs. tell? how directive? how much per turn?) is undesigned — it defaults to helpful-advice mode.
+>
+> **Progress (2026-06-29):** ✅ **E14.1 stance spec** + **web research** (lowest-harm/lowest-legal-risk/best-AI-result all converge — Amanda GPT-4o RCT used this exact stance; 2025 AI-therapy laws push us to "education+coaching not therapy") → `RELATTI_EXPERIENCE.md §5.6.1`. ✅ **Founder-approved.** ✅ **E14.3 BUILT** in `prompt-assembler.ts` (`isRelationship` branch): persona rebuilt to the stance + not-a-therapist/AI disclosure; **skipped** Heron Layer 3, AI-tools Layer 9, GROW challenges Layer 2 for relationship; **swapped** Layer 10 → new `buildRelationshipGuardrails` (legal positioning); **hardened** Layer 11 with subtle-cue detection. ⏳ **Pending: redeploy the `coach` edge fn** (also the TS check — no local Deno). Remaining: E14.2 gold-example tests, E14.4 deeper per-style calibration, E14.5 mode toggle.
 
 | Story | Done |
 |:--|:--|

@@ -43,6 +43,9 @@ function renderMarkdown(text: string): string {
     .replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre class="chat-code-block"><code>$2</code></pre>')
     // Inline code (`...`)
     .replace(/`([^`]+)`/g, '<code class="chat-inline-code">$1</code>')
+    // Headings (#, ##, ### …) → bold line. The coach is instructed not to emit
+    // headings (E14 conversational stance), but never render a raw "### " if it does.
+    .replace(/^#{1,6}\s+(.+?)\s*$/gm, "<strong>$1</strong>")
     // Bold (**text**)
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
     // Italic (*text*)
