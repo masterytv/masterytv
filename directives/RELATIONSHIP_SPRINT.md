@@ -214,6 +214,22 @@ Target: [`supabase/functions/_shared/prompt-assembler.ts`](supabase/functions/_s
 
 ---
 
+### E14 — Refine / revamp the relationship coaching STYLE  🧠  *(added 2026-06-29, founder)*
+*Goal: the coach currently coaches like a generally-good advice-giver. Define the actual **counselling stance** for Relatti and rebuild the persona + response patterns around it. Founder instinct: it should probably NOT lead with advice. Needs research into how good couples counselling actually works before rewriting prompts.*
+> Current state: relationship persona exists (`buildRelationshipCoachPersona` in `prompt-assembler.ts`, EFT/Gottman/SDT-grounded) + dyad context (archetypes + now relationship styles) + de-escalation mode (E9). But the *moment-to-moment style* (does it ask vs. tell? how directive? how much per turn?) is undesigned — it defaults to helpful-advice mode.
+
+| Story | Done |
+|:--|:--|
+| **E14.1** Research couples-counselling modalities + their conversational stance: EFT (de-escalate → restructure → consolidate; reflect & deepen, rarely advise), Gottman (psychoeducation + structured interventions/exercises), Socratic/questions-only, motivational interviewing (evoke, don't prescribe), solution-focused (small experiments). Output: a short decision doc — when to ask, when to reflect, when to teach, when to assign a tiny experiment. | A written stance spec the persona can be built from (extend RELATTI_EXPERIENCE §5.6). Founder-approved. |
+| **E14.2** Define the Relatti coaching stance: default to **questions + reflection + validation** (curiosity over prescription), name the cycle, surface the attachment need; offer a concrete step only when invited or clearly stuck, and keep it tiny (Fogg). Per-turn discipline: one idea, short, end with a question more often than a directive. | Written rules + 6-10 gold example exchanges (good vs. bad) for snapshot tests. |
+| **E14.3** Rebuild `buildRelationshipCoachPersona` (+ any layer overlays) to the new stance; tune length/format (no advice-dumps, no bullet lists of tips). | Persona reflects the stance; redeploy coach; snapshot tests pass. 🧪 |
+| **E14.4** Calibrate by attachment style (§4): reassurance-first for The Devoted, autonomy-respecting/low-pressure for The Independent, safety-slow for The Guarded Heart, straight-to-depth for Anchored — applied to *how it asks*, not just what it knows. | Same situation, different style → audibly different coaching. 🧪 |
+| **E14.5** (optional) Let the user choose a mode — "just listen / ask me questions" vs. "give me something to try" — honoring autonomy (SDT). | Mode toggle changes coach behaviour. |
+
+**E14 exit:** the coach has a deliberate, research-grounded counselling style (not generic advice), calibrated per person, with regression tests. *Larger epic — sequence after the current launch-blockers; do the research (E14.1) first.*
+
+---
+
 ## 4. Sprint slicing (proposed)
 
 | Sprint | Epics | Outcome |
