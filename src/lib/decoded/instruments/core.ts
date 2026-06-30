@@ -205,23 +205,27 @@ export const DERS16: InstrumentDef = {
   scaleLabels: ['Almost\nNever', 'Sometimes', 'About\nHalf', 'Most of\nthe Time', 'Almost\nAlways'],
   description: 'How often do the following apply to you?',
   estimatedMinutes: 3,
+  // Canonical Bjureberg (2016) DERS-16 — verbatim items in published administration
+  // order. No Awareness facet, no reverse-keyed items (all worded toward difficulty).
+  // Facet map: clarity[1,2] goals[3,7,15] impulse[4,8,11] strategies[5,6,12,14,16]
+  // nonAcceptance[9,10,13]. See DECODED_SCORING.md §6.
   items: [
     { index: 1, text: 'I have difficulty making sense out of my feelings' },
-    { index: 2, text: 'I have no idea how I am going to feel' },
-    { index: 3, text: 'I pay attention to how I feel', reversed: true },
-    { index: 4, text: 'I am confused about how I feel' },
-    { index: 5, text: 'When I am upset, I feel guilty for feeling that way' },
-    { index: 6, text: 'When I am upset, I have difficulty getting work done' },
-    { index: 7, text: 'When I am upset, I become out of control' },
-    { index: 8, text: 'When I am upset, I have difficulty focusing on other things' },
-    { index: 9, text: 'When I am upset, I feel out of control' },
-    { index: 10, text: 'When I am upset, I feel ashamed with myself for feeling that way' },
-    { index: 11, text: 'When I am upset, I believe that wallowing in it is all I can do' },
-    { index: 12, text: 'When I am upset, it takes me a long time to feel better' },
-    { index: 13, text: 'When I am upset, I start to feel very bad about myself' },
-    { index: 14, text: 'When I am upset, I become angry with myself for feeling that way' },
-    { index: 15, text: 'When I am upset, I have difficulty thinking about anything else' },
-    { index: 16, text: 'When I am upset, my emotions feel overwhelming' },
+    { index: 2, text: 'I am confused about how I feel' },
+    { index: 3, text: "When I'm upset, I have difficulty getting work done" },
+    { index: 4, text: "When I'm upset, I become out of control" },
+    { index: 5, text: "When I'm upset, I believe that I will remain that way for a long time" },
+    { index: 6, text: "When I'm upset, I believe that I'll end up feeling very depressed" },
+    { index: 7, text: "When I'm upset, I have difficulty focusing on other things" },
+    { index: 8, text: "When I'm upset, I feel out of control" },
+    { index: 9, text: "When I'm upset, I feel ashamed with myself for feeling that way" },
+    { index: 10, text: "When I'm upset, I feel like I am weak" },
+    { index: 11, text: "When I'm upset, I have difficulty controlling my behaviors" },
+    { index: 12, text: "When I'm upset, I believe that there is nothing I can do to make myself feel better" },
+    { index: 13, text: "When I'm upset, I become irritated with myself for feeling that way" },
+    { index: 14, text: "When I'm upset, I start to feel very bad about myself" },
+    { index: 15, text: "When I'm upset, I have difficulty thinking about anything else" },
+    { index: 16, text: "When I'm upset, my emotions feel overwhelming" },
   ],
 };
 

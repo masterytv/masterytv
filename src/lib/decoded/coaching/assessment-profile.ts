@@ -53,7 +53,6 @@ export interface AssessmentProfile {
       goalDirected: number;
       selfAcceptance: number;
       copingStrategies: number;
-      awareness: number;
     };
     coachingNote: string;   // e.g., "Struggles most with impulse control under stress"
   } | null;
@@ -196,7 +195,6 @@ function buildDERS(score: ScoreRow | undefined) {
     goalDirected: sub.goals ?? 0,
     selfAcceptance: sub.nonAcceptance ?? 0,
     copingStrategies: sub.strategies ?? 0,
-    awareness: sub.awareness ?? 0,
   };
 
   // Higher DERS subscale = more difficulty. Find the highest.
@@ -207,7 +205,6 @@ function buildDERS(score: ScoreRow | undefined) {
     goalDirected: 'staying goal-directed when upset',
     selfAcceptance: 'accepting difficult emotions',
     copingStrategies: 'finding effective coping strategies',
-    awareness: 'emotional awareness',
   };
 
   return {

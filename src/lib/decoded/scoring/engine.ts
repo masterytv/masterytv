@@ -265,33 +265,26 @@ export function scoreSCS_SF(responses: Record<string, number>): SCSSFScore {
 // ---------------------------------------------------------------------------
 
 export function scoreDERS16(responses: Record<string, number>): DERS16Score {
-  // Subscale groupings are derived from each item's WORDING (the construct it
-  // taps), NOT a positional assumption.
+  // Canonical Bjureberg (2016) DERS-16 — J Psychopathol Behav Assess 38:284–296
+  // (PMC4882111). Five facets, NO Awareness facet, and NO reverse-keyed items:
+  // every item is worded toward difficulty (higher = more difficulty). The
+  // item→facet map and administration order follow the published appendix.
   //
-  // NOTE on instrument fidelity: this "DERS-16" is a NON-CANONICAL hybrid — it
-  // does not match the published Bjureberg (2016) DERS-16, which omits the
-  // Awareness facet and contains no reverse-keyed items. Here item 3 ("I pay
-  // attention to how I feel") is the lone positively-worded item and is the only
-  // reverse-scored one. The TOTAL is robust to the partition (it sums all 16
-  // with item 3 reversed), but these subscale sums feed the coaching profile +
-  // report dashboard, so they must group by construct.
-  //
-  // Previously every facet except Nonacceptance was scrambled: item 2 (clarity)
-  // and 6/7 (goals/impulse) were filed under Strategies, 12 (strategies) under
-  // Goals, 13 (nonacceptance) under Impulse. Corrected by item wording below.
-  // (Audit 2026-06-30; see DECODED_SCORING.md.)
-  const clarity = sumItems(responses, ['1', '2', '4']);             // make sense of / no idea / confused about feelings
-  const awareness = reverse(val(responses, '3'), 5);                // "pay attention to how I feel" — lone reverse item
-  const nonAcceptance = sumItems(responses, ['5', '10', '13', '14']); // guilt / shame / feel bad about self / anger at self
-  const goals = sumItems(responses, ['6', '8', '15']);              // difficulty working / focusing / thinking when upset
-  const impulse = sumItems(responses, ['7', '9', '16']);            // out of control / overwhelmed when upset
-  const strategies = sumItems(responses, ['11', '12']);             // wallowing / takes a long time to feel better
+  // Re-fielded 2026-06-30: replaced the earlier DERS-SF/DERS-16 hybrid that
+  // carried a reverse-scored Awareness item ("I pay attention to how I feel").
+  // Re-fielding changes item text, which invalidates previously stored DERS
+  // responses by design — done for psychometric fidelity while pre-launch
+  // (founder-approved; assessments will be retaken). See DECODED_SCORING.md §6.
+  const clarity = sumItems(responses, ['1', '2']);                        // make sense of / confused about feelings
+  const goals = sumItems(responses, ['3', '7', '15']);                    // work done / focusing / thinking about anything else
+  const impulse = sumItems(responses, ['4', '8', '11']);                  // out of control / out of control / controlling behaviors
+  const strategies = sumItems(responses, ['5', '6', '12', '14', '16']);   // remain upset / depressed / nothing helps / bad about self / overwhelmed
+  const nonAcceptance = sumItems(responses, ['9', '10', '13']);           // ashamed / weak / irritated at self for feeling
 
-  // Total: sum all 16 items with awareness reversed
-  const allItemsExceptAwareness = sumItems(responses, 
-    ['1','2','4','5','6','7','8','9','10','11','12','13','14','15','16']
+  // Total: plain sum of all 16 items (no reversals). Range 16–80; higher = more difficulty.
+  const total = sumItems(responses,
+    ['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16']
   );
-  const total = allItemsExceptAwareness + awareness; // Range: 16–80
 
   return {
     instrumentId: 'ders16',
@@ -302,7 +295,6 @@ export function scoreDERS16(responses: Record<string, number>): DERS16Score {
       impulse,
       nonAcceptance,
       strategies,
-      awareness,
     },
   };
 }

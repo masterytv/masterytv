@@ -236,34 +236,28 @@ describe('scoreSCS_SF', () => {
 
 // ── DERS-16 ──────────────────────────────────────────────────────────────────
 describe('scoreDERS16', () => {
-  it('all-min: items = 1 → total = 16 (lowest difficulty)', () => {
-    const r = scoreDERS16(fillResponses(16, 1));
-    // 15 items at 1 = 15, plus item 3 reversed from 1 = 5; total = 20
-    // Wait: reverse(1,5) = 5. So total = 15 + 5 = 20
-    expect(r.totalScore).toBe(20);
+  it('all-min: items = 1 → total = 16 (lowest difficulty; canonical has no reverse items)', () => {
+    expect(scoreDERS16(fillResponses(16, 1)).totalScore).toBe(16);
   });
 
-  it('all-max: items = 5 → total = 76 (highest difficulty)', () => {
-    const r = scoreDERS16(fillResponses(16, 5));
-    // 15 items at 5 = 75, plus item 3 reversed from 5 = 1; total = 76
-    expect(r.totalScore).toBe(76);
+  it('all-max: items = 5 → total = 80 (highest difficulty)', () => {
+    expect(scoreDERS16(fillResponses(16, 5)).totalScore).toBe(80);
   });
 
-  it('known-clinical: high emotion dysregulation', () => {
-    const resp = fillResponses(16, 4);
-    const r = scoreDERS16(resp);
+  it('known-clinical: high emotion dysregulation (all 4s = 64)', () => {
+    const r = scoreDERS16(fillResponses(16, 4));
+    expect(r.totalScore).toBe(64);
     expect(r.totalScore).toBeGreaterThan(60);
   });
 
-  it('reverse-scoring: awareness item 3 reversed', () => {
-    const resp = fillResponses(16, 3);
-    resp['3'] = 1; // Low awareness → reversed to 5
-    const r = scoreDERS16(resp);
-    expect(r.subscaleScores.awareness).toBe(5);
+  it('canonical Bjureberg DERS-16 has no Awareness facet', () => {
+    const r = scoreDERS16(fillResponses(16, 3));
+    expect(r.subscaleScores).not.toHaveProperty('awareness');
   });
 
-  it('boundary: total range 16–80', () => {
+  it('boundary: total range 16–80 (all 3s = 48, the midpoint)', () => {
     const r = scoreDERS16(fillResponses(16, 3));
+    expect(r.totalScore).toBe(48);
     expect(r.totalScore).toBeGreaterThanOrEqual(16);
     expect(r.totalScore).toBeLessThanOrEqual(80);
   });
@@ -585,9 +579,9 @@ describe('scoreWEIMS — canonical W-SDI', () => {
 });
 
 // ═════════════════════════════════════════════════════════════════════════════
-// DERS-16 — subscale partition by item WORDING (audit 2026-06-30)
-// NOTE: non-canonical hybrid (not the published Bjureberg 2016 DERS-16). Item 3
-// is the lone reverse-scored item; total is the sum of all 16 with item 3 reversed.
+// DERS-16 — subscale partition (canonical Bjureberg 2016, re-fielded 2026-06-30)
+// Five facets, NO Awareness facet, NO reverse-keyed items. Item→facet map taken
+// verbatim from the published appendix (PMC4882111). See DECODED_SCORING.md §6.
 // ═════════════════════════════════════════════════════════════════════════════
 describe('scoreDERS16 — subscale partition', () => {
   const onlyHigh = (idxs: number[]): Record<string, number> => {
@@ -596,29 +590,27 @@ describe('scoreDERS16 — subscale partition', () => {
     return r;
   };
 
-  it('clarity = items 1,2,4', () => {
-    expect(scoreDERS16(onlyHigh([1, 2, 4])).subscaleScores.clarity).toBe(15); // 3×5
+  it('clarity = items 1,2', () => {
+    expect(scoreDERS16(onlyHigh([1, 2])).subscaleScores.clarity).toBe(10); // 2×5
   });
-  it('nonAcceptance = items 5,10,13,14', () => {
-    expect(scoreDERS16(onlyHigh([5, 10, 13, 14])).subscaleScores.nonAcceptance).toBe(20); // 4×5
+  it('goals = items 3,7,15', () => {
+    expect(scoreDERS16(onlyHigh([3, 7, 15])).subscaleScores.goals).toBe(15); // 3×5
   });
-  it('goals = items 6,8,15', () => {
-    expect(scoreDERS16(onlyHigh([6, 8, 15])).subscaleScores.goals).toBe(15);
+  it('impulse = items 4,8,11', () => {
+    expect(scoreDERS16(onlyHigh([4, 8, 11])).subscaleScores.impulse).toBe(15); // 3×5
   });
-  it('impulse = items 7,9,16', () => {
-    expect(scoreDERS16(onlyHigh([7, 9, 16])).subscaleScores.impulse).toBe(15);
+  it('strategies = items 5,6,12,14,16', () => {
+    expect(scoreDERS16(onlyHigh([5, 6, 12, 14, 16])).subscaleScores.strategies).toBe(25); // 5×5
   });
-  it('strategies = items 11,12 (only)', () => {
-    expect(scoreDERS16(onlyHigh([11, 12])).subscaleScores.strategies).toBe(10); // 2×5
+  it('nonAcceptance = items 9,10,13', () => {
+    expect(scoreDERS16(onlyHigh([9, 10, 13])).subscaleScores.nonAcceptance).toBe(15); // 3×5
   });
-  it('awareness = reverse(item 3) — paying attention LOWERS the difficulty score', () => {
-    expect(scoreDERS16({ ...fillResponses(16, 1), '3': 5 }).subscaleScores.awareness).toBe(1);
-    expect(scoreDERS16({ ...fillResponses(16, 1), '3': 1 }).subscaleScores.awareness).toBe(5);
-  });
-  it('regression: item 2 ("no idea how I will feel") loads CLARITY, not strategies', () => {
-    const r = scoreDERS16({ ...fillResponses(16, 1), '2': 5 });
-    expect(r.subscaleScores.clarity).toBeGreaterThan(scoreDERS16(fillResponses(16, 1)).subscaleScores.clarity);
-    expect(r.subscaleScores.strategies).toBe(scoreDERS16(fillResponses(16, 1)).subscaleScores.strategies);
+  it('no reverse items: raising any single item raises the total by exactly (5−1)', () => {
+    const base = scoreDERS16(fillResponses(16, 1)).totalScore; // 16
+    for (let i = 1; i <= 16; i++) {
+      const r = scoreDERS16({ ...fillResponses(16, 1), [String(i)]: 5 });
+      expect(r.totalScore).toBe(base + 4);
+    }
   });
 });
 
@@ -726,19 +718,17 @@ describe('per-item keying regression guard', () => {
     ]);
   });
 
-  it('DERS-16: subscales group by wording; total reverses only item 3', () => {
-    checkKeying(scoreDERS16, 16, 1, 5, [
-      ...fromMap({
-        clarity: [1, 2, 4], nonAcceptance: [5, 10, 13, 14],
-        goals: [6, 8, 15], impulse: [7, 9, 16], strategies: [11, 12],
-      }, sub, 1, 'DERS-sub'),
-      { index: 3, read: sub('awareness'), dir: -1, label: 'DERS-sub/awareness' },
-    ]);
-    // total: all items raise difficulty except item 3 (the reverse-keyed one)
-    checkKeying(scoreDERS16, 16, 1, 5, [
-      ...[1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16].map(i => ({ index: i, read: total, dir: 1 as const, label: 'DERS-total/direct' })),
-      { index: 3, read: total, dir: -1, label: 'DERS-total/reverse' },
-    ]);
+  it('DERS-16: canonical facets (Bjureberg 2016); every item is direct, no reverse', () => {
+    checkKeying(scoreDERS16, 16, 1, 5, fromMap({
+      clarity: [1, 2], goals: [3, 7, 15], impulse: [4, 8, 11],
+      strategies: [5, 6, 12, 14, 16], nonAcceptance: [9, 10, 13],
+    }, sub, 1, 'DERS-sub'));
+    // total: every item raises difficulty — the canonical DERS-16 has no reverse items
+    checkKeying(scoreDERS16, 16, 1, 5,
+      [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16].map(
+        i => ({ index: i, read: total, dir: 1 as const, label: 'DERS-total/direct' }),
+      ),
+    );
   });
 
   it('WEIMS: raw subscales rise with items; SDI rises for autonomous, falls for controlled', () => {

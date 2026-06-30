@@ -95,7 +95,6 @@ export interface DERS16Score extends InstrumentScore {
     impulse: number;
     nonAcceptance: number;
     strategies: number;
-    awareness: number;
   };
 }
 

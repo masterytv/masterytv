@@ -153,29 +153,50 @@ All scoring functions must be **pure functions** (no side effects) and **unit-te
 
 ---
 
-### 6. DERS-16 (Difficulty in Emotion Regulation)
+### 6. DERS-16 (Difficulties in Emotion Regulation Scale)
 
 **Items:** 16
 **Scale:** 1–5 (Almost Never → Almost Always)
-**License:** Verify with Gratz & Roemer (see DECODED.md §12)
+**License:** Public Domain (derived from Gratz & Roemer DERS; see DECODED.md §12)
+**Reference:** Bjureberg et al. (2016), *J Psychopathol Behav Assess* 38:284–296 — [PMC4882111](https://pmc.ncbi.nlm.nih.gov/articles/PMC4882111/)
 
-| Subscale | Items |
-|:---|:---|
-| **Clarity** | 1, 2, 4 |
-| **Non-Acceptance** | 5, 10, 13, 14 |
-| **Goals** | 6, 8, 15 |
-| **Impulse** | 7, 9, 16 |
-| **Strategies** | 11, 12 |
-| **Awareness** | 3 (reverse-scored) |
+> ✅ **Re-fielded to the canonical Bjureberg (2016) DERS-16 on 2026-06-30.** The prior implementation was a DERS-SF/DERS-16 hybrid carrying a reverse-scored **Awareness** item ("I pay attention to how I feel"). The published DERS-16 **drops the Awareness facet entirely** and has **no reverse-keyed items** — all 16 items are worded toward difficulty. Item text was re-fielded verbatim from the paper's appendix (administration order below). Changing item text invalidates previously stored DERS responses; this was accepted because the product is pre-launch with no live users (founder-approved — assessments will be retaken during testing).
 
-> ⚠️ **Non-canonical hybrid (audit 2026-06-30).** This 16-item set is NOT the published Bjureberg (2016) DERS-16 — that short form drops the Awareness facet and has no reverse-keyed items. Here item 3 ("I pay attention to how I feel") is the lone positively-worded item, so it is the only reverse-scored one. Subscale groupings above are assigned by item **wording**, not position (the earlier engine map scrambled every facet but Non-Acceptance: e.g. item 2 was filed under Strategies, 12 under Goals, 13 under Impulse). The **total** is unaffected by the partition and was always correct. To make this instrument psychometrically faithful, re-field the actual Bjureberg DERS-16 items (a product decision — changing item text invalidates stored responses).
+**Items (administration order — index → facet):**
+
+| # | Item | Facet |
+|:--|:--|:--|
+| 1 | I have difficulty making sense out of my feelings | Clarity |
+| 2 | I am confused about how I feel | Clarity |
+| 3 | When I'm upset, I have difficulty getting work done | Goals |
+| 4 | When I'm upset, I become out of control | Impulse |
+| 5 | When I'm upset, I believe that I will remain that way for a long time | Strategies |
+| 6 | When I'm upset, I believe that I'll end up feeling very depressed | Strategies |
+| 7 | When I'm upset, I have difficulty focusing on other things | Goals |
+| 8 | When I'm upset, I feel out of control | Impulse |
+| 9 | When I'm upset, I feel ashamed with myself for feeling that way | Nonacceptance |
+| 10 | When I'm upset, I feel like I am weak | Nonacceptance |
+| 11 | When I'm upset, I have difficulty controlling my behaviors | Impulse |
+| 12 | When I'm upset, I believe that there is nothing I can do to make myself feel better | Strategies |
+| 13 | When I'm upset, I become irritated with myself for feeling that way | Nonacceptance |
+| 14 | When I'm upset, I start to feel very bad about myself | Strategies |
+| 15 | When I'm upset, I have difficulty thinking about anything else | Goals |
+| 16 | When I'm upset, my emotions feel overwhelming | Strategies |
+
+| Facet | Items | Count |
+|:--|:--|:--|
+| **Clarity** (lack of emotional clarity) | 1, 2 | 2 |
+| **Goals** (difficulty with goal-directed behavior) | 3, 7, 15 | 3 |
+| **Impulse** (impulse-control difficulty) | 4, 8, 11 | 3 |
+| **Strategies** (limited access to regulation strategies) | 5, 6, 12, 14, 16 | 5 |
+| **Nonacceptance** (nonacceptance of emotional responses) | 9, 10, 13 | 3 |
 
 **Scoring:**
-1. Reverse-score Awareness item 3: `reversed = 6 - raw`
-2. Sum per subscale → subscale scores
-3. Sum all 16 (item 3 reversed) → total (16–80); higher = more difficulty
+1. No reverse-scoring — all 16 items are direct.
+2. Sum per facet → facet scores.
+3. Sum all 16 → total (16–80); higher = more difficulty.
 
-**Output:** `{ total: number, subscales: { clarity, goals, impulse, nonAcceptance, strategies, awareness } }`
+**Output:** `{ total: number, subscales: { clarity, goals, impulse, nonAcceptance, strategies } }`
 
 ---
 

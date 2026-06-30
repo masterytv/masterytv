@@ -641,12 +641,7 @@ export default function ScoreDashboard({ scores, archetypeBase, archetypeSublabe
             strategies: {
               label: 'Regulation Strategies',
               desc: 'Whether you have effective tools to calm yourself down. Higher scores mean you may feel stuck or helpless when distressed.',
-              max: 20,
-            },
-            awareness: {
-              label: 'Emotional Awareness',
-              desc: 'How tuned in you are to your emotional state. This scale is reverse-scored — higher means more aware.',
-              max: 5,
+              max: 25,
             },
           };
           return (

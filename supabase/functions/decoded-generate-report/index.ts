@@ -530,7 +530,7 @@ Return valid JSON with exactly this structure:
   "tldr": "One bold sentence about their emotional pattern",
   "dimensions": [
     {
-      "name": "Awareness",
+      "name": "Clarity",
       "score_label": "Above average",
       "interpretation": "1-2 sentences about what this means for them specifically"
     }
@@ -543,7 +543,7 @@ Return valid JSON with exactly this structure:
 }
 
 RULES:
-- dimensions: exactly 6 items (Awareness, Clarity, Acceptance, Impulse Control, Goal-Directed Behavior, Strategy Access)
+- dimensions: exactly 5 items (Clarity, Goal-Directed Behavior, Impulse Control, Strategy Access, Acceptance)
 - score_label: use natural language, never raw numbers
 - emotional_triggers: 2-4 items
 - Frame everything in terms of capacity and growth, never deficit`,

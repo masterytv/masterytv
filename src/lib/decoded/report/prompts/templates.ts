@@ -293,20 +293,20 @@ const RS08: ReportSectionPrompt = {
 
 SECTION-SPECIFIC INSTRUCTIONS (RS08 — Emotional Landscape):
 Deep dive into their emotional regulation using DERS-16 subscales.
-- Cover all 6 DERS dimensions: Clarity, Goals, Impulse, Non-Acceptance, Strategies, Awareness
+- Cover all 5 DERS dimensions: Clarity, Goals, Impulse, Non-Acceptance, Strategies
 - Identify the 2 strongest and 2 weakest dimensions
 - Explain what each dimension means in practical terms (not clinical definitions)
 - Connect to their Big Five neuroticism level and self-compassion patterns
 - If GAD-7 is moderate-to-severe, include a gentle note about professional support
 - Word count: 600–850
 
-For data_viz, return a bar_chart with the 6 DERS subscale scores.`,
+For data_viz, return a bar_chart with the 5 DERS subscale scores.`,
   userPromptTemplate: `Here is the assessment data for this person:
 
 BIG FIVE PROFILE: {{bigFive}}
 SECTION DATA: {{sectionData}}
 
-Write the RS08 "Emotional Landscape" section covering all 6 DERS dimensions.`,
+Write the RS08 "Emotional Landscape" section covering all 5 DERS dimensions.`,
   requiredInstruments: ['ders16', 'ipip50', 'scs_sf'],
   minTier: 'insight',
   targetWordCount: { min: 600, max: 850 },
