@@ -363,13 +363,20 @@ Deno.serve(async (req: Request) => {
           );
         }
 
-        // Stream processing with tool_use support
+        // Stream processing with tool_use support.
+        // Agentic loop: read a response; if the model asked for a tool, run it and
+        // loop to read the model's NEXT response. Bounded by MAX_TOOL_CALLS — once
+        // the budget is spent the follow-up call drops tools so the model MUST
+        // produce text, and because this is `while (true)` that final response is
+        // always read. (Previously `while (toolCallCount <= MAX_TOOL_CALLS)` fired a
+        // follow-up call and then exited the loop WITHOUT reading it — saving an
+        // empty reply whenever the model used its whole tool budget before answering.)
         let currentResponse = anthropicResponse;
         let toolUseMessages = [...claudeMessages];
         let toolCallCount = 0;
         const MAX_TOOL_CALLS = 3;
 
-        while (toolCallCount <= MAX_TOOL_CALLS) {
+        while (true) {
           const reader = currentResponse.body!.getReader();
           const decoder = new TextDecoder();
           let buffer = "";
@@ -444,6 +451,15 @@ Deno.serve(async (req: Request) => {
                   case "_usage":
                     if (event.input_tokens) inputTokens = event.input_tokens as number;
                     if (event.output_tokens) outputTokens = event.output_tokens as number;
+                    break;
+
+                  // Surface mid-stream LLM errors instead of silently skipping them
+                  // (they used to fall through, leaving an unexplained empty reply).
+                  case "error":
+                    console.error(
+                      `[${FUNCTION_NAME}] LLM stream error event:`,
+                      JSON.stringify(event.error ?? event).slice(0, 300),
+                    );
                     break;
                 }
               } catch {
@@ -526,10 +542,15 @@ Deno.serve(async (req: Request) => {
               encoder.encode(": keepalive\n\n")
             );
 
+            // At the tool-call cap, drop tools so the model answers with text on the
+            // next turn instead of requesting yet another tool we couldn't read.
+            const nextTools = toolCallCount >= MAX_TOOL_CALLS
+              ? []
+              : [SEARCH_FACTS_TOOL, LOOKUP_ASSESSMENT_TOOL, LOOKUP_RELATIONSHIP_TOOL];
             currentResponse = await callClaudeStreaming({
               system: contextualSystem,
               messages: toolUseMessages,
-              tools: [SEARCH_FACTS_TOOL, LOOKUP_ASSESSMENT_TOOL, LOOKUP_RELATIONSHIP_TOOL],
+              tools: nextTools,
               maxTokens: coachMaxTokens,
               forceClaude: isRelationship,
             });
@@ -601,24 +622,7 @@ Deno.serve(async (req: Request) => {
           coachMetadata.debug_trace = debugSummary;
         }
 
-        const { data: coachMsg, error: coachInsertError } = await supabase
-          .from("messages")
-          .insert({
-            user_id: streamUserId,
-            conversation_id: conversationId,
-            channel,
-            engagement_id: engagementId,
-            role: "coach",
-            content: fullContent,
-            metadata: coachMetadata,
-          })
-          .select("id, created_at")
-          .single();
-
-        if (coachInsertError) {
-          console.error(`[${FUNCTION_NAME}] Failed to store coach response:`, coachInsertError.message);
-        }
-
+        // Always record spend — we were billed for the tokens regardless of outcome.
         await supabase.from("cost_tracking").insert({
           user_id: streamUserId,
           purpose: FUNCTION_NAME,
@@ -628,30 +632,62 @@ Deno.serve(async (req: Request) => {
           cost_usd: costUsd,
         });
 
-        await writer.write(
-          encoder.encode(
-            sseEvent("done", {
-              message_id: coachMsg?.id ?? null,
-              model,
-              tokens: usage,
-              cost_usd: costUsd,
-              active_challenges: coachMetadata.active_challenges,
-            })
-          )
-        );
-
-        // Send debug summary as separate SSE event (admin only)
-        if (debugMode && coachMetadata.debug_trace) {
+        // Safety net: never persist a blank coach turn. If the agentic loop ended
+        // with no text (an LLM hiccup, a mid-stream error, or the tool budget spent
+        // without an answer), surface a retryable error instead of saving an empty
+        // bubble. The loop above already forces a no-tools final turn at the cap;
+        // this guards any residual empty case.
+        if (!fullContent.trim()) {
+          console.warn(
+            `[${FUNCTION_NAME}] Empty coach completion (stop_reason="${stopReason}", tool_calls=${toolCallCount}, model=${model}) — not saving a blank message.`,
+          );
           await writer.write(
-            encoder.encode(sseEvent("debug_summary", coachMetadata.debug_trace))
+            encoder.encode(sseEvent("error", { message: "The coach didn't finish that reply. Please try again." }))
           );
-        }
+        } else {
+          const { data: coachMsg, error: coachInsertError } = await supabase
+            .from("messages")
+            .insert({
+              user_id: streamUserId,
+              conversation_id: conversationId,
+              channel,
+              engagement_id: engagementId,
+              role: "coach",
+              content: fullContent,
+              metadata: coachMetadata,
+            })
+            .select("id, created_at")
+            .single();
 
-        // Trigger async post-processing (shared module)
-        if (coachMsg?.id) {
-          EdgeRuntime.waitUntil(
-            postProcess(supabase, streamUserId, conversationId, message, fullContent, coachMsg.id)
+          if (coachInsertError) {
+            console.error(`[${FUNCTION_NAME}] Failed to store coach response:`, coachInsertError.message);
+          }
+
+          await writer.write(
+            encoder.encode(
+              sseEvent("done", {
+                message_id: coachMsg?.id ?? null,
+                model,
+                tokens: usage,
+                cost_usd: costUsd,
+                active_challenges: coachMetadata.active_challenges,
+              })
+            )
           );
+
+          // Send debug summary as separate SSE event (admin only)
+          if (debugMode && coachMetadata.debug_trace) {
+            await writer.write(
+              encoder.encode(sseEvent("debug_summary", coachMetadata.debug_trace))
+            );
+          }
+
+          // Trigger async post-processing (shared module)
+          if (coachMsg?.id) {
+            EdgeRuntime.waitUntil(
+              postProcess(supabase, streamUserId, conversationId, message, fullContent, coachMsg.id)
+            );
+          }
         }
       } catch (streamError) {
         console.error(`[${FUNCTION_NAME}] Stream processing error:`, (streamError as Error).message);
