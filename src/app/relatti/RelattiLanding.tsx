@@ -83,7 +83,7 @@ const DEFAULT_CONTENT: LandingContent = {
 export default function RelattiLanding({ content }: { content?: LandingContent }) {
   const c = content ?? DEFAULT_CONTENT;
   return (
-    <main className="min-h-screen bg-surface-0 text-text-primary font-sans">
+    <main className="relatti-landing min-h-screen bg-surface-0 text-text-primary font-sans">
       <FloatingThemeToggle />
 
       {/* ── Nav ── */}
