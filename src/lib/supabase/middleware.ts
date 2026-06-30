@@ -10,7 +10,7 @@ import { resolveBrandId, isBrandId } from "@/lib/platform/brand";
  *   /auth/callback    — Unified OAuth + email confirmation callback
  *   /assess           — Distraction-free assessment (auth required)
  *   /dashboard/*      — Unified dashboard (auth required)
- *   /decoded/report/* — Report pages (auth required)
+ *   /report/* — Report pages (auth required)
  * 
  * Legacy routes (/coachapp/*) redirect to new unified routes.
  */
@@ -120,6 +120,32 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Legacy: the invite landing moved off /decoded → /invite/[code].
+  if (pathname.startsWith("/decoded/invite/")) {
+    const url = request.nextUrl.clone();
+    url.pathname = pathname.replace("/decoded/invite/", "/invite/");
+    return NextResponse.redirect(url);
+  }
+
+  // Legacy → brand-neutral routes: the report, compatibility, types,
+  // upgrade-success, and assessment surfaces moved off the Decoded namespace so
+  // URLs are generic for every domain (relatti.com, careercoach.com, …), not
+  // tied to one product. Preserves search params (?shared=true, ?session_id=).
+  const NEUTRALIZED_ROUTES: Array<[string, string]> = [
+    ["/decoded/report", "/report"],
+    ["/decoded/compatibility", "/compatibility"],
+    ["/decoded/upgrade-success", "/upgrade-success"],
+    ["/decoded/types", "/types"],
+    ["/decoded/assess", "/assess"],
+  ];
+  for (const [from, to] of NEUTRALIZED_ROUTES) {
+    if (pathname === from || pathname.startsWith(`${from}/`)) {
+      const url = request.nextUrl.clone();
+      url.pathname = to + pathname.slice(from.length);
+      return NextResponse.redirect(url);
+    }
+  }
+
   // ── Catch auth codes landing on wrong routes ──
   const code = request.nextUrl.searchParams.get("code");
   if (code && !pathname.startsWith("/auth/callback")) {
@@ -133,8 +159,9 @@ export async function updateSession(request: NextRequest) {
   const isProtected =
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/assess") ||
-    pathname.startsWith("/decoded/assess") ||
-    pathname.startsWith("/decoded/report");
+    pathname.startsWith("/report") ||
+    pathname.startsWith("/compatibility") ||
+    pathname.startsWith("/upgrade-success");
 
   if (!user && isProtected) {
     const url = request.nextUrl.clone();

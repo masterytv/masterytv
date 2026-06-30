@@ -176,7 +176,7 @@ export async function POST(req: NextRequest) {
     await syncEngagementForInvite(inviteRow?.id);
 
     const inviteUrl = inviteRow?.id
-      ? `${appUrl}/decoded/invite/${inviteRow.id}`
+      ? `${appUrl}/invite/${inviteRow.id}`
       : `${appUrl}/login`;
 
     // Step 3: Send the invite email via the brand's Resend account, falling back

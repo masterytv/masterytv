@@ -13,8 +13,70 @@
  */
 
 import { createSupabaseClient } from "./supabase.ts";
+import type { SupabaseClient } from "jsr:@supabase/supabase-js@2";
 
 export type ShareLevel = "none" | "type_compatibility" | "full";
+
+/** Warm-named attachment quadrant (mirrors deriveRelationshipStyle in the
+ * compatibility edge fn — edge functions can't share src, so the logic is kept
+ * in lockstep here). Axes are the ECR-R 1–7 scale; ~4 is the practical midpoint. */
+export interface RelationshipStyle {
+  name: string;
+  needForReassurance: string; // low | moderate | high (ECR anxiety)
+  needForSpace: string;       // low | moderate | high (ECR avoidance)
+  summary: string;
+}
+
+function band(v: number | null | undefined): "low" | "moderate" | "high" {
+  if (v == null) return "moderate";
+  if (v >= 4.5) return "high";
+  if (v <= 3) return "low";
+  return "moderate";
+}
+
+export function deriveRelationshipStyle(
+  anxiety: number | null | undefined,
+  avoidance: number | null | undefined,
+): RelationshipStyle {
+  const a = band(anxiety);
+  const v = band(avoidance);
+  const highA = a === "high";
+  const highV = v === "high";
+  let name = "Anchored";
+  let summary = "tends to feel secure reaching for closeness and giving space";
+  if (highA && highV) {
+    name = "The Guarded Heart";
+    summary = "longs for closeness and fears it at once, so they protect themselves even when they want to draw near";
+  } else if (highA && !highV) {
+    name = "The Devoted";
+    summary = "loves deeply and needs reassurance that the bond is safe; distance can read as danger";
+  } else if (!highA && highV) {
+    name = "The Independent";
+    summary = "values autonomy and steadies under pressure by stepping back; closeness can feel like a loss of self";
+  } else {
+    name = "Anchored";
+    summary = "generally trusts the bond, can ask for what they need, and offers steadiness in return";
+  }
+  return { name, needForReassurance: a, needForSpace: v, summary };
+}
+
+/** Load a user's relationship style from their latest ECR-R scores. */
+export async function loadRelationshipStyle(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<RelationshipStyle | null> {
+  const { data } = await supabase
+    .from("assessment_scores")
+    .select("subscale_scores")
+    .eq("user_id", userId)
+    .eq("instrument_id", "ecr_r_short")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const ss = data?.subscale_scores as Record<string, number> | undefined;
+  if (!ss) return null;
+  return deriveRelationshipStyle(ss.anxiety ?? null, ss.avoidance ?? null);
+}
 
 export interface DyadContext {
   engagementId: string;
@@ -23,6 +85,8 @@ export interface DyadContext {
   partnerShareLevel: ShareLevel;     // what the partner consented to share with the coach
   partnerArchetype?: { base: string | null; sublabel: string | null; tagline: string | null };
   partnerProfileSummary?: string;    // only when share level = full
+  readerStyle?: RelationshipStyle;   // the coached user's own attachment style
+  partnerStyle?: RelationshipStyle;  // partner's attachment style (gated by share level)
   blueprint?: Record<string, unknown> | null;
   stakeActive: boolean;              // is the partner accountability link active
 }
@@ -108,6 +172,13 @@ export async function resolveDyadContext(userId: string): Promise<DyadContext | 
     }
   }
 
+  // 3b. Relationship styles (attachment) — the user's own always; the partner's
+  // only at type_compatibility/full (same gate as their archetype).
+  ctx.readerStyle = (await loadRelationshipStyle(supabase, userId)) ?? undefined;
+  if (partner.user_id && (partnerShareLevel === "type_compatibility" || partnerShareLevel === "full")) {
+    ctx.partnerStyle = (await loadRelationshipStyle(supabase, partner.user_id as string)) ?? undefined;
+  }
+
   // 4. Blueprint artifact (shared) + 5. stake.
   const [{ data: artifact }, { data: stake }] = await Promise.all([
     supabase
@@ -157,6 +228,19 @@ export function buildDyadCoachLayer(dyad: DyadContext): string {
     if (dyad.partnerShareLevel === "full" && dyad.partnerProfileSummary) {
       parts.push(`${dyad.partnerName}'s profile summary: ${dyad.partnerProfileSummary}`);
     }
+  }
+
+  // Relationship styles (attachment) — what lets you tailor advice to how each
+  // person actually reaches and protects. The user's own is always known.
+  const styleLines: string[] = [];
+  if (dyad.readerStyle) {
+    styleLines.push(`- The user you're coaching: ${dyad.readerStyle.name} (need for reassurance: ${dyad.readerStyle.needForReassurance}, need for space: ${dyad.readerStyle.needForSpace}) — ${dyad.readerStyle.summary}.`);
+  }
+  if (dyad.partnerStyle && dyad.partnerShareLevel !== "none") {
+    styleLines.push(`- ${dyad.partnerName}: ${dyad.partnerStyle.name} (need for reassurance: ${dyad.partnerStyle.needForReassurance}, need for space: ${dyad.partnerStyle.needForSpace}) — ${dyad.partnerStyle.summary}.`);
+  }
+  if (styleLines.length > 0) {
+    parts.push(`RELATIONSHIP STYLES (attachment — tailor advice to these, and name the cycle between them):\n${styleLines.join("\n")}`);
   }
 
   if (dyad.blueprint) {

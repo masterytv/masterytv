@@ -84,12 +84,16 @@ function rawToPercentile(raw: number, mean: number, sd: number): number {
 
 export function scoreIPIP50(responses: Record<string, number>): IPIP50Score {
   // Item mapping: items are keyed as "1" through "50"
+  // Canonical IPIP-50 (Goldberg) keying — NOT a clean 5-pos/5-neg split. Only
+  // the items worded *against* the trait are reverse-scored; the rest are direct.
+  // (Previously this assumed 5/5 per factor, wrongly reversing items 42, 48,
+  // 29/39/49, 40/50 — inflating/deflating A, C, N and O.)
   const traits: Record<string, { pos: string[]; neg: string[] }> = {
     extraversion:      { pos: ['1','11','21','31','41'], neg: ['6','16','26','36','46'] },
-    agreeableness:     { pos: ['7','17','27','37','47'], neg: ['2','12','22','32','42'] },
-    conscientiousness: { pos: ['3','13','23','33','43'], neg: ['8','18','28','38','48'] },
-    neuroticism:       { pos: ['4','14','24','34','44'], neg: ['9','19','29','39','49'] },
-    openness:          { pos: ['5','15','25','35','45'], neg: ['10','20','30','40','50'] },
+    agreeableness:     { pos: ['7','17','27','37','42','47'], neg: ['2','12','22','32'] },
+    conscientiousness: { pos: ['3','13','23','33','43','48'], neg: ['8','18','28','38'] },
+    neuroticism:       { pos: ['4','14','24','29','34','39','44','49'], neg: ['9','19'] },
+    openness:          { pos: ['5','15','25','35','40','45','50'], neg: ['10','20','30'] },
   };
 
   const subscaleScores: Record<string, number> = {};
@@ -152,17 +156,22 @@ export function scoreRIASEC(responses: Record<string, number>): RIASECScore {
 // ---------------------------------------------------------------------------
 
 export function scoreECR_R_Short(responses: Record<string, number>): ECRRShortScore {
-  // Anxiety: items 1-6; Avoidance: items 7-12
-  // Positive (non-reversed): Anxiety 1,3,5; Avoidance 8,10,12
-  // Negative (reversed): Anxiety 2,4,6; Avoidance 7,9,11
+  // Anxiety: items 1-6 — ALL worded in the high-anxiety direction (e.g. "I worry
+  // a lot about my relationships"), so agree = more anxious and NONE are reverse-
+  // keyed. The subscale is the plain mean.
   const anxietyScore = (
-    val(responses, '1') + val(responses, '3') + val(responses, '5') +
-    reverse(val(responses, '2'), 7) + reverse(val(responses, '4'), 7) + reverse(val(responses, '6'), 7)
+    val(responses, '1') + val(responses, '2') + val(responses, '3') +
+    val(responses, '4') + val(responses, '5') + val(responses, '6')
   ) / 6;
 
+  // Avoidance: items 7-12 — all worded high-avoidance EXCEPT item 8 ("I feel
+  // comfortable sharing my private thoughts…"), the single low-avoidance item,
+  // which is reverse-keyed. (Previously items 7/9/11 were wrongly reversed and
+  // 8 was not, which inflated secure responders into Fearful-Avoidant.)
   const avoidanceScore = (
-    val(responses, '8') + val(responses, '10') + val(responses, '12') +
-    reverse(val(responses, '7'), 7) + reverse(val(responses, '9'), 7) + reverse(val(responses, '11'), 7)
+    reverse(val(responses, '8'), 7) +
+    val(responses, '7') + val(responses, '9') +
+    val(responses, '10') + val(responses, '11') + val(responses, '12')
   ) / 6;
 
   // Quadrant classification — uses full Bartholomew & Horowitz (1991) labels
@@ -256,19 +265,26 @@ export function scoreSCS_SF(responses: Record<string, number>): SCSSFScore {
 // ---------------------------------------------------------------------------
 
 export function scoreDERS16(responses: Record<string, number>): DERS16Score {
-  // Subscale items (all scored as-is except Awareness which is reverse-scored)
-  const clarity = sumItems(responses, ['1','4']);
-  const goals = sumItems(responses, ['8','12','15']);
-  const impulse = sumItems(responses, ['9','13','16']);
-  const nonAcceptance = sumItems(responses, ['5','10','14']);
-  const strategies = sumItems(responses, ['2','6','7','11']);
-  const awareness = reverse(val(responses, '3'), 5); // Single reverse-scored item
+  // Canonical Bjureberg (2016) DERS-16 — J Psychopathol Behav Assess 38:284–296
+  // (PMC4882111). Five facets, NO Awareness facet, and NO reverse-keyed items:
+  // every item is worded toward difficulty (higher = more difficulty). The
+  // item→facet map and administration order follow the published appendix.
+  //
+  // Re-fielded 2026-06-30: replaced the earlier DERS-SF/DERS-16 hybrid that
+  // carried a reverse-scored Awareness item ("I pay attention to how I feel").
+  // Re-fielding changes item text, which invalidates previously stored DERS
+  // responses by design — done for psychometric fidelity while pre-launch
+  // (founder-approved; assessments will be retaken). See DECODED_SCORING.md §6.
+  const clarity = sumItems(responses, ['1', '2']);                        // make sense of / confused about feelings
+  const goals = sumItems(responses, ['3', '7', '15']);                    // work done / focusing / thinking about anything else
+  const impulse = sumItems(responses, ['4', '8', '11']);                  // out of control / out of control / controlling behaviors
+  const strategies = sumItems(responses, ['5', '6', '12', '14', '16']);   // remain upset / depressed / nothing helps / bad about self / overwhelmed
+  const nonAcceptance = sumItems(responses, ['9', '10', '13']);           // ashamed / weak / irritated at self for feeling
 
-  // Total: sum all 16 items with awareness reversed
-  const allItemsExceptAwareness = sumItems(responses, 
-    ['1','2','4','5','6','7','8','9','10','11','12','13','14','15','16']
+  // Total: plain sum of all 16 items (no reversals). Range 16–80; higher = more difficulty.
+  const total = sumItems(responses,
+    ['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16']
   );
-  const total = allItemsExceptAwareness + awareness; // Range: 16–80
 
   return {
     instrumentId: 'ders16',
@@ -279,7 +295,6 @@ export function scoreDERS16(responses: Record<string, number>): DERS16Score {
       impulse,
       nonAcceptance,
       strategies,
-      awareness,
     },
   };
 }
@@ -303,9 +318,16 @@ export function scoreWEIMS(responses: Record<string, number>): WEIMSScore {
     subscaleScores[type] = Math.round(meanItems(responses, items) * 100) / 100;
   }
 
-  // Self-Determination Index
-  const sdi = (2 * subscaleScores.intrinsic + subscaleScores.integrated + subscaleScores.identified)
-    - (subscaleScores.introjected + subscaleScores.external + 2 * subscaleScores.amotivation);
+  // Work Self-Determination Index (W-SDI) — canonical weighting from Tremblay
+  // et al. (2009), grounded in the SDT autonomy continuum:
+  //   W-SDI = +3·IM + 2·INTEG + 1·IDEN − 1·INTRO − 2·EXT − 3·AMO
+  // With subscale MEANS on the 1–7 scale this ranges ±36 (±24 on a 5-pt scale);
+  // positive = self-determined, negative = controlled/amotivated.
+  // (Previously used non-canonical weights +2/+1/+1/−1/−1/−2, which both
+  // mis-weighted the regulations and compressed the range.)
+  const sdi =
+    (3 * subscaleScores.intrinsic + 2 * subscaleScores.integrated + subscaleScores.identified)
+    - (subscaleScores.introjected + 2 * subscaleScores.external + 3 * subscaleScores.amotivation);
 
   return {
     instrumentId: 'weims',

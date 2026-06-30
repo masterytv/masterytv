@@ -31,6 +31,13 @@ interface Props {
   estimatedMinutes: string;
   /** Relationship-framed intro copy (dimensions, consent). */
   relationshipMode: boolean;
+  /**
+   * True when this user arrived via someone else's invitation (they are the
+   * invited partner in a dyad). Invitees skip the "invite someone" screen —
+   * they're the one who was invited, so asking them to invite a partner is
+   * wrong. Organic signups still see it (the viral/partner loop).
+   */
+  isInvitee: boolean;
 }
 
 type Phase = "welcome" | "invite" | "primer" | "profile" | "core" | "addon_selection" | "addons" | "complete";
@@ -75,6 +82,7 @@ export default function AssessmentEngine({
   enableAddons,
   estimatedMinutes,
   relationshipMode,
+  isInvitee,
 }: Props) {
   const supabase = createClient();
 
@@ -283,7 +291,11 @@ export default function AssessmentEngine({
     newResponses[instId][itemKey] = value;
     setResponses(newResponses);
 
-    // Also store individual response for response_time tracking
+    // Best-effort per-item write (captures response_time_ms, which the blob
+    // doesn't). Non-blocking so it never stalls the question transition, but
+    // errors are logged rather than swallowed — this upsert silently failed for
+    // months because its onConflict target had no matching unique constraint.
+    // The authoritative write happens server-side in scoreAssessment().
     if (assessmentId) {
       supabase.from("assessment_responses").upsert({
         assessment_id: assessmentId,
@@ -295,6 +307,8 @@ export default function AssessmentEngine({
         response_time_ms: responseTimeMs,
       }, {
         onConflict: "assessment_id,instrument_id,item_index",
+      }).then(({ error }) => {
+        if (error) console.error("[Decoded] response upsert failed:", error.message);
       });
     }
 
@@ -498,7 +512,7 @@ export default function AssessmentEngine({
           </div>
 
           <button
-            onClick={() => setPhase("invite")}
+            onClick={() => setPhase(isInvitee ? "primer" : "invite")}
             className="mt-8 w-full rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-6 py-3 text-sm font-medium text-white hover:opacity-90 transition-opacity"
           >
             Get Started
@@ -520,29 +534,34 @@ export default function AssessmentEngine({
           className="glass w-full max-w-lg rounded-2xl p-8"
         >
           <h2 className="text-headline-md text-text-primary text-center mb-2">
-            Invite someone to take it too
+            {relationshipMode ? "Bring your partner in" : "Invite someone to take it too"}
           </h2>
           <p className="text-sm text-text-secondary text-center mb-6">
-            The assessment is free &mdash; share it with someone you know
+            {relationshipMode
+              ? "This works best with the two of you — invite your partner to take their relationship profile too."
+              : <>The assessment is free &mdash; share it with someone you know</>}
           </p>
 
-          {/* Relationship chips */}
-          <div className="flex flex-wrap justify-center gap-2 mb-6">
-            {RELATIONSHIP_TYPES.map((rel) => (
-              <button
-                key={rel.label}
-                onClick={() => setSelectedRelationship(rel.label === selectedRelationship ? null : rel.label)}
-                className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm transition-all ${
-                  selectedRelationship === rel.label
-                    ? "bg-[rgba(96,99,238,0.15)] ring-1 ring-[rgba(96,99,238,0.3)] text-text-primary"
-                    : "bg-surface-100/50 text-text-secondary hover:bg-surface-200/50"
-                }`}
-              >
-                <rel.icon className="h-4 w-4" />
-                {rel.label}
-              </button>
-            ))}
-          </div>
+          {/* Relationship chips — generic "who are you inviting" picker; omitted in
+              relationship mode where it's always the partner. */}
+          {!relationshipMode && (
+            <div className="flex flex-wrap justify-center gap-2 mb-6">
+              {RELATIONSHIP_TYPES.map((rel) => (
+                <button
+                  key={rel.label}
+                  onClick={() => setSelectedRelationship(rel.label === selectedRelationship ? null : rel.label)}
+                  className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm transition-all ${
+                    selectedRelationship === rel.label
+                      ? "bg-[rgba(96,99,238,0.15)] ring-1 ring-[rgba(96,99,238,0.3)] text-text-primary"
+                      : "bg-surface-100/50 text-text-secondary hover:bg-surface-200/50"
+                  }`}
+                >
+                  <rel.icon className="h-4 w-4" />
+                  {rel.label}
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Copy invite link */}
           <button
@@ -608,11 +627,20 @@ export default function AssessmentEngine({
           )}
 
           {/* Value prop */}
-          <div className="mt-6 rounded-xl bg-[rgba(96,99,238,0.05)] p-4 ring-1 ring-[rgba(96,99,238,0.1)]">
-            <p className="text-sm font-medium text-text-primary">Unlock a Comparison Report</p>
+          <div
+            className="mt-6 rounded-xl p-4"
+            style={{
+              background: "color-mix(in oklch, var(--color-primary) 5%, transparent)",
+              boxShadow: "inset 0 0 0 1px color-mix(in oklch, var(--color-primary) 12%, transparent)",
+            }}
+          >
+            <p className="text-sm font-medium text-text-primary">
+              {relationshipMode ? "See your relationship Blueprint together" : "Unlock a Comparison Report"}
+            </p>
             <p className="mt-1 text-xs text-text-secondary">
-              When you both complete the assessment, you can compare your profiles &mdash;
-              see your compatibility, communication styles, and blind spots together.
+              {relationshipMode
+                ? "When you both complete your profiles, you’ll see how you fit — your chemistry, your friction, and the small things that bring you closer."
+                : <>When you both complete the assessment, you can compare your profiles &mdash; see your compatibility, communication styles, and blind spots together.</>}
             </p>
           </div>
 
@@ -1056,59 +1084,13 @@ export default function AssessmentEngine({
                 <CheckCircle2 className="h-8 w-8 text-success" />
               </div>
               <h2 className="text-headline-md text-text-primary">Assessment Complete</h2>
-              <p className="mt-2 text-sm text-text-secondary">
-                {scoringResult.scores.length} instruments scored successfully.
-              </p>
-
-              {/* Quick score summary */}
-              <div className="mt-6 space-y-2 text-left">
-                {scoringResult.scores.map((score) => {
-                  const label = battery.find(i => i.id === score.instrumentId)?.shortName
-                    ?? ADDON_INSTRUMENTS.find(i => i.id === score.instrumentId)?.shortName
-                    ?? score.instrumentId;
-                  const summary = score.totalScore !== undefined
-                    ? `Score: ${score.totalScore}`
-                    : score.interpretation
-                      ? Object.values(score.interpretation).join(' · ')
-                      : 'Scored';
-                  return (
-                    <div
-                      key={score.instrumentId}
-                      className="flex items-center justify-between rounded-lg bg-surface-100/50 px-4 py-2.5"
-                    >
-                      <span className="text-sm text-text-primary">{label}</span>
-                      <span className="text-xs text-text-muted">{summary}</span>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Coaching flags */}
-              {scoringResult.coachingFlags && Object.values(scoringResult.coachingFlags).some(Boolean) && (
-                <div className="mt-6 rounded-lg bg-[rgba(255,180,90,0.08)] p-4 text-left">
-                  <p className="mb-2 text-xs font-semibold text-[#ffb45a]">
-                    Areas flagged for coaching focus:
-                  </p>
-                  <ul className="space-y-1 text-xs text-text-secondary">
-                    {scoringResult.coachingFlags.highNeuroticism && <li>• Elevated emotional reactivity</li>}
-                    {scoringResult.coachingFlags.lowConscientiousness && <li>• Structure & follow-through</li>}
-                    {scoringResult.coachingFlags.insecureAttachment && <li>• Attachment patterns</li>}
-                    {scoringResult.coachingFlags.highStress && <li>• Stress management</li>}
-                    {scoringResult.coachingFlags.sleepDeficit && <li>• Sleep quality</li>}
-                    {scoringResult.coachingFlags.sedentary && <li>• Physical activity</li>}
-                    {scoringResult.coachingFlags.socialIsolation && <li>• Social connection</li>}
-                    {scoringResult.coachingFlags.lowOverallWellness && <li>• Overall wellness below threshold</li>}
-                  </ul>
-                </div>
-              )}
-
-              <p className="mt-6 text-xs text-text-muted">
+              <p className="mt-3 text-sm text-text-secondary">
                 {generatedReportId
                   ? 'Your personalized report is ready.'
                   : 'Your full personalized report will be available in your dashboard.'}
               </p>
               <a
-                href={generatedReportId ? `/decoded/report/${generatedReportId}` : '/dashboard'}
+                href={generatedReportId ? `/report/${generatedReportId}` : '/dashboard'}
                 className="mt-4 inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-6 py-2.5 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
               >
                 {generatedReportId ? 'View Report' : 'Go to Dashboard'}

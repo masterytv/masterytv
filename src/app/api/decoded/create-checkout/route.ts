@@ -87,8 +87,8 @@ export async function POST(req: NextRequest) {
           product: 'decoded',
         },
       },
-      success_url: `${origin}/decoded/upgrade-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/decoded/report`,
+      success_url: `${origin}/upgrade-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/report`,
     });
 
     return NextResponse.json({ checkoutUrl: session.url });

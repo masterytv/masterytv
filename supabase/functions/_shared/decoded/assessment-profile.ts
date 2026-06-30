@@ -55,7 +55,6 @@ export interface AssessmentProfile {
       goalDirected: number;
       selfAcceptance: number;
       copingStrategies: number;
-      awareness: number;
     };
     coachingNote: string;   // e.g., "Struggles most with impulse control under stress"
   } | null;
@@ -198,7 +197,6 @@ function buildDERS(score: ScoreRow | undefined) {
     goalDirected: sub.goals ?? 0,
     selfAcceptance: sub.nonAcceptance ?? 0,
     copingStrategies: sub.strategies ?? 0,
-    awareness: sub.awareness ?? 0,
   };
 
   // Higher DERS subscale = more difficulty. Find the highest.
@@ -209,7 +207,6 @@ function buildDERS(score: ScoreRow | undefined) {
     goalDirected: 'staying goal-directed when upset',
     selfAcceptance: 'accepting difficult emotions',
     copingStrategies: 'finding effective coping strategies',
-    awareness: 'emotional awareness',
   };
 
   return {
@@ -247,10 +244,12 @@ function buildMotivation(riasec: ScoreRow | undefined, weims: ScoreRow | undefin
   const hollandCode = (riasec?.interpretation?.hollandCode as string) ?? '';
   const sdi = (weims?.interpretation?.sdi as number) ?? 0;
 
+  // W-SDI ranges ±36 (canonical Tremblay 2009 weights); bands rescaled ×1.5 from
+  // the prior ±24 range so labels keep the same relative meaning.
   let motivationType: string;
-  if (sdi >= 12) motivationType = 'highly autonomous';
-  else if (sdi >= 4) motivationType = 'moderately autonomous';
-  else if (sdi >= -4) motivationType = 'balanced';
+  if (sdi >= 18) motivationType = 'highly autonomous';
+  else if (sdi >= 6) motivationType = 'moderately autonomous';
+  else if (sdi >= -6) motivationType = 'balanced';
   else motivationType = 'externally driven';
 
   return { hollandCode, sdiScore: sdi, motivationType };
@@ -367,7 +366,7 @@ function deriveCoachingPriorities(
   // Motivation alignment
   const weims = scoreMap.get('weims');
   const sdi = (weims?.interpretation?.sdi as number) ?? 0;
-  if (sdi < -4) {
+  if (sdi < -6) { // ±36 range (canonical W-SDI); was -4 on the old ±24 range
     priorities.push({ priority: 'Reconnect with intrinsic motivation (currently externally driven)', weight: 4 });
   }
 

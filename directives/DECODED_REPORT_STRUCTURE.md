@@ -230,7 +230,7 @@ Positioned after Section 7, at the bottom of the Inner System section.
 #### [RS08] Section 8 — Your Emotional Landscape
 *(DERS-16 results — Insight+ only)*
 
-- 6 emotion regulation subscales: Awareness, Clarity, Goals, Impulse, Non-acceptance, Strategies
+- 5 emotion regulation subscales (canonical Bjureberg 2016 DERS-16): Clarity, Goals, Impulse, Non-acceptance, Strategies
 - How emotional regulation interacts with attachment style and Big Five Neuroticism
 - Specific patterns: "When you're emotionally flooded, here's what happens..."
 - Coach exercise: [specific emotion regulation technique from DBT/ACT matching their profile]

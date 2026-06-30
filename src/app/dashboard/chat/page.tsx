@@ -156,15 +156,46 @@ function ChatPageInner() {
       deepLinkProcessed.current = true;
       deepLinkContext.current = { type: contextType, section, topic: topic ?? undefined };
 
-      // Build a natural opening message from the deep link context
+      // Build a natural opening message from the deep link context. Brand-aware:
+      // Relatti users read a "relationship profile," not a "Decoded report."
+      const profileLabel = resolveBrandClient().id === "relatti" ? "relationship profile" : "report";
       const openingMessage = topic
-        ? `I was just reading my Decoded report — the ${section} section about ${topic}. Can we dig into this?`
-        : `I was just reading my Decoded report — the ${section} section. I'd love to explore this with you.`;
+        ? `I was just reading my ${profileLabel} — the ${section} section about ${topic}. Can we dig into this?`
+        : `I was just reading my ${profileLabel} — the ${section} section. I'd love to explore this with you.`;
 
       // Auto-send after a brief delay to let UI settle
       setTimeout(() => handleSendMessage(openingMessage), 300);
 
       // Clean URL to prevent re-triggering on refresh
+      router.replace('/dashboard/chat', { scroll: false });
+    } else if (contextType === 'ritual' && topic) {
+      // Daily connection ritual hand-off (§5.9): seed a conversation about the
+      // shared question, carrying the actual answers so the coach can respond to
+      // the content and reason from both partners' profiles.
+      deepLinkProcessed.current = true;
+      deepLinkContext.current = { type: contextType, topic };
+
+      const mine = searchParams.get('mine');
+      const theirs = searchParams.get('theirs');
+      const partner = searchParams.get('partner') || 'my partner';
+
+      let openingMessage: string;
+      if (theirs) {
+        // Dyad reveal — both answered. Open-ended on purpose: invite the coach to
+        // reflect and ask, not to pre-order an analysis + tip-list (E14 stance).
+        openingMessage =
+          `Our connection question was: "${topic}" I answered: "${mine}". ${partner} answered: "${theirs}". ` +
+          `What do you make of that?`;
+      } else if (mine) {
+        // Solo reflection — open, reflective; let the coach lead with curiosity.
+        openingMessage =
+          `Our connection question was: "${topic}" I answered: "${mine}". ` +
+          `What stands out to you about that?`;
+      } else {
+        openingMessage = `Our connection question was: "${topic}" I'd like to talk about it.`;
+      }
+
+      setTimeout(() => handleSendMessage(openingMessage), 300);
       router.replace('/dashboard/chat', { scroll: false });
     } else if (contextType === 'compatibility' && inviteId) {
       deepLinkProcessed.current = true;

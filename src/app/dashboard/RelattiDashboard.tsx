@@ -17,20 +17,25 @@ import { useState } from "react";
 import Link from "next/link";
 import { Heart, MessageCircle, FileText, ClipboardList, UserPlus, Copy, Check, Waves } from "lucide-react";
 import type { DashboardDyad, DyadConsent, DyadStreak } from "@/lib/relatti/dashboard-dyad";
-import DyadPanel from "@/components/relatti/DyadPanel";
+import type { Relationship } from "@/lib/relatti/relationships";
+import type { RitualView } from "@/lib/relatti/ritual";
 import ConsentControl from "@/components/relatti/ConsentControl";
+import RelationshipCard from "@/components/relatti/RelationshipCard";
+import RitualCard from "@/components/relatti/RitualCard";
 
 interface Props {
   userName: string;
   state: "none" | "in-progress" | "completed";
   reportId: string | null;
   dyad?: DashboardDyad | null;
+  relationships?: Relationship[];
   inviteUrl: string;
   consent?: DyadConsent | null;
   streak?: DyadStreak | null;
+  ritual?: RitualView | null;
 }
 
-export default function RelattiDashboard({ userName, state, reportId, dyad = null, inviteUrl, consent = null, streak = null }: Props) {
+export default function RelattiDashboard({ userName, state, reportId, relationships = [], inviteUrl, consent = null, ritual = null }: Props) {
   const [copied, setCopied] = useState(false);
   const assessed = state === "completed";
 
@@ -53,9 +58,15 @@ export default function RelattiDashboard({ userName, state, reportId, dyad = nul
           </h1>
         </div>
 
-        {/* Dyad panel when linked, else an invite-your-partner prompt */}
-        {dyad ? (
-          <DyadPanel dyad={dyad} streak={streak} />
+        {/* Daily connection ritual — the primary recurring action (§5.9).
+            Shown once the user has their relationship profile; before that the
+            assessment card below is the call to action. */}
+        {assessed && ritual && <RitualCard view={ritual} />}
+
+        {/* One card per relationship (symmetric for inviter & invitee); the
+            invite-your-partner prompt only shows when there are none yet. */}
+        {relationships.length > 0 ? (
+          relationships.map((r) => <RelationshipCard key={r.engagementId} relationship={r} />)
         ) : (
           <section className="mb-8 rounded-2xl bg-surface-50 p-6">
             <span
@@ -87,15 +98,15 @@ export default function RelattiDashboard({ userName, state, reportId, dyad = nul
           {/* Assessment / archetype */}
           {assessed ? (
             <Link
-              href={reportId ? `/decoded/report/${reportId}` : "/dashboard"}
+              href={reportId ? `/report/${reportId}` : "/dashboard"}
               className="group rounded-2xl bg-surface-50 p-6 transition-colors hover:bg-surface-100"
             >
               <FileText className="h-6 w-6" style={{ color: "var(--color-primary)" }} />
               <h3 className="mt-3 font-display text-lg font-semibold text-text-primary">
-                Your archetype
+                Your relationship profile
               </h3>
               <p className="mt-1 text-sm text-text-secondary">
-                Revisit who you are as a partner — your full personality report.
+                Revisit your relationship style, conflict patterns, and what you need to feel close.
               </p>
             </Link>
           ) : (
@@ -105,10 +116,10 @@ export default function RelattiDashboard({ userName, state, reportId, dyad = nul
             >
               <ClipboardList className="h-6 w-6" style={{ color: "var(--color-primary)" }} />
               <h3 className="mt-3 font-display text-lg font-semibold text-text-primary">
-                {state === "in-progress" ? "Continue your quiz" : "Take your quiz"}
+                {state === "in-progress" ? "Continue your relationship profile" : "Start your relationship profile"}
               </h3>
               <p className="mt-1 text-sm text-text-secondary">
-                Discover what kind of partner you are — the first step to being understood.
+                Discover how you love and connect — the first step to being understood by your partner.
               </p>
             </Link>
           )}
@@ -123,8 +134,8 @@ export default function RelattiDashboard({ userName, state, reportId, dyad = nul
               Talk to your coach
             </h3>
             <p className="mt-1 text-sm text-text-secondary">
-              {dyad
-                ? `Work through what's happening between you and ${dyad.partnerName}.`
+              {relationships[0]?.partnerJoined
+                ? `Work through what's happening between you and ${relationships[0].partner.name}.`
                 : "Start a conversation — your coach is here for the relationship."}
             </p>
           </Link>

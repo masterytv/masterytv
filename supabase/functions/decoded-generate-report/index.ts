@@ -530,7 +530,7 @@ Return valid JSON with exactly this structure:
   "tldr": "One bold sentence about their emotional pattern",
   "dimensions": [
     {
-      "name": "Awareness",
+      "name": "Clarity",
       "score_label": "Above average",
       "interpretation": "1-2 sentences about what this means for them specifically"
     }
@@ -543,7 +543,7 @@ Return valid JSON with exactly this structure:
 }
 
 RULES:
-- dimensions: exactly 6 items (Awareness, Clarity, Acceptance, Impulse Control, Goal-Directed Behavior, Strategy Access)
+- dimensions: exactly 5 items (Clarity, Goal-Directed Behavior, Impulse Control, Strategy Access, Acceptance)
 - score_label: use natural language, never raw numbers
 - emotional_triggers: 2-4 items
 - Frame everything in terms of capacity and growth, never deficit`,
@@ -1197,7 +1197,8 @@ async function seedCoachProfile(
   const sdi = (weims?.interpretation?.sdi as number) ?? 0;
   // High SDI (autonomous motivation) → internal accountability is fine
   // Low SDI (controlled motivation) → needs external accountability
-  const accountability = sdi >= 8 ? 3 : sdi >= 0 ? 5 : 8;
+  // W-SDI now ranges ±36 (canonical Tremblay 2009 weights); threshold rescaled ×1.5 (was 8).
+  const accountability = sdi >= 12 ? 3 : sdi >= 0 ? 5 : 8;
 
   // Evidence style: High openness → stories/metaphors, Low openness → data
   const evidenceStyle = mapPercentileToDimension(bigFive.openness ?? 50);

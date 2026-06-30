@@ -153,27 +153,50 @@ All scoring functions must be **pure functions** (no side effects) and **unit-te
 
 ---
 
-### 6. DERS-16 (Difficulty in Emotion Regulation)
+### 6. DERS-16 (Difficulties in Emotion Regulation Scale)
 
 **Items:** 16
 **Scale:** 1–5 (Almost Never → Almost Always)
-**License:** Verify with Gratz & Roemer (see DECODED.md §12)
+**License:** Public Domain (derived from Gratz & Roemer DERS; see DECODED.md §12)
+**Reference:** Bjureberg et al. (2016), *J Psychopathol Behav Assess* 38:284–296 — [PMC4882111](https://pmc.ncbi.nlm.nih.gov/articles/PMC4882111/)
 
-| Subscale | Items |
-|:---|:---|
-| **Clarity** | 1, 4 |
-| **Goals** | 8, 12, 15 |
-| **Impulse** | 9, 13, 16 |
-| **Non-Acceptance** | 5, 10, 14 |
-| **Strategies** | 2, 6, 7, 11 |
-| **Awareness** | 3 (reverse-scored) |
+> ✅ **Re-fielded to the canonical Bjureberg (2016) DERS-16 on 2026-06-30.** The prior implementation was a DERS-SF/DERS-16 hybrid carrying a reverse-scored **Awareness** item ("I pay attention to how I feel"). The published DERS-16 **drops the Awareness facet entirely** and has **no reverse-keyed items** — all 16 items are worded toward difficulty. Item text was re-fielded verbatim from the paper's appendix (administration order below). Changing item text invalidates previously stored DERS responses; this was accepted because the product is pre-launch with no live users (founder-approved — assessments will be retaken during testing).
+
+**Items (administration order — index → facet):**
+
+| # | Item | Facet |
+|:--|:--|:--|
+| 1 | I have difficulty making sense out of my feelings | Clarity |
+| 2 | I am confused about how I feel | Clarity |
+| 3 | When I'm upset, I have difficulty getting work done | Goals |
+| 4 | When I'm upset, I become out of control | Impulse |
+| 5 | When I'm upset, I believe that I will remain that way for a long time | Strategies |
+| 6 | When I'm upset, I believe that I'll end up feeling very depressed | Strategies |
+| 7 | When I'm upset, I have difficulty focusing on other things | Goals |
+| 8 | When I'm upset, I feel out of control | Impulse |
+| 9 | When I'm upset, I feel ashamed with myself for feeling that way | Nonacceptance |
+| 10 | When I'm upset, I feel like I am weak | Nonacceptance |
+| 11 | When I'm upset, I have difficulty controlling my behaviors | Impulse |
+| 12 | When I'm upset, I believe that there is nothing I can do to make myself feel better | Strategies |
+| 13 | When I'm upset, I become irritated with myself for feeling that way | Nonacceptance |
+| 14 | When I'm upset, I start to feel very bad about myself | Strategies |
+| 15 | When I'm upset, I have difficulty thinking about anything else | Goals |
+| 16 | When I'm upset, my emotions feel overwhelming | Strategies |
+
+| Facet | Items | Count |
+|:--|:--|:--|
+| **Clarity** (lack of emotional clarity) | 1, 2 | 2 |
+| **Goals** (difficulty with goal-directed behavior) | 3, 7, 15 | 3 |
+| **Impulse** (impulse-control difficulty) | 4, 8, 11 | 3 |
+| **Strategies** (limited access to regulation strategies) | 5, 6, 12, 14, 16 | 5 |
+| **Nonacceptance** (nonacceptance of emotional responses) | 9, 10, 13 | 3 |
 
 **Scoring:**
-1. Reverse-score Awareness items: `reversed = 6 - raw`
-2. Sum per subscale → subscale scores
-3. Sum all 16 → total (16–80); higher = more difficulty
+1. No reverse-scoring — all 16 items are direct.
+2. Sum per facet → facet scores.
+3. Sum all 16 → total (16–80); higher = more difficulty.
 
-**Output:** `{ total: number, subscales: { clarity, goals, impulse, nonAcceptance, strategies, awareness } }`
+**Output:** `{ total: number, subscales: { clarity, goals, impulse, nonAcceptance, strategies } }`
 
 ---
 
@@ -194,7 +217,7 @@ All scoring functions must be **pure functions** (no side effects) and **unit-te
 
 **Scoring:**
 1. Mean of 3 items per type → type score (1.0–7.0)
-2. Self-Determination Index (SDI): `(2 × Intrinsic + Integrated + Identified) - (Introjected + External + 2 × Amotivation)`
+2. Work Self-Determination Index (W-SDI), canonical weighting (Tremblay et al. 2009): `(3 × Intrinsic + 2 × Integrated + 1 × Identified) − (1 × Introjected + 2 × External + 3 × Amotivation)` → range **±36** on the 1–7 scale. Positive = self-determined. _(Audit 2026-06-30: corrected from the earlier non-canonical `+2/+1/+1/−1/−1/−2` weights, which mis-weighted the regulations and compressed the range to ±24.)_
 3. No reverse-scoring
 
 **Output:** `{ types: { intrinsic, integrated, identified, introjected, external, amotivation }, sdi: number }`

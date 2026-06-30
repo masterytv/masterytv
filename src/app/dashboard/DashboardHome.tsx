@@ -283,7 +283,7 @@ export default function DashboardHome({
           >
             {state === "completed" && reportId ? (
               <Link
-                href={`/decoded/report/${reportId}`}
+                href={`/report/${reportId}`}
                 className="group block rounded-2xl bg-surface-50 p-6 transition-all hover:bg-surface-100"
               >
                 <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[rgba(105,246,184,0.08)]">
@@ -414,7 +414,7 @@ export default function DashboardHome({
                       isConnected ? 'hover:bg-surface-200 cursor-pointer transition-colors' : ''
                     }`;
                     return isConnected ? (
-                      <Link key={inv.id} href={`/decoded/compatibility/${inv.id}`} className={className}>
+                      <Link key={inv.id} href={`/compatibility/${inv.id}`} className={className}>
                         {inner}
                       </Link>
                     ) : (

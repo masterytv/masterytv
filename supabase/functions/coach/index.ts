@@ -74,6 +74,22 @@ Deno.serve(async (req: Request) => {
     const engagementId = (body.engagement_id as string | null) ?? null;
     // E9: optional coach mode (e.g. 'deescalate' = fight de-escalator overlay).
     const mode = (body.mode as string | null) ?? null;
+    // Program/vertical (e.g. 'relationship') — selects the coach persona so every
+    // Relatti user gets a relationship coach, solo or dyad. Absent → executive.
+    const program = (body.program as string | null) ?? null;
+    // E14: the relationship coach should reply short and conversational (reflect +
+    // ask, not essays). A tighter token cap backstops the persona's length rules.
+    const isRelationship = (program ?? "").toLowerCase() === "relationship";
+    const coachMaxTokens = isRelationship ? 700 : 1024;
+    // The relationship coach already has the user's full Decoded profile injected
+    // into the system prompt (prompt-assembler Layer 4.5) and must never quote raw
+    // scores (RELATTI_EXPERIENCE §5.6), so it does NOT get lookup_assessment. Leaving
+    // it in made the model preamble "let me pull up your profile" and tool-fetch the
+    // profile every turn instead of reading what's already in context. The executive
+    // coach keeps the full deep-lookup tool set.
+    const coachTools = isRelationship
+      ? [SEARCH_FACTS_TOOL, LOOKUP_RELATIONSHIP_TOOL]
+      : [SEARCH_FACTS_TOOL, LOOKUP_ASSESSMENT_TOOL, LOOKUP_RELATIONSHIP_TOOL];
     // Sprint 0.4: Deep link context from report CTAs
     const context = body.context as { type?: string; section?: string; topic?: string; inviteId?: string } | undefined;
 
@@ -105,7 +121,7 @@ Deno.serve(async (req: Request) => {
 
     // ── 2.5 Free tier message limit check (S5.9) ──
     // Sprint 0.4: Deep link messages from report CTAs get bonus allowance
-    const { limitReached, upgradeResponse } = await checkMessageLimit(supabase, userId, corsHeaders, context);
+    const { limitReached, upgradeResponse } = await checkMessageLimit(supabase, userId, corsHeaders, context, isRelationship);
     if (limitReached && upgradeResponse) {
       return upgradeResponse;
     }
@@ -248,7 +264,7 @@ Deno.serve(async (req: Request) => {
 
     // ── 5. Assemble prompt (11-layer architecture) ──
     const promptStart = debugMode ? performance.now() : 0;
-    const { system, conversationHistory, metadata, debugTrace } = await assemblePrompt(userId, message, debugMode, engagementId, mode);
+    const { system, conversationHistory, metadata, debugTrace } = await assemblePrompt(userId, message, debugMode, engagementId, mode, program, conversationId);
     const promptMs = debugMode ? performance.now() - promptStart : 0;
 
     // Sprint 0.4: Inject deep link context instruction
@@ -320,8 +336,9 @@ Deno.serve(async (req: Request) => {
     const anthropicResponse = await callClaudeStreaming({
       system: contextualSystem,
       messages: claudeMessages,
-      tools: [SEARCH_FACTS_TOOL, LOOKUP_ASSESSMENT_TOOL, LOOKUP_RELATIONSHIP_TOOL],
-      maxTokens: 1024,
+      tools: coachTools,
+      maxTokens: coachMaxTokens,
+      forceClaude: isRelationship,
     });
 
     if (!anthropicResponse.body) {
@@ -355,13 +372,20 @@ Deno.serve(async (req: Request) => {
           );
         }
 
-        // Stream processing with tool_use support
+        // Stream processing with tool_use support.
+        // Agentic loop: read a response; if the model asked for a tool, run it and
+        // loop to read the model's NEXT response. Bounded by MAX_TOOL_CALLS — once
+        // the budget is spent the follow-up call drops tools so the model MUST
+        // produce text, and because this is `while (true)` that final response is
+        // always read. (Previously `while (toolCallCount <= MAX_TOOL_CALLS)` fired a
+        // follow-up call and then exited the loop WITHOUT reading it — saving an
+        // empty reply whenever the model used its whole tool budget before answering.)
         let currentResponse = anthropicResponse;
         let toolUseMessages = [...claudeMessages];
         let toolCallCount = 0;
         const MAX_TOOL_CALLS = 3;
 
-        while (toolCallCount <= MAX_TOOL_CALLS) {
+        while (true) {
           const reader = currentResponse.body!.getReader();
           const decoder = new TextDecoder();
           let buffer = "";
@@ -436,6 +460,15 @@ Deno.serve(async (req: Request) => {
                   case "_usage":
                     if (event.input_tokens) inputTokens = event.input_tokens as number;
                     if (event.output_tokens) outputTokens = event.output_tokens as number;
+                    break;
+
+                  // Surface mid-stream LLM errors instead of silently skipping them
+                  // (they used to fall through, leaving an unexplained empty reply).
+                  case "error":
+                    console.error(
+                      `[${FUNCTION_NAME}] LLM stream error event:`,
+                      JSON.stringify(event.error ?? event).slice(0, 300),
+                    );
                     break;
                 }
               } catch {
@@ -518,11 +551,17 @@ Deno.serve(async (req: Request) => {
               encoder.encode(": keepalive\n\n")
             );
 
+            // At the tool-call cap, drop tools so the model answers with text on the
+            // next turn instead of requesting yet another tool we couldn't read.
+            const nextTools = toolCallCount >= MAX_TOOL_CALLS
+              ? []
+              : coachTools;
             currentResponse = await callClaudeStreaming({
               system: contextualSystem,
               messages: toolUseMessages,
-              tools: [SEARCH_FACTS_TOOL, LOOKUP_ASSESSMENT_TOOL, LOOKUP_RELATIONSHIP_TOOL],
-              maxTokens: 1024,
+              tools: nextTools,
+              maxTokens: coachMaxTokens,
+              forceClaude: isRelationship,
             });
 
             stopReason = "";
@@ -592,24 +631,7 @@ Deno.serve(async (req: Request) => {
           coachMetadata.debug_trace = debugSummary;
         }
 
-        const { data: coachMsg, error: coachInsertError } = await supabase
-          .from("messages")
-          .insert({
-            user_id: streamUserId,
-            conversation_id: conversationId,
-            channel,
-            engagement_id: engagementId,
-            role: "coach",
-            content: fullContent,
-            metadata: coachMetadata,
-          })
-          .select("id, created_at")
-          .single();
-
-        if (coachInsertError) {
-          console.error(`[${FUNCTION_NAME}] Failed to store coach response:`, coachInsertError.message);
-        }
-
+        // Always record spend — we were billed for the tokens regardless of outcome.
         await supabase.from("cost_tracking").insert({
           user_id: streamUserId,
           purpose: FUNCTION_NAME,
@@ -619,30 +641,62 @@ Deno.serve(async (req: Request) => {
           cost_usd: costUsd,
         });
 
-        await writer.write(
-          encoder.encode(
-            sseEvent("done", {
-              message_id: coachMsg?.id ?? null,
-              model,
-              tokens: usage,
-              cost_usd: costUsd,
-              active_challenges: coachMetadata.active_challenges,
-            })
-          )
-        );
-
-        // Send debug summary as separate SSE event (admin only)
-        if (debugMode && coachMetadata.debug_trace) {
+        // Safety net: never persist a blank coach turn. If the agentic loop ended
+        // with no text (an LLM hiccup, a mid-stream error, or the tool budget spent
+        // without an answer), surface a retryable error instead of saving an empty
+        // bubble. The loop above already forces a no-tools final turn at the cap;
+        // this guards any residual empty case.
+        if (!fullContent.trim()) {
+          console.warn(
+            `[${FUNCTION_NAME}] Empty coach completion (stop_reason="${stopReason}", tool_calls=${toolCallCount}, model=${model}) — not saving a blank message.`,
+          );
           await writer.write(
-            encoder.encode(sseEvent("debug_summary", coachMetadata.debug_trace))
+            encoder.encode(sseEvent("error", { message: "The coach didn't finish that reply. Please try again." }))
           );
-        }
+        } else {
+          const { data: coachMsg, error: coachInsertError } = await supabase
+            .from("messages")
+            .insert({
+              user_id: streamUserId,
+              conversation_id: conversationId,
+              channel,
+              engagement_id: engagementId,
+              role: "coach",
+              content: fullContent,
+              metadata: coachMetadata,
+            })
+            .select("id, created_at")
+            .single();
 
-        // Trigger async post-processing (shared module)
-        if (coachMsg?.id) {
-          EdgeRuntime.waitUntil(
-            postProcess(supabase, streamUserId, conversationId, message, fullContent, coachMsg.id)
+          if (coachInsertError) {
+            console.error(`[${FUNCTION_NAME}] Failed to store coach response:`, coachInsertError.message);
+          }
+
+          await writer.write(
+            encoder.encode(
+              sseEvent("done", {
+                message_id: coachMsg?.id ?? null,
+                model,
+                tokens: usage,
+                cost_usd: costUsd,
+                active_challenges: coachMetadata.active_challenges,
+              })
+            )
           );
+
+          // Send debug summary as separate SSE event (admin only)
+          if (debugMode && coachMetadata.debug_trace) {
+            await writer.write(
+              encoder.encode(sseEvent("debug_summary", coachMetadata.debug_trace))
+            );
+          }
+
+          // Trigger async post-processing (shared module)
+          if (coachMsg?.id) {
+            EdgeRuntime.waitUntil(
+              postProcess(supabase, streamUserId, conversationId, message, fullContent, coachMsg.id)
+            );
+          }
         }
       } catch (streamError) {
         console.error(`[${FUNCTION_NAME}] Stream processing error:`, (streamError as Error).message);
@@ -693,15 +747,22 @@ async function checkMessageLimit(
   userId: string,
   headers: Record<string, string>,
   context?: { type?: string; section?: string; topic?: string; inviteId?: string },
+  isRelationship = false,
 ): Promise<{ limitReached: boolean; upgradeResponse?: Response }> {
   const { data: user } = await supabase
     .from("users")
-    .select("subscription_tier, daily_message_count, daily_message_reset_at, is_admin")
+    .select("subscription_tier, daily_message_count, daily_message_reset_at, is_admin, beta_access")
     .eq("id", userId)
     .single();
 
-  // Admin users bypass all message limits
-  if (!user || user.is_admin === true || user.subscription_tier !== "free") {
+  // Admins, paid tiers, and free-beta members bypass all message limits.
+  // beta_access is granted (no payment) in exchange for a feedback pledge — see /dashboard/beta.
+  if (
+    !user ||
+    user.is_admin === true ||
+    user.subscription_tier !== "free" ||
+    user.beta_access === true
+  ) {
     return { limitReached: false };
   }
 
@@ -748,7 +809,9 @@ async function checkMessageLimit(
     // Format as a human-readable time (UTC midnight = their daily reset)
     const resetHours = Math.ceil((tomorrow.getTime() - now.getTime()) / (1000 * 60 * 60));
 
-    const upgradeMessage = `You've reached your daily coaching limit (${FREE_TIER_DAILY_LIMIT} messages per day). Your limit resets in about ${resetHours} hour${resetHours !== 1 ? 's' : ''}.\n\nIf you'd like unlimited coaching conversations, you can upgrade anytime from your [Settings](/dashboard/settings) page.`;
+    const upgradeMessage = isRelationship
+      ? `You've reached today's free coaching limit (${FREE_TIER_DAILY_LIMIT} messages). It resets in about ${resetHours} hour${resetHours !== 1 ? 's' : ''}.\n\nWhile Relatti is in beta, you can unlock unlimited coaching for free — no credit card. All we ask is that you share a little honest feedback to help us improve. [Unlock unlimited (free)](/dashboard/beta)`
+      : `You've reached your daily coaching limit (${FREE_TIER_DAILY_LIMIT} messages per day). Your limit resets in about ${resetHours} hour${resetHours !== 1 ? 's' : ''}.\n\nIf you'd like unlimited coaching conversations, you can upgrade anytime from your [Settings](/dashboard/settings) page.`;
 
     const encoder = new TextEncoder();
     const stream = new ReadableStream({

@@ -180,8 +180,17 @@ export async function callClaudeStreaming(opts: {
   messages: AnthropicMessage[];
   tools?: AnthropicTool[];
   maxTokens?: number;
+  // E14: when true, go straight to Claude (claude-sonnet-4-6) and skip the GPT-4o
+  // primary. The Relatti relationship coach uses this — lab-tested, gpt-4o-mini
+  // produced templated replies and missed safety cues a small model shouldn't.
+  forceClaude?: boolean;
 }): Promise<Response> {
   const openaiKey = Deno.env.get("OPENAI_API_KEY");
+
+  if (opts.forceClaude) {
+    console.log("[llm] forceClaude — using Claude streaming directly");
+    return await callClaudeStreamingDirectly(opts);
+  }
 
   if (!openaiKey) {
     console.warn("[llm] OPENAI_API_KEY not set — using Claude streaming directly");

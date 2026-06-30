@@ -4,6 +4,7 @@
  */
 
 import { createClient } from "@/lib/supabase/client";
+import { resolveBrandClient } from "@/hooks/useBrand";
 
 // Debug trace types — manually synced from supabase/functions/_shared/debug-types.ts
 // We re-define the top-level type here to avoid importing Deno-specific modules
@@ -76,6 +77,9 @@ export async function sendMessageStream(
     body: JSON.stringify({
       message,
       channel: "web",
+      // Vertical/program → selects the coach persona (relationship vs executive)
+      // for every Relatti user, solo or dyad.
+      program: resolveBrandClient().programSlug,
       conversation_id: conversationId,
       ...(options?.engagementId ? { engagement_id: options.engagementId } : {}),
       ...(options?.mode ? { mode: options.mode } : {}),
