@@ -1078,53 +1078,7 @@ export default function AssessmentEngine({
                 <CheckCircle2 className="h-8 w-8 text-success" />
               </div>
               <h2 className="text-headline-md text-text-primary">Assessment Complete</h2>
-              <p className="mt-2 text-sm text-text-secondary">
-                {scoringResult.scores.length} instruments scored successfully.
-              </p>
-
-              {/* Quick score summary */}
-              <div className="mt-6 space-y-2 text-left">
-                {scoringResult.scores.map((score) => {
-                  const label = battery.find(i => i.id === score.instrumentId)?.shortName
-                    ?? ADDON_INSTRUMENTS.find(i => i.id === score.instrumentId)?.shortName
-                    ?? score.instrumentId;
-                  const summary = score.totalScore !== undefined
-                    ? `Score: ${score.totalScore}`
-                    : score.interpretation
-                      ? Object.values(score.interpretation).join(' · ')
-                      : 'Scored';
-                  return (
-                    <div
-                      key={score.instrumentId}
-                      className="flex items-center justify-between rounded-lg bg-surface-100/50 px-4 py-2.5"
-                    >
-                      <span className="text-sm text-text-primary">{label}</span>
-                      <span className="text-xs text-text-muted">{summary}</span>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Coaching flags */}
-              {scoringResult.coachingFlags && Object.values(scoringResult.coachingFlags).some(Boolean) && (
-                <div className="mt-6 rounded-lg bg-[rgba(255,180,90,0.08)] p-4 text-left">
-                  <p className="mb-2 text-xs font-semibold text-[#ffb45a]">
-                    Areas flagged for coaching focus:
-                  </p>
-                  <ul className="space-y-1 text-xs text-text-secondary">
-                    {scoringResult.coachingFlags.highNeuroticism && <li>• Elevated emotional reactivity</li>}
-                    {scoringResult.coachingFlags.lowConscientiousness && <li>• Structure & follow-through</li>}
-                    {scoringResult.coachingFlags.insecureAttachment && <li>• Attachment patterns</li>}
-                    {scoringResult.coachingFlags.highStress && <li>• Stress management</li>}
-                    {scoringResult.coachingFlags.sleepDeficit && <li>• Sleep quality</li>}
-                    {scoringResult.coachingFlags.sedentary && <li>• Physical activity</li>}
-                    {scoringResult.coachingFlags.socialIsolation && <li>• Social connection</li>}
-                    {scoringResult.coachingFlags.lowOverallWellness && <li>• Overall wellness below threshold</li>}
-                  </ul>
-                </div>
-              )}
-
-              <p className="mt-6 text-xs text-text-muted">
+              <p className="mt-3 text-sm text-text-secondary">
                 {generatedReportId
                   ? 'Your personalized report is ready.'
                   : 'Your full personalized report will be available in your dashboard.'}
