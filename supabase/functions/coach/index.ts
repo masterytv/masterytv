@@ -81,6 +81,15 @@ Deno.serve(async (req: Request) => {
     // ask, not essays). A tighter token cap backstops the persona's length rules.
     const isRelationship = (program ?? "").toLowerCase() === "relationship";
     const coachMaxTokens = isRelationship ? 700 : 1024;
+    // The relationship coach already has the user's full Decoded profile injected
+    // into the system prompt (prompt-assembler Layer 4.5) and must never quote raw
+    // scores (RELATTI_EXPERIENCE §5.6), so it does NOT get lookup_assessment. Leaving
+    // it in made the model preamble "let me pull up your profile" and tool-fetch the
+    // profile every turn instead of reading what's already in context. The executive
+    // coach keeps the full deep-lookup tool set.
+    const coachTools = isRelationship
+      ? [SEARCH_FACTS_TOOL, LOOKUP_RELATIONSHIP_TOOL]
+      : [SEARCH_FACTS_TOOL, LOOKUP_ASSESSMENT_TOOL, LOOKUP_RELATIONSHIP_TOOL];
     // Sprint 0.4: Deep link context from report CTAs
     const context = body.context as { type?: string; section?: string; topic?: string; inviteId?: string } | undefined;
 
@@ -327,7 +336,7 @@ Deno.serve(async (req: Request) => {
     const anthropicResponse = await callClaudeStreaming({
       system: contextualSystem,
       messages: claudeMessages,
-      tools: [SEARCH_FACTS_TOOL, LOOKUP_ASSESSMENT_TOOL, LOOKUP_RELATIONSHIP_TOOL],
+      tools: coachTools,
       maxTokens: coachMaxTokens,
       forceClaude: isRelationship,
     });
@@ -546,7 +555,7 @@ Deno.serve(async (req: Request) => {
             // next turn instead of requesting yet another tool we couldn't read.
             const nextTools = toolCallCount >= MAX_TOOL_CALLS
               ? []
-              : [SEARCH_FACTS_TOOL, LOOKUP_ASSESSMENT_TOOL, LOOKUP_RELATIONSHIP_TOOL];
+              : coachTools;
             currentResponse = await callClaudeStreaming({
               system: contextualSystem,
               messages: toolUseMessages,

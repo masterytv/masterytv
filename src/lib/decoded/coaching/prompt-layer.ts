@@ -135,6 +135,7 @@ export function buildDecodedProfileLayer(profile: AssessmentProfile): string {
 
   // ── Integration Instructions ──
   parts.push('HOW TO USE THIS ASSESSMENT DATA:');
+  parts.push('- You ALREADY have this profile — it is loaded right here, at the start of every conversation. Never tell the user you are "pulling up", "grabbing", "looking up", or "checking" their profile or results; just reference what you already know.');
   parts.push('- Reference insights naturally, as if you know the user well: "Given your high openness..." not "According to your assessment..."');
   parts.push('- Connect current problems to personality patterns when it adds value.');
   parts.push('- Never read out scores or percentiles unless the user asks.');

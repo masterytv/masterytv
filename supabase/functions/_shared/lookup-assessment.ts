@@ -19,7 +19,7 @@ import { createSupabaseClient } from "./supabase.ts";
 export const LOOKUP_ASSESSMENT_TOOL: AnthropicTool = {
   name: "lookup_assessment",
   description:
-    "Look up the user's Decoded personality assessment data. Use this when the user asks about specific scores, percentiles, trait details, report sections, or any numeric data from their assessment. ALWAYS use this tool instead of citing numbers from memory — your system prompt summary may not include all details. Categories: 'scores' (raw instrument scores and subscales), 'report_section' (narrative text from a specific report section), 'full_profile' (complete assessment profile with all instruments).",
+    "Fetch EXTRA detail from the user's Decoded assessment that is NOT already in your system prompt. The user's core profile (archetype, Big Five, attachment style, key coaching notes) is ALREADY provided to you above — reference that directly and do NOT call this tool for it. Only use this tool when the user explicitly asks for a precise number/percentile, a raw subscale, or the full narrative text of a specific report section that the summary above doesn't contain. Never narrate that you're 'pulling up' or 'looking up' their profile. Categories: 'scores' (raw instrument scores and subscales), 'report_section' (narrative text from a specific report section), 'full_profile' (complete assessment profile with all instruments).",
   input_schema: {
     type: "object" as const,
     properties: {
