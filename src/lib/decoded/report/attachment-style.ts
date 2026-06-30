@@ -24,7 +24,7 @@ export interface AttachmentStyleDisplay {
 /** Keyed by the canonical clinical label used across scoring + reports. */
 export const ATTACHMENT_DISPLAY: Record<string, AttachmentStyleDisplay> = {
   'Secure': {
-    name: 'Anchored',
+    name: 'The Anchor',
     clinical: 'Secure',
     tagline: 'Comfortable with closeness and independence alike',
   },

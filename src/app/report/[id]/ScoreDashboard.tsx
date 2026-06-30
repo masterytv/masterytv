@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import BigFiveRadar from './BigFiveRadar';
 import AttachmentQuadrant from './AttachmentQuadrant';
+import RelationshipStyleCard from './RelationshipStyleCard';
 import WellnessRadar from './WellnessRadar';
 import { attachmentDisplay } from '@/lib/decoded/report/attachment-style';
 
@@ -348,6 +349,19 @@ export default function ScoreDashboard({ scores, archetypeBase, archetypeSublabe
                 </div>
               )}
             </div>
+            {/* Shareable collectible emblem — Relatti relationship styles only */}
+            {isRelationship && (() => {
+              const slugMap: Record<string, string> = {
+                'Secure': 'anchor',
+                'Anxious-Preoccupied': 'devoted',
+                'Dismissive-Avoidant': 'independent',
+                'Fearful-Avoidant': 'guarded-heart',
+              };
+              const cardSlug = slugMap[displayStyle];
+              return cardSlug ? (
+                <RelationshipStyleCard slug={cardSlug} name={warm.name} />
+              ) : null;
+            })()}
             {/* Intro context */}
             <p style={{
               fontSize: '0.875rem',
