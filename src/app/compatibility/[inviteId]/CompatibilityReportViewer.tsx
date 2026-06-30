@@ -17,10 +17,13 @@ import {
   ArrowLeft, Heart, Users, Briefcase, Check, Lock, X,
   Send, Loader2, Eye,
   Handshake, Flame, Zap, ShieldAlert,
-  MessageSquare, ArrowUpRight, FileText,
+  MessageSquare, ArrowUpRight, FileText, RefreshCw,
 } from 'lucide-react';
-import { useBrand } from '@/hooks/useBrand';
+import { useBrand, resolveBrandClient } from '@/hooks/useBrand';
+import { createClient } from '@/lib/supabase/client';
 import './compatibility.css';
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 
 interface CompatDimension {
   dimension: string;
@@ -93,6 +96,12 @@ interface Props {
   userId: string;
   /** The other person's Decoded report ID — only set when share_with_human === 'full' */
   otherReportId?: string | null;
+  /** Staleness: a partner retook their assessment after this report was written. */
+  isStale?: boolean;
+  /** The viewer is the one who retook (drives the banner copy). */
+  viewerRetook?: boolean;
+  /** The other partner is the one who retook. */
+  partnerRetook?: boolean;
 }
 
 type TabId = 'intimate' | 'family_friendship' | 'work';
@@ -131,7 +140,7 @@ export default function CompatibilityReportViewer({
   report, inviterName, recipientName,
   shareWithHuman, isInviter, inviteId, otherPersonName,
   upgradeRequestedLevel, upgradeRequestedBy, userId,
-  otherReportId,
+  otherReportId, isStale, viewerRetook, partnerRetook,
 }: Props) {
   const brand = useBrand();
   const isRelatti = brand.id === 'relatti';
@@ -150,6 +159,7 @@ export default function CompatibilityReportViewer({
   const [localIRequested, setLocalIRequested] = useState(!!iRequestedUpgrade);
   const [upgradeAccepted, setUpgradeAccepted] = useState(false);
   const [unsharing, setUnsharing] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
   const router = useRouter();
 
   const context: ContextInsights | null = isMultiContext
@@ -235,6 +245,44 @@ export default function CompatibilityReportViewer({
     }
   }
 
+  // Re-write the compatibility report from both partners' latest results. Calls
+  // the edge fn directly with force_regenerate (same pattern as GenerateReport),
+  // then refreshes the server component so the fresh report + cleared staleness
+  // render. Kept manual (banner button) so a retake never silently spends tokens.
+  async function handleRegenerate() {
+    setRegenerating(true);
+    try {
+      const supabase = createClient();
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      if (!accessToken) {
+        setRegenerating(false);
+        return;
+      }
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/decoded-compatibility-report`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          invite_id: inviteId,
+          force_regenerate: true,
+          program: resolveBrandClient().programSlug,
+        }),
+      });
+      if (res.ok) {
+        // Leaves `regenerating` true until the refresh swaps in the fresh,
+        // no-longer-stale server render (which unmounts this banner).
+        router.refresh();
+      } else {
+        setRegenerating(false);
+      }
+    } catch {
+      setRegenerating(false);
+    }
+  }
+
   return (
     <div className="compat-container">
       {/* Back link */}
@@ -256,6 +304,41 @@ export default function CompatibilityReportViewer({
           <span>{inviterName}</span> × <span>{recipientName}</span>
         </p>
       </motion.div>
+
+      {/* ═══ Stale banner — a partner retook after this report was written ═══ */}
+      {isStale && (
+        <motion.div
+          className="compat-stale"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+        >
+          <RefreshCw className="compat-stale__icon h-4 w-4" />
+          <div className="compat-stale__body">
+            <div className="compat-stale__title">
+              {viewerRetook && partnerRetook
+                ? 'You both retook your assessment'
+                : viewerRetook
+                  ? 'You retook your assessment'
+                  : `${otherPersonName} retook their assessment`}
+            </div>
+            <p className="compat-stale__text">
+              This {isRelatti ? 'connection report' : 'compatibility report'} was written from earlier results. Regenerate it to reflect the latest.
+            </p>
+          </div>
+          <button
+            className="compat-stale__btn"
+            onClick={handleRegenerate}
+            disabled={regenerating}
+          >
+            {regenerating ? (
+              <><Loader2 className="h-4 w-4 animate-spin" /> Regenerating…</>
+            ) : (
+              <><RefreshCw className="h-4 w-4" /> Regenerate</>
+            )}
+          </button>
+        </motion.div>
+      )}
 
       {/* ═══ Sharing Transparency Card ═══ */}
       {showSharingCard && (

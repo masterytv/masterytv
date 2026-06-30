@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { redirect, notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import CompatibilityReportViewer from './CompatibilityReportViewer';
@@ -44,7 +45,7 @@ export default async function CompatibilityReportPage({ params }: PageProps) {
       compatibility_report, compatibility_report_inviter, compatibility_report_recipient,
       status, share_with_human, share_with_coach,
       upgrade_requested_level, upgrade_requested_by,
-      inviter_report_id, recipient_report_id
+      inviter_report_id, recipient_report_id, compatibility_generated_at
     `)
     .eq('id', inviteId)
     .single();
@@ -82,6 +83,41 @@ export default async function CompatibilityReportPage({ params }: PageProps) {
       : invite.inviter_report_id;
   }
 
+  // ── Staleness: did either partner retake (producing a newer report) since
+  // this compatibility report was written? Compare each linked report's
+  // generated_at to compatibility_generated_at. Read via the service role
+  // because RLS hides the partner's assessment_reports row. The *_report_id
+  // pointers are kept current by syncMyReportToSpine on dashboard load.
+  let viewerRetook = false;
+  let partnerRetook = false;
+  const compatGenAt = invite.compatibility_generated_at
+    ? new Date(invite.compatibility_generated_at).getTime()
+    : null;
+  if (compatGenAt) {
+    const reportIds = [invite.inviter_report_id, invite.recipient_report_id].filter(Boolean) as string[];
+    if (reportIds.length) {
+      const admin = createServiceClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      );
+      const { data: reps } = await admin
+        .from('assessment_reports')
+        .select('id, generated_at, created_at')
+        .in('id', reportIds);
+      const genOf = (rid: string | null): number | null => {
+        const r = reps?.find((x) => x.id === rid);
+        const t = r?.generated_at ?? r?.created_at;
+        return t ? new Date(t).getTime() : null;
+      };
+      const inviterGen = genOf(invite.inviter_report_id);
+      const recipientGen = genOf(invite.recipient_report_id);
+      const viewerGen = isInviter ? inviterGen : recipientGen;
+      const partnerGen = isInviter ? recipientGen : inviterGen;
+      viewerRetook = viewerGen !== null && viewerGen > compatGenAt;
+      partnerRetook = partnerGen !== null && partnerGen > compatGenAt;
+    }
+  }
+
   return (
     <CompatibilityReportViewer
       report={report}
@@ -95,6 +131,9 @@ export default async function CompatibilityReportPage({ params }: PageProps) {
       upgradeRequestedBy={invite.upgrade_requested_by || null}
       userId={user.id}
       otherReportId={otherReportId}
+      isStale={viewerRetook || partnerRetook}
+      viewerRetook={viewerRetook}
+      partnerRetook={partnerRetook}
     />
   );
 }

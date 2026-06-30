@@ -10,7 +10,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Lock, ArrowRight, ArrowUpRight, Loader2, Printer, MessageSquare, Share2, User, Heart } from 'lucide-react';
+import { Lock, ArrowRight, ArrowUpRight, Loader2, Printer, MessageSquare, Share2, User, Heart, RotateCcw } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import BigFiveRadar from './BigFiveRadar';
 import BigFiveContext from './BigFiveContext';
@@ -476,6 +476,41 @@ function V2SectionContent({
         </div>
       );
   }
+}
+
+/**
+ * Retake CTA — owner-only, shown at the end of a completed report. Starts a
+ * fresh assessment (/assess?retake=1). The current report stays viewable until
+ * the retake is finished; then the prior attempt is superseded and a new report
+ * is generated. Two-step confirm so a stray tap doesn't kick off a full redo.
+ */
+function RetakeAssessmentCTA({ isRelationship }: { isRelationship: boolean }) {
+  const [confirming, setConfirming] = useState(false);
+  const noun = isRelationship ? 'profile' : 'report';
+  return (
+    <div className="retake-cta no-print">
+      {!confirming ? (
+        <button className="retake-cta__button" onClick={() => setConfirming(true)}>
+          <RotateCcw size={16} />
+          Retake the assessment
+        </button>
+      ) : (
+        <div className="retake-cta__confirm">
+          <p className="retake-cta__text">
+            This starts a fresh assessment. Your current {noun} stays until you finish the new one — then it&apos;s replaced with your latest results.
+          </p>
+          <div className="retake-cta__actions">
+            <a href="/assess?retake=1" className="retake-cta__button retake-cta__button--confirm">
+              Start retake <ArrowRight className="h-4 w-4" />
+            </a>
+            <button className="retake-cta__cancel" onClick={() => setConfirming(false)}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function ReportViewer({ report: initialReport, scores, sharedOwnerName }: ReportViewerProps) {
@@ -1188,6 +1223,12 @@ export default function ReportViewer({ report: initialReport, scores, sharedOwne
             </a>
           </div>
         </div>
+      )}
+
+      {/* Retake the assessment — owner only, once generation is complete. The
+          existing /assess?retake=1 flow supersedes this attempt and regenerates. */}
+      {!isGenerating && generatedCount > 0 && !sharedOwnerName && (
+        <RetakeAssessmentCTA isRelationship={isRelationshipReport} />
       )}
 
       {/* Upgrade Modal */}

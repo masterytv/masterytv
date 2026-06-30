@@ -1,8 +1,8 @@
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 
 /**
- * Backfill the signed-in user's completed report id onto the dyad spine so the
- * OTHER partner can see "completed" status.
+ * Keep the signed-in user's CURRENT report id on the dyad spine so the OTHER
+ * partner can see "completed" status — and so a retake propagates.
  *
  * Why this exists: a participant can only read their OWN assessment rows (RLS),
  * so the relationship card derives each person's assessment status from shared
@@ -11,8 +11,12 @@ import { createClient as createServiceClient } from "@supabase/supabase-js";
  * when a user completes (the recipient_report_id backfill gap seen in testing),
  * so we reconcile them here, under the service role, on dashboard load.
  *
- * Idempotent and cheap: only touches this user's own spine rows where the report
- * id is still missing. No-op when the service env is unavailable or no report.
+ * Latest-tracking (not just null-backfill): `reportId` is the user's latest
+ * non-superseded report. After a RETAKE the user has a new report id, so these
+ * pointers must follow it — otherwise the compatibility report would regenerate
+ * from stale data and staleness detection (report.generated_at vs
+ * compatibility_generated_at) couldn't fire. We only write rows whose value
+ * actually differs (null OR an older report id), so steady-state loads are no-ops.
  */
 function serviceClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -37,12 +41,15 @@ export async function syncMyReportToSpine(
   try {
     await Promise.all([
       // My participant rows across every engagement I'm in.
-      admin.from("participant").update({ report_id: reportId }).eq("user_id", userId).is("report_id", null),
+      admin.from("participant").update({ report_id: reportId })
+        .eq("user_id", userId).or(`report_id.is.null,report_id.neq.${reportId}`),
       // Invites where I'm the inviter or the recipient.
-      admin.from("decoded_invites").update({ inviter_report_id: reportId }).eq("inviter_id", userId).is("inviter_report_id", null),
-      admin.from("decoded_invites").update({ recipient_report_id: reportId }).eq("recipient_id", userId).is("recipient_report_id", null),
+      admin.from("decoded_invites").update({ inviter_report_id: reportId })
+        .eq("inviter_id", userId).or(`inviter_report_id.is.null,inviter_report_id.neq.${reportId}`),
+      admin.from("decoded_invites").update({ recipient_report_id: reportId })
+        .eq("recipient_id", userId).or(`recipient_report_id.is.null,recipient_report_id.neq.${reportId}`),
     ]);
   } catch (err) {
-    console.error("[sync-my-report] backfill error:", err);
+    console.error("[sync-my-report] sync error:", err);
   }
 }

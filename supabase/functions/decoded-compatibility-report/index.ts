@@ -763,6 +763,9 @@ ${personBlock(inviterName, inviterArchetype, inviterFacts, inviterS1, inviterSec
         compatibility_report_recipient: recipientCompatReport,
         // Backward compat: store inviter version as the shared report
         compatibility_report: inviterCompatReport,
+        // Staleness baseline: record when this report was written so a later
+        // partner retake (new assessment_report.generated_at) flags it as stale.
+        compatibility_generated_at: new Date().toISOString(),
         status: "connected",
       })
       .eq("id", invite_id);
