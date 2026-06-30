@@ -84,12 +84,16 @@ function rawToPercentile(raw: number, mean: number, sd: number): number {
 
 export function scoreIPIP50(responses: Record<string, number>): IPIP50Score {
   // Item mapping: items are keyed as "1" through "50"
+  // Canonical IPIP-50 (Goldberg) keying — NOT a clean 5-pos/5-neg split. Only
+  // the items worded *against* the trait are reverse-scored; the rest are direct.
+  // (Previously this assumed 5/5 per factor, wrongly reversing items 42, 48,
+  // 29/39/49, 40/50 — inflating/deflating A, C, N and O.)
   const traits: Record<string, { pos: string[]; neg: string[] }> = {
     extraversion:      { pos: ['1','11','21','31','41'], neg: ['6','16','26','36','46'] },
-    agreeableness:     { pos: ['7','17','27','37','47'], neg: ['2','12','22','32','42'] },
-    conscientiousness: { pos: ['3','13','23','33','43'], neg: ['8','18','28','38','48'] },
-    neuroticism:       { pos: ['4','14','24','34','44'], neg: ['9','19','29','39','49'] },
-    openness:          { pos: ['5','15','25','35','45'], neg: ['10','20','30','40','50'] },
+    agreeableness:     { pos: ['7','17','27','37','42','47'], neg: ['2','12','22','32'] },
+    conscientiousness: { pos: ['3','13','23','33','43','48'], neg: ['8','18','28','38'] },
+    neuroticism:       { pos: ['4','14','24','29','34','39','44','49'], neg: ['9','19'] },
+    openness:          { pos: ['5','15','25','35','40','45','50'], neg: ['10','20','30'] },
   };
 
   const subscaleScores: Record<string, number> = {};

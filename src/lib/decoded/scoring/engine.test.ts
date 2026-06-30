@@ -23,25 +23,29 @@ function fillResponses(count: number, value: number): Record<string, number> {
 
 // ── IPIP-50 ──────────────────────────────────────────────────────────────────
 describe('scoreIPIP50', () => {
-  it('all-min: every item = 1 → raw scores near floor', () => {
+  it('all-min: every item = 1 → factor floors per canonical IPIP-50 keying', () => {
     const r = scoreIPIP50(fillResponses(50, 1));
-    // Positive items = 1×5 = 5; Negative reversed = (6-1)×5 = 25; Total = 30 per trait
+    // direct items contribute 1, reversed contribute 5. Splits: E 5/5, A 6/4,
+    // C 6/4, N 8/2, O 7/3 → 30 / 26 / 26 / 18 / 22.
     expect(r.subscaleScores.extraversion).toBe(30);
-    expect(r.subscaleScores.openness).toBe(30);
+    expect(r.subscaleScores.agreeableness).toBe(26);
+    expect(r.subscaleScores.conscientiousness).toBe(26);
+    expect(r.subscaleScores.neuroticism).toBe(18);
+    expect(r.subscaleScores.openness).toBe(22);
   });
 
-  it('all-max: every item = 5 → raw scores near ceiling', () => {
+  it('all-max: every item = 5 → factor ceilings per canonical keying', () => {
     const r = scoreIPIP50(fillResponses(50, 5));
-    // Positive items = 5×5 = 25; Negative reversed = (6-5)×5 = 5; Total = 30
+    // direct contribute 5, reversed contribute 1 → E 30, A 34, C 34, N 42, O 38.
     expect(r.subscaleScores.extraversion).toBe(30);
+    expect(r.subscaleScores.neuroticism).toBe(42);
+    expect(r.subscaleScores.openness).toBe(38);
   });
 
-  it('known-clinical: high neuroticism profile', () => {
+  it('known-clinical: high neuroticism profile maxes the trait', () => {
     const resp = fillResponses(50, 3);
-    // Set Neuroticism positive items high
-    [4,14,24,34,44].forEach(i => resp[String(i)] = 5);
-    // Set Neuroticism negative items low (will be reverse-scored high)
-    [9,19,29,39,49].forEach(i => resp[String(i)] = 1);
+    [4,14,24,29,34,39,44,49].forEach(i => resp[String(i)] = 5); // direct (high N)
+    [9,19].forEach(i => resp[String(i)] = 1);                    // reversed → 5
     const r = scoreIPIP50(resp);
     expect(r.subscaleScores.neuroticism).toBe(50); // Max possible
     expect(r.percentileScores.neuroticism).toBeGreaterThan(90);
@@ -49,18 +53,23 @@ describe('scoreIPIP50', () => {
 
   it('reverse-scoring: negative items correctly reversed', () => {
     const resp = fillResponses(50, 3);
-    resp['6'] = 1; // Extraversion negative → reversed to 5
-    resp['1'] = 5; // Extraversion positive → stays 5
+    resp['6'] = 1; // Extraversion reversed → 5
+    resp['1'] = 5; // Extraversion direct → stays 5
     const r = scoreIPIP50(resp);
-    // Extra gets a boost from items 1 and 6
     expect(r.subscaleScores.extraversion).toBeGreaterThan(30);
   });
 
-  it('boundary: neuroticism = 38 triggers coaching flag', () => {
+  it('regression: high-N items 29/39/49 raise neuroticism (scored direct, not reversed)', () => {
+    // "get upset easily / frequent mood swings / often feel blue" must INCREASE N.
+    const low = scoreIPIP50({ ...fillResponses(50, 3), '29': 1, '39': 1, '49': 1 });
+    const high = scoreIPIP50({ ...fillResponses(50, 3), '29': 5, '39': 5, '49': 5 });
+    expect(high.subscaleScores.neuroticism).toBeGreaterThan(low.subscaleScores.neuroticism);
+  });
+
+  it('boundary: neuroticism = 40 triggers coaching flag', () => {
     const resp = fillResponses(50, 3);
-    // Engineer Neuroticism to exactly 38
-    [4,14,24,34,44].forEach(i => resp[String(i)] = 4);
-    [9,19,29,39,49].forEach(i => resp[String(i)] = 2); // reversed = 4
+    [4,14,24,29,34,39,44,49].forEach(i => resp[String(i)] = 4); // direct = 4
+    [9,19].forEach(i => resp[String(i)] = 2);                    // reversed → 4
     const r = scoreIPIP50(resp);
     expect(r.subscaleScores.neuroticism).toBe(40); // 4×10 = 40
     const flags = deriveCoachingFlags([r]);
