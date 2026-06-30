@@ -112,7 +112,7 @@ Deno.serve(async (req: Request) => {
 
     // ── 2.5 Free tier message limit check (S5.9) ──
     // Sprint 0.4: Deep link messages from report CTAs get bonus allowance
-    const { limitReached, upgradeResponse } = await checkMessageLimit(supabase, userId, corsHeaders, context);
+    const { limitReached, upgradeResponse } = await checkMessageLimit(supabase, userId, corsHeaders, context, isRelationship);
     if (limitReached && upgradeResponse) {
       return upgradeResponse;
     }
@@ -702,15 +702,22 @@ async function checkMessageLimit(
   userId: string,
   headers: Record<string, string>,
   context?: { type?: string; section?: string; topic?: string; inviteId?: string },
+  isRelationship = false,
 ): Promise<{ limitReached: boolean; upgradeResponse?: Response }> {
   const { data: user } = await supabase
     .from("users")
-    .select("subscription_tier, daily_message_count, daily_message_reset_at, is_admin")
+    .select("subscription_tier, daily_message_count, daily_message_reset_at, is_admin, beta_access")
     .eq("id", userId)
     .single();
 
-  // Admin users bypass all message limits
-  if (!user || user.is_admin === true || user.subscription_tier !== "free") {
+  // Admins, paid tiers, and free-beta members bypass all message limits.
+  // beta_access is granted (no payment) in exchange for a feedback pledge — see /dashboard/beta.
+  if (
+    !user ||
+    user.is_admin === true ||
+    user.subscription_tier !== "free" ||
+    user.beta_access === true
+  ) {
     return { limitReached: false };
   }
 
@@ -757,7 +764,9 @@ async function checkMessageLimit(
     // Format as a human-readable time (UTC midnight = their daily reset)
     const resetHours = Math.ceil((tomorrow.getTime() - now.getTime()) / (1000 * 60 * 60));
 
-    const upgradeMessage = `You've reached your daily coaching limit (${FREE_TIER_DAILY_LIMIT} messages per day). Your limit resets in about ${resetHours} hour${resetHours !== 1 ? 's' : ''}.\n\nIf you'd like unlimited coaching conversations, you can upgrade anytime from your [Settings](/dashboard/settings) page.`;
+    const upgradeMessage = isRelationship
+      ? `You've reached today's free coaching limit (${FREE_TIER_DAILY_LIMIT} messages). It resets in about ${resetHours} hour${resetHours !== 1 ? 's' : ''}.\n\nWhile Relatti is in beta, you can unlock unlimited coaching for free — no credit card. All we ask is that you share a little honest feedback to help us improve. [Unlock unlimited (free)](/dashboard/beta)`
+      : `You've reached your daily coaching limit (${FREE_TIER_DAILY_LIMIT} messages per day). Your limit resets in about ${resetHours} hour${resetHours !== 1 ? 's' : ''}.\n\nIf you'd like unlimited coaching conversations, you can upgrade anytime from your [Settings](/dashboard/settings) page.`;
 
     const encoder = new TextEncoder();
     const stream = new ReadableStream({

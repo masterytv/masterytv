@@ -6,6 +6,8 @@ import { Sidebar } from "@/components/dashboard/sidebar";
 import { Topbar } from "@/components/dashboard/topbar";
 import { createClient } from "@/lib/supabase/client";
 import ShareModal from "@/components/decoded/ShareModal";
+import { FeedbackWidget } from "@/components/relatti/FeedbackWidget";
+import { useBrand } from "@/hooks/useBrand";
 
 /**
  * Unified dashboard layout — wraps all post-auth pages
@@ -25,6 +27,7 @@ export default function DashboardLayout({
   const [showShareModal, setShowShareModal] = useState(false);
   const [broadcastInviteUrl, setBroadcastInviteUrl] = useState<string>('');
   const { user } = useUser();
+  const brand = useBrand();
 
   // Check if user has a completed (non-superseded) assessment + fetch broadcast invite
   useEffect(() => {
@@ -97,6 +100,9 @@ export default function DashboardLayout({
           {children}
         </main>
       </div>
+
+      {/* Beta feedback widget — Relatti only */}
+      {brand.id === "relatti" && <FeedbackWidget />}
 
       {/* Share modal — triggered from sidebar Share button */}
       <ShareModal

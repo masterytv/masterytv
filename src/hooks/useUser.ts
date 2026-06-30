@@ -20,6 +20,7 @@ export interface UserProfile {
   website_url: string | null;
   is_admin: boolean;
   role: "user" | "admin" | "superadmin";
+  beta_access: boolean;
 }
 
 /**
@@ -45,7 +46,7 @@ export function useUser() {
       const { data, error } = await supabase
         .from("users")
         .select(
-          "id, email, name, timezone, preferred_channel, morning_briefing_time, subscription_tier, decoded_tier, stripe_customer_id, stripe_subscription_id, daily_message_count, telegram_chat_id, linkedin_url, website_url, is_admin, role"
+          "id, email, name, timezone, preferred_channel, morning_briefing_time, subscription_tier, decoded_tier, stripe_customer_id, stripe_subscription_id, daily_message_count, telegram_chat_id, linkedin_url, website_url, is_admin, role, beta_access"
         )
         .eq("id", authUser.id)
         .single();

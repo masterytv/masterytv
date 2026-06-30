@@ -2,9 +2,11 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Menu, LogOut, User, ShieldCheck } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { useBrand } from "@/hooks/useBrand";
 
 interface TopbarProps {
   userName: string | null;
@@ -14,6 +16,7 @@ interface TopbarProps {
 
 export function Topbar({ userName, onMenuClick, userRole }: TopbarProps) {
   const isAdmin = userRole === "admin" || userRole === "superadmin";
+  const brand = useBrand();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -49,18 +52,32 @@ export function Topbar({ userName, onMenuClick, userRole }: TopbarProps) {
 
   return (
     <header className="flex h-16 items-center justify-between bg-surface-50/80 backdrop-blur-xl px-4 lg:px-6">
-      {/* Mobile menu button */}
-      {onMenuClick && (
-        <button
-          onClick={onMenuClick}
-          className="rounded-md p-2 text-text-muted hover:text-text-primary lg:hidden transition-colors"
-        >
-          <Menu className="h-5 w-5" />
-        </button>
-      )}
+      {/* Left cluster: mobile menu + beta badge */}
+      <div className="flex items-center gap-2">
+        {onMenuClick && (
+          <button
+            onClick={onMenuClick}
+            className="rounded-md p-2 text-text-muted hover:text-text-primary lg:hidden transition-colors"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+        )}
 
-      {/* Page title area (can be customized per page) */}
-      <div className="hidden lg:block" />
+        {/* Beta badge — Relatti only. Links to the free-unlock + feedback page. */}
+        {brand.id === "relatti" && (
+          <Link
+            href="/dashboard/beta"
+            title="Relatti is in beta — unlock unlimited coaching free and share feedback"
+            className="text-label-sm rounded-full px-2.5 py-1 transition-opacity hover:opacity-80"
+            style={{
+              color: "var(--color-primary)",
+              background: "color-mix(in oklch, var(--color-primary) 14%, transparent)",
+            }}
+          >
+            Beta
+          </Link>
+        )}
+      </div>
 
       {/* Right side: theme toggle + user avatar */}
       <div className="flex items-center gap-3">
