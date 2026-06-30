@@ -962,14 +962,14 @@ export default function ScoreDashboard({ scores, archetypeBase, archetypeSublabe
         {/* ── Work Motivation ── */}
         {weims && (() => {
           const sdi = (weims.interpretation?.sdi as number) ?? 0;
-          // SDI ranges roughly from -18 to +18. Positive = more self-determined
-          const sdiLevel = sdi >= 6 ? 'Highly Self-Determined' : sdi >= 0 ? 'Moderately Self-Determined' : 'Externally Driven';
+          // W-SDI ranges ±36 on the 1–7 scale (canonical Tremblay 2009 weights). Positive = more self-determined.
+          const sdiLevel = sdi >= 9 ? 'Highly Self-Determined' : sdi >= 0 ? 'Moderately Self-Determined' : 'Externally Driven';
           const sdiExplanations: Record<string, string> = {
             'Highly Self-Determined': 'You work because you genuinely want to. Your motivation comes from within — passion, purpose, and personal values drive your effort. This is the strongest predictor of sustained performance and career satisfaction.',
             'Moderately Self-Determined': 'Your motivation is a mix of internal drive and external factors. You care about your work, but some of what keeps you going comes from obligation or reward rather than pure passion.',
             'Externally Driven': 'Much of your work motivation currently comes from external pressures — deadlines, money, approval, or avoiding consequences. This isn\u2019t a flaw, but it is a signal. Externally driven motivation burns out faster.',
           };
-          const sdiBadgeColor = sdi >= 6
+          const sdiBadgeColor = sdi >= 9
             ? { bg: 'rgba(105, 246, 184, 0.15)', text: 'var(--color-accent-emerald)' }
             : sdi >= 0
             ? { bg: 'rgba(251, 191, 36, 0.15)', text: '#fbbf24' }

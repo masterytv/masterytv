@@ -161,17 +161,19 @@ All scoring functions must be **pure functions** (no side effects) and **unit-te
 
 | Subscale | Items |
 |:---|:---|
-| **Clarity** | 1, 4 |
-| **Goals** | 8, 12, 15 |
-| **Impulse** | 9, 13, 16 |
-| **Non-Acceptance** | 5, 10, 14 |
-| **Strategies** | 2, 6, 7, 11 |
+| **Clarity** | 1, 2, 4 |
+| **Non-Acceptance** | 5, 10, 13, 14 |
+| **Goals** | 6, 8, 15 |
+| **Impulse** | 7, 9, 16 |
+| **Strategies** | 11, 12 |
 | **Awareness** | 3 (reverse-scored) |
 
+> ⚠️ **Non-canonical hybrid (audit 2026-06-30).** This 16-item set is NOT the published Bjureberg (2016) DERS-16 — that short form drops the Awareness facet and has no reverse-keyed items. Here item 3 ("I pay attention to how I feel") is the lone positively-worded item, so it is the only reverse-scored one. Subscale groupings above are assigned by item **wording**, not position (the earlier engine map scrambled every facet but Non-Acceptance: e.g. item 2 was filed under Strategies, 12 under Goals, 13 under Impulse). The **total** is unaffected by the partition and was always correct. To make this instrument psychometrically faithful, re-field the actual Bjureberg DERS-16 items (a product decision — changing item text invalidates stored responses).
+
 **Scoring:**
-1. Reverse-score Awareness items: `reversed = 6 - raw`
+1. Reverse-score Awareness item 3: `reversed = 6 - raw`
 2. Sum per subscale → subscale scores
-3. Sum all 16 → total (16–80); higher = more difficulty
+3. Sum all 16 (item 3 reversed) → total (16–80); higher = more difficulty
 
 **Output:** `{ total: number, subscales: { clarity, goals, impulse, nonAcceptance, strategies, awareness } }`
 
@@ -194,7 +196,7 @@ All scoring functions must be **pure functions** (no side effects) and **unit-te
 
 **Scoring:**
 1. Mean of 3 items per type → type score (1.0–7.0)
-2. Self-Determination Index (SDI): `(2 × Intrinsic + Integrated + Identified) - (Introjected + External + 2 × Amotivation)`
+2. Work Self-Determination Index (W-SDI), canonical weighting (Tremblay et al. 2009): `(3 × Intrinsic + 2 × Integrated + 1 × Identified) − (1 × Introjected + 2 × External + 3 × Amotivation)` → range **±36** on the 1–7 scale. Positive = self-determined. _(Audit 2026-06-30: corrected from the earlier non-canonical `+2/+1/+1/−1/−1/−2` weights, which mis-weighted the regulations and compressed the range to ±24.)_
 3. No reverse-scoring
 
 **Output:** `{ types: { intrinsic, integrated, identified, introjected, external, amotivation }, sdi: number }`

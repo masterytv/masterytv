@@ -539,3 +539,249 @@ describe('checkResponseValidity', () => {
     expect(result.issues.some(i => i.type === 'straight_lining')).toBe(false);
   });
 });
+
+// ═════════════════════════════════════════════════════════════════════════════
+// WEIMS W-SDI — canonical weighting (Tremblay et al. 2009)
+// Source: selfdeterminationtheory.org WEIMS / Tremblay, Blanchard et al. (2009).
+// W-SDI = +3·IM +2·INTEG +1·IDEN −1·INTRO −2·EXT −3·AMO, range ±36 on a 1–7 scale.
+// ═════════════════════════════════════════════════════════════════════════════
+describe('scoreWEIMS — canonical W-SDI', () => {
+  // subscale → item indices (verified against the published WEIMS key)
+  const IM = ['4', '8', '15'], INTEG = ['5', '10', '18'], IDEN = ['1', '7', '14'];
+  const INTRO = ['6', '11', '13'], EXT = ['2', '9', '16'], AMO = ['3', '12', '17'];
+  const set = (idxs: string[], v: number, into: Record<string, number>) => {
+    idxs.forEach(i => (into[i] = v));
+    return into;
+  };
+
+  it('maximally self-determined profile → SDI = +36', () => {
+    const r: Record<string, number> = {};
+    set(IM, 7, r); set(INTEG, 7, r); set(IDEN, 7, r);
+    set(INTRO, 1, r); set(EXT, 1, r); set(AMO, 1, r);
+    // 3·7 + 2·7 + 1·7 − 1·1 − 2·1 − 3·1 = 21+14+7 − 1−2−3 = 36
+    expect(scoreWEIMS(r).interpretation.sdi).toBe(36);
+  });
+
+  it('maximally controlled/amotivated profile → SDI = −36', () => {
+    const r: Record<string, number> = {};
+    set(IM, 1, r); set(INTEG, 1, r); set(IDEN, 1, r);
+    set(INTRO, 7, r); set(EXT, 7, r); set(AMO, 7, r);
+    // 3·1 + 2·1 + 1·1 − 1·7 − 2·7 − 3·7 = 6 − 42 = −36
+    expect(scoreWEIMS(r).interpretation.sdi).toBe(-36);
+  });
+
+  it('flat profile (all equal) → SDI = 0 (weights sum to zero)', () => {
+    expect(scoreWEIMS(fillResponses(18, 7)).interpretation.sdi).toBe(0);
+    expect(scoreWEIMS(fillResponses(18, 4)).interpretation.sdi).toBe(0);
+  });
+
+  it('weights each regulation correctly (intrinsic > identified contribution)', () => {
+    // Raising IM by 6 points adds +3·6=18; raising IDEN by 6 adds +1·6=6.
+    const base = fillResponses(18, 1);
+    const imHigh = scoreWEIMS(set(IM, 7, { ...base })).interpretation.sdi;
+    const idenHigh = scoreWEIMS(set(IDEN, 7, { ...base })).interpretation.sdi;
+    expect(imHigh - idenHigh).toBe(12); // (+18) − (+6)
+  });
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+// DERS-16 — subscale partition by item WORDING (audit 2026-06-30)
+// NOTE: non-canonical hybrid (not the published Bjureberg 2016 DERS-16). Item 3
+// is the lone reverse-scored item; total is the sum of all 16 with item 3 reversed.
+// ═════════════════════════════════════════════════════════════════════════════
+describe('scoreDERS16 — subscale partition', () => {
+  const onlyHigh = (idxs: number[]): Record<string, number> => {
+    const r = fillResponses(16, 1);
+    idxs.forEach(i => (r[String(i)] = 5));
+    return r;
+  };
+
+  it('clarity = items 1,2,4', () => {
+    expect(scoreDERS16(onlyHigh([1, 2, 4])).subscaleScores.clarity).toBe(15); // 3×5
+  });
+  it('nonAcceptance = items 5,10,13,14', () => {
+    expect(scoreDERS16(onlyHigh([5, 10, 13, 14])).subscaleScores.nonAcceptance).toBe(20); // 4×5
+  });
+  it('goals = items 6,8,15', () => {
+    expect(scoreDERS16(onlyHigh([6, 8, 15])).subscaleScores.goals).toBe(15);
+  });
+  it('impulse = items 7,9,16', () => {
+    expect(scoreDERS16(onlyHigh([7, 9, 16])).subscaleScores.impulse).toBe(15);
+  });
+  it('strategies = items 11,12 (only)', () => {
+    expect(scoreDERS16(onlyHigh([11, 12])).subscaleScores.strategies).toBe(10); // 2×5
+  });
+  it('awareness = reverse(item 3) — paying attention LOWERS the difficulty score', () => {
+    expect(scoreDERS16({ ...fillResponses(16, 1), '3': 5 }).subscaleScores.awareness).toBe(1);
+    expect(scoreDERS16({ ...fillResponses(16, 1), '3': 1 }).subscaleScores.awareness).toBe(5);
+  });
+  it('regression: item 2 ("no idea how I will feel") loads CLARITY, not strategies', () => {
+    const r = scoreDERS16({ ...fillResponses(16, 1), '2': 5 });
+    expect(r.subscaleScores.clarity).toBeGreaterThan(scoreDERS16(fillResponses(16, 1)).subscaleScores.clarity);
+    expect(r.subscaleScores.strategies).toBe(scoreDERS16(fillResponses(16, 1)).subscaleScores.strategies);
+  });
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+// PER-ITEM KEYING REGRESSION GUARD — the SOURCE OF TRUTH for scoring direction.
+//
+// For EVERY item of EVERY instrument we encode (a) which subscale/score it loads
+// on and (b) its keying direction. The test then proves that pushing the item to
+// its high-response end moves that target in the expected direction relative to
+// the low-response end. This is the guard against the recurring bug class where
+// the engine's hardcoded reverse-map drifts from the item wording (the ECR-R and
+// IPIP-50 bugs). If you change an item's wording, subscale, or keying, update the
+// map here in lockstep — a failure means the engine and the documented key disagree.
+// ═════════════════════════════════════════════════════════════════════════════
+describe('per-item keying regression guard', () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  type Reader = (r: any) => number;
+  interface ItemKey { index: number; read: Reader; dir: 1 | -1; min?: number; max?: number; label: string; }
+
+  // Push one item from its low end to its high end (others at the instrument
+  // floor) and assert the target moves the keyed way.
+  function checkKeying(
+    scoreFn: (resp: Record<string, number>) => unknown,
+    itemCount: number,
+    defMin: number,
+    defMax: number,
+    specs: ItemKey[],
+  ) {
+    for (const s of specs) {
+      const min = s.min ?? defMin;
+      const max = s.max ?? defMax;
+      const base = fillResponses(itemCount, defMin);
+      const low = s.read(scoreFn({ ...base, [String(s.index)]: min }));
+      const high = s.read(scoreFn({ ...base, [String(s.index)]: max }));
+      const delta = high - low;
+      if (s.dir > 0) {
+        expect(delta, `${s.label}: item ${s.index} (direct) must RAISE target`).toBeGreaterThan(0);
+      } else {
+        expect(delta, `${s.label}: item ${s.index} (reverse) must LOWER target`).toBeLessThan(0);
+      }
+    }
+  }
+
+  // Build specs from a {subscaleKey: indices[]} map, all the same direction.
+  function fromMap(
+    map: Record<string, number[]>,
+    read: (key: string) => Reader,
+    dir: 1 | -1,
+    labelPrefix: string,
+  ): ItemKey[] {
+    return Object.entries(map).flatMap(([key, idxs]) =>
+      idxs.map(i => ({ index: i, read: read(key), dir, label: `${labelPrefix}/${key}` })),
+    );
+  }
+
+  const sub = (key: string): Reader => (r) => r.subscaleScores[key];
+  const total: Reader = (r) => r.totalScore;
+
+  it('IPIP-50 (Goldberg): direct items raise, reverse items lower their factor', () => {
+    const DIRECT = {
+      extraversion: [1, 11, 21, 31, 41],
+      agreeableness: [7, 17, 27, 37, 42, 47],
+      conscientiousness: [3, 13, 23, 33, 43, 48],
+      neuroticism: [4, 14, 24, 29, 34, 39, 44, 49],
+      openness: [5, 15, 25, 35, 40, 45, 50],
+    };
+    const REVERSE = {
+      extraversion: [6, 16, 26, 36, 46],
+      agreeableness: [2, 12, 22, 32],
+      conscientiousness: [8, 18, 28, 38],
+      neuroticism: [9, 19],
+      openness: [10, 20, 30],
+    };
+    checkKeying(scoreIPIP50, 50, 1, 5, [
+      ...fromMap(DIRECT, sub, 1, 'IPIP-direct'),
+      ...fromMap(REVERSE, sub, -1, 'IPIP-reverse'),
+    ]);
+  });
+
+  it('ECR-R: anxiety 1-6 direct; avoidance 7,9-12 direct + item 8 reverse', () => {
+    checkKeying(scoreECR_R_Short, 12, 1, 7, [
+      ...fromMap({ anxiety: [1, 2, 3, 4, 5, 6], avoidance: [7, 9, 10, 11, 12] }, sub, 1, 'ECR-direct'),
+      { index: 8, read: sub('avoidance'), dir: -1, label: 'ECR-reverse/avoidance' },
+    ]);
+  });
+
+  it('RIASEC: every item raises its own Holland type (no reverse)', () => {
+    checkKeying(scoreRIASEC, 30, 1, 5, fromMap({
+      realistic: [1, 7, 13, 19, 25], investigative: [2, 8, 14, 20, 26],
+      artistic: [3, 9, 15, 21, 27], social: [4, 10, 16, 22, 28],
+      enterprising: [5, 11, 17, 23, 29], conventional: [6, 12, 18, 24, 30],
+    }, sub, 1, 'RIASEC'));
+  });
+
+  it('SCS-SF: raw subscales rise with their items; total reverses the negative facets', () => {
+    // (a) each raw subscale rises with its own items
+    checkKeying(scoreSCS_SF, 12, 1, 5, fromMap({
+      selfKindness: [2, 6], selfJudgment: [11, 12], commonHumanity: [5, 10],
+      isolation: [4, 8], mindfulness: [3, 7], overIdentification: [1, 9],
+    }, sub, 1, 'SCS-raw'));
+    // (b) total: positive facets raise it, negative facets lower it
+    checkKeying(scoreSCS_SF, 12, 1, 5, [
+      ...[2, 6, 5, 10, 3, 7].map(i => ({ index: i, read: total, dir: 1 as const, label: 'SCS-total/positive' })),
+      ...[11, 12, 4, 8, 1, 9].map(i => ({ index: i, read: total, dir: -1 as const, label: 'SCS-total/negative' })),
+    ]);
+  });
+
+  it('DERS-16: subscales group by wording; total reverses only item 3', () => {
+    checkKeying(scoreDERS16, 16, 1, 5, [
+      ...fromMap({
+        clarity: [1, 2, 4], nonAcceptance: [5, 10, 13, 14],
+        goals: [6, 8, 15], impulse: [7, 9, 16], strategies: [11, 12],
+      }, sub, 1, 'DERS-sub'),
+      { index: 3, read: sub('awareness'), dir: -1, label: 'DERS-sub/awareness' },
+    ]);
+    // total: all items raise difficulty except item 3 (the reverse-keyed one)
+    checkKeying(scoreDERS16, 16, 1, 5, [
+      ...[1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16].map(i => ({ index: i, read: total, dir: 1 as const, label: 'DERS-total/direct' })),
+      { index: 3, read: total, dir: -1, label: 'DERS-total/reverse' },
+    ]);
+  });
+
+  it('WEIMS: raw subscales rise with items; SDI rises for autonomous, falls for controlled', () => {
+    checkKeying(scoreWEIMS, 18, 1, 7, fromMap({
+      intrinsic: [4, 8, 15], integrated: [5, 10, 18], identified: [1, 7, 14],
+      introjected: [6, 11, 13], external: [2, 9, 16], amotivation: [3, 12, 17],
+    }, sub, 1, 'WEIMS-sub'));
+    const sdi: Reader = (r) => r.interpretation.sdi;
+    checkKeying(scoreWEIMS, 18, 1, 7, [
+      ...[4, 8, 15, 5, 10, 18, 1, 7, 14].map(i => ({ index: i, read: sdi, dir: 1 as const, label: 'WEIMS-SDI/autonomous' })),
+      ...[6, 11, 13, 2, 9, 16, 3, 12, 17].map(i => ({ index: i, read: sdi, dir: -1 as const, label: 'WEIMS-SDI/controlled' })),
+    ]);
+  });
+
+  it('SWLS / Flourishing / GAD-7 / CSI-4 / ACE-3: every item raises the total (no reverse)', () => {
+    checkKeying(scoreSWLS, 5, 1, 7, [1, 2, 3, 4, 5].map(i => ({ index: i, read: total, dir: 1 as const, label: 'SWLS' })));
+    checkKeying(scoreFlourishingScale, 8, 1, 7, [1, 2, 3, 4, 5, 6, 7, 8].map(i => ({ index: i, read: total, dir: 1 as const, label: 'Flourishing' })));
+    checkKeying(scoreGAD7, 7, 0, 3, [1, 2, 3, 4, 5, 6, 7].map(i => ({ index: i, read: total, dir: 1 as const, label: 'GAD7' })));
+    checkKeying(scoreACE3, 3, 0, 1, [1, 2, 3].map(i => ({ index: i, read: total, dir: 1 as const, label: 'ACE3' })));
+    // CSI-4: item 1 is 0–6, items 2–4 are 0–5
+    checkKeying(scoreCSI4, 4, 0, 5, [
+      { index: 1, read: total, dir: 1, min: 0, max: 6, label: 'CSI4' },
+      ...[2, 3, 4].map(i => ({ index: i, read: total, dir: 1 as const, label: 'CSI4' })),
+    ]);
+  });
+
+  it('ASRS: every symptom item can only raise the positive count', () => {
+    const positiveCount: Reader = (r) => r.interpretation.positiveCount;
+    checkKeying(scoreASRS, 6, 0, 4, [1, 2, 3, 4, 5, 6].map(i => ({ index: i, read: positiveCount, dir: 1 as const, label: 'ASRS' })));
+  });
+
+  it('Wellness Check: direct dims rise; exhaustion/stress/screen-time (4,5,9) invert', () => {
+    checkKeying(scoreWellnessCheck, 10, 1, 5, [
+      { index: 1, read: sub('exercise'), dir: 1, min: 0, max: 7, label: 'Wellness' },
+      { index: 2, read: sub('sleep'), dir: 1, min: 1, max: 6, label: 'Wellness' },
+      { index: 3, read: sub('nutrition'), dir: 1, label: 'Wellness' },
+      { index: 4, read: sub('energy'), dir: -1, label: 'Wellness-reverse' },
+      { index: 5, read: sub('stress'), dir: -1, label: 'Wellness-reverse' },
+      { index: 6, read: sub('coping'), dir: 1, label: 'Wellness' },
+      { index: 7, read: sub('social'), dir: 1, label: 'Wellness' },
+      { index: 8, read: sub('purpose'), dir: 1, label: 'Wellness' },
+      { index: 9, read: sub('screenTime'), dir: -1, min: 1, max: 6, label: 'Wellness-reverse' },
+      { index: 10, read: sub('vitality'), dir: 1, label: 'Wellness' },
+    ]);
+  });
+});

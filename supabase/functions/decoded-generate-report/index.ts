@@ -1197,7 +1197,8 @@ async function seedCoachProfile(
   const sdi = (weims?.interpretation?.sdi as number) ?? 0;
   // High SDI (autonomous motivation) → internal accountability is fine
   // Low SDI (controlled motivation) → needs external accountability
-  const accountability = sdi >= 8 ? 3 : sdi >= 0 ? 5 : 8;
+  // W-SDI now ranges ±36 (canonical Tremblay 2009 weights); threshold rescaled ×1.5 (was 8).
+  const accountability = sdi >= 12 ? 3 : sdi >= 0 ? 5 : 8;
 
   // Evidence style: High openness → stories/metaphors, Low openness → data
   const evidenceStyle = mapPercentileToDimension(bigFive.openness ?? 50);

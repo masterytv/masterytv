@@ -265,13 +265,27 @@ export function scoreSCS_SF(responses: Record<string, number>): SCSSFScore {
 // ---------------------------------------------------------------------------
 
 export function scoreDERS16(responses: Record<string, number>): DERS16Score {
-  // Subscale items (all scored as-is except Awareness which is reverse-scored)
-  const clarity = sumItems(responses, ['1','4']);
-  const goals = sumItems(responses, ['8','12','15']);
-  const impulse = sumItems(responses, ['9','13','16']);
-  const nonAcceptance = sumItems(responses, ['5','10','14']);
-  const strategies = sumItems(responses, ['2','6','7','11']);
-  const awareness = reverse(val(responses, '3'), 5); // Single reverse-scored item
+  // Subscale groupings are derived from each item's WORDING (the construct it
+  // taps), NOT a positional assumption.
+  //
+  // NOTE on instrument fidelity: this "DERS-16" is a NON-CANONICAL hybrid — it
+  // does not match the published Bjureberg (2016) DERS-16, which omits the
+  // Awareness facet and contains no reverse-keyed items. Here item 3 ("I pay
+  // attention to how I feel") is the lone positively-worded item and is the only
+  // reverse-scored one. The TOTAL is robust to the partition (it sums all 16
+  // with item 3 reversed), but these subscale sums feed the coaching profile +
+  // report dashboard, so they must group by construct.
+  //
+  // Previously every facet except Nonacceptance was scrambled: item 2 (clarity)
+  // and 6/7 (goals/impulse) were filed under Strategies, 12 (strategies) under
+  // Goals, 13 (nonacceptance) under Impulse. Corrected by item wording below.
+  // (Audit 2026-06-30; see DECODED_SCORING.md.)
+  const clarity = sumItems(responses, ['1', '2', '4']);             // make sense of / no idea / confused about feelings
+  const awareness = reverse(val(responses, '3'), 5);                // "pay attention to how I feel" — lone reverse item
+  const nonAcceptance = sumItems(responses, ['5', '10', '13', '14']); // guilt / shame / feel bad about self / anger at self
+  const goals = sumItems(responses, ['6', '8', '15']);              // difficulty working / focusing / thinking when upset
+  const impulse = sumItems(responses, ['7', '9', '16']);            // out of control / overwhelmed when upset
+  const strategies = sumItems(responses, ['11', '12']);             // wallowing / takes a long time to feel better
 
   // Total: sum all 16 items with awareness reversed
   const allItemsExceptAwareness = sumItems(responses, 
@@ -312,9 +326,16 @@ export function scoreWEIMS(responses: Record<string, number>): WEIMSScore {
     subscaleScores[type] = Math.round(meanItems(responses, items) * 100) / 100;
   }
 
-  // Self-Determination Index
-  const sdi = (2 * subscaleScores.intrinsic + subscaleScores.integrated + subscaleScores.identified)
-    - (subscaleScores.introjected + subscaleScores.external + 2 * subscaleScores.amotivation);
+  // Work Self-Determination Index (W-SDI) — canonical weighting from Tremblay
+  // et al. (2009), grounded in the SDT autonomy continuum:
+  //   W-SDI = +3·IM + 2·INTEG + 1·IDEN − 1·INTRO − 2·EXT − 3·AMO
+  // With subscale MEANS on the 1–7 scale this ranges ±36 (±24 on a 5-pt scale);
+  // positive = self-determined, negative = controlled/amotivated.
+  // (Previously used non-canonical weights +2/+1/+1/−1/−1/−2, which both
+  // mis-weighted the regulations and compressed the range.)
+  const sdi =
+    (3 * subscaleScores.intrinsic + 2 * subscaleScores.integrated + subscaleScores.identified)
+    - (subscaleScores.introjected + 2 * subscaleScores.external + 3 * subscaleScores.amotivation);
 
   return {
     instrumentId: 'weims',
