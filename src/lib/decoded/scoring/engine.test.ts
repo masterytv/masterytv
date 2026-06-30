@@ -103,51 +103,56 @@ describe('scoreRIASEC', () => {
 
 // ── ECR-R Short ──────────────────────────────────────────────────────────────
 describe('scoreECR_R_Short', () => {
-  it('all-min: items = 1 → secure (low anxiety, low avoidance)', () => {
-    const r = scoreECR_R_Short(fillResponses(12, 1));
-    // Pos items = 1, Reversed items = 8-1 = 7. Mean = (1+1+1+7+7+7)/6 = 4.0
-    expect(r.interpretation.attachmentStyle).toBeDefined();
+  // Anxiety = mean(items 1-6, all direct). Avoidance = mean(items 7,9-12 direct +
+  // item 8 reversed). A "secure" responder disagrees with anxious/avoidant items
+  // but AGREES that they're comfortable sharing (item 8).
+  const secureProfile = (): Record<string, number> => {
+    const r: Record<string, number> = {};
+    [1, 2, 3, 4, 5, 6].forEach(i => (r[String(i)] = 1)); // not anxious
+    [7, 9, 10, 11, 12].forEach(i => (r[String(i)] = 1)); // not avoidant
+    r['8'] = 7; // comfortable sharing → reverse(7,7)=1 → low avoidance
+    return r;
+  };
+
+  it('secure profile → Secure (low anxiety, low avoidance)', () => {
+    const r = scoreECR_R_Short(secureProfile());
+    expect(r.subscaleScores.anxiety).toBeCloseTo(1.0, 1);
+    expect(r.subscaleScores.avoidance).toBeCloseTo(1.0, 1);
+    expect(r.interpretation.attachmentStyle).toBe('Secure');
   });
 
-  it('all-max: items = 7 → mixed high scores', () => {
+  it('all-max: items = 7 → both subscales high → Fearful-Avoidant', () => {
     const r = scoreECR_R_Short(fillResponses(12, 7));
-    // Pos items = 7, Reversed = 8-7 = 1. Mean = (7+7+7+1+1+1)/6 = 4.0
-    expect(r.subscaleScores.anxiety).toBeCloseTo(4.0, 1);
+    // Anxiety = mean(7×6)=7.0. Avoidance = (reverse(7)=1 + 7+7+7+7+7)/6 = 6.0
+    expect(r.subscaleScores.anxiety).toBeCloseTo(7.0, 1);
+    expect(r.subscaleScores.avoidance).toBeCloseTo(6.0, 1);
+    expect(r.interpretation.attachmentStyle).toBe('Fearful-Avoidant');
   });
 
-  it('known-clinical: anxious attachment', () => {
-    const resp: Record<string, number> = {};
-    // High anxiety items (1,3,5 = high; 2,4,6 = low → reversed high)
-    [1,3,5].forEach(i => resp[String(i)] = 6);
-    [2,4,6].forEach(i => resp[String(i)] = 2); // reversed = 6
-    // Low avoidance (8,10,12 = low; 7,9,11 = high → reversed low)
-    [8,10,12].forEach(i => resp[String(i)] = 2);
-    [7,9,11].forEach(i => resp[String(i)] = 6); // reversed = 2
+  it('anxious-preoccupied: high anxiety, low avoidance', () => {
+    const resp = secureProfile();
+    [1, 2, 3, 4, 5, 6].forEach(i => (resp[String(i)] = 6)); // high anxiety
     const r = scoreECR_R_Short(resp);
     expect(r.subscaleScores.anxiety).toBeGreaterThan(3.5);
     expect(r.subscaleScores.avoidance).toBeLessThan(3.5);
     expect(r.interpretation.attachmentStyle).toBe('Anxious-Preoccupied');
   });
 
-  it('reverse-scoring: reversed items contribute correctly', () => {
-    const resp = fillResponses(12, 4);
-    resp['2'] = 1; // Reversed → 7
+  it('dismissive-avoidant: low anxiety, high avoidance', () => {
+    const resp = secureProfile();
+    [7, 9, 10, 11, 12].forEach(i => (resp[String(i)] = 6)); // high avoidance
+    resp['8'] = 2; // not comfortable sharing → reverse(2,7)=6 → high avoidance
     const r = scoreECR_R_Short(resp);
-    expect(r.subscaleScores.anxiety).toBeGreaterThan(4.0);
+    expect(r.subscaleScores.anxiety).toBeLessThan(3.5);
+    expect(r.subscaleScores.avoidance).toBeGreaterThan(3.5);
+    expect(r.interpretation.attachmentStyle).toBe('Dismissive-Avoidant');
   });
 
-  it('boundary: anxiety exactly 3.5 → anxious (avoidance low)', () => {
-    const resp: Record<string, number> = {};
-    // Anxiety: pos(1,3,5)=4, neg(2,4,6)=5 → reversed=3; mean=(4+4+4+3+3+3)/6=3.5
-    [1,3,5].forEach(i => resp[String(i)] = 4);
-    [2,4,6].forEach(i => resp[String(i)] = 5);
-    // Avoidance: pos(8,10,12)=1, neg(7,9,11)=4 → reversed=4; mean=(1+1+1+4+4+4)/6=2.5 (<3.5)
-    [8,10,12].forEach(i => resp[String(i)] = 1);
-    [7,9,11].forEach(i => resp[String(i)] = 4);
-    const r = scoreECR_R_Short(resp);
-    expect(r.subscaleScores.anxiety).toBeCloseTo(3.5, 1);
-    expect(r.subscaleScores.avoidance).toBeLessThan(3.5);
-    expect(r.interpretation.attachmentStyle).toBe('Anxious-Preoccupied');
+  it('item 8 is the lone reverse-keyed avoidance item', () => {
+    const base = fillResponses(12, 1);
+    const low8 = scoreECR_R_Short({ ...base, '8': 1 }); // disagree comfortable → avoidant
+    const high8 = scoreECR_R_Short({ ...base, '8': 7 }); // agree comfortable → secure
+    expect(low8.subscaleScores.avoidance).toBeGreaterThan(high8.subscaleScores.avoidance);
   });
 });
 

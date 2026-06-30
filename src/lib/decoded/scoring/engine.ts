@@ -152,17 +152,22 @@ export function scoreRIASEC(responses: Record<string, number>): RIASECScore {
 // ---------------------------------------------------------------------------
 
 export function scoreECR_R_Short(responses: Record<string, number>): ECRRShortScore {
-  // Anxiety: items 1-6; Avoidance: items 7-12
-  // Positive (non-reversed): Anxiety 1,3,5; Avoidance 8,10,12
-  // Negative (reversed): Anxiety 2,4,6; Avoidance 7,9,11
+  // Anxiety: items 1-6 — ALL worded in the high-anxiety direction (e.g. "I worry
+  // a lot about my relationships"), so agree = more anxious and NONE are reverse-
+  // keyed. The subscale is the plain mean.
   const anxietyScore = (
-    val(responses, '1') + val(responses, '3') + val(responses, '5') +
-    reverse(val(responses, '2'), 7) + reverse(val(responses, '4'), 7) + reverse(val(responses, '6'), 7)
+    val(responses, '1') + val(responses, '2') + val(responses, '3') +
+    val(responses, '4') + val(responses, '5') + val(responses, '6')
   ) / 6;
 
+  // Avoidance: items 7-12 — all worded high-avoidance EXCEPT item 8 ("I feel
+  // comfortable sharing my private thoughts…"), the single low-avoidance item,
+  // which is reverse-keyed. (Previously items 7/9/11 were wrongly reversed and
+  // 8 was not, which inflated secure responders into Fearful-Avoidant.)
   const avoidanceScore = (
-    val(responses, '8') + val(responses, '10') + val(responses, '12') +
-    reverse(val(responses, '7'), 7) + reverse(val(responses, '9'), 7) + reverse(val(responses, '11'), 7)
+    reverse(val(responses, '8'), 7) +
+    val(responses, '7') + val(responses, '9') +
+    val(responses, '10') + val(responses, '11') + val(responses, '12')
   ) / 6;
 
   // Quadrant classification — uses full Bartholomew & Horowitz (1991) labels

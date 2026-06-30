@@ -141,17 +141,20 @@ export const ECR_R_SHORT: InstrumentDef = {
   description: 'How well do these statements describe your feelings in close relationships? If you\'re not currently in a romantic relationship, think about how you generally feel or have felt in past relationships.',
   estimatedMinutes: 2,
   items: [
+    // Anxiety (1-6): all worded high-anxiety (agree = more anxious) — none reverse-keyed.
     { index: 1, text: "I'm afraid that I will lose my partner's love" },
-    { index: 2, text: 'I often worry that my partner will not want to stay with me', reversed: true },
+    { index: 2, text: 'I often worry that my partner will not want to stay with me' },
     { index: 3, text: 'I often worry that my partner does not really love me' },
-    { index: 4, text: "I worry that romantic partners won't care about me as much as I care about them", reversed: true },
+    { index: 4, text: "I worry that romantic partners won't care about me as much as I care about them" },
     { index: 5, text: 'I often wish that my partner\'s feelings for me were as strong as my feelings for them' },
-    { index: 6, text: 'I worry a lot about my relationships', reversed: true },
-    { index: 7, text: 'I prefer not to show a partner how I feel deep down', reversed: true },
-    { index: 8, text: 'I feel comfortable sharing my private thoughts and feelings with my partner' },
-    { index: 9, text: 'I find it difficult to allow myself to depend on romantic partners', reversed: true },
+    { index: 6, text: 'I worry a lot about my relationships' },
+    // Avoidance (7-12): all worded high-avoidance EXCEPT item 8 (the one low-avoidance
+    // item), which is reverse-keyed.
+    { index: 7, text: 'I prefer not to show a partner how I feel deep down' },
+    { index: 8, text: 'I feel comfortable sharing my private thoughts and feelings with my partner', reversed: true },
+    { index: 9, text: 'I find it difficult to allow myself to depend on romantic partners' },
     { index: 10, text: "I don't feel comfortable opening up to romantic partners" },
-    { index: 11, text: 'I prefer not to be too close to romantic partners', reversed: true },
+    { index: 11, text: 'I prefer not to be too close to romantic partners' },
     { index: 12, text: 'I get uncomfortable when a romantic partner wants to be very close' },
   ],
 };
