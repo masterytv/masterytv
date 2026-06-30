@@ -291,7 +291,11 @@ export default function AssessmentEngine({
     newResponses[instId][itemKey] = value;
     setResponses(newResponses);
 
-    // Also store individual response for response_time tracking
+    // Best-effort per-item write (captures response_time_ms, which the blob
+    // doesn't). Non-blocking so it never stalls the question transition, but
+    // errors are logged rather than swallowed — this upsert silently failed for
+    // months because its onConflict target had no matching unique constraint.
+    // The authoritative write happens server-side in scoreAssessment().
     if (assessmentId) {
       supabase.from("assessment_responses").upsert({
         assessment_id: assessmentId,
@@ -303,6 +307,8 @@ export default function AssessmentEngine({
         response_time_ms: responseTimeMs,
       }, {
         onConflict: "assessment_id,instrument_id,item_index",
+      }).then(({ error }) => {
+        if (error) console.error("[Decoded] response upsert failed:", error.message);
       });
     }
 
