@@ -136,7 +136,10 @@ Deno.serve(async (req: Request) => {
       const encoder = new TextEncoder();
       const stream = new ReadableStream({
         start(controller) {
-          controller.enqueue(encoder.encode(sseEvent("token", { text: crisis.response })));
+          // Emit as "delta" — the SSE event the web client (src/lib/chat.ts) renders.
+          // (It only handles conversation/delta/done/error; a "token" event was
+          // silently dropped, so the Tier-1 crisis/DV response showed a BLANK bubble.)
+          controller.enqueue(encoder.encode(sseEvent("delta", { text: crisis.response })));
           controller.enqueue(encoder.encode(sseEvent("done", { crisis_detected: true })));
           controller.close();
         },
