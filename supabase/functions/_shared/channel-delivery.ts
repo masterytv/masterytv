@@ -169,7 +169,7 @@ async function deliverViaEmail(
 
   const result = await sendEmail({
     to: user.email,
-    subject: `✦ ${subject}`,
+    subject,
     html,
     headers,
   });

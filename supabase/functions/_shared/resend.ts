@@ -291,7 +291,7 @@ export function buildCoachingEmailHtml(
   <div class="email-wrapper">
     <div class="email-container">
       <div class="header-bar">
-        <h1>✦ Mastery Coach</h1>
+        <h1>Mastery Coach</h1>
       </div>
       <div class="body-content">
         <p>${htmlBody}</p>
