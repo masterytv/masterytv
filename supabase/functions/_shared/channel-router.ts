@@ -26,6 +26,7 @@ import {
 import { SEARCH_FACTS_TOOL, handleSearchFacts } from "./search-facts.ts";
 import { runCrisisDetection } from "./crisis-detection.ts";
 import { postProcess } from "./post-processor.ts";
+import { runSafetySweep } from "./safety-sweep.ts";
 import { resetStrikes } from "./nagging.ts";
 
 const CONVERSATION_TIMEOUT_HOURS = 4;
@@ -424,6 +425,15 @@ export async function processCoachMessage(
       coachMsgRow.id
     ).catch((e) =>
       console.error("[channel-router] Post-process error:", e.message)
+    );
+
+    // Tier 2 safety sweep (async, non-blocking) — parity with the web coach.
+    runSafetySweep(supabase, {
+      userId: msg.user_id,
+      conversationId,
+      engagementId,
+    }).catch((e) =>
+      console.error("[channel-router] safety-sweep error:", e.message)
     );
   }
 

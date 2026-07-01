@@ -28,6 +28,7 @@ import {
 } from "../_shared/channel-router.ts";
 import { runCrisisDetection } from "../_shared/crisis-detection.ts";
 import { postProcess } from "../_shared/post-processor.ts";
+import { runSafetySweep } from "../_shared/safety-sweep.ts";
 import type { DebugSummary, PipelineTimeline } from "../_shared/debug-types.ts";
 
 const FUNCTION_NAME = "coach";
@@ -698,6 +699,18 @@ Deno.serve(async (req: Request) => {
               postProcess(supabase, streamUserId, conversationId, message, fullContent, coachMsg.id)
             );
           }
+
+          // Tier 2 safety sweep (async, non-blocking). Reads the recent window +
+          // this reply and flags third-person / indirect risk the Tier 1 keyword
+          // hard-stop is blind to; escalates high-severity self-harm / abuse.
+          // Kernel-level — runs for every program. (COACH_SAFETY_AND_TESTING_SPEC §A.2)
+          EdgeRuntime.waitUntil(
+            runSafetySweep(supabase, {
+              userId: streamUserId,
+              conversationId,
+              engagementId,
+            })
+          );
         }
       } catch (streamError) {
         console.error(`[${FUNCTION_NAME}] Stream processing error:`, (streamError as Error).message);
