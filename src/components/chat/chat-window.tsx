@@ -15,7 +15,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { UserStar, Heart } from "lucide-react";
+import { UserStar, Heart, Clock } from "lucide-react";
 import { useBrand } from "@/hooks/useBrand";
 import type { ChatMessage } from "@/lib/chat";
 
@@ -63,6 +63,47 @@ function renderMarkdown(text: string): string {
     .replace(/\n/g, "<br/>");
 }
 
+// ─── COACH AVATAR ───────────────────────────────────────────────────────
+// Brand-aware initial for the coach bubble: "R" for Relatti, "M" for MasteryTV.
+// (Was hardcoded "M", which showed on the Relatti relationship coach too.)
+function CoachAvatar() {
+  const brand = useBrand();
+  const initial = brand.id === "relatti" ? "R" : "M";
+  return <div className="chat-avatar chat-avatar-coach">{initial}</div>;
+}
+
+// ─── FREE-TIER LIMIT NOTICE ─────────────────────────────────────────────
+// A distinct SYSTEM card — deliberately NOT a coach bubble and with no coach
+// avatar. Warm and continuity-first ("your conversation is saved"), and it never
+// speaks in the first person, so it can't read as the coach personally walking
+// out mid-conversation. Brand-aware CTA (free beta unlock for Relatti).
+function LimitNotice({ resetHours }: { resetHours: number }) {
+  const brand = useBrand();
+  const isRelatti = brand.id === "relatti";
+  const resetText = resetHours <= 1 ? "in about an hour" : `in about ${resetHours} hours`;
+  return (
+    <div className="chat-system-notice" role="status">
+      <div className="chat-system-notice-icon">
+        <Clock size={18} strokeWidth={1.75} />
+      </div>
+      <div className="chat-system-notice-body">
+        <p className="chat-system-notice-title">You&apos;ve used today&apos;s free messages</p>
+        <p className="chat-system-notice-text">
+          {isRelatti
+            ? `Your conversation is saved — you can pick up right where you left off ${resetText}. Or keep going now, free while Relatti is in beta.`
+            : `Your conversation is saved — your free messages reset ${resetText}.`}
+        </p>
+        <a
+          className="chat-system-notice-cta"
+          href={isRelatti ? "/dashboard/beta" : "/dashboard/settings"}
+        >
+          {isRelatti ? "Unlock unlimited — free" : "See upgrade options"}
+        </a>
+      </div>
+    </div>
+  );
+}
+
 // ─── TYPING INDICATOR ───────────────────────────────────────────────────
 
 function TypingIndicator() {
@@ -73,7 +114,7 @@ function TypingIndicator() {
       exit={{ opacity: 0, y: -10 }}
       className="chat-typing"
     >
-      <div className="chat-avatar chat-avatar-coach">M</div>
+      <CoachAvatar />
       <div className="chat-bubble chat-bubble-coach">
         <div className="typing-dots">
           <motion.span
@@ -98,6 +139,22 @@ function TypingIndicator() {
 
 function MessageBubble({ message }: { message: ChatMessage }) {
   const isUser = message.role === "user";
+
+  // System messages (e.g. stream errors) are app chrome, not the coach — render
+  // them centered with no coach avatar/bubble so they never read as the coach.
+  if (message.role === "system") {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.25 }}
+        className="chat-message chat-message-system"
+      >
+        <div className="chat-system-line">{message.content}</div>
+      </motion.div>
+    );
+  }
+
   const time = new Date(message.created_at).toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit",
@@ -110,7 +167,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
       transition={{ duration: 0.25 }}
       className={`chat-message ${isUser ? "chat-message-user" : "chat-message-coach"}`}
     >
-      {!isUser && <div className="chat-avatar chat-avatar-coach">M</div>}
+      {!isUser && <CoachAvatar />}
       <div className={`chat-bubble ${isUser ? "chat-bubble-user" : "chat-bubble-coach"}`}>
         {isUser ? (
           <p>{message.content}</p>
@@ -191,6 +248,10 @@ interface ChatWindowProps {
   streamingContent?: string;
   onSendMessage: (message: string) => void;
   userId?: string;
+  /** Set when the free-tier daily limit is hit — renders the system notice. */
+  limitInfo?: { resetHours: number } | null;
+  /** Messages left today (free tier); null = unlimited/unknown → no heads-up. */
+  remainingToday?: number | null;
 }
 
 export default function ChatWindow({
@@ -199,6 +260,8 @@ export default function ChatWindow({
   streamingContent = "",
   onSendMessage,
   userId,
+  limitInfo = null,
+  remainingToday = null,
 }: ChatWindowProps) {
   const [input, setInput] = useState("");
   const [draftRestored, setDraftRestored] = useState(false);
@@ -214,6 +277,19 @@ export default function ChatWindow({
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  // Return focus to the input once the coach finishes answering, so the user can
+  // keep typing without clicking back into the box. The textarea is disabled while
+  // streaming (isLoading), which blurs it — this refocuses it the moment it
+  // re-enables. Keyed on the loading true→false transition so it never steals
+  // focus on mount or mid-stream.
+  const wasLoadingRef = useRef(false);
+  useEffect(() => {
+    if (wasLoadingRef.current && !isLoading) {
+      inputRef.current?.focus();
+    }
+    wasLoadingRef.current = isLoading;
+  }, [isLoading]);
 
   // Restore draft on mount — runs once after ChatWindow mounts (userId is stable by then)
   useEffect(() => {
@@ -301,7 +377,7 @@ export default function ChatWindow({
                   animate={{ opacity: 1, y: 0 }}
                   className="chat-message chat-message-coach"
                 >
-                  <div className="chat-avatar chat-avatar-coach">M</div>
+                  <CoachAvatar />
                   <div className="chat-bubble chat-bubble-coach">
                     <div
                       className="chat-markdown"
@@ -318,11 +394,19 @@ export default function ChatWindow({
             </AnimatePresence>
           </>
         )}
+        {limitInfo && <LimitNotice resetHours={limitInfo.resetHours} />}
         <div ref={messagesEndRef} />
       </div>
 
       {/* Input area */}
       <form className="chat-input-area" onSubmit={handleSubmit}>
+        {!limitInfo && (remainingToday === 1 || remainingToday === 0) && (
+          <p className="chat-heads-up" role="status">
+            {remainingToday === 1
+              ? "1 message left today on your free plan."
+              : "That was your last free message for today."}
+          </p>
+        )}
         <div className="chat-input-wrapper">
           <textarea
             ref={inputRef}

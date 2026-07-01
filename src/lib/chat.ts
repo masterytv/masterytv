@@ -37,6 +37,12 @@ export interface StreamCallbacks {
     tokens: { input_tokens: number; output_tokens: number };
     cost_usd: number;
     active_challenges: Array<{ title: string; framework: string; phase: string }>;
+    /** Free-tier daily limit hit — render a SYSTEM notice, not a coach message. */
+    limit_reached?: boolean;
+    /** Messages left today (free tier). null = unlimited/unknown → no heads-up. */
+    remaining_today?: number | null;
+    /** Hours until the daily reset (only sent with limit_reached). */
+    reset_hours?: number;
   }) => void;
   /** Called when the debug summary is received (admin debug mode only) */
   onDebugTrace?: (trace: DebugSummary) => void;

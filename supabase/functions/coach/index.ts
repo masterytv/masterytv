@@ -121,7 +121,7 @@ Deno.serve(async (req: Request) => {
 
     // ── 2.5 Free tier message limit check (S5.9) ──
     // Sprint 0.4: Deep link messages from report CTAs get bonus allowance
-    const { limitReached, upgradeResponse } = await checkMessageLimit(supabase, userId, corsHeaders, context, isRelationship);
+    const { limitReached, upgradeResponse, remainingToday } = await checkMessageLimit(supabase, userId, corsHeaders, context);
     if (limitReached && upgradeResponse) {
       return upgradeResponse;
     }
@@ -680,6 +680,7 @@ Deno.serve(async (req: Request) => {
                 tokens: usage,
                 cost_usd: costUsd,
                 active_challenges: coachMetadata.active_challenges,
+                remaining_today: remainingToday ?? null,
               })
             )
           );
@@ -747,8 +748,7 @@ async function checkMessageLimit(
   userId: string,
   headers: Record<string, string>,
   context?: { type?: string; section?: string; topic?: string; inviteId?: string },
-  isRelationship = false,
-): Promise<{ limitReached: boolean; upgradeResponse?: Response }> {
+): Promise<{ limitReached: boolean; upgradeResponse?: Response; remainingToday?: number | null }> {
   const { data: user } = await supabase
     .from("users")
     .select("subscription_tier, daily_message_count, daily_message_reset_at, is_admin, beta_access")
@@ -763,7 +763,8 @@ async function checkMessageLimit(
     user.subscription_tier !== "free" ||
     user.beta_access === true
   ) {
-    return { limitReached: false };
+    // Unlimited tiers → no heads-up (remainingToday null = "don't show a counter").
+    return { limitReached: false, remainingToday: null };
   }
 
   // Reset counter if new day
@@ -794,31 +795,28 @@ async function checkMessageLimit(
 
     if ((deepLinkCount ?? 0) < BONUS_LIMIT) {
       console.log(`[coach] Deep link bonus message (${(deepLinkCount ?? 0) + 1}/${BONUS_LIMIT})`);
-      // Don't increment the daily counter — this is a bonus message
-      return { limitReached: false };
+      // Don't increment the daily counter — this is a bonus message (no heads-up).
+      return { limitReached: false, remainingToday: null };
     }
     // If bonus limit exceeded, fall through to normal limit check
   }
 
   if (currentCount >= FREE_TIER_DAILY_LIMIT) {
-    // Calculate tomorrow's reset time (same time tomorrow in user's local perception)
+    // Time until the daily reset (UTC midnight).
     const now = new Date();
     const tomorrow = new Date(now);
     tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
     tomorrow.setUTCHours(0, 0, 0, 0);
-    // Format as a human-readable time (UTC midnight = their daily reset)
     const resetHours = Math.ceil((tomorrow.getTime() - now.getTime()) / (1000 * 60 * 60));
 
-    const upgradeMessage = isRelationship
-      ? `You've reached today's free coaching limit (${FREE_TIER_DAILY_LIMIT} messages). It resets in about ${resetHours} hour${resetHours !== 1 ? 's' : ''}.\n\nWhile Relatti is in beta, you can unlock unlimited coaching for free — no credit card. All we ask is that you share a little honest feedback to help us improve. [Unlock unlimited (free)](/dashboard/beta)`
-      : `You've reached your daily coaching limit (${FREE_TIER_DAILY_LIMIT} messages per day). Your limit resets in about ${resetHours} hour${resetHours !== 1 ? 's' : ''}.\n\nIf you'd like unlimited coaching conversations, you can upgrade anytime from your [Settings](/dashboard/settings) page.`;
-
+    // Signal-only `done` — DO NOT speak the limit in the coach's voice. The client
+    // renders a distinct SYSTEM notice (never a coach bubble) from limit_reached +
+    // reset_hours. A business/limit message wearing the coach's identity mid-
+    // conversation reads as the coach personally abandoning the user — acutely
+    // harmful in relationship coaching, where that IS the wound being worked on.
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       start(controller) {
-        controller.enqueue(
-          encoder.encode(sseEvent("delta", { text: upgradeMessage }))
-        );
         controller.enqueue(
           encoder.encode(
             sseEvent("done", {
@@ -829,6 +827,7 @@ async function checkMessageLimit(
               active_challenges: [],
               limit_reached: true,
               remaining_today: 0,
+              reset_hours: resetHours,
             })
           )
         );
@@ -838,6 +837,7 @@ async function checkMessageLimit(
 
     return {
       limitReached: true,
+      remainingToday: 0,
       upgradeResponse: new Response(stream, {
         headers: {
           ...headers,
@@ -856,6 +856,8 @@ async function checkMessageLimit(
     .eq("id", userId)
     .then(() => {});
 
-  return { limitReached: false };
+  // Messages left today after this one — drives the client's low-balance heads-up.
+  const remainingToday = Math.max(0, FREE_TIER_DAILY_LIMIT - (currentCount + 1));
+  return { limitReached: false, remainingToday };
 }
 

@@ -453,6 +453,90 @@
   51%, 100% { opacity: 0; }
 }
 
+/* ─── SYSTEM NOTICE (free-tier limit & other app messages) ────────────────
+   Deliberately NOT a chat bubble: a business/system message must never wear the
+   coach's identity. Centered tonal card — clearly "the app", never "Coach".
+   All tokens are semantic, so light-mode adapts automatically. */
+.chat-system-notice {
+  max-width: 620px;
+  margin: 8px auto 18px;
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 18px 20px;
+  border-radius: 16px;
+  background: var(--color-surface-100);
+}
+
+.chat-system-notice-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--primary-tint-10);
+  color: var(--color-primary);
+}
+
+.chat-system-notice-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.chat-system-notice-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--text-heading);
+}
+
+.chat-system-notice-text {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--text-body);
+}
+
+.chat-system-notice-cta {
+  align-self: flex-start;
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.chat-system-notice-cta:hover {
+  text-decoration: underline;
+}
+
+/* Low-balance heads-up — subtle, above the input. Only shows at 0/1 left. */
+.chat-heads-up {
+  max-width: 780px;
+  margin: 0 auto 8px;
+  font-size: 12px;
+  color: var(--text-hint);
+  text-align: center;
+}
+
+/* Generic system-role message (e.g. stream errors) — centered, not the coach. */
+.chat-message-system {
+  display: flex;
+  justify-content: center;
+}
+
+.chat-system-line {
+  max-width: 620px;
+  font-size: 13px;
+  color: var(--text-hint);
+  text-align: center;
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: var(--color-surface-100);
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    LIGHT MODE OVERRIDES
    "Executive Performance Framework" — Professional Zen
