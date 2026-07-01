@@ -1,6 +1,7 @@
 "use client";
 
 import { useUser } from "@/hooks/useUser";
+import { useBrand } from "@/hooks/useBrand";
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -86,6 +87,8 @@ const DELIVERY_DIMENSIONS = ["directness", "framing", "warmth", "pacing", "evide
 
 function SettingsContent() {
   const { user, loading, updateUser } = useUser();
+  const brand = useBrand();
+  const isRelatti = brand.id === "relatti";
   const searchParams = useSearchParams();
   const router = useRouter();
   const [saving, setSaving] = useState(false);
@@ -920,9 +923,24 @@ function SettingsContent() {
                 <li>• All messages and conversation history</li>
                 <li>• Memory facts and knowledge graph</li>
                 <li>• Coach profile and personalization</li>
-                <li>• Commitments and progress tracking</li>
+                <li>• {isRelatti ? "Your assessment and reports" : "Commitments and progress tracking"}</li>
                 <li>• Your account and login credentials</li>
               </ul>
+
+              {isRelatti && (
+                <div className="ml-14 mb-6 rounded-lg bg-surface-100 p-3.5">
+                  <p className="text-sm font-medium text-text-primary">
+                    This also affects your partner
+                  </p>
+                  <p className="mt-1 text-sm text-text-secondary">
+                    Your compatibility reports are shared, so deleting your data
+                    permanently removes them for your partner too. Because of that,
+                    we&apos;ll email your partner to let them know. Their own
+                    conversations and account stay private and aren&apos;t affected
+                    — they can keep chatting.
+                  </p>
+                </div>
+              )}
 
               <div className="ml-14 mb-6">
                 <p className="text-sm font-medium text-text-primary mb-2">

@@ -1,5 +1,35 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+/**
+ * E15.5 — record legal acceptance for OAuth (Google) sign-ups. The email path
+ * records the accepted version directly in signUp metadata; OAuth can't, so the
+ * client sets a short-lived `legal_ack` cookie at sign-up and we fold it into
+ * the user's metadata here (only when the recorded version differs, to preserve
+ * the original acceptance). Never blocks the auth redirect.
+ */
+async function recordLegalAck(
+  supabase: SupabaseClient,
+  res: NextResponse,
+): Promise<void> {
+  try {
+    const ack = (await cookies()).get("legal_ack")?.value;
+    if (!ack) return;
+    res.cookies.delete("legal_ack");
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user && user.user_metadata?.legal_version !== ack) {
+      await supabase.auth.updateUser({
+        data: { legal_accepted_at: new Date().toISOString(), legal_version: ack },
+      });
+    }
+  } catch {
+    // Consent recording is best-effort — never fail the sign-in over it.
+  }
+}
 
 /**
  * Unified auth callback — handles Google OAuth, email confirmation,
@@ -40,7 +70,9 @@ export async function GET(request: Request) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
-      return NextResponse.redirect(`${origin}${next}`);
+      const res = NextResponse.redirect(`${origin}${next}`);
+      await recordLegalAck(supabase, res);
+      return res;
     }
   }
 

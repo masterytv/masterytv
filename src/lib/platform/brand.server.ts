@@ -19,3 +19,17 @@ export async function getBrand(): Promise<Brand> {
   const h = await headers();
   return BRANDS[resolveBrandId({ host: h.get("host"), cookie: c.get("brand")?.value })];
 }
+
+/**
+ * Like getBrand(), but also honors a first-request ?brand= override read from a
+ * page's searchParams. Use this in server components that render brand-specific
+ * content and must theme correctly on a preview host (localhost/staging) before
+ * the brand cookie is set — e.g. the (legal) pages behind ?brand=relatti.
+ */
+export async function getBrandFromRequest(param?: string | null): Promise<Brand> {
+  const c = await cookies();
+  const h = await headers();
+  return BRANDS[
+    resolveBrandId({ host: h.get("host"), param, cookie: c.get("brand")?.value })
+  ];
+}
