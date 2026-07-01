@@ -21,6 +21,7 @@ import type { Relationship } from "@/lib/relatti/relationships";
 import type { RitualView } from "@/lib/relatti/ritual";
 import ConsentControl from "@/components/relatti/ConsentControl";
 import RelationshipCard from "@/components/relatti/RelationshipCard";
+import DepartedRelationshipNotice from "@/components/relatti/DepartedRelationshipNotice";
 import RitualCard from "@/components/relatti/RitualCard";
 
 interface Props {
@@ -66,7 +67,13 @@ export default function RelattiDashboard({ userName, state, reportId, relationsh
         {/* One card per relationship (symmetric for inviter & invitee); the
             invite-your-partner prompt only shows when there are none yet. */}
         {relationships.length > 0 ? (
-          relationships.map((r) => <RelationshipCard key={r.engagementId} relationship={r} />)
+          relationships.map((r) =>
+            r.partnerDeparted ? (
+              <DepartedRelationshipNotice key={r.engagementId} engagementId={r.engagementId} inviteUrl={inviteUrl} />
+            ) : (
+              <RelationshipCard key={r.engagementId} relationship={r} />
+            )
+          )
         ) : (
           <section className="mb-8 rounded-2xl bg-surface-50 p-6">
             <span

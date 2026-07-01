@@ -69,6 +69,10 @@ Deno.serve(async (req: Request) => {
     });
   }
 
+  // E15.3 — identity for the admin-access audit trail (who read what).
+  const adminId = authUser.id;
+  const adminEmail = authUser.email ?? undefined;
+
   // ── Route by action ──
   const url = new URL(req.url);
   const action = url.searchParams.get("action");
@@ -82,6 +86,12 @@ Deno.serve(async (req: Request) => {
         break;
       case "crisis-flags":
         result = await getCrisisFlags(supabase);
+        await logAdminAccess(supabase, {
+          adminId,
+          adminEmail,
+          action: "read_crisis_flags",
+          detail: { count: (result as { flags: unknown[] }).flags.length },
+        });
         break;
       case "frameworks":
         result = await getFrameworks(supabase);
@@ -89,6 +99,12 @@ Deno.serve(async (req: Request) => {
       case "resolve-crisis": {
         const body = await req.json();
         result = await resolveCrisis(supabase, body.flag_id);
+        await logAdminAccess(supabase, {
+          adminId,
+          adminEmail,
+          action: "resolve_crisis",
+          targetId: body.flag_id,
+        });
         break;
       }
       case "update-framework": {
@@ -105,6 +121,13 @@ Deno.serve(async (req: Request) => {
           );
         }
         result = await getDebugTrace(supabase, messageId);
+        await logAdminAccess(supabase, {
+          adminId,
+          adminEmail,
+          action: "read_debug_trace",
+          targetId: messageId,
+          targetUserId: (result as { user_id?: string }).user_id ?? null,
+        });
         break;
       }
       case "coach-profile": {
@@ -116,6 +139,12 @@ Deno.serve(async (req: Request) => {
           );
         }
         result = await getCoachProfile(supabase, targetUserId);
+        await logAdminAccess(supabase, {
+          adminId,
+          adminEmail,
+          action: "read_coach_profile",
+          targetUserId,
+        });
         break;
       }
       default:
@@ -143,6 +172,39 @@ Deno.serve(async (req: Request) => {
 // ═══════════════════════════════════════════════════════════════════
 
 type SupabaseClient = ReturnType<typeof createClient>;
+
+/**
+ * E15.3 — record an admin access to sensitive user data in admin_audit_log.
+ * Best-effort: a logging failure must never break the admin action, but it is
+ * logged to the function console so a broken audit trail is noticed.
+ */
+async function logAdminAccess(
+  supabase: SupabaseClient,
+  entry: {
+    adminId: string;
+    adminEmail?: string;
+    action: string;
+    targetUserId?: string | null;
+    targetId?: string | null;
+    detail?: Record<string, unknown>;
+  },
+): Promise<void> {
+  try {
+    const { error } = await supabase.from("admin_audit_log").insert({
+      admin_user_id: entry.adminId,
+      admin_email: entry.adminEmail ?? null,
+      action: entry.action,
+      target_user_id: entry.targetUserId ?? null,
+      target_id: entry.targetId ?? null,
+      detail: entry.detail ?? {},
+    });
+    if (error) {
+      console.error("[admin-data] audit log insert failed:", error.message);
+    }
+  } catch (e) {
+    console.error("[admin-data] audit log threw:", (e as Error).message);
+  }
+}
 
 async function getMetrics(supabase: SupabaseClient) {
   // ── Users by tier ──

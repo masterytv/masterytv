@@ -28,6 +28,7 @@ import {
 } from "../_shared/channel-router.ts";
 import { runCrisisDetection } from "../_shared/crisis-detection.ts";
 import { postProcess } from "../_shared/post-processor.ts";
+import { runSafetySweep, sendSafetyEscalationEmail } from "../_shared/safety-sweep.ts";
 import type { DebugSummary, PipelineTimeline } from "../_shared/debug-types.ts";
 
 const FUNCTION_NAME = "coach";
@@ -121,21 +122,43 @@ Deno.serve(async (req: Request) => {
 
     // ── 2.5 Free tier message limit check (S5.9) ──
     // Sprint 0.4: Deep link messages from report CTAs get bonus allowance
-    const { limitReached, upgradeResponse } = await checkMessageLimit(supabase, userId, corsHeaders, context, isRelationship);
+    const { limitReached, upgradeResponse, remainingToday } = await checkMessageLimit(supabase, userId, corsHeaders, context);
     if (limitReached && upgradeResponse) {
       return upgradeResponse;
     }
 
     // ── 2.6 Crisis Detection (shared module) ──
     const crisisStart = debugMode ? performance.now() : 0;
-    const crisis = await runCrisisDetection(supabase, userId, message);
+    const crisis = await runCrisisDetection(supabase, userId, message, {
+      conversationId: (body.conversation_id as string | null) ?? null,
+      engagementId,
+    });
     const crisisMs = debugMode ? performance.now() - crisisStart : 0;
 
     if (crisis.isCrisis && crisis.response) {
+      // E15.4 — Tier 1 high-severity → founder safety alert (async, non-blocking so
+      // the crisis response still streams immediately). Deduped in runCrisisDetection.
+      if (crisis.escalate) {
+        EdgeRuntime.waitUntil(
+          sendSafetyEscalationEmail(supabase, userId, {
+            source: "tier1_keyword",
+            risk: crisis.category === "abuse" ? "abuse" : "self_harm",
+            severity: "high",
+            subject_scope: "self",
+            coach_handled: true,
+            rationale: `Tier-1 keyword hard-stop — matched: ${(crisis.matchedKeywords ?? []).join(", ")}`,
+            excerpt: message.slice(0, 200),
+          }),
+        );
+      }
+
       const encoder = new TextEncoder();
       const stream = new ReadableStream({
         start(controller) {
-          controller.enqueue(encoder.encode(sseEvent("token", { text: crisis.response })));
+          // Emit as "delta" — the SSE event the web client (src/lib/chat.ts) renders.
+          // (It only handles conversation/delta/done/error; a "token" event was
+          // silently dropped, so the Tier-1 crisis/DV response showed a BLANK bubble.)
+          controller.enqueue(encoder.encode(sseEvent("delta", { text: crisis.response })));
           controller.enqueue(encoder.encode(sseEvent("done", { crisis_detected: true })));
           controller.close();
         },
@@ -680,6 +703,7 @@ Deno.serve(async (req: Request) => {
                 tokens: usage,
                 cost_usd: costUsd,
                 active_challenges: coachMetadata.active_challenges,
+                remaining_today: remainingToday ?? null,
               })
             )
           );
@@ -697,6 +721,18 @@ Deno.serve(async (req: Request) => {
               postProcess(supabase, streamUserId, conversationId, message, fullContent, coachMsg.id)
             );
           }
+
+          // Tier 2 safety sweep (async, non-blocking). Reads the recent window +
+          // this reply and flags third-person / indirect risk the Tier 1 keyword
+          // hard-stop is blind to; escalates high-severity self-harm / abuse.
+          // Kernel-level — runs for every program. (COACH_SAFETY_AND_TESTING_SPEC §A.2)
+          EdgeRuntime.waitUntil(
+            runSafetySweep(supabase, {
+              userId: streamUserId,
+              conversationId,
+              engagementId,
+            })
+          );
         }
       } catch (streamError) {
         console.error(`[${FUNCTION_NAME}] Stream processing error:`, (streamError as Error).message);
@@ -747,8 +783,7 @@ async function checkMessageLimit(
   userId: string,
   headers: Record<string, string>,
   context?: { type?: string; section?: string; topic?: string; inviteId?: string },
-  isRelationship = false,
-): Promise<{ limitReached: boolean; upgradeResponse?: Response }> {
+): Promise<{ limitReached: boolean; upgradeResponse?: Response; remainingToday?: number | null }> {
   const { data: user } = await supabase
     .from("users")
     .select("subscription_tier, daily_message_count, daily_message_reset_at, is_admin, beta_access")
@@ -763,7 +798,8 @@ async function checkMessageLimit(
     user.subscription_tier !== "free" ||
     user.beta_access === true
   ) {
-    return { limitReached: false };
+    // Unlimited tiers → no heads-up (remainingToday null = "don't show a counter").
+    return { limitReached: false, remainingToday: null };
   }
 
   // Reset counter if new day
@@ -794,31 +830,28 @@ async function checkMessageLimit(
 
     if ((deepLinkCount ?? 0) < BONUS_LIMIT) {
       console.log(`[coach] Deep link bonus message (${(deepLinkCount ?? 0) + 1}/${BONUS_LIMIT})`);
-      // Don't increment the daily counter — this is a bonus message
-      return { limitReached: false };
+      // Don't increment the daily counter — this is a bonus message (no heads-up).
+      return { limitReached: false, remainingToday: null };
     }
     // If bonus limit exceeded, fall through to normal limit check
   }
 
   if (currentCount >= FREE_TIER_DAILY_LIMIT) {
-    // Calculate tomorrow's reset time (same time tomorrow in user's local perception)
+    // Time until the daily reset (UTC midnight).
     const now = new Date();
     const tomorrow = new Date(now);
     tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
     tomorrow.setUTCHours(0, 0, 0, 0);
-    // Format as a human-readable time (UTC midnight = their daily reset)
     const resetHours = Math.ceil((tomorrow.getTime() - now.getTime()) / (1000 * 60 * 60));
 
-    const upgradeMessage = isRelationship
-      ? `You've reached today's free coaching limit (${FREE_TIER_DAILY_LIMIT} messages). It resets in about ${resetHours} hour${resetHours !== 1 ? 's' : ''}.\n\nWhile Relatti is in beta, you can unlock unlimited coaching for free — no credit card. All we ask is that you share a little honest feedback to help us improve. [Unlock unlimited (free)](/dashboard/beta)`
-      : `You've reached your daily coaching limit (${FREE_TIER_DAILY_LIMIT} messages per day). Your limit resets in about ${resetHours} hour${resetHours !== 1 ? 's' : ''}.\n\nIf you'd like unlimited coaching conversations, you can upgrade anytime from your [Settings](/dashboard/settings) page.`;
-
+    // Signal-only `done` — DO NOT speak the limit in the coach's voice. The client
+    // renders a distinct SYSTEM notice (never a coach bubble) from limit_reached +
+    // reset_hours. A business/limit message wearing the coach's identity mid-
+    // conversation reads as the coach personally abandoning the user — acutely
+    // harmful in relationship coaching, where that IS the wound being worked on.
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       start(controller) {
-        controller.enqueue(
-          encoder.encode(sseEvent("delta", { text: upgradeMessage }))
-        );
         controller.enqueue(
           encoder.encode(
             sseEvent("done", {
@@ -829,6 +862,7 @@ async function checkMessageLimit(
               active_challenges: [],
               limit_reached: true,
               remaining_today: 0,
+              reset_hours: resetHours,
             })
           )
         );
@@ -838,6 +872,7 @@ async function checkMessageLimit(
 
     return {
       limitReached: true,
+      remainingToday: 0,
       upgradeResponse: new Response(stream, {
         headers: {
           ...headers,
@@ -856,6 +891,8 @@ async function checkMessageLimit(
     .eq("id", userId)
     .then(() => {});
 
-  return { limitReached: false };
+  // Messages left today after this one — drives the client's low-balance heads-up.
+  const remainingToday = Math.max(0, FREE_TIER_DAILY_LIMIT - (currentCount + 1));
+  return { limitReached: false, remainingToday };
 }
 

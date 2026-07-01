@@ -9,91 +9,17 @@
 
 import { callClaude } from "./anthropic.ts";
 import { createSupabaseClient } from "./supabase.ts";
+import {
+  detectCrisisKeywords,
+  type CrisisCategory,
+  type CrisisResult,
+} from "./crisis-patterns.ts";
 
-// ─── CRISIS KEYWORD PATTERNS ───────────────────────────────────────────
-
-const CRISIS_PATTERNS = {
-  high: [
-    /\bsuicid(e|al)\b/i,
-    /\bkill\s+(my|him|her|them)?self\b/i,
-    /\bwant\s+to\s+die\b/i,
-    /\bend\s+(my|it\s+all|this)\s*(life)?\b/i,
-    /\bhurt\s+my\s?self\b/i,
-    /\bself[- ]harm/i,
-    /\bno\s+reason\s+to\s+live\b/i,
-    /\bplan\s+to\s+(kill|end|hurt)/i,
-  ],
-  moderate: [
-    /\bdon'?t\s+want\s+to\s+(be\s+here|exist|go\s+on|continue)\b/i,
-    /\bwish\s+I\s+(was|were)\s+dead\b/i,
-    /\bgive\s+up\s+on\s+(life|everything)\b/i,
-    /\bnothing\s+(matters|left|to\s+live\s+for)\b/i,
-    /\bharm\s+(myself|others|someone)\b/i,
-    /\bbetter\s+off\s+(dead|without\s+me)\b/i,
-  ],
-  // E7 — intimate-partner abuse / coercive control. Coarse filter; the LLM
-  // confirms intimate-partner context (a strict boss / figurative use is not abuse).
-  abuse: [
-    /\b(afraid|scared|terrified|frightened)\s+of\s+(my|him|her|them|hi[ms]|my\s+(partner|husband|wife|boyfriend|girlfriend|spouse|ex))\b/i,
-    /\b(hits?|hit|beats?|beat|punch|slaps?|chok(e|ed|es|ing)|strangl|shoves?|grab(s|bed)?)\s+me\b/i,
-    /\b(threaten(s|ed)?|threat)\b.{0,40}\b(me|kill|hurt|leave|kids|children)\b/i,
-    /\bwon'?t\s+(let|allow)\s+me\b/i,
-    /\b(not\s+allowed|forbids?\s+me|forbidden)\s+to\b/i,
-    /\bcontrols?\s+(my|who\s+I|where\s+I|what\s+I|the\s+money|all\s+the\s+money|everything|my\s+phone)\b/i,
-    /\b(isolat(e|ed|es|ing)\s+me|cut\s+me\s+off\s+from)\b/i,
-    /\b(monitors?|tracks?|checks?)\s+(my|me|my\s+phone|where\s+I)\b/i,
-    /\btakes?\s+my\s+(phone|money|keys|passport|car)\b/i,
-    /\b(coerc|forced?\s+me|made\s+me)\b.{0,30}\b(sex|do|stay|sign)\b/i,
-    /\bif\s+I\s+(leave|try\s+to\s+leave|tell|call)\b.{0,40}\b(he|she|they|kill|hurt|take)\b/i,
-  ],
-};
-
-export type CrisisCategory = "self_harm" | "abuse" | "none";
-
-export interface CrisisResult {
-  isCrisis: boolean;
-  severity: "high" | "moderate" | "none";
-  category: CrisisCategory;
-  matchedKeywords: string[];
-}
-
-/**
- * Layer 1: Fast keyword scan (<1ms). Runs on every message.
- * Checks self-harm (high → moderate) then abuse / coercive control.
- */
-export function detectCrisisKeywords(message: string): CrisisResult {
-  // Self-harm — high severity first
-  const high: string[] = [];
-  for (const pattern of CRISIS_PATTERNS.high) {
-    const match = message.match(pattern);
-    if (match) high.push(match[0]);
-  }
-  if (high.length > 0) {
-    return { isCrisis: true, severity: "high", category: "self_harm", matchedKeywords: high };
-  }
-
-  // Self-harm — moderate
-  const moderate: string[] = [];
-  for (const pattern of CRISIS_PATTERNS.moderate) {
-    const match = message.match(pattern);
-    if (match) moderate.push(match[0]);
-  }
-  if (moderate.length > 0) {
-    return { isCrisis: true, severity: "moderate", category: "self_harm", matchedKeywords: moderate };
-  }
-
-  // Abuse / coercive control — always high; LLM confirms intimate-partner context.
-  const abuse: string[] = [];
-  for (const pattern of CRISIS_PATTERNS.abuse) {
-    const match = message.match(pattern);
-    if (match) abuse.push(match[0]);
-  }
-  if (abuse.length > 0) {
-    return { isCrisis: true, severity: "high", category: "abuse", matchedKeywords: abuse };
-  }
-
-  return { isCrisis: false, severity: "none", category: "none", matchedKeywords: [] };
-}
+// Tier 1 keyword logic now lives in the pure, dependency-free crisis-patterns.ts
+// (so it's importable by the Node safety battery too). Re-export so existing
+// import sites (coach/index.ts, channel-router.ts) keep working unchanged.
+export { detectCrisisKeywords };
+export type { CrisisCategory, CrisisResult };
 
 /**
  * Layer 2: LLM context check. Only runs when Layer 1 flags moderate severity.
@@ -239,6 +165,15 @@ What would be most helpful right now?`;
 /**
  * Log crisis event to crisis_flags table for admin review.
  */
+export interface CrisisFlagContext {
+  conversationId?: string | null;
+  engagementId?: string | null;
+  subjectScope?: "self" | "partner" | "third_party";
+  source?: "keyword" | "llm_sweep";
+  coachHandled?: boolean;
+  detail?: Record<string, unknown> | null;
+}
+
 export async function logCrisisFlag(
   supabase: ReturnType<typeof createSupabaseClient>,
   userId: string,
@@ -246,7 +181,8 @@ export async function logCrisisFlag(
   matchedKeywords: string[],
   llmConfirmed: boolean,
   message: string,
-  category: CrisisCategory = "self_harm"
+  category: CrisisCategory = "self_harm",
+  ctx: CrisisFlagContext = {}
 ): Promise<void> {
   try {
     await supabase.from("crisis_flags").insert({
@@ -257,6 +193,12 @@ export async function logCrisisFlag(
       llm_confirmed: llmConfirmed,
       message_excerpt: message.slice(0, 200),
       reviewed: false,
+      conversation_id: ctx.conversationId ?? null,
+      engagement_id: ctx.engagementId ?? null,
+      subject_scope: ctx.subjectScope ?? "self",
+      source: ctx.source ?? "keyword",
+      coach_handled: ctx.coachHandled ?? false,
+      detail: ctx.detail ?? null,
     });
   } catch (e) {
     console.error(
@@ -266,19 +208,62 @@ export async function logCrisisFlag(
   }
 }
 
+// Tier 1 escalation dedup window — mirrors safety-sweep's DEDUP_WINDOW_MS so the two
+// tiers suppress each other's duplicate founder alerts for the same (user,conv,category).
+const ESCALATION_DEDUP_MS = 12 * 60 * 60 * 1000;
+
+/**
+ * Has a high-severity, unreviewed crisis_flag for this (user, conversation, category)
+ * already been logged within the dedup window? If so, we've already alerted — don't
+ * re-email. Queried BEFORE inserting the current flag so it only sees PRIOR flags.
+ * On query failure we return false (escalate anyway — a double alert beats a missed one).
+ */
+async function hasRecentHighFlag(
+  supabase: ReturnType<typeof createSupabaseClient>,
+  userId: string,
+  conversationId: string | null,
+  category: CrisisCategory
+): Promise<boolean> {
+  try {
+    const since = new Date(Date.now() - ESCALATION_DEDUP_MS).toISOString();
+    let q = supabase
+      .from("crisis_flags")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("category", category)
+      .eq("severity", "high")
+      .eq("reviewed", false)
+      .gte("created_at", since);
+    q = conversationId
+      ? q.eq("conversation_id", conversationId)
+      : q.is("conversation_id", null);
+    const { data } = await q.limit(1).maybeSingle();
+    return !!data;
+  } catch (e) {
+    console.warn("[crisis] escalation dedup check failed, will escalate:", (e as Error).message);
+    return false;
+  }
+}
+
 /**
  * Full crisis detection pipeline.
  * Combines Layer 1 (keyword) + Layer 2 (LLM context check).
- * Returns { isCrisis, response } if crisis detected, or { isCrisis: false } if safe.
+ * Returns { isCrisis, response, escalate } if crisis detected, or { isCrisis: false }.
+ * `escalate` is true when a NEW high-severity event should trigger the founder alert
+ * email (E15.4); the caller dispatches it (web via waitUntil, other channels awaited).
  */
 export async function runCrisisDetection(
   supabase: ReturnType<typeof createSupabaseClient>,
   userId: string,
-  message: string
+  message: string,
+  ctx: { conversationId?: string | null; engagementId?: string | null } = {}
 ): Promise<{
   isCrisis: boolean;
   response?: string;
   severity?: "high" | "moderate";
+  category?: CrisisCategory;
+  matchedKeywords?: string[];
+  escalate?: boolean;
 }> {
   const keywords = detectCrisisKeywords(message);
 
@@ -299,7 +284,17 @@ export async function runCrisisDetection(
     confirmed = await confirmCrisisWithLLM(message, keywords.matchedKeywords);
   }
 
+  const conversationId = ctx.conversationId ?? null;
+
   if (confirmed) {
+    // E15.4 — high-severity Tier 1 events escalate to the founder alert email
+    // (self-harm high, or abuse which is always high). Moderate self-harm is flagged
+    // but not emailed, matching Tier 2. Deduped so a burst doesn't flood the inbox.
+    let escalate = severity === "high";
+    if (escalate) {
+      escalate = !(await hasRecentHighFlag(supabase, userId, conversationId, keywords.category));
+    }
+
     await logCrisisFlag(
       supabase,
       userId,
@@ -307,7 +302,14 @@ export async function runCrisisDetection(
       keywords.matchedKeywords,
       true,
       message,
-      keywords.category
+      keywords.category,
+      {
+        source: "keyword",
+        subjectScope: "self",
+        coachHandled: true, // the canned crisis/DV response always surfaces resources
+        conversationId,
+        engagementId: ctx.engagementId ?? null,
+      }
     );
 
     return {
@@ -317,6 +319,9 @@ export async function runCrisisDetection(
           ? buildAbuseResponse()
           : buildCrisisResponse(severity),
       severity,
+      category: keywords.category,
+      matchedKeywords: keywords.matchedKeywords,
+      escalate,
     };
   }
 
@@ -328,7 +333,13 @@ export async function runCrisisDetection(
     keywords.matchedKeywords,
     false,
     message,
-    keywords.category
+    keywords.category,
+    {
+      source: "keyword",
+      subjectScope: "self",
+      conversationId,
+      engagementId: ctx.engagementId ?? null,
+    }
   );
   console.log(
     `[crisis] False positive cleared by LLM: "${keywords.matchedKeywords.join(", ")}"`

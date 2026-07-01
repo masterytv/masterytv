@@ -34,6 +34,8 @@ export interface Relationship {
   engagementId: string;
   status: string; // forming | active | paused | ended
   partnerJoined: boolean;
+  /** Partner deleted their account: engagement tombstoned, no partner row left. */
+  partnerDeparted: boolean;
   me: PersonStatus;
   partner: PersonStatus;
   hasBlueprint: boolean;
@@ -84,7 +86,7 @@ export async function getRelationships(
   // 1. My participant rows in dyads I can act in.
   const { data: myParts, error } = await supabase
     .from("participant")
-    .select("engagement_id, role, engagement:engagement_id(id, kind, status, source_invite_id, created_at)")
+    .select("engagement_id, role, engagement:engagement_id(id, kind, status, source_invite_id, created_at, metadata)")
     .eq("user_id", userId)
     .in("status", ["active", "consented"]);
 
@@ -94,7 +96,7 @@ export async function getRelationships(
   const myDyads = myParts
     .map((p) => {
       const eng = Array.isArray(p.engagement) ? p.engagement[0] : p.engagement;
-      return { myRole: p.role as string, eng: eng as { id: string; kind: string; status: string; source_invite_id: string | null; created_at: string } | null };
+      return { myRole: p.role as string, eng: eng as { id: string; kind: string; status: string; source_invite_id: string | null; created_at: string; metadata: Record<string, unknown> | null } | null };
     })
     .filter((d) => d.eng?.kind === "relationship_dyad" && d.eng);
 
@@ -141,7 +143,44 @@ export async function getRelationships(
     const parts = partsByEng.get(eng.id) ?? [];
     const mine = parts.find((p) => p.user_id === userId) ?? parts.find((p) => p.role === d.myRole);
     const partner = parts.find((p) => p.role !== d.myRole);
-    if (!mine || !partner) continue;
+    if (!mine) continue;
+
+    // Partner deleted their account: delete-user-data removed their participant
+    // row but left a PII-free tombstone on the engagement, so we surface a
+    // "your partner left" notice instead of the relationship silently vanishing.
+    // Cleared once the survivor dismisses it.
+    const meta = (eng.metadata ?? {}) as Record<string, unknown>;
+    const partnerDeparted = meta.partner_departed === true && meta.partner_departed_dismissed !== true;
+    if (!partner) {
+      if (partnerDeparted) {
+        const myShare = shareFlags(mine.share_level);
+        relationships.push({
+          engagementId: eng.id,
+          status: eng.status,
+          partnerJoined: false,
+          partnerDeparted: true,
+          me: {
+            name: "You",
+            isYou: true,
+            joined: true,
+            assessment: myState,
+            sharedWithCoach: myShare.coach,
+            sharedWithPartner: myShare.partner,
+          },
+          partner: {
+            name: "your partner",
+            isYou: false,
+            joined: false,
+            assessment: "not_started",
+            sharedWithCoach: false,
+            sharedWithPartner: false,
+          },
+          hasBlueprint: hasBlueprintSet.has(eng.id),
+          streak: null,
+        });
+      }
+      continue;
+    }
     // Only surface a card once the partner has an account — pending/unaccepted
     // invites stay in the "invite your partner" prompt, not as waiting cards.
     if (!partner.user_id) continue;
@@ -176,6 +215,7 @@ export async function getRelationships(
       engagementId: eng.id,
       status: eng.status,
       partnerJoined,
+      partnerDeparted: false,
       me: {
         name: "You",
         isYou: true,

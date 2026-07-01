@@ -45,6 +45,11 @@ function ChatPageInner() {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [streamingContent, setStreamingContent] = useState<string>("");
+  // Free-tier limit UX (rendered as app chrome, never as the coach): the inline
+  // system notice when the limit is hit, and the messages-left count for the
+  // low-balance heads-up (null = unlimited/unknown → no heads-up).
+  const [limitInfo, setLimitInfo] = useState<{ resetHours: number } | null>(null);
+  const [remainingToday, setRemainingToday] = useState<number | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const abortRef = useRef<(() => void) | null>(null);
   // Ref to accumulate streamed text — avoids React Strict Mode double-invoke of state updaters
@@ -124,6 +129,9 @@ function ChatPageInner() {
         if (cancelled) return;
         setConversationId(activeId);
         setMessages(history);
+        // Clear the ephemeral free-tier limit UI when switching/loading a thread.
+        setLimitInfo(null);
+        setRemainingToday(null);
       } catch (error) {
         console.error("Failed to load conversation:", error);
       } finally {
@@ -245,7 +253,25 @@ function ChatPageInner() {
             onDone: (metadata) => {
               // Read accumulated content from ref (not from state updater)
               const finalContent = streamedTextRef.current;
-              
+
+              // Free-tier limit: the server sends a signal-only `done` (no coach
+              // text). Render a distinct SYSTEM notice instead of a coach bubble —
+              // a limit message in the coach's voice mid-conversation reads as the
+              // coach abandoning the user. Never push a coach message here.
+              if (metadata.limit_reached) {
+                setLimitInfo({ resetHours: metadata.reset_hours ?? 24 });
+                setRemainingToday(0);
+                setStreamingContent("");
+                streamedTextRef.current = "";
+                setIsLoading(false);
+                return;
+              }
+
+              // Normal reply — clear any prior limit state and track how many
+              // messages are left (for the low-balance heads-up).
+              setLimitInfo(null);
+              setRemainingToday(metadata.remaining_today ?? null);
+
               const coachMessage: ChatMessage = {
                 id: metadata.message_id ?? `coach-${Date.now()}`,
                 role: "coach",
@@ -253,7 +279,7 @@ function ChatPageInner() {
                 created_at: new Date().toISOString(),
                 metadata: metadata as unknown as Record<string, unknown>,
               };
-              
+
               setMessages((prev) => [...prev, coachMessage]);
               setStreamingContent("");
               streamedTextRef.current = "";
@@ -389,6 +415,8 @@ function ChatPageInner() {
               streamingContent={streamingContent}
               onSendMessage={handleSendMessage}
               userId={user?.id}
+              limitInfo={limitInfo}
+              remainingToday={remainingToday}
             />
           </div>
           <DebugPanel debugData={debugData} traceHistory={traceHistory} />
@@ -401,6 +429,8 @@ function ChatPageInner() {
           streamingContent={streamingContent}
           onSendMessage={handleSendMessage}
           userId={user?.id}
+          limitInfo={limitInfo}
+          remainingToday={remainingToday}
         />
       )}
     </div>

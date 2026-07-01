@@ -26,6 +26,7 @@ import {
 import { SEARCH_FACTS_TOOL, handleSearchFacts } from "./search-facts.ts";
 import { runCrisisDetection } from "./crisis-detection.ts";
 import { postProcess } from "./post-processor.ts";
+import { runSafetySweep, sendSafetyEscalationEmail } from "./safety-sweep.ts";
 import { resetStrikes } from "./nagging.ts";
 
 const CONVERSATION_TIMEOUT_HOURS = 4;
@@ -181,8 +182,23 @@ export async function processCoachMessage(
   resetStrikes(supabase, msg.user_id, "accountability_check").catch(() => {});
 
   // ── 1. Crisis detection ──
-  const crisis = await runCrisisDetection(supabase, msg.user_id, msg.content);
+  const crisis = await runCrisisDetection(supabase, msg.user_id, msg.content, {
+    conversationId: msg.conversation_id ?? null,
+  });
   if (crisis.isCrisis && crisis.response) {
+    // E15.4 — Tier 1 high-severity → founder safety alert (channel parity with web).
+    // Awaited here: these channels aren't latency-sensitive like the web SSE stream.
+    if (crisis.escalate) {
+      await sendSafetyEscalationEmail(supabase, msg.user_id, {
+        source: "tier1_keyword",
+        risk: crisis.category === "abuse" ? "abuse" : "self_harm",
+        severity: "high",
+        subject_scope: "self",
+        coach_handled: true,
+        rationale: `Tier-1 keyword hard-stop — matched: ${(crisis.matchedKeywords ?? []).join(", ")}`,
+        excerpt: msg.content.slice(0, 200),
+      });
+    }
     return {
       response: crisis.response,
       conversationId: msg.conversation_id ?? "",
@@ -424,6 +440,18 @@ export async function processCoachMessage(
       coachMsgRow.id
     ).catch((e) =>
       console.error("[channel-router] Post-process error:", e.message)
+    );
+
+    // Tier 2 safety sweep (async, non-blocking) — parity with the web coach.
+    // channel-router has no engagement context (resolveConversation defaults it to
+    // null), so pass null explicitly — the bare `engagementId` shorthand referenced
+    // an undefined variable (latent ReferenceError on this path). E15.4.
+    runSafetySweep(supabase, {
+      userId: msg.user_id,
+      conversationId,
+      engagementId: null,
+    }).catch((e) =>
+      console.error("[channel-router] safety-sweep error:", e.message)
     );
   }
 

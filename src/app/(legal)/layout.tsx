@@ -1,32 +1,64 @@
 import Link from "next/link";
+import { Heart, Fingerprint } from "lucide-react";
+import { getBrand } from "@/lib/platform/brand.server";
+import { LEGAL_CONTACT } from "@/lib/platform/legal";
 
 /**
- * Legal pages layout — minimal, professional header + footer.
- * Used by /privacy and /terms routes.
+ * Legal pages layout — minimal, professional, brand-aware (E15.5).
+ *
+ * Header mark, product name, footer entity, and accent all resolve from the
+ * current brand (rose Relatti / indigo MasteryTV) via CSS variables, so the
+ * /privacy, /terms, and /disclaimer routes match the brand whose domain served
+ * them. Brand comes from host / cookie (getBrand); the pages themselves also
+ * honor ?brand= for preview.
  */
-export default function LegalLayout({
+export default async function LegalLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const brand = await getBrand();
+  const contact = LEGAL_CONTACT[brand.id];
+  const BrandIcon = brand.id === "relatti" ? Heart : Fingerprint;
+  const year = new Date().getFullYear();
+
   return (
     <div className="flex min-h-screen flex-col">
-      {/* Background gradient (same as landing) */}
+      {/* Background gradient — themed to the brand primary, subtle */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute -top-1/3 left-1/2 h-[900px] w-[900px] -translate-x-1/2 rounded-full bg-[rgba(96,99,238,0.05)] blur-[150px]" />
+        <div
+          className="absolute -top-1/3 left-1/2 h-[900px] w-[900px] -translate-x-1/2 rounded-full blur-[150px]"
+          style={{
+            background:
+              "color-mix(in oklch, var(--color-primary) 6%, transparent)",
+          }}
+        />
       </div>
 
       {/* Nav */}
       <nav className="relative flex items-center justify-between px-6 py-4 lg:px-12">
         <Link href="/" className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[rgba(96,99,238,0.12)]">
-            <span className="text-sm font-bold text-[#a3a6ff]">M</span>
-          </div>
-          <span className="text-xl font-semibold tracking-tight">Mastery Coach</span>
+          <span
+            className="flex h-9 w-9 items-center justify-center rounded-lg"
+            style={{
+              background:
+                "color-mix(in oklch, var(--color-primary) 12%, transparent)",
+            }}
+          >
+            <BrandIcon
+              className="h-4 w-4"
+              style={{ color: "var(--color-primary)" }}
+              strokeWidth={1.75}
+            />
+          </span>
+          <span className="text-xl font-semibold tracking-tight text-text-primary">
+            {brand.name}
+          </span>
         </Link>
         <Link
-          href="/decoded"
-          className="rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-5 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity"
+          href="/login"
+          className="rounded-lg px-5 py-2 text-sm font-medium text-text-inverse transition-opacity hover:opacity-90"
+          style={{ background: "var(--color-primary)" }}
         >
           Get Started
         </Link>
@@ -41,14 +73,26 @@ export default function LegalLayout({
       <footer className="relative bg-surface-50 px-6 py-8 lg:px-12">
         <div className="mx-auto flex max-w-3xl flex-col items-center justify-between gap-4 sm:flex-row">
           <p className="text-sm text-text-muted">
-            © {new Date().getFullYear()} MasteryTV LLC. All rights reserved.
+            © {year} {contact.entity}. All rights reserved.
           </p>
           <div className="flex gap-6">
-            <Link href="/privacy" className="text-sm text-text-secondary hover:text-text-primary transition-colors">
+            <Link
+              href="/privacy"
+              className="text-sm text-text-secondary transition-colors hover:text-text-primary"
+            >
               Privacy Policy
             </Link>
-            <Link href="/terms" className="text-sm text-text-secondary hover:text-text-primary transition-colors">
+            <Link
+              href="/terms"
+              className="text-sm text-text-secondary transition-colors hover:text-text-primary"
+            >
               Terms of Service
+            </Link>
+            <Link
+              href="/disclaimer"
+              className="text-sm text-text-secondary transition-colors hover:text-text-primary"
+            >
+              Disclaimer
             </Link>
           </div>
         </div>

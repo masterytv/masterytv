@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Loader2, ArrowRight, Eye, EyeOff, User, Mail, Check, Heart, Fingerprint } from "lucide-react";
 import { FloatingThemeToggle } from "@/components/floating-theme-toggle";
 import type { BrandId } from "@/lib/platform/brand";
+import { LEGAL_VERSION } from "@/lib/platform/legal";
 
 /**
  * LoginPanel — the clean, brand-aware auth entry (no marketing).
@@ -54,6 +55,9 @@ export default function LoginPanel({
   const [error, setError] = useState<string | null>(null);
   const [accountExists, setAccountExists] = useState(false);
   const [confirmationSent, setConfirmationSent] = useState(false);
+  // E15.5 — signup is gated on accepting the legal docs. We record the accepted
+  // version so a consent record maps to a specific published revision.
+  const [acceptedLegal, setAcceptedLegal] = useState(false);
 
   const supabase = createClient();
 
@@ -80,11 +84,23 @@ export default function LoginPanel({
         return;
       }
 
+      if (!acceptedLegal) {
+        setError("Please agree to the Terms, Privacy Policy, and Disclaimer to continue.");
+        setLoading(false);
+        return;
+      }
+
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          data: { display_name: name || undefined, full_name: name || undefined },
+          data: {
+            display_name: name || undefined,
+            full_name: name || undefined,
+            // Consent record: which legal revision the user accepted, and when.
+            legal_accepted_at: new Date().toISOString(),
+            legal_version: LEGAL_VERSION,
+          },
           emailRedirectTo: callbackUrl(window.location.origin),
         },
       });
@@ -178,6 +194,17 @@ export default function LoginPanel({
   }
 
   async function handleGoogleLogin() {
+    // E15.5 — gate Google *sign-up* on accepting the legal docs. Sign-in is not
+    // gated (existing users already accepted). We can't distinguish signup from
+    // signin inside the OAuth callback, so we stash the accepted version in a
+    // short-lived cookie that /auth/callback records onto the user.
+    if (mode === "signup") {
+      if (!acceptedLegal) {
+        setError("Please agree to the Terms, Privacy Policy, and Disclaimer to continue.");
+        return;
+      }
+      document.cookie = `legal_ack=${LEGAL_VERSION}; path=/; max-age=600; samesite=lax`;
+    }
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: callbackUrl(window.location.origin) },
@@ -326,12 +353,39 @@ export default function LoginPanel({
                   </button>
                 </div>
 
+                {mode === "signup" && (
+                  <label className="flex cursor-pointer items-start gap-2.5 pt-1 text-xs text-text-secondary">
+                    <input
+                      type="checkbox"
+                      checked={acceptedLegal}
+                      onChange={(e) => setAcceptedLegal(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 shrink-0 rounded"
+                      style={{ accentColor: "var(--color-primary)" }}
+                    />
+                    <span>
+                      I agree to the{" "}
+                      <a href="/terms" target="_blank" rel="noopener noreferrer" className="font-medium underline underline-offset-2" style={{ color: "var(--color-primary)" }}>
+                        Terms
+                      </a>
+                      ,{" "}
+                      <a href="/privacy" target="_blank" rel="noopener noreferrer" className="font-medium underline underline-offset-2" style={{ color: "var(--color-primary)" }}>
+                        Privacy Policy
+                      </a>
+                      , and{" "}
+                      <a href="/disclaimer" target="_blank" rel="noopener noreferrer" className="font-medium underline underline-offset-2" style={{ color: "var(--color-primary)" }}>
+                        AI &amp; Coaching Disclaimer
+                      </a>
+                      . This is an AI coach — not therapy or a crisis service.
+                    </span>
+                  </label>
+                )}
+
                 {error && <p className="text-xs text-danger">{error}</p>}
 
                 <button
                   type="submit"
-                  disabled={loading}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-text-inverse transition-opacity hover:opacity-90 disabled:opacity-50"
+                  disabled={loading || (mode === "signup" && !acceptedLegal)}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-text-inverse transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ background: "var(--color-primary)" }}
                 >
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <>{mode === "signup" ? "Create account" : "Sign in"}<ArrowRight className="h-4 w-4" /></>}
