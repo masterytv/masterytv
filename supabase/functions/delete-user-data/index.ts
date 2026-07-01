@@ -207,6 +207,20 @@ Deno.serve(async (req: Request) => {
     const results: Record<string, number> = {};
 
     // ── 5. Detach the shared spine (preserve the partner; unblock report/user deletes) ──
+    // Capture the engagements the leaver belongs to BEFORE removing their
+    // participant, so we can tombstone the ones a partner still occupies (§6.5).
+    const { data: myEngRows } = await supabase
+      .from("participant")
+      .select("engagement_id")
+      .eq("user_id", userId);
+    const myEngagementIds = [
+      ...new Set(
+        (myEngRows ?? [])
+          .map((r: { engagement_id: string | null }) => r.engagement_id)
+          .filter((id: string | null): id is string => !!id),
+      ),
+    ];
+
     // Null the leaving user's references on any shared engagement so it survives
     // for the partner and the users delete isn't FK-blocked.
     await supabase.from("engagement").update({ created_by: null }).eq("created_by", userId);
@@ -232,6 +246,38 @@ Deno.serve(async (req: Request) => {
       .delete({ count: "exact" })
       .or(`inviter_id.eq.${userId},recipient_id.eq.${userId}`);
     results["decoded_invites"] = invitesCount ?? 0;
+
+    // ── 6.5. Tombstone shared engagements a partner still occupies ──
+    // The partner's participant + conversations are preserved (§3), but with the
+    // leaver's participant row now gone the dyad would silently vanish from the
+    // partner's dashboard. Leave a PII-FREE marker — the FACT a partner left plus
+    // a timestamp, and NOTHING about who they were — so the survivor sees a
+    // "your partner left" notice and can reconnect. Read by getRelationships()
+    // (partnerDeparted); cleared when the survivor dismisses it.
+    let engagementsTombstoned = 0;
+    for (const engId of myEngagementIds) {
+      const { count: remaining } = await supabase
+        .from("participant")
+        .select("id", { count: "exact", head: true })
+        .eq("engagement_id", engId);
+      if ((remaining ?? 0) === 0) continue; // nobody left to see it
+
+      const { data: engRow } = await supabase
+        .from("engagement")
+        .select("metadata")
+        .eq("id", engId)
+        .single();
+      const meta = (engRow?.metadata ?? {}) as Record<string, unknown>;
+      const { error: tombErr } = await supabase
+        .from("engagement")
+        .update({
+          status: "ended",
+          metadata: { ...meta, partner_departed: true, partner_departed_at: new Date().toISOString() },
+        })
+        .eq("id", engId);
+      if (!tombErr) engagementsTombstoned++;
+    }
+    results["engagements_tombstoned"] = engagementsTombstoned;
 
     // ── 7. Delete the user's own content (leaf → root) ──
     for (const table of USER_DATA_TABLES) {
