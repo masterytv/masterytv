@@ -72,6 +72,17 @@ function CoachAvatar() {
   return <div className="chat-avatar chat-avatar-coach">{initial}</div>;
 }
 
+// Hours until the daily free-tier reset (UTC midnight) — mirrors the edge fn's
+// calc so we can show the upgrade card the instant the last message is used,
+// without waiting for the wall's server-sent `reset_hours`.
+function hoursUntilReset(): number {
+  const now = new Date();
+  const reset = new Date(now);
+  reset.setUTCDate(reset.getUTCDate() + 1);
+  reset.setUTCHours(0, 0, 0, 0);
+  return Math.max(1, Math.ceil((reset.getTime() - now.getTime()) / 3_600_000));
+}
+
 // ─── FREE-TIER LIMIT NOTICE ─────────────────────────────────────────────
 // A distinct SYSTEM card — deliberately NOT a coach bubble and with no coach
 // avatar. Warm and continuity-first ("your conversation is saved"), and it never
@@ -358,6 +369,12 @@ export default function ChatWindow({
     }
   }, [input]);
 
+  // Free-tier limit display. Show the upgrade CARD the moment the last free message
+  // is used (remainingToday === 0) — not only after the user wastes another send that
+  // hits the wall (limitInfo). The chip is reserved for exactly 1 left.
+  const atLimit = Boolean(limitInfo) || remainingToday === 0;
+  const resetHours = limitInfo?.resetHours ?? hoursUntilReset();
+
   return (
     <div className="chat-window" onClick={handleStarterClick}>
       {/* Messages area */}
@@ -394,16 +411,15 @@ export default function ChatWindow({
             </AnimatePresence>
           </>
         )}
-        {/* Low-balance heads-up — in the conversation flow (right after the coach's
-            reply), visible but gentle, so the daily cap is never a surprise. */}
-        {!limitInfo && !isLoading && (remainingToday === 1 || remainingToday === 0) && (
+        {/* Low-balance heads-up — a gentle chip at exactly 1 left. At 0 (last free
+            message used) we show the upgrade card right here instead, so the user
+            never has to waste a question hitting the wall to reach the CTA. */}
+        {!atLimit && !isLoading && remainingToday === 1 && (
           <div className="chat-heads-up" role="status">
-            {remainingToday === 1
-              ? "1 message left today on your free plan"
-              : "That was your last free message for today"}
+            1 message left today on your free plan
           </div>
         )}
-        {limitInfo && <LimitNotice resetHours={limitInfo.resetHours} />}
+        {atLimit && <LimitNotice resetHours={resetHours} />}
         <div ref={messagesEndRef} />
       </div>
 
@@ -418,13 +434,13 @@ export default function ChatWindow({
             placeholder="Tell your coach what's on your mind..."
             className="chat-input"
             rows={1}
-            disabled={isLoading}
+            disabled={isLoading || atLimit}
             maxLength={5000}
           />
           <button
             type="submit"
             className="chat-send-btn"
-            disabled={!input.trim() || isLoading}
+            disabled={!input.trim() || isLoading || atLimit}
             aria-label="Send message"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
