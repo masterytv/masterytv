@@ -394,19 +394,21 @@ export default function ChatWindow({
             </AnimatePresence>
           </>
         )}
+        {/* Low-balance heads-up — in the conversation flow (right after the coach's
+            reply), visible but gentle, so the daily cap is never a surprise. */}
+        {!limitInfo && !isLoading && (remainingToday === 1 || remainingToday === 0) && (
+          <div className="chat-heads-up" role="status">
+            {remainingToday === 1
+              ? "1 message left today on your free plan"
+              : "That was your last free message for today"}
+          </div>
+        )}
         {limitInfo && <LimitNotice resetHours={limitInfo.resetHours} />}
         <div ref={messagesEndRef} />
       </div>
 
       {/* Input area */}
       <form className="chat-input-area" onSubmit={handleSubmit}>
-        {!limitInfo && (remainingToday === 1 || remainingToday === 0) && (
-          <p className="chat-heads-up" role="status">
-            {remainingToday === 1
-              ? "1 message left today on your free plan."
-              : "That was your last free message for today."}
-          </p>
-        )}
         <div className="chat-input-wrapper">
           <textarea
             ref={inputRef}
