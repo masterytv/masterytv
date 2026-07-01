@@ -97,6 +97,8 @@ Acute grief / indirect low-confidence distress is **logged but not emailed** (ad
 
 ## Part B — Automated Test Harness
 
+> **STATUS: BUILT 2026-07-01.** `scripts/coach-lab/`: `lib.mjs` (mirrors the deployed relationship system prompt + multi-turn model calls + Haiku LLM-judge), `scenarios.mjs` (8 scenarios: stance / boundary / safety / control, tagged hard vs soft), `assertions.mjs` (deterministic checks), `test.mjs` (runner). Safety scenarios mirror prod by running the real Tier-1 detector and short-circuiting to the canned resource reply. `node scripts/coach-lab/test.mjs` = **GATE PASSED** (all hard green; 2 advisory soft warns); `--judge` scored the deployed persona 5/5 on the stance rubric; `--both` adds a gpt-4o-mini cross-model diff; exits non-zero on any hard failure (usable as a pre-deploy gate). Snapshots are gitignored (LLM output is non-deterministic).
+
 Goal: convert `scripts/coach-lab/run.mjs` (today an **eyeball A/B tool** — no assertions) into a repeatable suite that gates deploys and guards the EFT stance + the safety kernel. Covers the ~75% that's automatable; the ~25% (clinical/"feel") stays a manual founder read.
 
 ### B.1 Layer 1 — Safety unit battery (Deno, free, instant, deterministic)
