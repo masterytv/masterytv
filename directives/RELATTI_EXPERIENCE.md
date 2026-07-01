@@ -149,6 +149,7 @@ This is the worst offender and the highest emotional-stakes moment.
   6. ⭐ **Relational interpretation per section (founder, 2026-06-26):** every section carries a **"What This Means for You, Their Partner"** sub-block that translates this person's result — and, once shared, the partner's — into *what it means for the two of you together*. The profile reads as dyad-interpretive, not two solo reports. Governed by consent (type + attachment only); **private coaching is never surfaced.** State the privacy rule plainly in the share UI.
   7. **Rename:** this is the **"relationship profile,"** never "report" / "assessment" / "Decoded."
   - Personalize the opener's voice per §4 (leveraging the *existing* personality voice).
+  - ✅ **Retake (built 2026-06-30):** a confirm-gated **"Retake the assessment"** CTA at the end of the profile (`ReportViewer`, owner-only) → reuses `/assess?retake=1` (fresh assessment → supersede old → re-score → regenerate). Added because re-fielding the canonical DERS-16 invalidated stored answers; lets testers re-collect without DB surgery.
 - Principles: 1, 2, 6, 8, 9, 10.
 
 ### 5.5 Dashboard home (`RelattiDashboard.tsx`)
@@ -263,7 +264,8 @@ Default order of moves in any turn is **Validate → Reflect → (ask) Question*
 
 ### 5.8 Compatibility (`CompatibilityHub.tsx`)
 - **Current:** Decoded compatibility hub (legacy).
-- **Target:** fold into the Blueprint / dyad surface; retire the Decoded chrome. (Nav still says "Compatibility" under Relatti — should become "Blueprint.")
+- **Target:** make it relationship-native and retire the legacy Decoded chrome. **The nav label STAYS "Compatibility."** — founder decision (2026-07-01): "compatibility" is the correct, natural word for a couples product; "Blueprint" is leftover Decoded framing and reads abstract for relationships. (The shared dyad artifact at `/dashboard/blueprint` keeps its own name; the user-facing couples surface is "Compatibility." Do NOT rename it — earlier drafts of this doc proposed Compatibility→Blueprint; that is rejected.)
+- ✅ **Stale-on-retake (built 2026-06-30):** when a partner retakes, the dyad pointers follow their new report (`syncMyReportToSpine` is now latest-tracking) and the couples report self-flags via `decoded_invites.compatibility_generated_at` (stamped by the `decoded-compatibility-report` edge fn). The viewer shows a banner naming who retook + a manual **Regenerate** (`force_regenerate`; manual so a retake never silently spends tokens). See `relatti-open-state` memory.
 - Principles: 1, 10.
 
 ### 5.9 Daily connection ritual (NEW — the retention spine) — **NEXT BUILD: full MVP (founder approved June 26, 2026)**
@@ -314,10 +316,10 @@ Rebuild in journey order of *emotional stakes*, worst offenders first:
 2. **The coach brain (§5.6)** — relationship first-message, the per-person voice layer (§4), fix the "Decoded" deep-link + coaching-question vocabulary. *Highest emotional stakes.*
 3. **Dashboard + assessment copy (§5.3, §5.5)** — reframe the archetype card, the invite-partner moment, the "What You'll Explore" grid.
 4. **The daily connection ritual (§5.9)** — the new retention spine. *Biggest new bet; do after 1–3 prove the reframe.*
-5. **Blueprint as centerpiece + retire Compatibility chrome (§5.7–5.8).**
+5. **Blueprint as centerpiece (§5.7)** + modernize the Compatibility surface (§5.8) — **keep the "Compatibility" name** (founder, 2026-07-01; do not rename to "Blueprint").
 6. **Proactive layer (§5.10 / E6)** — gated on the founder's SMS-provider decision.
 
-**Quick, do-regardless leaks** (can land immediately, independent of the larger overhaul): the hardcoded `"my Decoded report"` deep-link string, the ✦ sparkle in `resend.ts`, and the nav "Compatibility"→"Blueprint" label under Relatti.
+**Quick, do-regardless leaks** (can land immediately, independent of the larger overhaul): the hardcoded `"my Decoded report"` deep-link string. (The ✦ sparkle in `resend.ts` was removed 2026-07-01. The earlier "Compatibility"→"Blueprint" nav rename is **rejected** — "Compatibility" is the correct word for a couples product.)
 
 **Explicitly NOT in V1:** human-coach marketplace, the career/white-label voice layers, gamification beyond a forgiving shared streak, video.
 
