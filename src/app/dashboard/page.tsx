@@ -200,7 +200,7 @@ export default async function DashboardPage({
 
     // Consent control + ritual hang off the primary (most active) relationship.
     const primaryEngagementId = relationships[0]?.engagementId ?? dyad?.engagementId ?? null;
-    const consent = primaryEngagementId ? await getDyadConsent(supabase, primaryEngagementId) : null;
+    const consent = primaryEngagementId ? await getDyadConsent(supabase, primaryEngagementId, user.id) : null;
     // Daily connection ritual (§5.9) — only meaningful once they have a profile.
     const ritual =
       state === "completed" ? await getTodaysRitual(supabase, user.id, dyad) : null;

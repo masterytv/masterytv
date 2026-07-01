@@ -165,7 +165,14 @@ export default function RelattiDashboard({ userName, state, reportId, relationsh
 
         {/* PB2.3: consent control — only when the dyad has an invite to govern */}
         {consent && (
-          <ConsentControl inviteId={consent.inviteId} currentLevel={consent.shareLevel} />
+          <ConsentControl
+            inviteId={consent.inviteId}
+            engagementId={consent.engagementId}
+            partnerName={consent.partnerName}
+            coachLevel={consent.coachLevel}
+            partnerLevel={consent.partnerLevel}
+            pending={consent.pending}
+          />
         )}
 
         <p className="mt-8 flex items-center justify-center gap-1.5 text-xs text-text-muted">
