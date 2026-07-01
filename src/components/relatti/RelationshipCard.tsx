@@ -77,7 +77,9 @@ function PersonRow({ person, joined }: { person: PersonStatus; joined: boolean }
       {(joined || person.isYou) && (
         <div className="mt-2.5 flex flex-wrap gap-1.5">
           <ShareBadge on={person.sharedWithPartner} label="With partner" />
-          <ShareBadge on={person.sharedWithCoach} label="With coach" />
+          {/* Coach visibility is a private, unilateral choice — only ever shown on
+              your own row, never on your partner's. */}
+          {person.isYou && <ShareBadge on={person.sharedWithCoach} label="With coach" />}
         </div>
       )}
     </div>

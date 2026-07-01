@@ -225,7 +225,11 @@ export async function getRelationships(
         isYou: false,
         joined: partnerJoined,
         assessment: partnerAssessment,
-        sharedWithCoach: isSharing(partner.coach_share_level),
+        // The coach axis (coach_share_level) is private + unilateral — how much of
+        // their OWN profile the partner lets THEIR coach use. It's not the user's to
+        // see, so we never surface it AND never ship the real value to the client.
+        // Only "With partner" (the negotiated, mutually-agreed axis) belongs here.
+        sharedWithCoach: false,
         sharedWithPartner: isSharing(partner.share_level),
       },
       hasBlueprint: hasBlueprintSet.has(eng.id),
