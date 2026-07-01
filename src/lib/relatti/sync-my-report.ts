@@ -49,6 +49,28 @@ export async function syncMyReportToSpine(
       admin.from("decoded_invites").update({ recipient_report_id: reportId })
         .eq("recipient_id", userId).or(`recipient_report_id.is.null,recipient_report_id.neq.${reportId}`),
     ]);
+
+    // Un-stick the invitee. The claim (claimPendingInvites) only advances an
+    // invite 'pending' → 'completed' on the FIRST claim *and* only if the
+    // recipient already had a report — so a recipient who signed up before
+    // finishing their assessment leaves the invite frozen at 'pending', which
+    // freezes their partner participant at 'invited' and hides the dyad from
+    // their dashboard ("Invite your partner"). We're here because this user now
+    // HAS a report (reportId is non-null), so any still-pending invite where
+    // they're the recipient is really complete: flip it and re-run the spine
+    // sync, which promotes their participant/engagement invited → active.
+    const { data: promoted } = await admin
+      .from("decoded_invites")
+      .update({ status: "completed", completed_at: new Date().toISOString() })
+      .eq("recipient_id", userId)
+      .eq("status", "pending")
+      .neq("recipient_email", "broadcast")
+      .select("id");
+
+    for (const inv of promoted ?? []) {
+      const { error } = await admin.rpc("relatti_sync_invite", { p_invite_id: inv.id });
+      if (error) console.error("[sync-my-report] relatti_sync_invite failed:", error.message);
+    }
   } catch (err) {
     console.error("[sync-my-report] sync error:", err);
   }
