@@ -28,7 +28,7 @@ import {
 } from "../_shared/channel-router.ts";
 import { runCrisisDetection } from "../_shared/crisis-detection.ts";
 import { postProcess } from "../_shared/post-processor.ts";
-import { runSafetySweep } from "../_shared/safety-sweep.ts";
+import { runSafetySweep, sendSafetyEscalationEmail } from "../_shared/safety-sweep.ts";
 import type { DebugSummary, PipelineTimeline } from "../_shared/debug-types.ts";
 
 const FUNCTION_NAME = "coach";
@@ -129,10 +129,29 @@ Deno.serve(async (req: Request) => {
 
     // ── 2.6 Crisis Detection (shared module) ──
     const crisisStart = debugMode ? performance.now() : 0;
-    const crisis = await runCrisisDetection(supabase, userId, message);
+    const crisis = await runCrisisDetection(supabase, userId, message, {
+      conversationId: (body.conversation_id as string | null) ?? null,
+      engagementId,
+    });
     const crisisMs = debugMode ? performance.now() - crisisStart : 0;
 
     if (crisis.isCrisis && crisis.response) {
+      // E15.4 — Tier 1 high-severity → founder safety alert (async, non-blocking so
+      // the crisis response still streams immediately). Deduped in runCrisisDetection.
+      if (crisis.escalate) {
+        EdgeRuntime.waitUntil(
+          sendSafetyEscalationEmail(supabase, userId, {
+            source: "tier1_keyword",
+            risk: crisis.category === "abuse" ? "abuse" : "self_harm",
+            severity: "high",
+            subject_scope: "self",
+            coach_handled: true,
+            rationale: `Tier-1 keyword hard-stop — matched: ${(crisis.matchedKeywords ?? []).join(", ")}`,
+            excerpt: message.slice(0, 200),
+          }),
+        );
+      }
+
       const encoder = new TextEncoder();
       const stream = new ReadableStream({
         start(controller) {

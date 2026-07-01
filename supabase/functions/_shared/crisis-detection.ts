@@ -208,19 +208,62 @@ export async function logCrisisFlag(
   }
 }
 
+// Tier 1 escalation dedup window — mirrors safety-sweep's DEDUP_WINDOW_MS so the two
+// tiers suppress each other's duplicate founder alerts for the same (user,conv,category).
+const ESCALATION_DEDUP_MS = 12 * 60 * 60 * 1000;
+
+/**
+ * Has a high-severity, unreviewed crisis_flag for this (user, conversation, category)
+ * already been logged within the dedup window? If so, we've already alerted — don't
+ * re-email. Queried BEFORE inserting the current flag so it only sees PRIOR flags.
+ * On query failure we return false (escalate anyway — a double alert beats a missed one).
+ */
+async function hasRecentHighFlag(
+  supabase: ReturnType<typeof createSupabaseClient>,
+  userId: string,
+  conversationId: string | null,
+  category: CrisisCategory
+): Promise<boolean> {
+  try {
+    const since = new Date(Date.now() - ESCALATION_DEDUP_MS).toISOString();
+    let q = supabase
+      .from("crisis_flags")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("category", category)
+      .eq("severity", "high")
+      .eq("reviewed", false)
+      .gte("created_at", since);
+    q = conversationId
+      ? q.eq("conversation_id", conversationId)
+      : q.is("conversation_id", null);
+    const { data } = await q.limit(1).maybeSingle();
+    return !!data;
+  } catch (e) {
+    console.warn("[crisis] escalation dedup check failed, will escalate:", (e as Error).message);
+    return false;
+  }
+}
+
 /**
  * Full crisis detection pipeline.
  * Combines Layer 1 (keyword) + Layer 2 (LLM context check).
- * Returns { isCrisis, response } if crisis detected, or { isCrisis: false } if safe.
+ * Returns { isCrisis, response, escalate } if crisis detected, or { isCrisis: false }.
+ * `escalate` is true when a NEW high-severity event should trigger the founder alert
+ * email (E15.4); the caller dispatches it (web via waitUntil, other channels awaited).
  */
 export async function runCrisisDetection(
   supabase: ReturnType<typeof createSupabaseClient>,
   userId: string,
-  message: string
+  message: string,
+  ctx: { conversationId?: string | null; engagementId?: string | null } = {}
 ): Promise<{
   isCrisis: boolean;
   response?: string;
   severity?: "high" | "moderate";
+  category?: CrisisCategory;
+  matchedKeywords?: string[];
+  escalate?: boolean;
 }> {
   const keywords = detectCrisisKeywords(message);
 
@@ -241,7 +284,17 @@ export async function runCrisisDetection(
     confirmed = await confirmCrisisWithLLM(message, keywords.matchedKeywords);
   }
 
+  const conversationId = ctx.conversationId ?? null;
+
   if (confirmed) {
+    // E15.4 — high-severity Tier 1 events escalate to the founder alert email
+    // (self-harm high, or abuse which is always high). Moderate self-harm is flagged
+    // but not emailed, matching Tier 2. Deduped so a burst doesn't flood the inbox.
+    let escalate = severity === "high";
+    if (escalate) {
+      escalate = !(await hasRecentHighFlag(supabase, userId, conversationId, keywords.category));
+    }
+
     await logCrisisFlag(
       supabase,
       userId,
@@ -250,7 +303,13 @@ export async function runCrisisDetection(
       true,
       message,
       keywords.category,
-      { source: "keyword", subjectScope: "self" }
+      {
+        source: "keyword",
+        subjectScope: "self",
+        coachHandled: true, // the canned crisis/DV response always surfaces resources
+        conversationId,
+        engagementId: ctx.engagementId ?? null,
+      }
     );
 
     return {
@@ -260,6 +319,9 @@ export async function runCrisisDetection(
           ? buildAbuseResponse()
           : buildCrisisResponse(severity),
       severity,
+      category: keywords.category,
+      matchedKeywords: keywords.matchedKeywords,
+      escalate,
     };
   }
 
@@ -272,7 +334,12 @@ export async function runCrisisDetection(
     false,
     message,
     keywords.category,
-    { source: "keyword", subjectScope: "self" }
+    {
+      source: "keyword",
+      subjectScope: "self",
+      conversationId,
+      engagementId: ctx.engagementId ?? null,
+    }
   );
   console.log(
     `[crisis] False positive cleared by LLM: "${keywords.matchedKeywords.join(", ")}"`

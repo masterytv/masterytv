@@ -51,6 +51,15 @@ try {
   console.log("  ✗ keyword battery FAILED (gates deploy)\n");
 }
 
+// ── 1b. Partner-isolation regression guard (E15.3, offline, deterministic) ──
+console.log("── Partner-isolation guard ──");
+try {
+  execFileSync("node", [resolve(HERE, "isolation-check.mjs")], { stdio: "inherit" });
+} catch {
+  gateFails++;
+  console.log("  ✗ partner-isolation guard FAILED (gates deploy)\n");
+}
+
 // ── 2. Scenario battery ──
 for (const model of models) {
   console.log(`\n────────── SCENARIOS · model=${model}${model === GATE_MODEL ? " (GATE)" : " (advisory)"} ──────────`);

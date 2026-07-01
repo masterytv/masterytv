@@ -217,10 +217,25 @@ function parseClassification(text: string): Classification | null {
   }
 }
 
-async function escalateEmail(
+/**
+ * Tier-agnostic safety-escalation email. Used by BOTH the async Tier 2 sweep and
+ * the synchronous Tier 1 keyword hard-stop (E15.4 — Tier 1 previously never emailed).
+ * Fully non-fatal: any failure is logged and swallowed.
+ */
+export interface SafetyEscalation {
+  source: "tier1_keyword" | "llm_sweep";
+  risk: "none" | "self_harm" | "abuse" | "acute_distress";
+  severity: "none" | "low" | "moderate" | "high";
+  subject_scope: "self" | "partner" | "third_party";
+  coach_handled: boolean;
+  rationale: string;
+  excerpt: string;
+}
+
+export async function sendSafetyEscalationEmail(
   supabase: ReturnType<typeof createSupabaseClient>,
   userId: string,
-  info: Classification & { excerpt: string },
+  info: SafetyEscalation,
 ): Promise<void> {
   try {
     const { data: u } = await supabase
@@ -231,8 +246,12 @@ async function escalateEmail(
     const who = (u as { name?: string; email?: string } | null)?.name ||
       (u as { email?: string } | null)?.email || userId;
 
+    const tierLabel = info.source === "tier1_keyword"
+      ? "Tier 1 (synchronous keyword hard-stop)"
+      : "Tier 2 (async LLM sweep)";
     const subject = `[Relatti safety] ${info.risk} (${info.severity}) — about ${info.subject_scope}`;
     const html = `<h2>Safety flag — review</h2>
+<p><strong>Detected by:</strong> ${tierLabel}</p>
 <p><strong>Risk:</strong> ${info.risk} &middot; <strong>Severity:</strong> ${info.severity} &middot; <strong>About:</strong> ${info.subject_scope}</p>
 <p><strong>Coach surfaced resources:</strong> ${info.coach_handled ? "yes" : "NO — check the reply"}</p>
 <p><strong>User:</strong> ${who} (${userId})</p>
@@ -242,8 +261,25 @@ async function escalateEmail(
 <p style="color:#666">Internal audit alert only. The user was routed to crisis resources in-product; there is no promised human follow-up. Review in the admin crisis queue (/admin/crisis).</p>`;
 
     await sendEmail({ to: ESCALATION_TO, subject, html });
-    console.log("[safety-sweep] escalation emailed to", ESCALATION_TO);
+    console.log("[safety-escalation] emailed to", ESCALATION_TO, "source:", info.source);
   } catch (e) {
-    console.error("[safety-sweep] escalation email failed:", (e as Error).message);
+    console.error("[safety-escalation] email failed:", (e as Error).message);
   }
+}
+
+// Tier 2 adapter — kept so the sweep call site reads unchanged.
+async function escalateEmail(
+  supabase: ReturnType<typeof createSupabaseClient>,
+  userId: string,
+  info: Classification & { excerpt: string },
+): Promise<void> {
+  await sendSafetyEscalationEmail(supabase, userId, {
+    source: "llm_sweep",
+    risk: info.risk,
+    severity: info.severity,
+    subject_scope: info.subject_scope,
+    coach_handled: info.coach_handled,
+    rationale: info.rationale,
+    excerpt: info.excerpt,
+  });
 }
