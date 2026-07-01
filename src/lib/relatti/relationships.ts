@@ -42,14 +42,13 @@ export interface Relationship {
   streak: DyadStreak | null;
 }
 
-function shareFlags(level: string | null | undefined): {
-  coach: boolean;
-  partner: boolean;
-} {
-  // share_level governs visibility: 'full' and 'type_compatibility' both expose
-  // type + compatibility to the coach and the partner; 'none' exposes nothing.
-  const sharing = level === "full" || level === "type_compatibility";
-  return { coach: sharing, partner: sharing };
+// A level exposes the profile at 'full' or 'type_compatibility'; 'none' exposes
+// nothing. The two axes are independent: the coach badge reads the per-person
+// coach axis (coach_share_level), the partner badge reads the negotiated partner
+// axis (share_level). (They used to derive from one shared value — that made a
+// user who set their coach to Private still show "With coach".)
+function isSharing(level: string | null | undefined): boolean {
+  return level === "full" || level === "type_compatibility";
 }
 
 interface ParticipantRow {
@@ -58,6 +57,7 @@ interface ParticipantRow {
   invited_email: string | null;
   role: string;
   share_level: string | null;
+  coach_share_level: string | null;
   report_id: string | null;
 }
 
@@ -109,7 +109,7 @@ export async function getRelationships(
   const [{ data: allParts }, { data: invites }] = await Promise.all([
     supabase
       .from("participant")
-      .select("engagement_id, user_id, invited_email, role, share_level, report_id")
+      .select("engagement_id, user_id, invited_email, role, share_level, coach_share_level, report_id")
       .in("engagement_id", engagementIds),
     inviteIds.length > 0
       ? supabase
@@ -153,7 +153,6 @@ export async function getRelationships(
     const partnerDeparted = meta.partner_departed === true && meta.partner_departed_dismissed !== true;
     if (!partner) {
       if (partnerDeparted) {
-        const myShare = shareFlags(mine.share_level);
         relationships.push({
           engagementId: eng.id,
           status: eng.status,
@@ -164,8 +163,8 @@ export async function getRelationships(
             isYou: true,
             joined: true,
             assessment: myState,
-            sharedWithCoach: myShare.coach,
-            sharedWithPartner: myShare.partner,
+            sharedWithCoach: isSharing(mine.coach_share_level),
+            sharedWithPartner: isSharing(mine.share_level),
           },
           partner: {
             name: "your partner",
@@ -208,9 +207,6 @@ export async function getRelationships(
         ? "in_progress"
         : "not_started";
 
-    const myShare = shareFlags(mine.share_level);
-    const partnerShare = shareFlags(partner.share_level);
-
     relationships.push({
       engagementId: eng.id,
       status: eng.status,
@@ -221,16 +217,16 @@ export async function getRelationships(
         isYou: true,
         joined: true,
         assessment: myState,
-        sharedWithCoach: myShare.coach,
-        sharedWithPartner: myShare.partner,
+        sharedWithCoach: isSharing(mine.coach_share_level),
+        sharedWithPartner: isSharing(mine.share_level),
       },
       partner: {
         name: partnerName,
         isYou: false,
         joined: partnerJoined,
         assessment: partnerAssessment,
-        sharedWithCoach: partnerShare.coach,
-        sharedWithPartner: partnerShare.partner,
+        sharedWithCoach: isSharing(partner.coach_share_level),
+        sharedWithPartner: isSharing(partner.share_level),
       },
       hasBlueprint: hasBlueprintSet.has(eng.id),
       streak: await getDyadStreak(supabase, eng.id, userId),
