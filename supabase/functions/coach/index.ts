@@ -75,22 +75,9 @@ Deno.serve(async (req: Request) => {
     const engagementId = (body.engagement_id as string | null) ?? null;
     // E9: optional coach mode (e.g. 'deescalate' = fight de-escalator overlay).
     const mode = (body.mode as string | null) ?? null;
-    // Program/vertical (e.g. 'relationship') — selects the coach persona so every
-    // Relatti user gets a relationship coach, solo or dyad. Absent → executive.
-    const program = (body.program as string | null) ?? null;
-    // E14: the relationship coach should reply short and conversational (reflect +
-    // ask, not essays). A tighter token cap backstops the persona's length rules.
-    const isRelationship = (program ?? "").toLowerCase() === "relationship";
-    const coachMaxTokens = isRelationship ? 700 : 1024;
-    // The relationship coach already has the user's full Decoded profile injected
-    // into the system prompt (prompt-assembler Layer 4.5) and must never quote raw
-    // scores (RELATTI_EXPERIENCE §5.6), so it does NOT get lookup_assessment. Leaving
-    // it in made the model preamble "let me pull up your profile" and tool-fetch the
-    // profile every turn instead of reading what's already in context. The executive
-    // coach keeps the full deep-lookup tool set.
-    const coachTools = isRelationship
-      ? [SEARCH_FACTS_TOOL, LOOKUP_RELATIONSHIP_TOOL]
-      : [SEARCH_FACTS_TOOL, LOOKUP_ASSESSMENT_TOOL, LOOKUP_RELATIONSHIP_TOOL];
+    // Program/vertical hint from the client (e.g. 'relationship'). A HINT only —
+    // resolved server-side in §2.4 below; never trusted as-is.
+    const clientProgram = (body.program as string | null) ?? null;
     // Sprint 0.4: Deep link context from report CTAs
     const context = body.context as { type?: string; section?: string; topic?: string; inviteId?: string } | undefined;
 
@@ -119,6 +106,39 @@ Deno.serve(async (req: Request) => {
 
     // Pipeline timing (only tracked when debug mode is on)
     const pipelineStart = debugMode ? performance.now() : 0;
+
+    // ── 2.4 Server-side program + engagement resolution (P1 security fix) ──
+    // `program` used to be trusted straight off the request body: omitting it
+    // silently gave a Relatti user the EXECUTIVE persona, business guardrails,
+    // and lookup_assessment (fail-open — COACH_ARCHITECTURE_AUDIT §2.2). And
+    // `engagement_id` was written under the service role with no membership
+    // check. Now: an engagement must belong to the caller (403 otherwise) and
+    // its program is authoritative; with no usable hint the spine decides
+    // before any executive fallback. Full pack resolution arrives with the
+    // Coach Pack refactor (audit Phase 4).
+    const resolved = await resolveProgram(supabase, userId, clientProgram, engagementId);
+    if (!resolved.ok) {
+      return errorResponse(
+        "FORBIDDEN",
+        "You are not a participant of this engagement",
+        403,
+        corsHeaders,
+      );
+    }
+    const program = resolved.program;
+    // E14: the relationship coach should reply short and conversational (reflect +
+    // ask, not essays). A tighter token cap backstops the persona's length rules.
+    const isRelationship = (program ?? "").toLowerCase() === "relationship";
+    const coachMaxTokens = isRelationship ? 700 : 1024;
+    // The relationship coach already has the user's full Decoded profile injected
+    // into the system prompt (prompt-assembler Layer 4.5) and must never quote raw
+    // scores (RELATTI_EXPERIENCE §5.6), so it does NOT get lookup_assessment. Leaving
+    // it in made the model preamble "let me pull up your profile" and tool-fetch the
+    // profile every turn instead of reading what's already in context. The executive
+    // coach keeps the full deep-lookup tool set.
+    const coachTools = isRelationship
+      ? [SEARCH_FACTS_TOOL, LOOKUP_RELATIONSHIP_TOOL]
+      : [SEARCH_FACTS_TOOL, LOOKUP_ASSESSMENT_TOOL, LOOKUP_RELATIONSHIP_TOOL];
 
     // ── 2.5 Free tier message limit check (S5.9) ──
     // Sprint 0.4: Deep link messages from report CTAs get bonus allowance
@@ -773,6 +793,65 @@ Deno.serve(async (req: Request) => {
     );
   }
 });
+
+// ─── PROGRAM / ENGAGEMENT RESOLUTION (P1 fail-open fix) ────────────────
+
+// Program hints the client may name directly. 'general' = the executive coach
+// (the MasteryTV brand sends it explicitly, so Decoded users keep their coach).
+// Anything else — including a missing hint — falls through to the spine check,
+// so a stripped/forged body can't silently select the executive persona for a
+// Relatti user.
+const KNOWN_PROGRAM_HINTS = new Set(["relationship", "general"]);
+
+async function resolveProgram(
+  supabase: ReturnType<typeof createSupabaseClient>,
+  userId: string,
+  clientProgram: string | null,
+  engagementId: string | null,
+): Promise<{ ok: false } | { ok: true; program: string | null }> {
+  // 1. An engagement is authoritative — but only if the caller belongs to it.
+  //    (Also stops service-role writes to messages/engagement_activity being
+  //    attributed to an engagement the caller isn't part of.)
+  if (engagementId) {
+    const { data: membership } = await supabase
+      .from("participant")
+      .select("id, engagement:engagement_id(program:program_id(slug))")
+      .eq("engagement_id", engagementId)
+      .eq("user_id", userId)
+      .limit(1)
+      .maybeSingle();
+    if (!membership) return { ok: false };
+    const slug = (membership as {
+      engagement?: { program?: { slug?: string } | null } | null;
+    }).engagement?.program?.slug;
+    // Every engagement today is a relationship dyad; default that way if the
+    // nested join comes back thin.
+    return { ok: true, program: slug ?? "relationship" };
+  }
+
+  // 2. A recognized client hint is honored as sent.
+  const hint = (clientProgram ?? "").toLowerCase();
+  if (KNOWN_PROGRAM_HINTS.has(hint)) {
+    return { ok: true, program: hint };
+  }
+
+  // 3. No usable hint → the spine decides. Any participant or invite row means
+  //    this user is in the relationship product; never hand them the executive
+  //    persona + business guardrails by default.
+  const { count: participantCount } = await supabase
+    .from("participant")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId);
+  if ((participantCount ?? 0) > 0) return { ok: true, program: "relationship" };
+
+  const { count: inviteCount } = await supabase
+    .from("decoded_invites")
+    .select("id", { count: "exact", head: true })
+    .or(`inviter_id.eq.${userId},recipient_id.eq.${userId}`);
+  if ((inviteCount ?? 0) > 0) return { ok: true, program: "relationship" };
+
+  return { ok: true, program: clientProgram };
+}
 
 // ─── FREE TIER LIMIT CHECK (S5.9) ──────────────────────────────────────
 
