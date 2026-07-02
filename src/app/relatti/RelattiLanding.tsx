@@ -128,7 +128,7 @@ export default function RelattiLanding({ content }: { content?: LandingContent }
         ) : (
           <div className="flex items-center gap-2 sm:gap-4">
             <Link
-              href="/login"
+              href="/login?mode=signin"
               className="rounded-lg px-3 py-2 text-sm font-medium text-text-secondary transition-colors hover:text-text-primary"
             >
               Log in

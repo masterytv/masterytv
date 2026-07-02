@@ -36,14 +36,18 @@ export default function LoginPanel({
   next,
   inviteCode,
   prefilledEmail,
+  initialMode,
 }: {
   brandId: BrandId;
   brandName: string;
+  /** Which card to open on. An explicit "Log in" click passes "signin";
+      the default stays "signup" for Get-started / invite arrivals. */
+  initialMode?: "signup" | "signin";
   next?: string;
   inviteCode?: string;
   prefilledEmail?: string;
 }) {
-  const [mode, setMode] = useState<"signup" | "signin">("signup");
+  const [mode, setMode] = useState<"signup" | "signin">(initialMode ?? "signup");
   const [name, setName] = useState("");
   const [email, setEmail] = useState(prefilledEmail ?? "");
   // When the email came from an invite, lock it so the dyad link can't be broken
