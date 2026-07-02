@@ -617,7 +617,11 @@ Deno.serve(async (req: Request) => {
 
         // ── 7. Stream complete — store, log, post-process ──
         const claudeMs = debugMode ? performance.now() - claudeStart : 0;
-        const isFallback = model.startsWith("gpt-");
+        // calculateCost's second arg means "Claude (Sonnet) rates". This used to
+        // be model.startsWith("gpt-") — a leftover from when Claude was primary —
+        // which billed GPT traffic at Sonnet rates and ALL Relatti traffic
+        // (forceClaude) at gpt-4o-mini rates (~20x under). Fixed 2026-07-02.
+        const isFallback = !model.startsWith("gpt-");
         const usage = { input_tokens: inputTokens, output_tokens: outputTokens };
         const costUsd = calculateCost(usage, isFallback);
 

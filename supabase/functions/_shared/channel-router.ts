@@ -376,13 +376,17 @@ export async function processCoachMessage(
   }
 
   // ── 7. Store coach response ──
-  const isFallback = model.startsWith("gpt-");
+  // GPT-4o-mini is primary; Claude is the fallback (anthropic.ts). A Claude
+  // model name therefore means we fell back — and calculateCost's second arg
+  // means "Claude rates". (This was inverted before 2026-07-02, mispricing
+  // cost_tracking ~20x in both directions.)
+  const isFallback = !model.startsWith("gpt-");
   const usage = { input_tokens: inputTokens, output_tokens: outputTokens };
   const costUsd = calculateCost(usage, isFallback);
 
   if (isFallback) {
     console.warn(
-      `[channel-router] ⚠️ Response served via GPT-4o fallback for user ${msg.user_id}`
+      `[channel-router] ⚠️ Response served via Claude fallback for user ${msg.user_id}`
     );
   }
 
