@@ -47,6 +47,17 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Every redirect below MUST carry the cookies accumulated on
+  // supabaseResponse (the just-refreshed auth session + the persisted brand
+  // cookie). A bare NextResponse.redirect() silently drops them — the browser
+  // keeps its EXPIRED token, so auth state flip-flops between requests
+  // ("logged in, maybe"). Same bug class as the / → /relatti rewrite fix.
+  const redirectWithCookies = (url: URL) => {
+    const res = NextResponse.redirect(url);
+    for (const c of supabaseResponse.cookies.getAll()) res.cookies.set(c);
+    return res;
+  };
+
   // PA2 + preview override: resolve the brand for this request.
   // Precedence: ?brand= override (preview on any host) > brand cookie > host.
   // The override persists via a cookie so previewing relatti on localhost/
@@ -101,36 +112,36 @@ export async function updateSession(request: NextRequest) {
     const url = request.nextUrl.clone();
     // Map /coachapp/dashboard/chat → /dashboard/chat, etc.
     url.pathname = pathname.replace("/coachapp/dashboard", "/dashboard");
-    return NextResponse.redirect(url);
+    return redirectWithCookies(url);
   }
   if (pathname.startsWith("/coachapp/login")) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
-    return NextResponse.redirect(url);
+    return redirectWithCookies(url);
   }
   // /coachapp/onboarding relocated to /onboarding (PA1). Keeps search (?redo=1).
   if (pathname.startsWith("/coachapp/onboarding")) {
     const url = request.nextUrl.clone();
     url.pathname = "/onboarding";
-    return NextResponse.redirect(url);
+    return redirectWithCookies(url);
   }
   // /coachapp/admin/* consolidated into /admin (PA1: crisis + frameworks migrated).
   if (pathname.startsWith("/coachapp/admin")) {
     const url = request.nextUrl.clone();
     url.pathname = pathname.replace("/coachapp/admin", "/admin");
-    return NextResponse.redirect(url);
+    return redirectWithCookies(url);
   }
   if (pathname === "/coachapp" || pathname === "/coachapp/") {
     const url = request.nextUrl.clone();
     url.pathname = user ? "/dashboard" : "/login";
-    return NextResponse.redirect(url);
+    return redirectWithCookies(url);
   }
 
   // Legacy: the invite landing moved off /decoded → /invite/[code].
   if (pathname.startsWith("/decoded/invite/")) {
     const url = request.nextUrl.clone();
     url.pathname = pathname.replace("/decoded/invite/", "/invite/");
-    return NextResponse.redirect(url);
+    return redirectWithCookies(url);
   }
 
   // Legacy → brand-neutral routes: the report, compatibility, types,
@@ -148,7 +159,7 @@ export async function updateSession(request: NextRequest) {
     if (pathname === from || pathname.startsWith(`${from}/`)) {
       const url = request.nextUrl.clone();
       url.pathname = to + pathname.slice(from.length);
-      return NextResponse.redirect(url);
+      return redirectWithCookies(url);
     }
   }
 
@@ -158,7 +169,7 @@ export async function updateSession(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/callback";
     url.search = `?code=${code}`;
-    return NextResponse.redirect(url);
+    return redirectWithCookies(url);
   }
 
   // ── Protected routes: require auth ──
@@ -176,14 +187,14 @@ export async function updateSession(request: NextRequest) {
     const intended = pathname + (request.nextUrl.search || "");
     url.pathname = "/login";
     url.search = `?next=${encodeURIComponent(intended)}`;
-    return NextResponse.redirect(url);
+    return redirectWithCookies(url);
   }
 
   // ── Authenticated user on auth pages → redirect to dashboard ──
   if (user && pathname === "/decoded/login") {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
-    return NextResponse.redirect(url);
+    return redirectWithCookies(url);
   }
 
   return supabaseResponse;

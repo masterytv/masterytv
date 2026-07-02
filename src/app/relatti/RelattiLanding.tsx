@@ -14,6 +14,8 @@
  */
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { RelattiMark } from "@/components/relatti/RelattiMark";
 import {
   Heart,
@@ -83,6 +85,20 @@ const DEFAULT_CONTENT: LandingContent = {
 
 export default function RelattiLanding({ content }: { content?: LandingContent }) {
   const c = content ?? DEFAULT_CONTENT;
+
+  // Auth-aware chrome: signed-in visitors get "Open dashboard" instead of
+  // signup CTAs (least-friction path back in; also an honest signed-in
+  // indicator). null = unknown (first paint) → render the logged-out pair so
+  // the marketing default is instant; a signed-in visitor sees it swap.
+  // Client-side check keeps this page statically rendered.
+  const [authed, setAuthed] = useState<boolean | null>(null);
+  useEffect(() => {
+    createClient()
+      .auth.getSession()
+      .then(({ data }) => setAuthed(!!data.session))
+      .catch(() => setAuthed(false));
+  }, []);
+
   return (
     <main className="relatti-landing min-h-screen bg-surface-0 text-text-primary font-sans">
       <FloatingThemeToggle />
@@ -98,13 +114,34 @@ export default function RelattiLanding({ content }: { content?: LandingContent }
           </span>
           <span className="font-display text-xl font-semibold tracking-tight">Relatti</span>
         </Link>
-        <Link
-          href="/assess"
-          className="rounded-lg px-5 py-2 text-sm font-medium text-text-inverse transition-opacity hover:opacity-90"
-          style={{ background: "var(--color-primary-container)" }}
-        >
-          Get started
-        </Link>
+        {authed ? (
+          <div className="flex items-center gap-4">
+            <span className="hidden text-sm text-text-muted sm:inline">You&rsquo;re signed in</span>
+            <Link
+              href="/dashboard"
+              className="rounded-lg px-5 py-2 text-sm font-medium text-text-inverse transition-opacity hover:opacity-90"
+              style={{ background: "var(--color-primary-container)" }}
+            >
+              Open dashboard
+            </Link>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 sm:gap-4">
+            <Link
+              href="/login"
+              className="rounded-lg px-3 py-2 text-sm font-medium text-text-secondary transition-colors hover:text-text-primary"
+            >
+              Log in
+            </Link>
+            <Link
+              href="/assess"
+              className="rounded-lg px-5 py-2 text-sm font-medium text-text-inverse transition-opacity hover:opacity-90"
+              style={{ background: "var(--color-primary-container)" }}
+            >
+              Get started
+            </Link>
+          </div>
+        )}
       </header>
 
       {/* ── Hero ── */}
@@ -131,11 +168,11 @@ export default function RelattiLanding({ content }: { content?: LandingContent }
 
         <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Link
-            href="/assess"
+            href={authed ? "/dashboard" : "/assess"}
             className="group inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-base font-semibold text-text-inverse shadow-card transition-transform hover:-translate-y-0.5"
             style={{ background: "var(--color-primary-container)" }}
           >
-            Take the free quiz
+            {authed ? "Pick up where you left off" : "Take the free quiz"}
             <ArrowRight className="h-4.5 w-4.5 transition-transform group-hover:translate-x-0.5" />
           </Link>
           <a
@@ -211,11 +248,11 @@ export default function RelattiLanding({ content }: { content?: LandingContent }
             coaching — and none would keep it this honest.
           </p>
           <Link
-            href="/assess"
+            href={authed ? "/dashboard" : "/assess"}
             className="mt-8 inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-base font-semibold text-text-inverse transition-transform hover:-translate-y-0.5"
             style={{ background: "var(--color-primary-container)" }}
           >
-            Find your archetype
+            {authed ? "Open your dashboard" : "Find your archetype"}
             <ArrowRight className="h-4.5 w-4.5" />
           </Link>
           {/* Quiet trust links — for the skeptical reader, deliberately understated */}
