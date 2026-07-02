@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Heart, Fingerprint } from "lucide-react";
+import { Fingerprint } from "lucide-react";
+import { RelattiMark } from "@/components/relatti/RelattiMark";
 import { getBrand } from "@/lib/platform/brand.server";
 import { LEGAL_CONTACT } from "@/lib/platform/legal";
 
@@ -19,7 +20,6 @@ export default async function LegalLayout({
 }) {
   const brand = await getBrand();
   const contact = LEGAL_CONTACT[brand.id];
-  const BrandIcon = brand.id === "relatti" ? Heart : Fingerprint;
   const year = new Date().getFullYear();
 
   return (
@@ -45,11 +45,15 @@ export default async function LegalLayout({
                 "color-mix(in oklch, var(--color-primary) 12%, transparent)",
             }}
           >
-            <BrandIcon
-              className="h-4 w-4"
-              style={{ color: "var(--color-primary)" }}
-              strokeWidth={1.75}
-            />
+            {brand.id === "relatti" ? (
+              <RelattiMark className="h-4 w-4" />
+            ) : (
+              <Fingerprint
+                className="h-4 w-4"
+                style={{ color: "var(--color-primary)" }}
+                strokeWidth={1.75}
+              />
+            )}
           </span>
           <span className="text-xl font-semibold tracking-tight text-text-primary">
             {brand.name}

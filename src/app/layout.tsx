@@ -85,13 +85,52 @@ export default function RootLayout({
                   var ck = document.cookie.match(/(?:^|; )brand=([^;]+)/);
                   var cookieBrand = ck ? decodeURIComponent(ck[1]) : null;
                   var relattiHost = (host === 'relatti.com' || host === 'www.relatti.com' || host === 'staging.relatti.com');
-                  var relattiPath = /^\/(relatti|couples|engaged|premarital)(\/|$)/.test(path);
+                  // NOTE: this JS lives in a template literal, where "\\/" emits
+                  // "\/" — a single "\/" would collapse to "/" and make the
+                  // emitted regex a SyntaxError that killed this whole script
+                  // (brand AND theme resolution) from 2026-06-22 to 2026-07-02.
+                  var relattiPath = /^\\/(relatti|couples|engaged|premarital)(\\/|$)/.test(path);
                   var hostBrand = (relattiHost || relattiPath) ? 'relatti' : 'masterytv';
                   var brand = (urlBrand === 'relatti' || urlBrand === 'masterytv') ? urlBrand
                     : (relattiHost || relattiPath) ? 'relatti'
                     : (cookieBrand === 'relatti' || cookieBrand === 'masterytv') ? cookieBrand
                     : 'masterytv';
                   document.documentElement.setAttribute('data-brand', brand);
+                  // Brand-aware favicon/touch icon, same FOUC-free client-side
+                  // mechanism as data-brand (keeps pages static — no Host read).
+                  // Metadata's default icons are removed and Relatti's set added
+                  // once the head is parsed.
+                  if (brand === 'relatti') {
+                    // Idempotent: strip non-Relatti icon links, add ours once.
+                    // Next re-injects the metadata default icons during
+                    // hydration, so a MutationObserver keeps the swap applied
+                    // for the first seconds, then disconnects.
+                    var setIcons = function() {
+                      try {
+                        document.querySelectorAll('link[rel~="icon"], link[rel="apple-touch-icon"]').forEach(function(l) {
+                          if ((l.getAttribute('href') || '').indexOf('/relatti/') !== 0) l.remove();
+                        });
+                        [['icon','/relatti/icon.svg','image/svg+xml'],
+                         ['icon','/relatti/favicon-32.png','image/png'],
+                         ['apple-touch-icon','/relatti/apple-touch-icon.png','']].forEach(function(s) {
+                          if (document.querySelector('link[href="' + s[1] + '"]')) return;
+                          var l = document.createElement('link');
+                          l.rel = s[0]; l.href = s[1]; if (s[2]) l.type = s[2];
+                          document.head.appendChild(l);
+                        });
+                      } catch(e) {}
+                    };
+                    var startIconGuard = function() {
+                      setIcons();
+                      try {
+                        var mo = new MutationObserver(setIcons);
+                        mo.observe(document.head, { childList: true });
+                        setTimeout(function() { mo.disconnect(); }, 10000);
+                      } catch(e) {}
+                    };
+                    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', startIconGuard);
+                    else startIconGuard();
+                  }
                 } catch(e) {}
               })();
             `,

@@ -9,6 +9,7 @@ import { useUser } from "@/hooks/useUser";
 import { useBrandModules } from "@/hooks/useBrandModules";
 import { useBrand } from "@/hooks/useBrand";
 import type { ModuleId } from "@/lib/platform/modules";
+import { RelattiMark } from "@/components/relatti/RelattiMark";
 import {
   Home,
   ClipboardCheck,
@@ -72,7 +73,6 @@ export function Sidebar({ open, onClose, assessmentCompleted = false, reportId =
   const enabledModules = useBrandModules();
   const brand = useBrand();
   const isRelatti = brand.id === "relatti";
-  const BrandIcon = isRelatti ? Heart : Fingerprint;
   const brandLabel = isRelatti ? "Relatti" : "Mastery";
 
   // Map decoded_tier to display label
@@ -113,7 +113,11 @@ export function Sidebar({ open, onClose, assessmentCompleted = false, reportId =
               className="flex h-8 w-8 items-center justify-center rounded-lg"
               style={{ background: "color-mix(in oklch, var(--color-primary-container) 14%, transparent)" }}
             >
-              <BrandIcon className="h-4 w-4" style={{ color: "var(--color-primary)" }} />
+              {isRelatti ? (
+                <RelattiMark className="h-4 w-4" />
+              ) : (
+                <Fingerprint className="h-4 w-4" style={{ color: "var(--color-primary)" }} />
+              )}
             </div>
             <span className="text-lg font-semibold tracking-tight text-text-primary">
               {brandLabel}

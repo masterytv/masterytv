@@ -78,7 +78,13 @@ export async function updateSession(request: NextRequest) {
   if (pathname === "/" && brandId === "relatti") {
     const url = request.nextUrl.clone();
     url.pathname = "/relatti";
-    return NextResponse.rewrite(url);
+    // Carry over cookies set on supabaseResponse — returning a bare rewrite
+    // used to DROP the refreshed auth session cookies and the persisted
+    // ?brand= cookie on exactly this (Relatti home) path.
+    const rewritten = NextResponse.rewrite(url);
+    for (const c of supabaseResponse.cookies.getAll()) rewritten.cookies.set(c);
+    rewritten.headers.set("x-brand", brandId);
+    return rewritten;
   }
 
   // ── Allow callback routes always ──

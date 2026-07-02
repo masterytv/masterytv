@@ -2,7 +2,8 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { useState } from "react";
-import { Loader2, ArrowRight, Eye, EyeOff, User, Mail, Check, Heart, Fingerprint } from "lucide-react";
+import { Loader2, ArrowRight, Eye, EyeOff, User, Mail, Check, Fingerprint } from "lucide-react";
+import { RelattiMark } from "@/components/relatti/RelattiMark";
 import { FloatingThemeToggle } from "@/components/floating-theme-toggle";
 import type { BrandId } from "@/lib/platform/brand";
 import { LEGAL_VERSION } from "@/lib/platform/legal";
@@ -69,7 +70,6 @@ export default function LoginPanel({
   const callbackUrl = (origin: string) =>
     `${origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`;
 
-  const BrandIcon = brandId === "relatti" ? Heart : Fingerprint;
   const copy = COPY[brandId] ?? COPY.masterytv;
 
   async function handleSubmit(e: React.FormEvent) {
@@ -223,7 +223,11 @@ export default function LoginPanel({
             className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl"
             style={{ background: "color-mix(in oklch, var(--color-primary) 12%, transparent)" }}
           >
-            <BrandIcon className="h-6 w-6" style={{ color: "var(--color-primary)" }} strokeWidth={1.5} />
+            {brandId === "relatti" ? (
+              <RelattiMark className="h-6 w-6" />
+            ) : (
+              <Fingerprint className="h-6 w-6" style={{ color: "var(--color-primary)" }} strokeWidth={1.5} />
+            )}
           </span>
           <h1 className="font-display text-2xl font-bold tracking-tight text-text-primary">{brandName}</h1>
           <p className="mt-1 text-sm text-text-secondary">{copy.tagline}</p>
