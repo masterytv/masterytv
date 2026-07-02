@@ -18,10 +18,6 @@ export default function RelattiScience() {
       <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
         The science behind Relatti
       </h1>
-      <p className="mt-2 text-sm text-text-muted">
-        Written for skeptics, therapists, and researchers. Every load-bearing
-        claim below is cited or labeled as a design choice.
-      </p>
 
       <div className="mt-10 space-y-12 text-text-secondary leading-relaxed">
         <section>

@@ -218,6 +218,26 @@ export default function RelattiLanding({ content }: { content?: LandingContent }
             Find your archetype
             <ArrowRight className="h-4.5 w-4.5" />
           </Link>
+          {/* Quiet trust links — for the skeptical reader, deliberately understated */}
+          <p className="mt-6 text-sm text-text-muted">
+            Built on published relationship research —{" "}
+            <Link
+              href="/science"
+              className="underline underline-offset-2 transition-opacity hover:opacity-80"
+              style={{ color: "var(--color-primary)" }}
+            >
+              read the science
+            </Link>
+            . Wary of AI?{" "}
+            <Link
+              href="/why-ai"
+              className="underline underline-offset-2 transition-opacity hover:opacity-80"
+              style={{ color: "var(--color-primary)" }}
+            >
+              We answer that honestly
+            </Link>
+            .
+          </p>
         </div>
       </section>
 

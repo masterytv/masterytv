@@ -24,6 +24,8 @@ import {
   Fingerprint,
   Lock,
   ShieldCheck,
+  BookOpen,
+  HelpCircle,
 } from "lucide-react";
 
 // `module` tags a gatable capability (PA4). Items without one are core and
@@ -230,6 +232,34 @@ export function Sidebar({ open, onClose, assessmentCompleted = false, reportId =
               />
               Admin
             </Link>
+          )}
+
+          {/* Resources — quiet reference links for the skeptical reader
+              (Relatti only; pt not mt because the nav's space-y overrides margins) */}
+          {isRelatti && (
+            <div className="pt-6">
+              <p className="px-3 text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted/70">
+                Resources
+              </p>
+              <div className="mt-1.5 space-y-0.5">
+                <Link
+                  href="/science"
+                  onClick={onClose}
+                  className="group flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-text-muted transition-colors hover:bg-surface-200 hover:text-text-primary"
+                >
+                  <BookOpen className="h-4 w-4 text-text-muted/60 group-hover:text-text-muted" />
+                  The science
+                </Link>
+                <Link
+                  href="/why-ai"
+                  onClick={onClose}
+                  className="group flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-text-muted transition-colors hover:bg-surface-200 hover:text-text-primary"
+                >
+                  <HelpCircle className="h-4 w-4 text-text-muted/60 group-hover:text-text-muted" />
+                  Why an AI coach?
+                </Link>
+              </div>
+            </div>
           )}
         </nav>
 
