@@ -101,21 +101,32 @@ export default function RootLayout({
                   // Metadata's default icons are removed and Relatti's set added
                   // once the head is parsed.
                   if (brand === 'relatti') {
-                    // Idempotent: strip non-Relatti icon links, add ours once.
-                    // Next re-injects the metadata default icons during
-                    // hydration, so a MutationObserver keeps the swap applied
-                    // for the first seconds, then disconnects.
+                    // STRICTLY NON-DESTRUCTIVE swap. Never remove or move the
+                    // metadata-rendered <link> nodes — Next owns them, and
+                    // deleting them silently breaks every subsequent soft
+                    // navigation (URL changes, page doesn't — the "two clicks"
+                    // bug). Instead: rewrite their hrefs in place (attribute-
+                    // only), and append OUR icon links as foreign nodes Next
+                    // ignores. Duplicate rel=icon links are valid; the last
+                    // one wins in practice.
                     var setIcons = function() {
                       try {
                         document.querySelectorAll('link[rel~="icon"], link[rel="apple-touch-icon"]').forEach(function(l) {
-                          if ((l.getAttribute('href') || '').indexOf('/relatti/') !== 0) l.remove();
+                          var href = l.getAttribute('href') || '';
+                          if (href.indexOf('/relatti/') === 0) return;
+                          if (l.getAttribute('rel') === 'apple-touch-icon') {
+                            l.setAttribute('href', '/relatti/apple-touch-icon.png');
+                          } else {
+                            l.setAttribute('href', '/relatti/favicon-32.png');
+                            if (l.getAttribute('type')) l.setAttribute('type', 'image/png');
+                          }
                         });
                         [['icon','/relatti/icon.svg','image/svg+xml'],
-                         ['icon','/relatti/favicon-32.png','image/png'],
                          ['apple-touch-icon','/relatti/apple-touch-icon.png','']].forEach(function(s) {
-                          if (document.querySelector('link[href="' + s[1] + '"]')) return;
+                          if (document.querySelector('link[data-relatti-icon][href="' + s[1] + '"]')) return;
                           var l = document.createElement('link');
                           l.rel = s[0]; l.href = s[1]; if (s[2]) l.type = s[2];
+                          l.setAttribute('data-relatti-icon', '');
                           document.head.appendChild(l);
                         });
                       } catch(e) {}

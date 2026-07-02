@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 };
 
 interface PageProps {
-  searchParams: Promise<{ next?: string; invite?: string }>;
+  searchParams: Promise<{ next?: string; invite?: string; mode?: string }>;
 }
 
 /**
@@ -19,7 +19,7 @@ interface PageProps {
  * Authenticated users skip straight to their intended destination.
  */
 export default async function LoginPage({ searchParams }: PageProps) {
-  const { next, invite } = await searchParams;
+  const { next, invite, mode } = await searchParams;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -62,6 +62,7 @@ export default async function LoginPage({ searchParams }: PageProps) {
       next={safeNext}
       inviteCode={invite}
       prefilledEmail={prefilledEmail}
+      initialMode={mode === "signin" ? "signin" : undefined}
     />
   );
 }
