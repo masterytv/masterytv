@@ -152,9 +152,9 @@ The old MARKETING.md is archived and nothing replaced it — currently marketing
 **Today / this week**
 1. 🔴 Revoke `EXECUTE` on `match_memory_facts` / `match_messages` (P0 leak) + add the partner-isolation regression test.
 2. 🔴 Server-side `program`/pack resolution in `coach/index.ts` (kill the fail-open executive default).
-3. 🟠 Fix the inverted `isFallback` cost calculation.
-4. 🟠 Verify the safety-escalation email actually delivers (Resend domain).
-5. 🟠 Enable leaked-password protection; decide on `get_auth_provider_for_email` anon exposure.
+3. ✅ ~~Fix the inverted `isFallback` cost calculation~~ — fixed 2026-07-02 (`coach/index.ts` + `channel-router.ts`, deployed).
+4. ✅ ~~Verify the safety-escalation email actually delivers~~ — mail.relatti.com verified; escalations now send `brand: "relatti"` from the Relatti Resend account; test delivered through the production path 2026-07-02 (founder to confirm tom@relatti.com receipt).
+5. 🟠 Enable leaked-password protection (Supabase dashboard → Auth); decide on `get_auth_provider_for_email` anon exposure.
 
 **Pre-launch (the gate)**
 6. Legal set per PRIVACY_TERMS_LIABILITY_PLAN (attorney + clinician; publish Privacy/ToS; acceptance gate) — already planned; hold the line.
