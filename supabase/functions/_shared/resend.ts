@@ -10,6 +10,13 @@
 const RESEND_API_URL = "https://api.resend.com";
 const FROM_ADDRESS = "Mastery Coach <coach@mail.masterytv.com>";
 
+// Relatti has its OWN Resend account (RESEND_API_KEY_RELATTI) with
+// mail.relatti.com verified as of 2026-07-02. Callers pass brand: "relatti" to
+// send from it; if that key isn't set we fall back to the shared MasteryTV
+// account with a Relatti display name (mirrors send-email/index.ts BRANDS).
+const RELATTI_FROM = "Relatti <donotreply@mail.relatti.com>";
+const RELATTI_FALLBACK_FROM = "Relatti <donotreply@mail.masterytv.com>";
+
 // ─── SEND EMAIL ─────────────────────────────────────────────────────────
 
 interface SendEmailParams {
@@ -21,6 +28,8 @@ interface SendEmailParams {
   headers?: Record<string, string>;
   /** Override the default sender (e.g. a per-brand from address). */
   from?: string;
+  /** Send from a brand's own Resend account + domain (falls back to shared). */
+  brand?: "relatti" | "masterytv";
 }
 
 interface SendEmailResult {
@@ -34,11 +43,21 @@ interface SendEmailResult {
 export async function sendEmail(
   params: SendEmailParams
 ): Promise<SendEmailResult> {
-  const apiKey = Deno.env.get("RESEND_API_KEY");
+  let apiKey = Deno.env.get("RESEND_API_KEY");
+  let from = params.from ?? FROM_ADDRESS;
+  if (params.brand === "relatti") {
+    const relattiKey = Deno.env.get("RESEND_API_KEY_RELATTI");
+    if (relattiKey) {
+      apiKey = relattiKey;
+      from = params.from ?? RELATTI_FROM;
+    } else {
+      from = params.from ?? RELATTI_FALLBACK_FROM;
+    }
+  }
   if (!apiKey) throw new Error("RESEND_API_KEY not set");
 
   const body: Record<string, unknown> = {
-    from: params.from ?? FROM_ADDRESS,
+    from,
     to: [params.to],
     subject: params.subject,
     html: params.html,

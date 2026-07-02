@@ -9,6 +9,7 @@ import { useUser } from "@/hooks/useUser";
 import { useBrandModules } from "@/hooks/useBrandModules";
 import { useBrand } from "@/hooks/useBrand";
 import type { ModuleId } from "@/lib/platform/modules";
+import { RelattiMark } from "@/components/relatti/RelattiMark";
 import {
   Home,
   ClipboardCheck,
@@ -23,6 +24,8 @@ import {
   Fingerprint,
   Lock,
   ShieldCheck,
+  BookOpen,
+  HelpCircle,
 } from "lucide-react";
 
 // `module` tags a gatable capability (PA4). Items without one are core and
@@ -72,7 +75,6 @@ export function Sidebar({ open, onClose, assessmentCompleted = false, reportId =
   const enabledModules = useBrandModules();
   const brand = useBrand();
   const isRelatti = brand.id === "relatti";
-  const BrandIcon = isRelatti ? Heart : Fingerprint;
   const brandLabel = isRelatti ? "Relatti" : "Mastery";
 
   // Map decoded_tier to display label
@@ -113,7 +115,11 @@ export function Sidebar({ open, onClose, assessmentCompleted = false, reportId =
               className="flex h-8 w-8 items-center justify-center rounded-lg"
               style={{ background: "color-mix(in oklch, var(--color-primary-container) 14%, transparent)" }}
             >
-              <BrandIcon className="h-4 w-4" style={{ color: "var(--color-primary)" }} />
+              {isRelatti ? (
+                <RelattiMark className="h-4 w-4" />
+              ) : (
+                <Fingerprint className="h-4 w-4" style={{ color: "var(--color-primary)" }} />
+              )}
             </div>
             <span className="text-lg font-semibold tracking-tight text-text-primary">
               {brandLabel}
@@ -226,6 +232,34 @@ export function Sidebar({ open, onClose, assessmentCompleted = false, reportId =
               />
               Admin
             </Link>
+          )}
+
+          {/* Resources — quiet reference links for the skeptical reader
+              (Relatti only; pt not mt because the nav's space-y overrides margins) */}
+          {isRelatti && (
+            <div className="pt-6">
+              <p className="px-3 text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted/70">
+                Resources
+              </p>
+              <div className="mt-1.5 space-y-0.5">
+                <Link
+                  href="/science"
+                  onClick={onClose}
+                  className="group flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-text-muted transition-colors hover:bg-surface-200 hover:text-text-primary"
+                >
+                  <BookOpen className="h-4 w-4 text-text-muted/60 group-hover:text-text-muted" />
+                  The science
+                </Link>
+                <Link
+                  href="/why-ai"
+                  onClick={onClose}
+                  className="group flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-text-muted transition-colors hover:bg-surface-200 hover:text-text-primary"
+                >
+                  <HelpCircle className="h-4 w-4 text-text-muted/60 group-hover:text-text-muted" />
+                  Why an AI coach?
+                </Link>
+              </div>
+            </div>
           )}
         </nav>
 

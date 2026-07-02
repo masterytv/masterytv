@@ -14,6 +14,7 @@
  */
 
 import Link from "next/link";
+import { RelattiMark } from "@/components/relatti/RelattiMark";
 import {
   Heart,
   Users,
@@ -93,7 +94,7 @@ export default function RelattiLanding({ content }: { content?: LandingContent }
             className="flex h-8 w-8 items-center justify-center rounded-lg"
             style={{ background: "color-mix(in oklch, var(--color-primary-container) 16%, transparent)" }}
           >
-            <Heart className="h-4 w-4" style={{ color: "var(--color-primary)" }} />
+            <RelattiMark className="h-4 w-4" />
           </span>
           <span className="font-display text-xl font-semibold tracking-tight">Relatti</span>
         </Link>
@@ -217,6 +218,26 @@ export default function RelattiLanding({ content }: { content?: LandingContent }
             Find your archetype
             <ArrowRight className="h-4.5 w-4.5" />
           </Link>
+          {/* Quiet trust links — for the skeptical reader, deliberately understated */}
+          <p className="mt-6 text-sm text-text-muted">
+            Built on published relationship research —{" "}
+            <Link
+              href="/science"
+              className="underline underline-offset-2 transition-opacity hover:opacity-80"
+              style={{ color: "var(--color-primary)" }}
+            >
+              read the science
+            </Link>
+            . Wary of AI?{" "}
+            <Link
+              href="/why-ai"
+              className="underline underline-offset-2 transition-opacity hover:opacity-80"
+              style={{ color: "var(--color-primary)" }}
+            >
+              We answer that honestly
+            </Link>
+            .
+          </p>
         </div>
       </section>
 
@@ -224,10 +245,12 @@ export default function RelattiLanding({ content }: { content?: LandingContent }
       <footer className="border-t border-[var(--ghost-border)]">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 py-8 text-sm text-text-muted sm:flex-row">
           <span className="flex items-center gap-2">
-            <Heart className="h-4 w-4" style={{ color: "var(--color-primary)" }} />
+            <RelattiMark className="h-4 w-4" />
             Relatti
           </span>
           <div className="flex items-center gap-6">
+            <Link href="/science" className="transition-colors hover:text-text-secondary">The science</Link>
+            <Link href="/why-ai" className="transition-colors hover:text-text-secondary">Why AI?</Link>
             <Link href="/privacy" className="transition-colors hover:text-text-secondary">Privacy</Link>
             <Link href="/terms" className="transition-colors hover:text-text-secondary">Terms</Link>
           </div>

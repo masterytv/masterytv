@@ -122,6 +122,37 @@
 
   --color-info: #ff9db0;
   --shadow-glow: 0 0 20px rgba(255, 157, 176, 0.15);
+
+  /* Relatti brand mark ("The Held Heart", RelattiMark.tsx) — two-half heart;
+     lighter rose tones on dark surfaces, deeper on light. */
+  --relatti-mark-left: #fb7185;
+  --relatti-mark-right: #e11d48;
+}
+
+/* Light-mode Relatti primaries. Needed because the global [data-theme="light"]
+   block appears LATER in this file and (at equal specificity) would otherwise
+   override the brand block above with MasteryTV blues — i.e. Relatti pages
+   went blue in light mode. The combined selector (0,2,0) wins in both orders.
+   Values are the rose ramp darkened for WCAG contrast on light surfaces,
+   mirroring how the masterytv light palette darkens its blues. */
+[data-brand="relatti"][data-theme="light"] {
+  --relatti-mark-left: #f43f5e;
+  --relatti-mark-right: #be123c;
+
+  --color-primary: #be123c;
+  --color-primary-container: #e11d48;
+  --color-primary-deep: #9f1239;
+  --color-primary-darker: #881337;
+  --color-primary-dim: #e11d48;
+  --color-info: #be123c;
+
+  --accent-primary: #be123c;
+  --accent-primary-bg: rgba(190, 18, 60, 0.06);
+  --accent-primary-bg-hover: rgba(190, 18, 60, 0.1);
+  --accent-primary-ring: rgba(190, 18, 60, 0.08);
+
+  --cta-from: #f43f5e;
+  --cta-to: #be123c;
 }
 
 /* ===========================================================

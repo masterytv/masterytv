@@ -30,7 +30,7 @@ interface SweepParams {
 }
 
 interface Classification {
-  risk: "none" | "self_harm" | "abuse" | "acute_distress";
+  risk: "none" | "self_harm" | "harm_to_others" | "abuse" | "acute_distress";
   severity: "none" | "low" | "moderate" | "high";
   subject_scope: "self" | "partner" | "third_party";
   confidence: number;
@@ -73,7 +73,7 @@ export async function runSafetySweep(
     // Focus the admin queue on genuine safety risk (avoid flag-flooding on ordinary
     // emotional conversations — grief the coach already routes is only logged when high).
     const isSafetyRisk =
-      (c.risk === "self_harm" || c.risk === "abuse") &&
+      (c.risk === "self_harm" || c.risk === "abuse" || c.risk === "harm_to_others") &&
       (c.severity === "moderate" || c.severity === "high");
     const isAcuteHigh = c.risk === "acute_distress" && c.severity === "high";
     if ((!isSafetyRisk && !isAcuteHigh) || c.confidence < 0.5) return;
@@ -95,7 +95,8 @@ export async function runSafetySweep(
       .limit(1)
       .maybeSingle();
 
-    let escalate = c.severity === "high" && (c.risk === "self_harm" || c.risk === "abuse");
+    let escalate = c.severity === "high" &&
+      (c.risk === "self_harm" || c.risk === "abuse" || c.risk === "harm_to_others");
     const detail = {
       risk: c.risk,
       severity: c.severity,
@@ -152,13 +153,14 @@ async function classify(apiKey: string, transcript: string): Promise<Classificat
   const system = `You are a safety classifier for an AI coaching product (often relationship coaching). You read the recent conversation and flag risk the coach must not miss — INCLUDING risk about a THIRD PERSON the user describes (e.g. "my husband hinted at ending his life", "she said she doesn't want to be here").
 
 Return ONLY a JSON object, no prose:
-{"risk":"none|self_harm|abuse|acute_distress","severity":"none|low|moderate|high","subject_scope":"self|partner|third_party","confidence":0.0-1.0,"coach_handled":true|false,"rationale":"one short sentence"}
+{"risk":"none|self_harm|harm_to_others|abuse|acute_distress","severity":"none|low|moderate|high","subject_scope":"self|partner|third_party","confidence":0.0-1.0,"coach_handled":true|false,"rationale":"one short sentence"}
 
 Definitions:
 - self_harm: suicidal ideation, self-harm, or intent to die — the USER or a person they describe. severity high = explicit or current intent, a plan, or a clear recent statement; moderate = passive ideation or hints; low = vague hopelessness.
+- harm_to_others: the USER expresses genuine intent, a plan, or a credible threat to PHYSICALLY HARM another person (their partner, a child, anyone) — the user is the potential aggressor here (this is the mirror of abuse, where the user is the one AT RISK). CRUCIAL — hyperbolic venting is NOT harm_to_others and MUST be risk "none": "I want to kill my husband, he's such an asshole", "I could kill him", "I'm so mad I could strangle her" are ordinary frustration, not intent. Flag ONLY genuine intent: high = a stated plan, access to a means, or a credible present threat (e.g. "I've thought about how I'd do it and I'm not sure I'd stop myself"); moderate = specific, repeated violent ideation the user genuinely seems to be entertaining, not a one-off outburst. When unsure whether it's venting vs. intent, prefer "none" unless there is something concrete (a plan, a means, or a stated decision).
 - abuse: intimate-partner abuse, coercive control, or fear for physical safety. high = violence/threats/fear in the present; moderate = a controlling or coercive pattern. Ordinary conflict or yelling WITHOUT fear/control/violence is NOT abuse.
 - acute_distress: grief/trauma/distress clearly beyond everyday relationship coaching (e.g. a recent miscarriage, months-long hopelessness) with NO self_harm or abuse. Use high only when serious and sustained.
-- subject_scope: who is AT RISK — "self" (the user, INCLUDING when the user is the one being abused, controlled, or afraid), "partner" (the user's romantic partner is the at-risk person, e.g. the partner is the one who is suicidal), or "third_party" (someone else, e.g. a child).
+- subject_scope: who is AT RISK — "self" (the user, INCLUDING when the user is the one being abused, controlled, or afraid), "partner" (the user's romantic partner is the at-risk person — e.g. the partner is the one who is suicidal, OR the partner is the person the user is threatening to harm), or "third_party" (someone else at risk, e.g. a child).
 - coach_handled: did the COACH's most recent turn appropriately surface crisis/professional resources (988, a hotline, a counselor/therapist) or clearly stop coaching to route out?
 - If nothing rises above ordinary relationship difficulty, return risk "none", severity "none".`;
 
@@ -224,7 +226,7 @@ function parseClassification(text: string): Classification | null {
  */
 export interface SafetyEscalation {
   source: "tier1_keyword" | "llm_sweep";
-  risk: "none" | "self_harm" | "abuse" | "acute_distress";
+  risk: "none" | "self_harm" | "harm_to_others" | "abuse" | "acute_distress";
   severity: "none" | "low" | "moderate" | "high";
   subject_scope: "self" | "partner" | "third_party";
   coach_handled: boolean;
@@ -260,7 +262,9 @@ export async function sendSafetyEscalationEmail(
 <hr>
 <p style="color:#666">Internal audit alert only. The user was routed to crisis resources in-product; there is no promised human follow-up. Review in the admin crisis queue (/admin/crisis).</p>`;
 
-    await sendEmail({ to: ESCALATION_TO, subject, html });
+    // brand: relatti → sends from the verified mail.relatti.com domain
+    // (falls back to the shared MasteryTV account if the key is unset).
+    await sendEmail({ to: ESCALATION_TO, subject, html, brand: "relatti" });
     console.log("[safety-escalation] emailed to", ESCALATION_TO, "source:", info.source);
   } catch (e) {
     console.error("[safety-escalation] email failed:", (e as Error).message);

@@ -808,21 +808,60 @@ export async function assemblePrompt(
   // ── Assemble system prompt from layers ──
   const deliveryResult = buildDeliveryStyle(profile);
 
-  // ── Build Decoded profile layer (Layer 4.5 — S0.4) ──
+  // ── Coach-visibility axis (Relatti): how much of the user's OWN profile their
+  // coach may use. Per-person (participant.coach_share_level); default 'full' —
+  // which is also the effective default for non-Relatti users, who have no
+  // participant row (so the executive coach is unchanged). 'none' hides the
+  // self-profile; 'type_compatibility' trims it to archetype + attachment only.
+  let coachShareLevel = "full";
+  try {
+    const { data: myParts } = await supabase
+      .from("participant")
+      .select("coach_share_level")
+      .eq("user_id", userId);
+    if (myParts && myParts.length > 0) {
+      const rank: Record<string, number> = { none: 0, type_compatibility: 1, full: 2 };
+      // Most permissive across the user's dyads — it's their own profile.
+      coachShareLevel = myParts.reduce(
+        (acc: string, p: { coach_share_level: string }) =>
+          (rank[p.coach_share_level] ?? 2) > (rank[acc] ?? 0) ? p.coach_share_level : acc,
+        "none",
+      );
+    }
+  } catch (_e) {
+    /* default 'full' */
+  }
+
+  // ── Build Decoded profile layer (Layer 4.5 — S0.4), gated by the coach axis ──
   let decodedLayer = "";
-  if (decodedScores.length > 0 && decodedReport) {
+  if (coachShareLevel !== "none" && decodedScores.length > 0 && decodedReport) {
     try {
       // Dynamic import to avoid loading Decoded code when not needed
       // These modules live in _shared/decoded/ alongside the prompt assembler
       const { buildAssessmentProfile } = await import("./decoded/assessment-profile.ts");
-      const { buildDecodedProfileLayer } = await import("./decoded/prompt-layer.ts");
       const assessmentProfile = buildAssessmentProfile(decodedScores, decodedReport);
-      decodedLayer = buildDecodedProfileLayer(assessmentProfile);
-      console.log(`[prompt-assembler] Decoded profile loaded (${decodedScores.length} instruments, archetype: ${decodedReport.archetype_base})`);
+      if (coachShareLevel === "full") {
+        const { buildDecodedProfileLayer } = await import("./decoded/prompt-layer.ts");
+        decodedLayer = buildDecodedProfileLayer(assessmentProfile);
+      } else {
+        // 'type_compatibility' — the user limited coaching to archetype + style.
+        const arch = assessmentProfile.archetype;
+        const att = assessmentProfile.attachment;
+        const parts = [
+          "DECODED PROFILE (the user limited what their coach may use to their archetype + relationship style only):",
+        ];
+        if (arch?.base && arch.base !== "Unknown") parts.push(`Archetype: "${arch.sublabel}" (${arch.base}).`);
+        if (att?.style) parts.push(`Relationship style: ${att.style} — speak to how they connect, not to raw scores.`);
+        parts.push("Do NOT cite Big Five percentiles, subscales, or detailed assessment numbers.");
+        decodedLayer = parts.join("\n");
+      }
+      console.log(`[prompt-assembler] Decoded profile loaded (coach share: ${coachShareLevel})`);
     } catch (e) {
       // Decoded profile failure shouldn't break the coach
       console.error("[prompt-assembler] Decoded profile build failed:", (e as Error).message);
     }
+  } else if (coachShareLevel === "none") {
+    console.log("[prompt-assembler] Decoded self-profile hidden by coach-visibility = none");
   }
 
   // ── Build Relationship Dyad layer (Layer 4.6) ──
@@ -848,9 +887,9 @@ export async function assemblePrompt(
     // Case 2: User is the recipient and inviter shared... (future: bidirectional)
     const { data: sharedInvites } = await supabase
       .from("decoded_invites")
-      .select("inviter_id, recipient_id, inviter_name, recipient_email, share_with_coach, compatibility_report")
+      .select("inviter_id, recipient_id, inviter_name, recipient_email, share_with_human, compatibility_report")
       .or(`inviter_id.eq.${userId},recipient_id.eq.${userId}`)
-      .neq("share_with_coach", "none")
+      .neq("share_with_human", "none")
       .in("status", ["consented", "connected"]);
 
     if (sharedInvites && sharedInvites.length > 0) {
@@ -861,7 +900,7 @@ export async function assemblePrompt(
         const partnerName = isInviter 
           ? (inv.recipient_email?.split("@")[0] || "Partner")
           : (inv.inviter_name || "Partner");
-        const shareLevel = inv.share_with_coach;
+        const shareLevel = inv.share_with_human;
 
         let partnerContext = "";
         

@@ -155,7 +155,7 @@ async function notifyPartnerOfDeletion(
     subject,
     html,
     text,
-    from: "Relatti <coach@mail.masterytv.com>",
+    brand: "relatti", // verified mail.relatti.com sender (2026-07-02)
   });
 }
 
