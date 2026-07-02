@@ -229,6 +229,8 @@ export default function RelattiLanding({ content }: { content?: LandingContent }
             Relatti
           </span>
           <div className="flex items-center gap-6">
+            <Link href="/science" className="transition-colors hover:text-text-secondary">The science</Link>
+            <Link href="/why-ai" className="transition-colors hover:text-text-secondary">Why AI?</Link>
             <Link href="/privacy" className="transition-colors hover:text-text-secondary">Privacy</Link>
             <Link href="/terms" className="transition-colors hover:text-text-secondary">Terms</Link>
           </div>

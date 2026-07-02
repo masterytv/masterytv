@@ -80,6 +80,22 @@ export default async function LegalLayout({
             © {year} {contact.entity}. All rights reserved.
           </p>
           <div className="flex gap-6">
+            {brand.id === "relatti" && (
+              <>
+                <Link
+                  href="/science"
+                  className="text-sm text-text-secondary transition-colors hover:text-text-primary"
+                >
+                  The Science
+                </Link>
+                <Link
+                  href="/why-ai"
+                  className="text-sm text-text-secondary transition-colors hover:text-text-primary"
+                >
+                  Why AI?
+                </Link>
+              </>
+            )}
             <Link
               href="/privacy"
               className="text-sm text-text-secondary transition-colors hover:text-text-primary"
