@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { originFromHeaders } from '@/lib/platform/origin';
 
 /**
  * POST /api/decoded/invite-notify
@@ -85,7 +86,7 @@ export async function POST(req: NextRequest) {
       || invite.recipient_email?.split('@')[0]
       || 'Your friend';
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://masterytv.com';
+    const appUrl = originFromHeaders(req.headers);
     const compatibilityUrl = `${appUrl}/dashboard/compatibility`;
 
     const resendKey = process.env.RESEND_API_KEY;

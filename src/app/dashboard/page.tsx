@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import type { Metadata } from "next";
 import { claimPendingInvites } from "@/lib/decoded/claim-invites";
 import { getActiveDyad, getDyadConsent } from "@/lib/relatti/dashboard-dyad";
@@ -8,6 +9,7 @@ import { syncMyReportToSpine } from "@/lib/relatti/sync-my-report";
 import { getTodaysRitual } from "@/lib/relatti/ritual";
 import { getBrand } from "@/lib/platform/brand.server";
 import { isBrandId } from "@/lib/platform/brand";
+import { originFromHeaders } from "@/lib/platform/origin";
 import DashboardHome from "./DashboardHome";
 import RelattiDashboard from "./RelattiDashboard";
 
@@ -38,6 +40,10 @@ export default async function DashboardPage({
     redirect("/decoded");
   }
 
+  // Invite/share links must use the domain the user is actually on (relatti.com
+  // for a Relatti user), NOT the static NEXT_PUBLIC_APP_URL (= masterytv.com).
+  const appUrl = originFromHeaders(await headers());
+
   // Auto-claim any pending invites for this user's email
   // and notify inviters when their recipient has completed the assessment
   if (user.email) {
@@ -45,9 +51,8 @@ export default async function DashboardPage({
 
     // Fire-and-forget notifications for newly claimed invites
     if (claimedIds.length > 0) {
-      const origin = process.env.NEXT_PUBLIC_APP_URL || 'https://masterytv.com';
       for (const inviteId of claimedIds) {
-        fetch(`${origin}/api/decoded/invite-notify`, {
+        fetch(`${appUrl}/api/decoded/invite-notify`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ inviteId }),
@@ -156,7 +161,6 @@ export default async function DashboardPage({
     .select("id")
     .single();
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://masterytv.com";
   const inviteUrl = broadcastInvite
     ? `${appUrl}/invite/${broadcastInvite.id}`
     : `${appUrl}/login`;
