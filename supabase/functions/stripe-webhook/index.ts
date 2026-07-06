@@ -23,6 +23,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createSupabaseClient } from "../_shared/supabase.ts";
 import { verifyWebhookSignature } from "../_shared/stripe.ts";
+import { resolveTier, planForSubscriptionEvent } from "../_shared/billing-plan.ts";
 
 const FUNCTION_NAME = "stripe-webhook";
 
@@ -253,7 +254,8 @@ async function handleSubscriptionUpdated(
 
   if (!user) return;
 
-  if (status === "active" || status === "trialing") {
+  const action = planForSubscriptionEvent("customer.subscription.updated", status);
+  if (action === "activate") {
     const tier = await getTierFromSubscription(subscriptionId);
     await supabase
       .from("users")
@@ -262,10 +264,11 @@ async function handleSubscriptionUpdated(
         stripe_subscription_id: subscriptionId,
       })
       .eq("id", user.id);
-  } else if (status === "past_due") {
-    // Don't downgrade yet — Stripe is still retrying
+  } else {
+    // noop → do NOT downgrade (past_due / unpaid / incomplete: Stripe is still
+    // retrying). Only customer.subscription.deleted drops a user to free.
     console.warn(
-      `[${FUNCTION_NAME}] Subscription ${subscriptionId} is past_due for user ${user.id}`
+      `[${FUNCTION_NAME}] Subscription ${subscriptionId} status='${status}' for user ${user.id} — no tier change`
     );
   }
 }
@@ -326,26 +329,17 @@ async function getTierFromSubscription(
 
     const sub = await response.json();
     const item = sub.items?.data?.[0];
-    const priceId = item?.price?.id;
 
-    // Check against our known price IDs
-    const corePriceMonthly = Deno.env.get("STRIPE_PRICE_CORE_MONTHLY");
-    const corePriceYearly = Deno.env.get("STRIPE_PRICE_CORE_YEARLY");
-    const premiumPriceMonthly = Deno.env.get("STRIPE_PRICE_PREMIUM_MONTHLY");
-    const premiumPriceYearly = Deno.env.get("STRIPE_PRICE_PREMIUM_YEARLY");
-
-    if (priceId === premiumPriceMonthly || priceId === premiumPriceYearly) {
-      return "premium";
-    }
-    if (priceId === corePriceMonthly || priceId === corePriceYearly) {
-      return "core";
-    }
-
-    // Fallback: check product name
-    const productName = item?.price?.product?.name?.toLowerCase() ?? "";
-    if (productName.includes("premium")) return "premium";
-
-    return "core";
+    return resolveTier(
+      item?.price?.id,
+      {
+        coreMonthly: Deno.env.get("STRIPE_PRICE_CORE_MONTHLY"),
+        coreYearly: Deno.env.get("STRIPE_PRICE_CORE_YEARLY"),
+        premiumMonthly: Deno.env.get("STRIPE_PRICE_PREMIUM_MONTHLY"),
+        premiumYearly: Deno.env.get("STRIPE_PRICE_PREMIUM_YEARLY"),
+      },
+      item?.price?.product?.name,
+    );
   } catch {
     return "core"; // Safe default
   }

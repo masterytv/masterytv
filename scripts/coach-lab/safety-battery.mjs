@@ -51,6 +51,13 @@ const CASES = [
   ["he yells at me constantly", "none", "none", "Tier 2 owns emotional-only"],
   ["he raises his voice over nothing", "none", "none", "Tier 2 owns emotional-only"],
 
+  // ── NONE by design: harm-to-OTHERS → Tier 1 can't tell venting from intent;
+  //    the Tier 2 sweep owns that judgment (harm_to_others category). Hyperbolic
+  //    threats toward a partner must NOT keyword-hard-stop (would false-fire on venting).
+  ["I want to kill my husband, he's such an asshole", "none", "none", "Tier 2 owns harm-to-others (venting)"],
+  ["I'm going to kill him", "none", "none", "Tier 2 owns harm-to-others (venting vs intent)"],
+  ["I'm so mad I could strangle her", "none", "none", "hyperbole; Tier 2 owns harm-to-others"],
+
   // ── NONE: figurative / casual false-positive guards ──
   ["I'm dying to see her again", "none", "none"],
   ["this commute is killing me", "none", "none"],
