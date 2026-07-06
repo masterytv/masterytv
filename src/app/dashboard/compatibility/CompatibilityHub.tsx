@@ -1,26 +1,24 @@
 'use client';
 
 /**
- * CompatibilityHub — Central page for relationship management.
+ * CompatibilityHub — the couples relationship hub (Relatti).
  *
- * Two-step sharing flow:
- *   1. Either party clicks "Request Compatibility" and picks a level
- *   2. The other party sees "Accept Request" and picks their level
- *   3. The effective level is the mutual minimum (least permissive wins)
- *
- * Sections:
- *   1. Invite Someone — Invite new people to take the assessment
- *   2. People Who Invited You — Received invites + request/accept flow
- *   3. Your Requests — Sent invites with status tracking + request/accept flow
+ * A couples product = one relationship, so this is a single linear flow with no
+ * sharing-level negotiation (connected partners auto-see each other's full report
+ * + compatibility — see ensureCoupleFullSharing):
+ *   • no partner        → Invite Someone
+ *   • invited, waiting  → status + Remind (max 3) / Change email / Uninvite
+ *   • partner joined    → "finishing their quiz"
+ *   • connected         → View Compatibility Report
+ * A "Talk to your coach" link is always present at the bottom.
  */
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  Heart, Users, Send, Loader2, Check, X, Clock, Shield,
-  ArrowRight, Mail, ChevronDown, FileText,
+  Send, Loader2, Clock, ArrowRight, Mail, Heart, UserCheck,
+  MessageSquare, Bell, Pencil, X, Check,
 } from 'lucide-react';
 import ShareModal from '@/components/decoded/ShareModal';
 
@@ -28,15 +26,12 @@ interface SentInvite {
   id: string;
   recipient_email: string;
   recipient_id: string | null;
+  recipient_report_id: string | null;
   status: string;
-  share_with_human: string | null;
-  share_with_coach: string | null;
-  compatibility_report: unknown | null;
   created_at: string;
   completed_at: string | null;
   consented_at: string | null;
-  upgrade_requested_level: string | null;
-  upgrade_requested_by: string | null;
+  reminder_count: number | null;
 }
 
 interface ReceivedInvite {
@@ -45,13 +40,8 @@ interface ReceivedInvite {
   inviter_name: string | null;
   inviter_email: string | null;
   status: string;
-  share_with_human: string | null;
-  share_with_coach: string | null;
-  compatibility_report: unknown | null;
   created_at: string;
   consented_at: string | null;
-  upgrade_requested_level: string | null;
-  upgrade_requested_by: string | null;
 }
 
 interface Props {
@@ -61,635 +51,261 @@ interface Props {
   receivedInvites: ReceivedInvite[];
 }
 
-type ShareLevel = 'type_compatibility' | 'full';
+const MAX_REMINDERS = 3;
 
-const SHARE_OPTIONS: Array<{ value: ShareLevel; label: string; desc: string }> = [
-  {
-    value: 'type_compatibility',
-    label: 'Compatibility Report',
-    desc: 'Your personality archetype + how your personalities interact',
-  },
-  {
-    value: 'full',
-    label: 'Full Report + Compatibility',
-    desc: 'Your complete Decoded report + compatibility analysis',
-  },
-];
+type PartnerState = 'invited' | 'joined' | 'connected' | 'pending_me';
 
-export default function CompatibilityHub({ userName, userId, sentInvites, receivedInvites }: Props) {
-  const [showShareModal, setShowShareModal] = useState(false);
-  const [expandedCard, setExpandedCard] = useState<string | null>(null);
-  const [saving, setSaving] = useState<string | null>(null);
-  const [selectedLevel, setSelectedLevel] = useState<Record<string, ShareLevel>>({});
+interface PartnerRow {
+  inviteId: string;
+  label: string;
+  state: PartnerState;
+  reminderCount: number;
+}
+
+function isConnected(status: string): boolean {
+  return status === 'consented' || status === 'connected';
+}
+
+export default function CompatibilityHub({ sentInvites, receivedInvites }: Props) {
   const router = useRouter();
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [editing, setEditing] = useState<string | null>(null);
+  const [newEmail, setNewEmail] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
-  // Categorize received invites
-  const pendingConsent = receivedInvites.filter((i) => i.status === 'completed');
-  const connected = receivedInvites.filter((i) => i.status === 'consented' || i.status === 'connected');
-  const allReceived = [...pendingConsent, ...connected];
+  // ── Derive the (usually single) relationship from both sides ──
+  const sentPartners: PartnerRow[] = sentInvites.map((inv) => ({
+    inviteId: inv.id,
+    label: inv.recipient_email,
+    state: isConnected(inv.status) ? 'connected' : inv.recipient_id ? 'joined' : 'invited',
+    reminderCount: inv.reminder_count ?? 0,
+  }));
+  const receivedPartners: PartnerRow[] = receivedInvites.map((inv) => ({
+    inviteId: inv.id,
+    label: inv.inviter_name || inv.inviter_email?.split('@')[0] || 'Your partner',
+    state: isConnected(inv.status) ? 'connected' : 'pending_me',
+    reminderCount: 0,
+  }));
+  const partners = [...sentPartners, ...receivedPartners];
+  const showInvite = partners.length === 0;
 
-  // ── Actions ──
-
-  /** Step 1: Request compatibility sharing */
-  async function handleRequest(inviteId: string) {
-    const level = selectedLevel[inviteId] || 'type_compatibility';
-    setSaving(inviteId);
+  // ── Manage actions (invited state only) ──
+  async function manage(inviteId: string, action: 'remind' | 'uninvite' | 'changeEmail', email?: string) {
+    setBusy(inviteId);
+    setError(null);
     try {
-      await fetch('/api/decoded/compatibility-request', {
+      const res = await fetch('/api/relatti/manage-invite', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ inviteId, level }),
+        body: JSON.stringify({ inviteId, action, email }),
       });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error || 'Something went wrong. Please try again.');
+        return;
+      }
+      setEditing(null);
+      setNewEmail('');
       router.refresh();
     } catch {
-      // silent
+      setError('Something went wrong. Please try again.');
     } finally {
-      setSaving(null);
-      setExpandedCard(null);
+      setBusy(null);
     }
   }
 
-  /** Step 2: Accept a compatibility request (mutual minimum computed server-side) */
-  async function handleAccept(inviteId: string) {
-    const level = selectedLevel[inviteId] || 'type_compatibility';
-    setSaving(inviteId);
-    try {
-      await fetch('/api/decoded/invite-consent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ inviteId, shareLevel: level }),
-      });
-      router.refresh();
-    } catch {
-      // silent
-    } finally {
-      setSaving(null);
-      setExpandedCard(null);
-    }
-  }
-
-  /** Revoke sharing */
-  async function handleRevoke(inviteId: string) {
-    setSaving(inviteId);
-    try {
-      await fetch('/api/decoded/invite-consent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ inviteId, shareLevel: 'none' }),
-      });
-      router.refresh();
-    } catch {
-      // silent
-    } finally {
-      setSaving(null);
-    }
-  }
-
-  /** Deny an upgrade request — clears the request without changing sharing level */
-  async function handleDenyUpgrade(inviteId: string) {
-    setSaving(inviteId);
-    try {
-      await fetch('/api/decoded/deny-upgrade', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ inviteId }),
-      });
-      router.refresh();
-    } catch {
-      // silent
-    } finally {
-      setSaving(null);
-    }
-  }
-
-  // ── Shared UI components ──
-
-  /** Inline share-level picker (2 options) */
-  function ShareLevelPicker({ inviteId, actionLabel, onSubmit }: {
-    inviteId: string;
-    actionLabel: string;
-    onSubmit: (id: string) => void;
-  }) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, height: 0 }}
-        animate={{ opacity: 1, height: 'auto' }}
-        exit={{ opacity: 0, height: 0 }}
-        className="mt-4 space-y-3 overflow-hidden"
-      >
-        <label className="text-label-sm text-text-secondary font-medium block">
-          What would you like to share?
-        </label>
-        <div className="space-y-1.5">
-          {SHARE_OPTIONS.map((opt) => (
-            <label
-              key={opt.value}
-              className={`flex items-start gap-2.5 rounded-lg border px-3 py-2.5 cursor-pointer transition-all text-sm ${
-                (selectedLevel[inviteId] || 'type_compatibility') === opt.value
-                  ? 'border-[var(--color-primary)] bg-[color-mix(in_oklch,var(--color-primary-container)_5%,transparent)]'
-                  : 'border-surface-200 hover:border-surface-300'
-              }`}
-            >
-              <input
-                type="radio"
-                name={`level-${inviteId}`}
-                checked={(selectedLevel[inviteId] || 'type_compatibility') === opt.value}
-                onChange={() => setSelectedLevel((p) => ({ ...p, [inviteId]: opt.value }))}
-                className="accent-[var(--color-primary)] mt-0.5"
-              />
-              <div>
-                <span className="text-text-primary font-medium">{opt.label}</span>
-                <p className="text-body-sm text-text-muted mt-0.5">{opt.desc}</p>
-              </div>
-            </label>
-          ))}
-        </div>
-        <p className="text-body-sm text-text-muted">
-          The final sharing level is the mutual minimum — if either party picks Compatibility Report, both get that level.
-        </p>
-        <div className="flex items-center justify-end pt-1">
-          <button
-            onClick={() => onSubmit(inviteId)}
-            disabled={saving === inviteId}
-            className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-container)] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity disabled:opacity-50"
-          >
-            {saving === inviteId ? (
-              <><Loader2 className="h-4 w-4 animate-spin" /> Saving...</>
-            ) : (
-              <><Send className="h-4 w-4" /> {actionLabel}</>
-            )}
-          </button>
-        </div>
-      </motion.div>
-    );
-  }
+  const ctaGradient = { background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-container))' };
+  const softPrimary = { background: 'color-mix(in oklch, var(--color-primary) 12%, transparent)', color: 'var(--color-primary)' };
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="mx-auto max-w-3xl px-6 py-8">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
-          <h1 className="text-display-sm text-text-primary font-bold">
-            Compatibility
-          </h1>
+      <div className="mx-auto max-w-2xl px-6 py-8">
+        <div className="mb-8">
+          <h1 className="text-display-sm text-text-primary font-bold">Compatibility</h1>
           <p className="mt-1 text-body-md text-text-secondary">
-            Compare personality profiles and discover relationship dynamics.
+            {showInvite
+              ? 'Invite your partner so your coach can understand you both.'
+              : 'Where you two fit, where it gets hard, and how to love each other well.'}
           </p>
-        </motion.div>
+        </div>
 
-        {/* ═══ Invite Someone ═══ */}
-        <motion.section
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.05 }}
-          className="mb-8"
-        >
-          <div className="rounded-2xl border border-[color-mix(in_oklch,var(--color-primary-container)_15%,transparent)] bg-surface-50 p-6">
+        {/* ── Invite Someone (until a partner is in the picture) ── */}
+        {showInvite && (
+          <section className="mb-6 rounded-2xl bg-surface-50 p-6" style={{ border: '1px solid color-mix(in oklch, var(--color-primary) 14%, transparent)' }}>
             <div className="flex items-center gap-3 mb-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[color-mix(in_oklch,var(--color-primary-container)_10%,transparent)]">
-                <Send className="h-5 w-5 text-[var(--color-primary)]" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: 'color-mix(in oklch, var(--color-primary) 12%, transparent)' }}>
+                <Send className="h-5 w-5" style={{ color: 'var(--color-primary)' }} />
               </div>
               <div>
-                <h2 className="text-title-md text-text-primary font-semibold">
-                  Invite Someone
-                </h2>
-                <p className="text-body-sm text-text-secondary">
-                  Send an invite via email or share a link
-                </p>
+                <h2 className="text-title-md text-text-primary font-semibold">Invite your partner</h2>
+                <p className="text-body-sm text-text-secondary">Send an invite by email or share your link.</p>
               </div>
             </div>
             <button
               onClick={() => setShowShareModal(true)}
-              className="mt-2 flex items-center gap-2 rounded-lg bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-container)] px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+              className="mt-2 flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+              style={ctaGradient}
             >
               <Mail className="h-4 w-4" />
-              Send Invite
+              Invite your partner
             </button>
-          </div>
-        </motion.section>
-
-        {/* ═══ People Who Invited You ═══ */}
-        {allReceived.length > 0 && (
-          <motion.section
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="mb-8"
-          >
-            <div className="flex items-center gap-2 mb-4">
-              <Shield className="h-4 w-4 text-[var(--color-primary)]" />
-              <h2 className="text-title-md text-text-primary font-semibold">
-                People Who Invited You
-              </h2>
-              <span className="text-label-sm text-text-muted ml-auto">
-                {allReceived.length} {allReceived.length === 1 ? 'person' : 'people'}
-              </span>
-            </div>
-
-            <div className="space-y-3">
-              {allReceived.map((inv) => {
-                const isConnected = inv.status === 'consented' || inv.status === 'connected';
-                const isExpanded = expandedCard === `recv-${inv.id}`;
-                const inviterName = inv.inviter_name || inv.inviter_email?.split('@')[0] || 'Someone';
-
-                // Determine which state this invite is in
-                const theyRequested = inv.upgrade_requested_level && inv.upgrade_requested_by && inv.upgrade_requested_by !== userId;
-                const iRequested = inv.upgrade_requested_level && inv.upgrade_requested_by === userId;
-                const noRequest = !inv.upgrade_requested_level;
-
-                const requestedLevelLabel = inv.upgrade_requested_level === 'full'
-                  ? 'Full Report + Compatibility'
-                  : 'Compatibility Report';
-
-                return (
-                  <div key={inv.id}>
-                    <motion.div
-                      layout
-                      className={`rounded-xl border p-4 transition-colors ${
-                        isConnected
-                          ? 'border-surface-200 bg-surface-50'
-                          : theyRequested
-                            ? 'border-[color-mix(in_oklch,var(--color-primary-container)_20%,transparent)] bg-[color-mix(in_oklch,var(--color-primary-container)_4%,transparent)]'
-                            : 'border-surface-200 bg-surface-50'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                            isConnected
-                              ? 'bg-[color-mix(in_oklch,var(--color-primary-container)_10%,transparent)] text-[var(--color-primary)]'
-                              : theyRequested
-                                ? 'bg-[color-mix(in_oklch,var(--color-primary-container)_10%,transparent)] text-[var(--color-primary)]'
-                                : 'bg-emerald-400/10 text-emerald-400'
-                          }`}>
-                            {(inv.inviter_name || '?')[0].toUpperCase()}
-                          </div>
-                          <div>
-                            <p className="text-body-md text-text-primary font-medium">
-                              {inviterName}
-                            </p>
-                            <p className="text-body-sm text-text-muted">
-                              {inv.inviter_email || ''}
-                            </p>
-                          </div>
-                        </div>
-
-                        {isConnected ? (
-                          <div className="flex items-center gap-2">
-                            <Link
-                              href={`/compatibility/${inv.id}`}
-                              className="flex items-center gap-1.5 rounded-lg bg-[color-mix(in_oklch,var(--color-primary-container)_10%,transparent)] px-3 py-1.5 text-sm font-medium text-[var(--color-primary)] hover:bg-[color-mix(in_oklch,var(--color-primary-container)_15%,transparent)] transition-colors"
-                            >
-                              View Report <ArrowRight className="h-3.5 w-3.5" />
-                            </Link>
-                            <button
-                              onClick={() => handleRevoke(inv.id)}
-                              disabled={saving === inv.id}
-                              className="rounded-lg px-2 py-1.5 text-xs font-medium text-text-muted hover:text-red-400 hover:bg-red-400/10 transition-colors"
-                            >
-                              Unshare
-                            </button>
-                          </div>
-                        ) : theyRequested ? (
-                          /* They sent a request — show Accept */
-                          <button
-                            onClick={() => setExpandedCard(isExpanded ? null : `recv-${inv.id}`)}
-                            className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-container)] px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
-                          >
-                            <Heart className="h-3.5 w-3.5" />
-                            Accept Request
-                            <ChevronDown className={`h-3 w-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-                          </button>
-                        ) : iRequested ? (
-                          /* I already sent a request — waiting */
-                          <span className="flex items-center gap-1.5 rounded-full bg-amber-400/10 px-3 py-1.5 text-xs font-semibold text-amber-400">
-                            <Clock className="h-3 w-3" />
-                            Request Sent
-                          </span>
-                        ) : noRequest ? (
-                          /* No request yet — show Request Compatibility */
-                          <button
-                            onClick={() => setExpandedCard(isExpanded ? null : `recv-${inv.id}`)}
-                            className="flex items-center gap-1.5 rounded-lg bg-[color-mix(in_oklch,var(--color-primary-container)_10%,transparent)] px-3 py-1.5 text-sm font-medium text-[var(--color-primary)] hover:bg-[color-mix(in_oklch,var(--color-primary-container)_15%,transparent)] transition-colors"
-                          >
-                            <Heart className="h-3.5 w-3.5" />
-                            Request Compatibility
-                            <ChevronDown className={`h-3 w-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-                          </button>
-                        ) : null}
-                      </div>
-
-                      {/* Upgrade re-request from the other party — Accept / Deny */}
-                      {isConnected && theyRequested && inv.upgrade_requested_level === 'full' && inv.share_with_human !== 'full' && (
-                        <div className="mt-3 ml-11">
-                          <p className="text-body-sm text-amber-400 font-medium mb-2">
-                            {inviterName} requested <strong>Full Report + Compatibility</strong> again
-                          </p>
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => setExpandedCard(isExpanded ? null : `recv-${inv.id}`)}
-                              className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-container)] px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 transition-opacity"
-                            >
-                              <Heart className="h-3 w-3" />
-                              Accept
-                            </button>
-                            <button
-                              onClick={() => handleDenyUpgrade(inv.id)}
-                              disabled={saving === inv.id}
-                              className="flex items-center gap-1.5 rounded-lg border border-surface-200 px-3 py-1.5 text-xs font-medium text-text-muted hover:text-red-400 hover:border-red-400/30 transition-colors"
-                            >
-                              Deny
-                            </button>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* I requested upgrade — waiting */}
-                      {isConnected && iRequested && inv.upgrade_requested_level === 'full' && inv.share_with_human !== 'full' && (
-                        <p className="mt-2 ml-11 text-body-sm text-text-muted">
-                          You requested <strong>Full Report + Compatibility</strong> — Full Report Denied. Compatibility Accepted.
-                        </p>
-                      )}
-
-                      {/* They sent a request — show what they requested (only when not yet connected) */}
-                      {theyRequested && !isExpanded && !isConnected && (
-                        <p className="mt-2 ml-11 text-body-sm text-text-secondary">
-                          <strong>{inviterName}</strong> requested <strong>{requestedLevelLabel}</strong> sharing
-                        </p>
-                      )}
-
-                      {/* Expanded picker */}
-                      <AnimatePresence>
-                        {isExpanded && (
-                          <ShareLevelPicker
-                            inviteId={inv.id}
-                            actionLabel={theyRequested ? 'Accept & Share' : 'Send Request'}
-                            onSubmit={theyRequested ? handleAccept : handleRequest}
-                          />
-                        )}
-                      </AnimatePresence>
-                    </motion.div>
-                  </div>
-                );
-              })}
-            </div>
-          </motion.section>
+          </section>
         )}
 
-        {/* ═══ Your Requests (Sent) ═══ */}
-        <motion.section
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-        >
-          <div className="flex items-center gap-2 mb-4">
-            <Users className="h-4 w-4 text-[var(--color-success)]" />
-            <h2 className="text-title-md text-text-primary font-semibold">
-              Your Requests
-            </h2>
-            <span className="text-label-sm text-text-muted ml-auto">
-              {sentInvites.length} sent
-            </span>
-          </div>
+        {/* ── The relationship(s) ── */}
+        {partners.length > 0 && (
+          <section className="space-y-3">
+            {partners.map((p) => (
+              <div key={p.inviteId} className="rounded-xl bg-surface-50 p-4" style={{ border: '1px solid color-mix(in oklch, var(--color-primary) 12%, transparent)' }}>
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="h-9 w-9 rounded-full flex items-center justify-center text-sm font-bold" style={softPrimary}>
+                      {(p.label[0] || '?').toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-body-md text-text-primary font-medium truncate">{p.label}</p>
+                      <StatusLine state={p.state} />
+                    </div>
+                  </div>
 
-          {sentInvites.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-surface-200 p-8 text-center">
-              <Heart className="h-8 w-8 text-text-muted/30 mx-auto mb-3" />
-              <p className="text-body-md text-text-secondary">
-                No invites sent yet.
-              </p>
-              <p className="text-body-sm text-text-muted mt-1">
-                Send an invite above to compare personality profiles.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {sentInvites.map((inv) => {
-                const isConnected = inv.status === 'consented' || inv.status === 'connected';
-                const isExpanded = expandedCard === `sent-${inv.id}`;
+                  {p.state === 'connected' && (
+                    <Link
+                      href={`/compatibility/${p.inviteId}`}
+                      className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                      style={ctaGradient}
+                    >
+                      View Compatibility Report <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  )}
+                  {p.state === 'pending_me' && (
+                    <Link
+                      href="/assess"
+                      className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                      style={ctaGradient}
+                    >
+                      Finish your quiz <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  )}
+                </div>
 
-                // Determine state
-                const theyRequested = inv.upgrade_requested_level && inv.upgrade_requested_by && inv.upgrade_requested_by !== userId;
-                const iRequested = inv.upgrade_requested_level && inv.upgrade_requested_by === userId;
-                const noRequest = !inv.upgrade_requested_level;
-                const assessmentComplete = inv.status === 'completed';
-
-                const requestedLevelLabel = inv.upgrade_requested_level === 'full'
-                  ? 'Full Report + Compatibility'
-                  : 'Compatibility Report';
-
-                return (
-                  <div key={inv.id}>
-                    {isConnected ? (
-                      /* Connected — link to report + unshare */
-                      <div className="rounded-xl border border-surface-200 bg-surface-50 px-4 py-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className="h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold bg-[color-mix(in_oklch,var(--color-primary-container)_10%,transparent)] text-[var(--color-primary)]">
-                              {inv.recipient_email[0].toUpperCase()}
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-body-md text-text-primary font-medium truncate">
-                                {inv.recipient_email}
-                              </p>
-                              <p className="text-body-sm text-text-muted">
-                                Connected {inv.consented_at ? new Date(inv.consented_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Link
-                              href={`/compatibility/${inv.id}`}
-                              className="flex items-center gap-1.5 rounded-lg bg-[color-mix(in_oklch,var(--color-primary-container)_10%,transparent)] px-3 py-1.5 text-sm font-medium text-[var(--color-primary)] hover:bg-[color-mix(in_oklch,var(--color-primary-container)_15%,transparent)] transition-colors"
-                            >
-                              View Report <ArrowRight className="h-3.5 w-3.5" />
-                            </Link>
-                            <button
-                              onClick={() => handleRevoke(inv.id)}
-                              disabled={saving === inv.id}
-                              className="rounded-lg px-2 py-1.5 text-xs font-medium text-text-muted hover:text-red-400 hover:bg-red-400/10 transition-colors"
-                            >
-                              Unshare
-                            </button>
-                          </div>
-                        </div>
-                        {/* Denial / re-request context */}
-                        {inv.upgrade_requested_level === 'full' && inv.share_with_human !== 'full' && inv.upgrade_requested_by === userId && (
-                          <p className="mt-2 ml-11 text-body-sm text-text-muted">
-                            You requested <strong>Full Report + Compatibility</strong> — Full Report Denied. Compatibility Accepted.
-                          </p>
-                        )}
-                        {inv.upgrade_requested_level === 'full' && inv.share_with_human !== 'full' && inv.upgrade_requested_by && inv.upgrade_requested_by !== userId && (
-                          <div className="mt-3 ml-11">
-                            <p className="text-body-sm text-amber-400 font-medium mb-2">
-                              {inv.recipient_email.split('@')[0]} requested <strong>Full Report + Compatibility</strong> again
-                            </p>
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => setExpandedCard(expandedCard === `sent-${inv.id}` ? null : `sent-${inv.id}`)}
-                                className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-container)] px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 transition-opacity"
-                              >
-                                <Heart className="h-3 w-3" />
-                                Accept
-                              </button>
-                              <button
-                                onClick={() => handleDenyUpgrade(inv.id)}
-                                disabled={saving === inv.id}
-                                className="flex items-center gap-1.5 rounded-lg border border-surface-200 px-3 py-1.5 text-xs font-medium text-text-muted hover:text-red-400 hover:border-red-400/30 transition-colors"
-                              >
-                                Deny
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ) : assessmentComplete ? (
-                      /* Assessment complete — show request/accept states */
-                      <div className="rounded-xl border border-surface-200 bg-surface-50 px-4 py-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className="h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold bg-emerald-400/10 text-emerald-400">
-                              {inv.recipient_email[0].toUpperCase()}
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-body-md text-text-primary font-medium truncate">
-                                {inv.recipient_email}
-                              </p>
-                              <p className="text-body-sm text-emerald-400">
-                                Assessment complete
-                              </p>
-                            </div>
-                          </div>
-
-                          {theyRequested ? (
-                            /* They requested — show Accept */
-                            <button
-                              onClick={() => setExpandedCard(isExpanded ? null : `sent-${inv.id}`)}
-                              className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-container)] px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
-                            >
-                              <Heart className="h-3.5 w-3.5" />
-                              Accept Request
-                              <ChevronDown className={`h-3 w-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-                            </button>
-                          ) : iRequested ? (
-                            /* I already requested — waiting */
-                            <span className="flex items-center gap-1.5 rounded-full bg-amber-400/10 px-3 py-1.5 text-xs font-semibold text-amber-400">
-                              <Clock className="h-3 w-3" />
-                              Request Sent
-                            </span>
-                          ) : noRequest ? (
-                            /* No request — show CTA */
-                            <button
-                              onClick={() => setExpandedCard(isExpanded ? null : `sent-${inv.id}`)}
-                              className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-container)] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
-                            >
-                              <Heart className="h-3.5 w-3.5" />
-                              Request Compatibility
-                            </button>
-                          ) : null}
-                        </div>
-
-                        {/* They sent a request — show what they requested */}
-                        {theyRequested && !isExpanded && (
-                          <p className="mt-2 ml-11 text-body-sm text-text-secondary">
-                            <strong>{inv.recipient_email.split('@')[0]}</strong> requested <strong>{requestedLevelLabel}</strong> sharing
-                          </p>
-                        )}
-
-                        {/* I sent a request — show what I requested */}
-                        {iRequested && (
-                          <p className="mt-2 ml-11 text-body-sm text-text-muted">
-                            You requested <strong>{requestedLevelLabel}</strong> · Waiting for response
-                          </p>
-                        )}
-
-                        {/* Expanded picker */}
-                        <AnimatePresence>
-                          {isExpanded && (
-                            <ShareLevelPicker
-                              inviteId={inv.id}
-                              actionLabel={theyRequested ? 'Accept & Share' : 'Send Request'}
-                              onSubmit={theyRequested ? handleAccept : handleRequest}
-                            />
-                          )}
-                        </AnimatePresence>
+                {/* Invited (not joined) → remind / change email / uninvite */}
+                {p.state === 'invited' && (
+                  <div className="mt-4 pl-12">
+                    {editing === p.inviteId ? (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <input
+                          type="email"
+                          value={newEmail}
+                          onChange={(e) => setNewEmail(e.target.value)}
+                          placeholder="new@email.com"
+                          className="rounded-lg bg-surface-100 px-3 py-2 text-sm text-text-primary outline-none placeholder:text-text-muted"
+                          style={{ border: '1px solid color-mix(in oklch, var(--color-primary) 15%, transparent)' }}
+                        />
+                        <button
+                          onClick={() => manage(p.inviteId, 'changeEmail', newEmail)}
+                          disabled={busy === p.inviteId || !newEmail.trim()}
+                          className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                          style={ctaGradient}
+                        >
+                          <Check className="h-3.5 w-3.5" /> Save &amp; resend
+                        </button>
+                        <button onClick={() => { setEditing(null); setError(null); }} className="rounded-lg px-2 py-2 text-xs font-medium text-text-muted hover:text-text-primary">
+                          Cancel
+                        </button>
                       </div>
                     ) : (
-                      /* Pending — assessment not taken yet */
-                      <div className="flex items-center justify-between rounded-xl border border-surface-200 bg-surface-50 px-4 py-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold bg-amber-400/10 text-amber-400">
-                            {inv.recipient_email[0].toUpperCase()}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-body-md text-text-primary font-medium truncate">
-                              {inv.recipient_email}
-                            </p>
-                            <p className="text-body-sm text-text-muted">
-                              Invited {new Date(inv.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · Assessment pending
-                            </p>
-                          </div>
-                        </div>
-                        <StatusBadge status="pending" />
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <button
+                          onClick={() => manage(p.inviteId, 'remind')}
+                          disabled={busy === p.inviteId || p.reminderCount >= MAX_REMINDERS}
+                          className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-40"
+                          style={{ background: 'color-mix(in oklch, var(--color-primary) 10%, transparent)', color: 'var(--color-primary)' }}
+                        >
+                          {busy === p.inviteId ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Bell className="h-3.5 w-3.5" />}
+                          {p.reminderCount >= MAX_REMINDERS
+                            ? 'Reminder limit reached'
+                            : `Send reminder${p.reminderCount > 0 ? ` (${MAX_REMINDERS - p.reminderCount} left)` : ''}`}
+                        </button>
+                        <button
+                          onClick={() => { setEditing(p.inviteId); setNewEmail(''); setError(null); }}
+                          className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary transition-colors"
+                        >
+                          <Pencil className="h-3.5 w-3.5" /> Change email
+                        </button>
+                        <button
+                          onClick={() => manage(p.inviteId, 'uninvite')}
+                          disabled={busy === p.inviteId}
+                          className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-text-muted hover:text-danger transition-colors"
+                        >
+                          <X className="h-3.5 w-3.5" /> Uninvite
+                        </button>
                       </div>
                     )}
+                    {error && busy === null && <p className="mt-2 text-xs text-danger">{error}</p>}
                   </div>
-                );
-              })}
+                )}
+              </div>
+            ))}
+          </section>
+        )}
+
+        {/* ── Always: talk to your coach ── */}
+        <div className="mt-8 rounded-xl bg-surface-50 p-4 flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: 'color-mix(in oklch, var(--color-primary) 10%, transparent)' }}>
+              <MessageSquare className="h-5 w-5" style={{ color: 'var(--color-primary)' }} />
             </div>
-          )}
-        </motion.section>
+            <div>
+              <p className="text-body-md text-text-primary font-medium">Talk to your coach</p>
+              <p className="text-body-sm text-text-secondary">Questions about your relationship? Your coach is here.</p>
+            </div>
+          </div>
+          <Link
+            href="/dashboard/chat"
+            className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition-colors"
+            style={softPrimary}
+          >
+            Open coach <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
       </div>
 
-      {/* Share modal */}
       <ShareModal
         isOpen={showShareModal}
         onClose={() => setShowShareModal(false)}
-        onUnlock={() => {
-          setShowShareModal(false);
-          router.refresh();
-        }}
-        shareUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/decoded`}
+        onUnlock={() => { setShowShareModal(false); router.refresh(); }}
+        shareUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/dashboard`}
       />
     </div>
   );
 }
 
-// ── Status config ──
-
-const statusConfig: Record<string, { label: string; icon: React.ReactNode; cls: string }> = {
-  pending: {
-    label: 'Invite Sent',
-    icon: <Clock className="h-3 w-3" />,
-    cls: 'text-amber-400 bg-amber-400/10',
-  },
-  completed: {
-    label: 'Ready',
-    icon: <Check className="h-3 w-3" />,
-    cls: 'text-emerald-400 bg-emerald-400/10',
-  },
-  consented: {
-    label: 'Connected',
-    icon: <Heart className="h-3 w-3" />,
-    cls: 'text-[var(--color-primary)] bg-[color-mix(in_oklch,var(--color-primary-container)_10%,transparent)]',
-  },
-  connected: {
-    label: 'Connected',
-    icon: <Heart className="h-3 w-3" />,
-    cls: 'text-[var(--color-primary)] bg-[color-mix(in_oklch,var(--color-primary-container)_10%,transparent)]',
-  },
-};
-
-function StatusBadge({ status }: { status: string }) {
-  const config = statusConfig[status] ?? statusConfig.pending;
+function StatusLine({ state }: { state: PartnerState }) {
+  if (state === 'connected') {
+    return (
+      <span className="flex items-center gap-1.5 text-body-sm" style={{ color: 'var(--color-primary)' }}>
+        <Heart className="h-3.5 w-3.5" /> Connected — you can see each other fully
+      </span>
+    );
+  }
+  if (state === 'joined') {
+    return (
+      <span className="flex items-center gap-1.5 text-body-sm text-text-secondary">
+        <UserCheck className="h-3.5 w-3.5" /> Joined — finishing their quiz
+      </span>
+    );
+  }
+  if (state === 'pending_me') {
+    return (
+      <span className="flex items-center gap-1.5 text-body-sm text-text-secondary">
+        <Clock className="h-3.5 w-3.5" /> Invited you — finish your quiz to connect
+      </span>
+    );
+  }
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${config.cls}`}>
-      {config.icon}
-      {config.label}
+    <span className="flex items-center gap-1.5 text-body-sm text-text-muted">
+      <Clock className="h-3.5 w-3.5" /> Invited — waiting for them to join
     </span>
   );
 }
