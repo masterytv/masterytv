@@ -186,7 +186,7 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
               key={opt.value}
               className={`flex items-start gap-2.5 rounded-lg border px-3 py-2.5 cursor-pointer transition-all text-sm ${
                 (selectedLevel[inviteId] || 'type_compatibility') === opt.value
-                  ? 'border-[#a3a6ff] bg-[rgba(96,99,238,0.05)]'
+                  ? 'border-[var(--color-primary)] bg-[color-mix(in_oklch,var(--color-primary-container)_5%,transparent)]'
                   : 'border-surface-200 hover:border-surface-300'
               }`}
             >
@@ -195,7 +195,7 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
                 name={`level-${inviteId}`}
                 checked={(selectedLevel[inviteId] || 'type_compatibility') === opt.value}
                 onChange={() => setSelectedLevel((p) => ({ ...p, [inviteId]: opt.value }))}
-                className="accent-[#a3a6ff] mt-0.5"
+                className="accent-[var(--color-primary)] mt-0.5"
               />
               <div>
                 <span className="text-text-primary font-medium">{opt.label}</span>
@@ -211,7 +211,7 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
           <button
             onClick={() => onSubmit(inviteId)}
             disabled={saving === inviteId}
-            className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity disabled:opacity-50"
+            className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-container)] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity disabled:opacity-50"
           >
             {saving === inviteId ? (
               <><Loader2 className="h-4 w-4 animate-spin" /> Saving...</>
@@ -248,10 +248,10 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
           transition={{ delay: 0.05 }}
           className="mb-8"
         >
-          <div className="rounded-2xl border border-[rgba(96,99,238,0.15)] bg-surface-50 p-6">
+          <div className="rounded-2xl border border-[color-mix(in_oklch,var(--color-primary-container)_15%,transparent)] bg-surface-50 p-6">
             <div className="flex items-center gap-3 mb-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[rgba(96,99,238,0.1)]">
-                <Send className="h-5 w-5 text-[#a3a6ff]" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[color-mix(in_oklch,var(--color-primary-container)_10%,transparent)]">
+                <Send className="h-5 w-5 text-[var(--color-primary)]" />
               </div>
               <div>
                 <h2 className="text-title-md text-text-primary font-semibold">
@@ -264,7 +264,7 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
             </div>
             <button
               onClick={() => setShowShareModal(true)}
-              className="mt-2 flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+              className="mt-2 flex items-center gap-2 rounded-lg bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-container)] px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
             >
               <Mail className="h-4 w-4" />
               Send Invite
@@ -281,7 +281,7 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
             className="mb-8"
           >
             <div className="flex items-center gap-2 mb-4">
-              <Shield className="h-4 w-4 text-[#a3a6ff]" />
+              <Shield className="h-4 w-4 text-[var(--color-primary)]" />
               <h2 className="text-title-md text-text-primary font-semibold">
                 People Who Invited You
               </h2>
@@ -313,7 +313,7 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
                         isConnected
                           ? 'border-surface-200 bg-surface-50'
                           : theyRequested
-                            ? 'border-[rgba(96,99,238,0.2)] bg-[rgba(96,99,238,0.02)]'
+                            ? 'border-[color-mix(in_oklch,var(--color-primary-container)_20%,transparent)] bg-[color-mix(in_oklch,var(--color-primary-container)_4%,transparent)]'
                             : 'border-surface-200 bg-surface-50'
                       }`}
                     >
@@ -321,9 +321,9 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
                         <div className="flex items-center gap-3">
                           <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold ${
                             isConnected
-                              ? 'bg-[rgba(96,99,238,0.1)] text-[#a3a6ff]'
+                              ? 'bg-[color-mix(in_oklch,var(--color-primary-container)_10%,transparent)] text-[var(--color-primary)]'
                               : theyRequested
-                                ? 'bg-[rgba(96,99,238,0.1)] text-[#a3a6ff]'
+                                ? 'bg-[color-mix(in_oklch,var(--color-primary-container)_10%,transparent)] text-[var(--color-primary)]'
                                 : 'bg-emerald-400/10 text-emerald-400'
                           }`}>
                             {(inv.inviter_name || '?')[0].toUpperCase()}
@@ -342,7 +342,7 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
                           <div className="flex items-center gap-2">
                             <Link
                               href={`/compatibility/${inv.id}`}
-                              className="flex items-center gap-1.5 rounded-lg bg-[rgba(96,99,238,0.1)] px-3 py-1.5 text-sm font-medium text-[#a3a6ff] hover:bg-[rgba(96,99,238,0.15)] transition-colors"
+                              className="flex items-center gap-1.5 rounded-lg bg-[color-mix(in_oklch,var(--color-primary-container)_10%,transparent)] px-3 py-1.5 text-sm font-medium text-[var(--color-primary)] hover:bg-[color-mix(in_oklch,var(--color-primary-container)_15%,transparent)] transition-colors"
                             >
                               View Report <ArrowRight className="h-3.5 w-3.5" />
                             </Link>
@@ -358,7 +358,7 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
                           /* They sent a request — show Accept */
                           <button
                             onClick={() => setExpandedCard(isExpanded ? null : `recv-${inv.id}`)}
-                            className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+                            className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-container)] px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
                           >
                             <Heart className="h-3.5 w-3.5" />
                             Accept Request
@@ -374,7 +374,7 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
                           /* No request yet — show Request Compatibility */
                           <button
                             onClick={() => setExpandedCard(isExpanded ? null : `recv-${inv.id}`)}
-                            className="flex items-center gap-1.5 rounded-lg bg-[rgba(96,99,238,0.1)] px-3 py-1.5 text-sm font-medium text-[#a3a6ff] hover:bg-[rgba(96,99,238,0.15)] transition-colors"
+                            className="flex items-center gap-1.5 rounded-lg bg-[color-mix(in_oklch,var(--color-primary-container)_10%,transparent)] px-3 py-1.5 text-sm font-medium text-[var(--color-primary)] hover:bg-[color-mix(in_oklch,var(--color-primary-container)_15%,transparent)] transition-colors"
                           >
                             <Heart className="h-3.5 w-3.5" />
                             Request Compatibility
@@ -392,7 +392,7 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() => setExpandedCard(isExpanded ? null : `recv-${inv.id}`)}
-                              className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 transition-opacity"
+                              className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-container)] px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 transition-opacity"
                             >
                               <Heart className="h-3 w-3" />
                               Accept
@@ -447,7 +447,7 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
           transition={{ delay: 0.15 }}
         >
           <div className="flex items-center gap-2 mb-4">
-            <Users className="h-4 w-4 text-[#69f6b8]" />
+            <Users className="h-4 w-4 text-[var(--color-success)]" />
             <h2 className="text-title-md text-text-primary font-semibold">
               Your Requests
             </h2>
@@ -489,7 +489,7 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
                       <div className="rounded-xl border border-surface-200 bg-surface-50 px-4 py-3">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3 min-w-0">
-                            <div className="h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold bg-[rgba(96,99,238,0.1)] text-[#a3a6ff]">
+                            <div className="h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold bg-[color-mix(in_oklch,var(--color-primary-container)_10%,transparent)] text-[var(--color-primary)]">
                               {inv.recipient_email[0].toUpperCase()}
                             </div>
                             <div className="min-w-0">
@@ -504,7 +504,7 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
                           <div className="flex items-center gap-2">
                             <Link
                               href={`/compatibility/${inv.id}`}
-                              className="flex items-center gap-1.5 rounded-lg bg-[rgba(96,99,238,0.1)] px-3 py-1.5 text-sm font-medium text-[#a3a6ff] hover:bg-[rgba(96,99,238,0.15)] transition-colors"
+                              className="flex items-center gap-1.5 rounded-lg bg-[color-mix(in_oklch,var(--color-primary-container)_10%,transparent)] px-3 py-1.5 text-sm font-medium text-[var(--color-primary)] hover:bg-[color-mix(in_oklch,var(--color-primary-container)_15%,transparent)] transition-colors"
                             >
                               View Report <ArrowRight className="h-3.5 w-3.5" />
                             </Link>
@@ -531,7 +531,7 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
                             <div className="flex items-center gap-2">
                               <button
                                 onClick={() => setExpandedCard(expandedCard === `sent-${inv.id}` ? null : `sent-${inv.id}`)}
-                                className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 transition-opacity"
+                                className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-container)] px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 transition-opacity"
                               >
                                 <Heart className="h-3 w-3" />
                                 Accept
@@ -569,7 +569,7 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
                             /* They requested — show Accept */
                             <button
                               onClick={() => setExpandedCard(isExpanded ? null : `sent-${inv.id}`)}
-                              className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+                              className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-container)] px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
                             >
                               <Heart className="h-3.5 w-3.5" />
                               Accept Request
@@ -585,7 +585,7 @@ export default function CompatibilityHub({ userName, userId, sentInvites, receiv
                             /* No request — show CTA */
                             <button
                               onClick={() => setExpandedCard(isExpanded ? null : `sent-${inv.id}`)}
-                              className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+                              className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-container)] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
                             >
                               <Heart className="h-3.5 w-3.5" />
                               Request Compatibility
@@ -675,12 +675,12 @@ const statusConfig: Record<string, { label: string; icon: React.ReactNode; cls: 
   consented: {
     label: 'Connected',
     icon: <Heart className="h-3 w-3" />,
-    cls: 'text-[#a3a6ff] bg-[rgba(96,99,238,0.1)]',
+    cls: 'text-[var(--color-primary)] bg-[color-mix(in_oklch,var(--color-primary-container)_10%,transparent)]',
   },
   connected: {
     label: 'Connected',
     icon: <Heart className="h-3 w-3" />,
-    cls: 'text-[#a3a6ff] bg-[rgba(96,99,238,0.1)]',
+    cls: 'text-[var(--color-primary)] bg-[color-mix(in_oklch,var(--color-primary-container)_10%,transparent)]',
   },
 };
 
