@@ -487,8 +487,8 @@ export default function AssessmentEngine({
           transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
           className="glass w-full max-w-lg rounded-2xl p-8 text-center"
         >
-          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-[rgba(96,99,238,0.1)] ring-1 ring-[rgba(96,99,238,0.15)]">
-            <Fingerprint className="h-8 w-8 text-[#a3a6ff]" strokeWidth={1.5} />
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-[color-mix(in_oklch,var(--color-primary-container)_10%,transparent)] ring-1 ring-[color-mix(in_oklch,var(--color-primary-container)_15%,transparent)]">
+            <Fingerprint className="h-8 w-8 text-[var(--color-primary)]" strokeWidth={1.5} />
           </div>
 
           <h1 className="text-headline-lg text-text-primary mb-3">
@@ -513,7 +513,7 @@ export default function AssessmentEngine({
 
           <button
             onClick={() => setPhase(isInvitee ? "primer" : "invite")}
-            className="mt-8 w-full rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-6 py-3 text-sm font-medium text-white hover:opacity-90 transition-opacity"
+            className="mt-8 w-full rounded-lg bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-container)] px-6 py-3 text-sm font-medium text-white hover:opacity-90 transition-opacity"
           >
             Get Started
           </button>
@@ -552,7 +552,7 @@ export default function AssessmentEngine({
                   onClick={() => setSelectedRelationship(rel.label === selectedRelationship ? null : rel.label)}
                   className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm transition-all ${
                     selectedRelationship === rel.label
-                      ? "bg-[rgba(96,99,238,0.15)] ring-1 ring-[rgba(96,99,238,0.3)] text-text-primary"
+                      ? "bg-[color-mix(in_oklch,var(--color-primary-container)_15%,transparent)] ring-1 ring-[color-mix(in_oklch,var(--color-primary-container)_30%,transparent)] text-text-primary"
                       : "bg-surface-100/50 text-text-secondary hover:bg-surface-200/50"
                   }`}
                 >
@@ -571,7 +571,7 @@ export default function AssessmentEngine({
               setInviteCopied(true);
               setTimeout(() => setInviteCopied(false), 2000);
             }}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-4 py-3 text-sm font-medium text-white hover:opacity-90 transition-opacity"
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-container)] px-4 py-3 text-sm font-medium text-white hover:opacity-90 transition-opacity"
           >
             {inviteCopied ? (
               <>
@@ -600,7 +600,7 @@ export default function AssessmentEngine({
               value={inviteEmail}
               onChange={(e) => setInviteEmail(e.target.value)}
               placeholder="Their email address"
-              className="flex-1 rounded-lg bg-surface-100 px-4 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-[rgba(96,99,238,0.2)] transition-all"
+              className="flex-1 rounded-lg bg-surface-100 px-4 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-[color-mix(in_oklch,var(--color-primary-container)_20%,transparent)] transition-all"
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && inviteEmail && !inviteSending) {
                   handleSendInvite();
@@ -653,7 +653,7 @@ export default function AssessmentEngine({
           {/* Continue */}
           <button
             onClick={() => setPhase("primer")}
-            className="mt-6 w-full rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-6 py-3 text-sm font-medium text-white hover:opacity-90 transition-opacity"
+            className="mt-6 w-full rounded-lg bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-container)] px-6 py-3 text-sm font-medium text-white hover:opacity-90 transition-opacity"
           >
             Continue
           </button>
@@ -690,7 +690,7 @@ export default function AssessmentEngine({
                 key={dim.label}
                 className="flex items-start gap-3 rounded-xl bg-surface-100/50 p-3"
               >
-                <dim.icon className="h-5 w-5 text-[#a3a6ff] flex-shrink-0 mt-0.5" strokeWidth={1.5} />
+                <dim.icon className="h-5 w-5 text-[var(--color-primary)] flex-shrink-0 mt-0.5" strokeWidth={1.5} />
                 <div>
                   <p className="text-sm font-medium text-text-primary">{dim.label}</p>
                   <p className="text-xs text-text-muted">{dim.desc}</p>
@@ -699,7 +699,7 @@ export default function AssessmentEngine({
             ))}
           </div>
 
-          <p className="text-center text-xs text-[#a3a6ff] italic mb-6">
+          <p className="text-center text-xs text-[var(--color-primary)] italic mb-6">
             Plus personalized sections based on your answers
           </p>
 
@@ -722,7 +722,7 @@ export default function AssessmentEngine({
           {/* Start button — opens consent modal */}
           <button
             onClick={() => setShowConsent(true)}
-            className="w-full rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-6 py-3 text-sm font-medium text-white hover:opacity-90 transition-opacity"
+            className="w-full rounded-lg bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-container)] px-6 py-3 text-sm font-medium text-white hover:opacity-90 transition-opacity"
           >
             Start My Profile
           </button>
@@ -783,7 +783,7 @@ export default function AssessmentEngine({
                         next[i] = !next[i];
                         setConsentChecks(next);
                       }}
-                      className="mt-1 h-4 w-4 rounded accent-[#6063ee] flex-shrink-0"
+                      className="mt-1 h-4 w-4 rounded accent-[var(--color-primary-container)] flex-shrink-0"
                     />
                     <span className="text-sm text-text-secondary group-hover:text-text-primary transition-colors">
                       {label}
@@ -798,16 +798,16 @@ export default function AssessmentEngine({
                   setPhase("profile");
                 }}
                 disabled={!consentChecks.every(Boolean)}
-                className="mt-6 w-full rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-6 py-3 text-sm font-medium text-white hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+                className="mt-6 w-full rounded-lg bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-container)] px-6 py-3 text-sm font-medium text-white hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
               >
                 Continue to Assessment
               </button>
 
               <p className="mt-4 text-center text-xs text-text-muted">
                 By continuing, you agree to our{" "}
-                <a href="/terms" className="text-[#a3a6ff] hover:underline">Terms of Service</a>
+                <a href="/terms" className="text-[var(--color-primary)] hover:underline">Terms of Service</a>
                 {" "}and{" "}
-                <a href="/privacy" className="text-[#a3a6ff] hover:underline">Privacy Policy</a>
+                <a href="/privacy" className="text-[var(--color-primary)] hover:underline">Privacy Policy</a>
               </p>
             </motion.div>
           </div>
@@ -842,8 +842,8 @@ export default function AssessmentEngine({
           className="glass w-full max-w-lg rounded-2xl p-8"
         >
           <div className="flex items-center gap-3 mb-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[rgba(96,99,238,0.1)]">
-              <User className="h-5 w-5 text-[#a3a6ff]" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[color-mix(in_oklch,var(--color-primary-container)_10%,transparent)]">
+              <User className="h-5 w-5 text-[var(--color-primary)]" />
             </div>
             <h2 className="text-headline-md text-text-primary">
               Let&apos;s Get to Know You
@@ -858,7 +858,7 @@ export default function AssessmentEngine({
             {/* Name (required) */}
             <div>
               <label htmlFor="profile-name" className="text-xs font-semibold text-text-secondary mb-1.5 flex items-center gap-1.5">
-                👋 Name <span className="text-[#e74c3c]">*</span>
+                Name <span className="text-[var(--color-danger)]">*</span>
               </label>
               <input
                 id="profile-name"
@@ -866,14 +866,14 @@ export default function AssessmentEngine({
                 value={profileName}
                 onChange={(e) => setProfileName(e.target.value)}
                 placeholder="Whatever feels right — real name, nickname, anything"
-                className="w-full rounded-lg bg-surface-100 px-4 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-[rgba(96,99,238,0.3)] border border-white/10 transition-all"
+                className="w-full rounded-lg bg-surface-100 px-4 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-[color-mix(in_oklch,var(--color-primary-container)_30%,transparent)] border border-white/10 transition-all"
               />
             </div>
 
             {/* Age */}
             <div>
               <label htmlFor="profile-age" className="text-xs font-semibold text-text-secondary mb-1.5 flex items-center gap-1.5">
-                🎂 Age
+                Age
               </label>
               <input
                 id="profile-age"
@@ -883,7 +883,7 @@ export default function AssessmentEngine({
                 value={profileAge}
                 onChange={(e) => setProfileAge(e.target.value)}
                 placeholder="25"
-                className="w-full max-w-[100px] rounded-lg bg-surface-100 px-4 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-[rgba(96,99,238,0.3)] border border-white/10 transition-all"
+                className="w-full max-w-[100px] rounded-lg bg-surface-100 px-4 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-[color-mix(in_oklch,var(--color-primary-container)_30%,transparent)] border border-white/10 transition-all"
               />
             </div>
 
@@ -900,7 +900,7 @@ export default function AssessmentEngine({
                     onClick={() => setProfileGender(profileGender === g ? '' : g)}
                     className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition-all ${
                       profileGender === g
-                        ? 'bg-[rgba(96,99,238,0.15)] ring-1 ring-[rgba(96,99,238,0.3)] text-text-primary'
+                        ? 'bg-[color-mix(in_oklch,var(--color-primary-container)_15%,transparent)] ring-1 ring-[color-mix(in_oklch,var(--color-primary-container)_30%,transparent)] text-text-primary'
                         : 'bg-surface-100/50 text-text-secondary hover:bg-surface-200/50'
                     }`}
                   >
@@ -913,7 +913,7 @@ export default function AssessmentEngine({
             {/* Occupation */}
             <div>
               <label htmlFor="profile-occupation" className="text-xs font-semibold text-text-secondary mb-1.5 flex items-center gap-1.5">
-                💼 Occupation
+                Occupation
               </label>
               <input
                 id="profile-occupation"
@@ -921,7 +921,7 @@ export default function AssessmentEngine({
                 value={profileOccupation}
                 onChange={(e) => setProfileOccupation(e.target.value)}
                 placeholder="e.g. designer, student, nurse..."
-                className="w-full rounded-lg bg-surface-100 px-4 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-[rgba(96,99,238,0.3)] border border-white/10 transition-all"
+                className="w-full rounded-lg bg-surface-100 px-4 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-[color-mix(in_oklch,var(--color-primary-container)_30%,transparent)] border border-white/10 transition-all"
               />
             </div>
 
@@ -929,13 +929,13 @@ export default function AssessmentEngine({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label htmlFor="profile-rel" className="text-xs font-semibold text-text-secondary mb-1.5 flex items-center gap-1.5">
-                  💕 Relationship
+                  Relationship
                 </label>
                 <select
                   id="profile-rel"
                   value={profileRelStatus}
                   onChange={(e) => setProfileRelStatus(e.target.value)}
-                  className="w-full rounded-lg bg-surface-100 px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-[rgba(96,99,238,0.3)] border border-white/10 transition-all appearance-none"
+                  className="w-full rounded-lg bg-surface-100 px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-[color-mix(in_oklch,var(--color-primary-container)_30%,transparent)] border border-white/10 transition-all appearance-none"
                 >
                   <option value="">Select...</option>
                   {RELATIONSHIP_OPTIONS.map((r) => (
@@ -946,7 +946,7 @@ export default function AssessmentEngine({
 
               <div>
                 <label className="text-xs font-semibold text-text-secondary mb-1.5 flex items-center gap-1.5">
-                  🧒 Children
+                  Children
                 </label>
                 <div className="flex flex-wrap gap-2 mt-1">
                   {CHILDREN_OPTIONS.map((c) => (
@@ -956,7 +956,7 @@ export default function AssessmentEngine({
                       onClick={() => setProfileChildren(profileChildren === c ? '' : c)}
                       className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
                         profileChildren === c
-                          ? 'bg-[rgba(96,99,238,0.15)] ring-1 ring-[rgba(96,99,238,0.3)] text-text-primary'
+                          ? 'bg-[color-mix(in_oklch,var(--color-primary-container)_15%,transparent)] ring-1 ring-[color-mix(in_oklch,var(--color-primary-container)_30%,transparent)] text-text-primary'
                           : 'bg-surface-100/50 text-text-secondary hover:bg-surface-200/50'
                       }`}
                     >
@@ -971,7 +971,7 @@ export default function AssessmentEngine({
           <button
             onClick={saveProfile}
             disabled={!profileName.trim()}
-            className="mt-8 w-full rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-6 py-3 text-sm font-medium text-white hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+            className="mt-8 w-full rounded-lg bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-container)] px-6 py-3 text-sm font-medium text-white hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
           >
             Begin Assessment →
           </button>
@@ -1011,7 +1011,7 @@ export default function AssessmentEngine({
                 key={addon.id}
                 className={`glass-hover flex cursor-pointer items-start gap-3 rounded-xl p-4 transition-all ${
                   selectedAddons.includes(addon.id)
-                    ? "ring-1 ring-[rgba(96,99,238,0.3)] bg-[rgba(96,99,238,0.05)]"
+                    ? "ring-1 ring-[color-mix(in_oklch,var(--color-primary-container)_30%,transparent)] bg-[color-mix(in_oklch,var(--color-primary-container)_5%,transparent)]"
                     : ""
                 }`}
               >
@@ -1025,7 +1025,7 @@ export default function AssessmentEngine({
                       setSelectedAddons(selectedAddons.filter(id => id !== addon.id));
                     }
                   }}
-                  className="mt-1 accent-[#6063ee]"
+                  className="mt-1 accent-[var(--color-primary-container)]"
                 />
                 <div>
                   <div className="text-sm font-medium text-text-primary">{addon.name}</div>
@@ -1045,7 +1045,7 @@ export default function AssessmentEngine({
           <div className="mt-6 flex gap-3">
             <button
               onClick={() => handleSkipAddons()}
-              className="flex-1 rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-4 py-2.5 text-sm font-medium text-white hover:opacity-90 transition-opacity"
+              className="flex-1 rounded-lg bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-container)] px-4 py-2.5 text-sm font-medium text-white hover:opacity-90 transition-opacity"
             >
               {selectedAddons.length > 0
                 ? `Continue with ${selectedAddons.length} add-on${selectedAddons.length > 1 ? "s" : ""}`
@@ -1071,7 +1071,7 @@ export default function AssessmentEngine({
           {scoring ? (
             /* Scoring in progress */
             <>
-              <Loader2 className="mx-auto mb-4 h-10 w-10 animate-spin text-[#a3a6ff]" />
+              <Loader2 className="mx-auto mb-4 h-10 w-10 animate-spin text-[var(--color-primary)]" />
               <h2 className="text-headline-md text-text-primary">Scoring your assessment…</h2>
               <p className="mt-2 text-sm text-text-secondary">
                 Running 13 instruments through the scoring engine.
@@ -1091,7 +1091,7 @@ export default function AssessmentEngine({
               </p>
               <a
                 href={generatedReportId ? `/report/${generatedReportId}` : '/dashboard'}
-                className="mt-4 inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-6 py-2.5 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+                className="mt-4 inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-container)] px-6 py-2.5 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
               >
                 {generatedReportId ? 'View Report' : 'Go to Dashboard'}
                 <ArrowRight className="h-4 w-4" />
@@ -1100,8 +1100,8 @@ export default function AssessmentEngine({
           ) : (
             /* Error state */
             <>
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[rgba(255,180,90,0.1)] ring-1 ring-[rgba(255,180,90,0.2)]">
-                <AlertTriangle className="h-8 w-8 text-[#ffb45a]" />
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[color-mix(in_oklch,var(--color-warning)_10%,transparent)] ring-1 ring-[color-mix(in_oklch,var(--color-warning)_20%,transparent)]">
+                <AlertTriangle className="h-8 w-8 text-[var(--color-warning)]" />
               </div>
               <h2 className="text-headline-md text-text-primary">Almost there</h2>
               <p className="mt-2 text-sm text-text-secondary">
@@ -1109,7 +1109,7 @@ export default function AssessmentEngine({
               </p>
               <button
                 onClick={() => assessmentId && completeAssessment(responses)}
-                className="mt-4 rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-6 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity"
+                className="mt-4 rounded-lg bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-container)] px-6 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity"
               >
                 Retry scoring
               </button>
@@ -1162,7 +1162,7 @@ export default function AssessmentEngine({
         <div className="mx-auto mt-2 max-w-2xl">
           <div className="h-1 w-full overflow-hidden rounded-full bg-surface-200">
             <motion.div
-              className="h-full rounded-full bg-gradient-to-r from-[#a3a6ff] to-[#6063ee]"
+              className="h-full rounded-full bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-container)]"
               initial={false}
               animate={{ width: `${progressPercent}%` }}
               transition={{ duration: 0.3, ease: "easeOut" }}
@@ -1183,7 +1183,7 @@ export default function AssessmentEngine({
               transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
               className="glass rounded-2xl p-8 text-center"
             >
-              <p className="text-label-md text-[#a3a6ff] mb-3 tracking-wider uppercase">
+              <p className="text-label-md text-[var(--color-primary)] mb-3 tracking-wider uppercase">
                 {currentInst.shortName}
               </p>
               <h2 className="text-xl font-semibold text-text-primary mb-2">
@@ -1193,8 +1193,8 @@ export default function AssessmentEngine({
                 {currentInst.items.length} questions &middot; ~{currentInst.estimatedMinutes} min
               </p>
 
-              <div className="rounded-xl bg-[rgba(96,99,238,0.05)] ring-1 ring-[rgba(96,99,238,0.1)] p-4 mb-6">
-                <p className="text-label-sm text-[#a3a6ff] mb-1 uppercase tracking-wider">Instructions</p>
+              <div className="rounded-xl bg-[color-mix(in_oklch,var(--color-primary-container)_5%,transparent)] ring-1 ring-[color-mix(in_oklch,var(--color-primary-container)_10%,transparent)] p-4 mb-6">
+                <p className="text-label-sm text-[var(--color-primary)] mb-1 uppercase tracking-wider">Instructions</p>
                 <p className="text-sm text-text-secondary italic">
                   {currentInst.description}
                 </p>
@@ -1202,7 +1202,7 @@ export default function AssessmentEngine({
 
               <button
                 onClick={() => setShowSectionIntro(false)}
-                className="rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-8 py-3 text-sm font-medium text-white hover:opacity-90 transition-opacity"
+                className="rounded-lg bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-container)] px-8 py-3 text-sm font-medium text-white hover:opacity-90 transition-opacity"
               >
                 Start Section ↵
               </button>
@@ -1219,7 +1219,7 @@ export default function AssessmentEngine({
           ) : (
             <>
               {/* Persistent instruction context */}
-              <p className="text-center text-xs text-[#a3a6ff] italic mb-6">
+              <p className="text-center text-xs text-[var(--color-primary)] italic mb-6">
                 {currentInst.description}
               </p>
 
@@ -1255,14 +1255,14 @@ export default function AssessmentEngine({
                       onClick={() => handleAnswer(value)}
                       className={`flex-1 min-w-0 rounded-xl py-3 text-center transition-all ${
                         isSelected
-                          ? "bg-[rgba(96,99,238,0.15)] ring-1 ring-[rgba(96,99,238,0.3)] text-text-primary"
+                          ? "bg-[color-mix(in_oklch,var(--color-primary-container)_15%,transparent)] ring-1 ring-[color-mix(in_oklch,var(--color-primary-container)_30%,transparent)] text-text-primary"
                           : "glass-hover text-text-secondary hover:text-text-primary"
                       }`}
                     >
                       <span className="flex flex-col items-center gap-1">
                         <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold ${
                           isSelected
-                            ? "bg-[#6063ee] text-white"
+                            ? "bg-[var(--color-primary-container)] text-white"
                             : "bg-surface-200 text-text-muted"
                         }`}>
                           {value}
