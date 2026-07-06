@@ -10,6 +10,7 @@
  * BRAND.md: Lucide only, semantic tokens, light + dark safe.
  */
 
+import { useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -36,6 +37,16 @@ export default function InviteLanding({
 }: InviteLandingProps) {
   // The invite carries through sign-up so the dyad links on the other side.
   const ctaHref = `/login?invite=${inviteCode}`;
+
+  // Persist the invite id in a cookie so it survives sign-up AND the assessment
+  // and can link the dyad on the dashboard. The copy/paste (broadcast) path has
+  // no recipient email to match on, so this id is the only handle we have — the
+  // ?invite= param alone is dropped once the multi-step assessment starts.
+  useEffect(() => {
+    if (inviteCode) {
+      document.cookie = `pending_invite=${encodeURIComponent(inviteCode)}; path=/; max-age=3600; SameSite=Lax`;
+    }
+  }, [inviteCode]);
 
   // ── Relatti: relationship-framed, no Decoded chrome ──
   if (brandId === 'relatti') {

@@ -1,8 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
+import { headers, cookies } from "next/headers";
 import type { Metadata } from "next";
-import { claimPendingInvites } from "@/lib/decoded/claim-invites";
+import { claimPendingInvites, claimInviteById } from "@/lib/decoded/claim-invites";
 import { getActiveDyad, getDyadConsent } from "@/lib/relatti/dashboard-dyad";
 import { getRelationships } from "@/lib/relatti/relationships";
 import { syncMyReportToSpine } from "@/lib/relatti/sync-my-report";
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ brand?: string }>;
+  searchParams: Promise<{ brand?: string; invite?: string }>;
 }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -58,6 +58,16 @@ export default async function DashboardPage({
           body: JSON.stringify({ inviteId }),
         }).catch((err) => console.error('[dashboard] notify error:', err));
       }
+    }
+
+    // Copy/paste (broadcast) invite links have no recipient email to match on, so
+    // claimPendingInvites can't link them. The invite id rides through sign-up +
+    // the assessment in the `pending_invite` cookie (set on the invite landing),
+    // with a ?invite= param as a fallback. Claim it by id so the dyad forms.
+    const { invite: inviteParam } = await searchParams;
+    const pendingInvite = inviteParam || (await cookies()).get("pending_invite")?.value;
+    if (pendingInvite) {
+      await claimInviteById(user.id, user.email, pendingInvite);
     }
   }
 
