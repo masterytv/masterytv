@@ -3,33 +3,43 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useUser } from "@/hooks/useUser";
-import { Infinity as InfinityIcon, MessageSquare, Check, ArrowRight } from "lucide-react";
+import { Infinity as InfinityIcon, MessageSquare, Check, ArrowRight, KeyRound } from "lucide-react";
 
 /**
  * Free-beta unlock page. A free tester who hits the daily coaching cap lands
- * here from the coach's limit message (or the topbar Beta badge). They unlock
- * unlimited coaching at no cost in exchange for a feedback pledge — no card.
- * POSTs /api/relatti/beta-unlock, which flips users.beta_access.
+ * here from the coach's limit message (or the topbar Beta badge). During the
+ * controlled beta they redeem an INVITE CODE (per-code cap) to unlock unlimited
+ * coaching at no cost, plus an optional feedback note.
+ * POSTs /api/relatti/beta-unlock → redeem_beta_code → flips users.beta_access.
  */
 export default function BetaUnlockPage() {
   const { user, loading } = useUser();
+  const [code, setCode] = useState("");
   const [note, setNote] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "done" | "error">("idle");
+  const [errorMsg, setErrorMsg] = useState("");
 
   const unlocked = status === "done" || !!user?.beta_access;
 
   async function unlock() {
-    if (status === "sending") return;
+    if (status === "sending" || !code.trim()) return;
     setStatus("sending");
+    setErrorMsg("");
     try {
       const res = await fetch("/api/relatti/beta-unlock", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ note }),
+        body: JSON.stringify({ code: code.trim(), note }),
       });
-      if (!res.ok) throw new Error("request failed");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setErrorMsg(data.error || "Something went wrong. Please try again.");
+        setStatus("error");
+        return;
+      }
       setStatus("done");
     } catch {
+      setErrorMsg("Something went wrong. Please try again.");
       setStatus("error");
     }
   }
@@ -79,9 +89,9 @@ export default function BetaUnlockPage() {
               Unlock unlimited coaching — free during beta
             </h1>
             <p className="mt-3 text-base text-text-secondary">
-              Relatti is still in beta, so we&apos;re not charging yet. Keep going with
-              unlimited coaching at no cost. All we ask in return is your honest
-              feedback — it&apos;s what makes the product better.
+              Relatti is still in beta, so we&apos;re not charging yet. Enter your invite
+              code to unlock unlimited coaching at no cost. All we ask in return is your
+              honest feedback — it&apos;s what makes the product better.
             </p>
 
             <div className="mt-6 space-y-4 rounded-xl bg-surface-50 p-6">
@@ -117,6 +127,24 @@ export default function BetaUnlockPage() {
             </div>
 
             <label className="mt-6 block text-sm font-medium text-text-primary">
+              Your invite code
+            </label>
+            <div className="relative mt-2">
+              <KeyRound
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2"
+                style={{ color: "var(--color-primary)" }}
+              />
+              <input
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder="Enter the code we sent you"
+                autoCapitalize="characters"
+                className="w-full rounded-md bg-surface-100 py-3 pl-10 pr-3 text-sm uppercase tracking-wide text-text-primary outline-none placeholder:normal-case placeholder:tracking-normal placeholder:text-text-muted"
+                style={{ border: "1px solid color-mix(in oklch, var(--color-primary) 12%, transparent)" }}
+              />
+            </div>
+
+            <label className="mt-6 block text-sm font-medium text-text-primary">
               Anything you&apos;d like us to know? <span className="text-text-muted">(optional)</span>
             </label>
             <textarea
@@ -130,13 +158,13 @@ export default function BetaUnlockPage() {
 
             {status === "error" && (
               <p className="mt-3 text-sm text-danger">
-                Something went wrong unlocking your access. Please try again.
+                {errorMsg || "Something went wrong unlocking your access. Please try again."}
               </p>
             )}
 
             <button
               onClick={unlock}
-              disabled={status === "sending"}
+              disabled={status === "sending" || !code.trim()}
               className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-md py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
               style={{
                 background:

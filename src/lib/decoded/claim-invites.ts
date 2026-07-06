@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { syncEngagementForInvite } from './sync-engagement';
+import { normalizeInviteEmail, buildClaimPatch } from './invite-claim';
 
 /**
  * A service-role client for the privileged invite-linking operations below.
@@ -63,17 +64,10 @@ export async function claimPendingInvites(
     .limit(1)
     .maybeSingle();
 
-  const newStatus = hasReport ? 'completed' : 'pending';
-
   const { data, error } = await admin
     .from('decoded_invites')
-    .update({
-      recipient_id: userId,
-      recipient_report_id: hasReport?.id ?? null,
-      status: newStatus,
-      ...(hasReport ? { completed_at: new Date().toISOString() } : {}),
-    })
-    .eq('recipient_email', userEmail.toLowerCase())
+    .update(buildClaimPatch(userId, hasReport?.id ?? null, new Date().toISOString()))
+    .eq('recipient_email', normalizeInviteEmail(userEmail))
     .is('recipient_id', null)
     .select('id');
 
@@ -121,7 +115,7 @@ export async function isUserInvitee(
     .select('id', { count: 'exact', head: true });
 
   query = userEmail
-    ? query.or(`recipient_id.eq.${userId},recipient_email.eq.${userEmail.toLowerCase()}`)
+    ? query.or(`recipient_id.eq.${userId},recipient_email.eq.${normalizeInviteEmail(userEmail)}`)
     : query.eq('recipient_id', userId);
 
   const { count, error } = await query;

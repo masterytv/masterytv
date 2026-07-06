@@ -1,24 +1,17 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { syncEngagementForInvite } from "@/lib/decoded/sync-engagement";
+import { reduceConsent } from "@/lib/relatti/consent-machine";
 
 /**
  * The negotiated PARTNER-visibility axis (decoded_invites.share_with_human).
  *
- * Actions:
- *   • request — RAISE the level. Stores a pending request (upgrade_requested_*);
- *     the partner sees a dashboard notice and must accept before it applies.
- *   • accept  — apply the partner's pending request.
- *   • decline — clear the partner's pending request.
- *   • lower   — REDUCE the level (incl. 'none' = Private). Applies immediately;
- *     'none' sets revoked_at so relatti_sync_invite won't re-default it upward.
- *
- * All invite writes use the caller's authed client (RLS lets a party update
- * their own invite); the spine is re-synced via syncEngagementForInvite.
+ * The transition rules (request/accept/decline/lower + the Private guard) live in
+ * the pure, unit-tested `reduceConsent` reducer. This route owns only I/O: auth,
+ * loading the invite, verifying the caller is a party to it, applying the reducer's
+ * patch with the caller's authed client (RLS lets a party update their own invite),
+ * and re-syncing the spine via syncEngagementForInvite when the reducer asks.
  */
-const RANK: Record<string, number> = { none: 0, compatibility: 1, type_compatibility: 1, full: 2 };
-const LEVELS = ["none", "type_compatibility", "full"];
-
 export async function POST(req: Request) {
   try {
     const supabase = await createClient();
@@ -49,83 +42,32 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Not authorized" }, { status: 403 });
     }
 
-    const current = (invite.share_with_human as string) || "none";
-    const now = new Date().toISOString();
+    const result = reduceConsent({
+      action,
+      level,
+      current: invite.share_with_human as string | null,
+      requestedLevel: invite.upgrade_requested_level as string | null,
+      requestedBy: invite.upgrade_requested_by as string | null,
+      userId: user.id,
+      now: new Date().toISOString(),
+    });
 
-    if (action === "request") {
-      if (!level || !LEVELS.includes(level) || RANK[level] <= RANK[current]) {
-        return NextResponse.json({ error: "A request must raise the level" }, { status: 400 });
-      }
-      const { error } = await supabase
-        .from("decoded_invites")
-        .update({ upgrade_requested_level: level, upgrade_requested_by: user.id })
-        .eq("id", inviteId);
-      if (error) {
-        return NextResponse.json({ error: "Failed to save request" }, { status: 500 });
-      }
-      return NextResponse.json({ success: true, status: "requested", level });
+    if (!result.ok) {
+      return NextResponse.json({ error: result.error }, { status: result.httpStatus });
     }
 
-    if (action === "accept") {
-      const reqLevel = invite.upgrade_requested_level as string | null;
-      if (!reqLevel || invite.upgrade_requested_by === user.id) {
-        return NextResponse.json({ error: "Nothing to accept" }, { status: 400 });
-      }
-      const { error } = await supabase
-        .from("decoded_invites")
-        .update({
-          share_with_human: reqLevel,
-          share_with_coach: reqLevel,
-          status: "consented",
-          consented_at: now,
-          revoked_at: null,
-          upgrade_requested_level: null,
-          upgrade_requested_by: null,
-        })
-        .eq("id", inviteId);
-      if (error) {
-        return NextResponse.json({ error: "Failed to accept" }, { status: 500 });
-      }
+    const { error } = await supabase
+      .from("decoded_invites")
+      .update(result.patch)
+      .eq("id", inviteId);
+    if (error) {
+      return NextResponse.json({ error: result.failureMessage }, { status: 500 });
+    }
+
+    if (result.syncAfter) {
       await syncEngagementForInvite(inviteId);
-      return NextResponse.json({ success: true, status: "accepted", level: reqLevel });
     }
-
-    if (action === "decline") {
-      const { error } = await supabase
-        .from("decoded_invites")
-        .update({ upgrade_requested_level: null, upgrade_requested_by: null })
-        .eq("id", inviteId);
-      if (error) {
-        return NextResponse.json({ error: "Failed to decline" }, { status: 500 });
-      }
-      return NextResponse.json({ success: true, status: "declined" });
-    }
-
-    if (action === "lower") {
-      if (!level || !LEVELS.includes(level) || RANK[level] >= RANK[current]) {
-        return NextResponse.json({ error: "Lowering must reduce the level" }, { status: 400 });
-      }
-      const goingPrivate = level === "none";
-      const { error } = await supabase
-        .from("decoded_invites")
-        .update({
-          share_with_human: level,
-          share_with_coach: level,
-          status: goingPrivate ? "completed" : "consented",
-          consented_at: goingPrivate ? null : now,
-          revoked_at: goingPrivate ? now : null,
-          upgrade_requested_level: null,
-          upgrade_requested_by: null,
-        })
-        .eq("id", inviteId);
-      if (error) {
-        return NextResponse.json({ error: "Failed to update" }, { status: 500 });
-      }
-      await syncEngagementForInvite(inviteId);
-      return NextResponse.json({ success: true, status: "lowered", level });
-    }
-
-    return NextResponse.json({ error: "Unknown action" }, { status: 400 });
+    return NextResponse.json(result.response);
   } catch (err) {
     console.error("[partner-sharing] error:", err);
     return NextResponse.json({ error: "Unexpected error" }, { status: 500 });

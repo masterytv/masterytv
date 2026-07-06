@@ -6,7 +6,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "safety": "node scripts/coach-lab/safety-battery.mjs",
+    "isolation": "node scripts/coach-lab/isolation-check.mjs",
+    "gate": "npm run typecheck && npm run test && npm run safety && npm run isolation"
   },
   "dependencies": {
     "@react-pdf/renderer": "^4.0.0",

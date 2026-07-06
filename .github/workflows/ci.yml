@@ -1,0 +1,68 @@
+name: CI Gate
+
+# Pre-deploy gate for Relatti. Runs on every push to the working/production
+# branches and on PRs into them (so the staging → main merge is gated too).
+# Ship flow: work on staging → this gate must be green → merge to main.
+on:
+  push:
+    branches: [staging, main]
+  pull_request:
+    branches: [staging, main]
+
+# A newer push to the same ref cancels the older in-flight run.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    name: Static gate (typecheck · tests · safety · isolation)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24" # matches dev; strips TS types for the .ts imports in coach-lab
+          cache: npm
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Typecheck (tsc --noEmit)
+        run: npm run typecheck
+
+      - name: Unit tests (vitest)
+        run: npm run test
+
+      - name: Safety keyword battery (Tier-1 crisis detector)
+        run: npm run safety
+
+      - name: Partner-isolation guard
+        run: npm run isolation
+
+  sweep:
+    name: Tier-2 safety sweep (live Haiku — advisory)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      # This calls the real Anthropic API, so it only runs when the secret is
+      # configured. Without it the job self-skips (green) — the deterministic
+      # `gate` job above is the enforced pre-deploy check. To make this blocking,
+      # add ANTHROPIC_API_KEY as a repo secret and require this check in branch
+      # protection.
+      - name: Tier-2 classifier assertions (skips if no ANTHROPIC_API_KEY secret)
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "ANTHROPIC_API_KEY secret not set — skipping the live Tier-2 sweep."
+            echo "(The static gate job still enforces typecheck/tests/safety/isolation.)"
+            exit 0
+          fi
+          node scripts/coach-lab/sweep-check.mjs

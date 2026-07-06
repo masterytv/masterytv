@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { syncEngagementForInvite } from '@/lib/decoded/sync-engagement';
+import { normalizeInviteEmail, isValidInviteEmail } from '@/lib/decoded/invite-claim';
 import { resolveBrand, isBrandId, type BrandId } from '@/lib/platform/brand';
-
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
  * Per-brand invite email config. Each brand sends from its OWN Resend account
@@ -121,9 +120,9 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const recipientEmail = body.email?.trim().toLowerCase();
+    const recipientEmail = normalizeInviteEmail(body.email);
 
-    if (!recipientEmail || !EMAIL_REGEX.test(recipientEmail)) {
+    if (!isValidInviteEmail(recipientEmail)) {
       return NextResponse.json(
         { error: 'Please enter a valid email address.' },
         { status: 400 }

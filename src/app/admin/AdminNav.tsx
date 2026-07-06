@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart2, Users, ArrowLeft, Fingerprint, Shield, AlertTriangle, Layers } from "lucide-react";
+import { BarChart2, Users, ArrowLeft, Fingerprint, Shield, AlertTriangle, Layers, Gauge } from "lucide-react";
 
 interface AdminNavProps {
   role: "admin" | "superadmin";
@@ -13,6 +13,7 @@ export default function AdminNav({ role, email }: AdminNavProps) {
   const pathname = usePathname();
 
   const links = [
+    { href: "/admin/beta", label: "Beta Cockpit", icon: Gauge },
     { href: "/admin/costs", label: "Cost Dashboard", icon: BarChart2 },
     { href: "/admin/crisis", label: "Crisis Flags", icon: AlertTriangle },
     { href: "/admin/frameworks", label: "Frameworks", icon: Layers },
