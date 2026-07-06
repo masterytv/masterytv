@@ -2,21 +2,25 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { claimPendingInvites } from "@/lib/decoded/claim-invites";
+import { ensureCoupleFullSharing } from "@/lib/relatti/auto-full-sharing";
+import { getBrand } from "@/lib/platform/brand.server";
 import CompatibilityHub from "./CompatibilityHub";
+import CompatibilityHubDecoded from "./CompatibilityHubDecoded";
 
 export const metadata: Metadata = {
   title: "Compatibility — Mastery",
-  description: "Compare personalities, manage sharing, and explore relationship dynamics.",
+  description: "See your compatibility, invite your partner, and explore your relationship dynamics.",
   robots: { index: false, follow: false },
 };
 
 /**
- * /dashboard/compatibility — The relationship hub.
- * 
- * - Request access (invite new people or request sharing from existing users)
- * - See invite statuses (pending, completed, connected, denied)
- * - View compatibility reports
- * - Manage received sharing requests
+ * /dashboard/compatibility — brand-gated.
+ *
+ * • Relatti (couples): a single relationship flow with NO sharing levels —
+ *   connected partners auto-see each other's full report + compatibility.
+ * • MasteryTV / Decoded (unchanged): the multi-person compatibility hub with the
+ *   type_compatibility/full sharing-level negotiation. Do NOT apply the couples
+ *   behavior here.
  */
 export default async function CompatibilityPage() {
   const supabase = await createClient();
@@ -26,12 +30,44 @@ export default async function CompatibilityPage() {
     redirect("/decoded");
   }
 
-  // Auto-claim any pending invites for this user's email
   if (user.email) {
     await claimPendingInvites(supabase, user.id, user.email);
   }
 
-  // Load invites sent BY this user (exclude broadcast invite used for share links)
+  const brand = await getBrand();
+  const userName = user.user_metadata?.display_name
+    || user.user_metadata?.full_name
+    || user.email?.split("@")[0]
+    || "there";
+
+  // ── Relatti: couples flow (auto-full, no levels) ──
+  if (brand.id === "relatti") {
+    await ensureCoupleFullSharing(user.id);
+
+    const { data: sentInvites } = await supabase
+      .from("decoded_invites")
+      .select("id, recipient_email, recipient_id, recipient_report_id, status, created_at, completed_at, consented_at, reminder_count")
+      .eq("inviter_id", user.id)
+      .neq("recipient_email", "broadcast")
+      .order("created_at", { ascending: false });
+
+    const { data: receivedInvites } = await supabase
+      .from("decoded_invites")
+      .select("id, inviter_id, inviter_name, inviter_email, status, created_at, consented_at")
+      .eq("recipient_id", user.id)
+      .order("created_at", { ascending: false });
+
+    return (
+      <CompatibilityHub
+        userName={userName}
+        userId={user.id}
+        sentInvites={sentInvites ?? []}
+        receivedInvites={receivedInvites ?? []}
+      />
+    );
+  }
+
+  // ── MasteryTV / Decoded: multi-person compatibility + sharing levels (unchanged) ──
   const { data: sentInvites } = await supabase
     .from("decoded_invites")
     .select("id, recipient_email, recipient_id, status, share_with_human, share_with_coach, compatibility_report, created_at, completed_at, consented_at, upgrade_requested_level, upgrade_requested_by")
@@ -39,20 +75,14 @@ export default async function CompatibilityPage() {
     .neq("recipient_email", "broadcast")
     .order("created_at", { ascending: false });
 
-  // Load invites sent TO this user (requests to share)
   const { data: receivedInvites } = await supabase
     .from("decoded_invites")
     .select("id, inviter_id, inviter_name, inviter_email, status, share_with_human, share_with_coach, compatibility_report, created_at, consented_at, upgrade_requested_level, upgrade_requested_by")
     .eq("recipient_id", user.id)
     .order("created_at", { ascending: false });
 
-  const userName = user.user_metadata?.display_name
-    || user.user_metadata?.full_name
-    || user.email?.split("@")[0]
-    || "there";
-
   return (
-    <CompatibilityHub
+    <CompatibilityHubDecoded
       userName={userName}
       userId={user.id}
       sentInvites={sentInvites ?? []}
