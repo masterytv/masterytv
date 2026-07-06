@@ -29,7 +29,7 @@ export default async function BetaPage() {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  const { testers, metrics } = await getBetaFunnel(admin);
+  const { testers, metrics, codes } = await getBetaFunnel(admin);
 
-  return <BetaCockpit testers={testers} metrics={metrics} />;
+  return <BetaCockpit testers={testers} metrics={metrics} codes={codes} />;
 }

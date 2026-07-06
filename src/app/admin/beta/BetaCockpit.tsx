@@ -1,11 +1,13 @@
 "use client";
 
 import { Fragment, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Users, ClipboardCheck, Send, CheckCircle2, MessageSquareText,
   MessageSquare, Sunrise, Clock, UserCheck, ChevronRight, ChevronDown, Search,
+  KeyRound, Plus, Copy, Check, Power,
 } from "lucide-react";
-import { FUNNEL_STAGES, type Tester, type CohortMetrics } from "./funnel";
+import { FUNNEL_STAGES, type Tester, type CohortMetrics, type BetaCode } from "./funnel";
 
 function relativeTime(iso: string | null): string {
   if (!iso) return "—";
@@ -55,7 +57,7 @@ function MetricCard({ icon, label, value, hint }: MetricCardProps) {
   );
 }
 
-export default function BetaCockpit({ testers, metrics }: { testers: Tester[]; metrics: CohortMetrics }) {
+export default function BetaCockpit({ testers, metrics, codes }: { testers: Tester[]; metrics: CohortMetrics; codes: BetaCode[] }) {
   const [open, setOpen] = useState<Set<string>>(new Set());
   const [query, setQuery] = useState("");
 
@@ -131,6 +133,9 @@ export default function BetaCockpit({ testers, metrics }: { testers: Tester[]; m
             </div>
           ))}
         </div>
+
+        {/* Invite codes */}
+        <BetaCodesPanel codes={codes} />
 
         {/* Tester table */}
         <div className="ad-table-wrap">
@@ -219,6 +224,7 @@ export default function BetaCockpit({ testers, metrics }: { testers: Tester[]; m
                                 <span>Signed up {shortDate(t.createdAt)}</span>
                                 <span>Report {shortDate(t.reportAt)}</span>
                                 <span>Plan {t.tier ?? "—"}</span>
+                                {t.codeRedeemed && <span>Code {t.codeRedeemed}</span>}
                               </div>
 
                               <div className="ad-beta-detail__group">
@@ -287,6 +293,141 @@ export default function BetaCockpit({ testers, metrics }: { testers: Tester[]; m
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+/** Admin panel to create + activate/deactivate invite codes. Server data is
+ *  re-fetched via router.refresh() after each mutation. */
+function BetaCodesPanel({ codes }: { codes: BetaCode[] }) {
+  const router = useRouter();
+  const [label, setLabel] = useState("");
+  const [maxUses, setMaxUses] = useState("1");
+  const [days, setDays] = useState("");
+  const [custom, setCustom] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [copied, setCopied] = useState<string | null>(null);
+
+  async function create() {
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      const res = await fetch("/api/admin/beta-codes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          label,
+          maxUses: Number(maxUses) || 1,
+          expiresInDays: days ? Number(days) : undefined,
+          code: custom,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error || "Could not create code.");
+        return;
+      }
+      setLabel("");
+      setMaxUses("1");
+      setDays("");
+      setCustom("");
+      router.refresh();
+    } catch {
+      setError("Could not create code.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function toggle(id: string, active: boolean) {
+    await fetch("/api/admin/beta-codes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "toggle", id, active }),
+    });
+    router.refresh();
+  }
+
+  function copy(code: string) {
+    navigator.clipboard?.writeText(code).then(() => {
+      setCopied(code);
+      setTimeout(() => setCopied((c) => (c === code ? null : c)), 1500);
+    });
+  }
+
+  return (
+    <div className="ad-table-wrap">
+      <div className="ad-table-header" style={{ alignItems: "flex-start", flexDirection: "column", gap: "0.75rem" }}>
+        <span className="ad-table-header__title">Invite codes ({codes.length})</span>
+        <div className="ad-beta-form">
+          <input className="ad-beta-input" style={{ minWidth: 180 }} placeholder="Label (e.g. Friends & family)" value={label} onChange={(e) => setLabel(e.target.value)} />
+          <input className="ad-beta-input" style={{ width: 92 }} type="number" min={1} placeholder="Max uses" value={maxUses} onChange={(e) => setMaxUses(e.target.value)} />
+          <input className="ad-beta-input" style={{ width: 118 }} type="number" min={1} placeholder="Expires (days)" value={days} onChange={(e) => setDays(e.target.value)} />
+          <input className="ad-beta-input" style={{ width: 140 }} placeholder="Custom code (opt.)" value={custom} onChange={(e) => setCustom(e.target.value.toUpperCase())} />
+          <button className="ad-beta-btn" onClick={create} disabled={busy}>
+            <Plus size={14} /> {busy ? "Creating…" : "Create code"}
+          </button>
+        </div>
+        {error && <span style={{ fontSize: "0.75rem", color: "var(--danger-hex)" }}>{error}</span>}
+      </div>
+
+      {codes.length === 0 ? (
+        <div className="ad-beta-empty">No codes yet — create one to gate the beta.</div>
+      ) : (
+        <table className="ad-table">
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Label</th>
+              <th>Used</th>
+              <th>Expires</th>
+              <th>Status</th>
+              <th style={{ width: 40 }} />
+            </tr>
+          </thead>
+          <tbody>
+            {codes.map((c) => {
+              const exhausted = c.uses >= c.maxUses;
+              const expired = c.expiresAt != null && new Date(c.expiresAt).getTime() <= Date.now();
+              return (
+                <tr key={c.id}>
+                  <td>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
+                      <KeyRound size={13} style={{ color: "var(--color-primary)" }} />
+                      <span className="ad-beta-code-mono">{c.code}</span>
+                      <button className="ad-beta-iconbtn" onClick={() => copy(c.code)} aria-label="Copy code">
+                        {copied === c.code ? <Check size={13} /> : <Copy size={13} />}
+                      </button>
+                    </span>
+                  </td>
+                  <td style={{ color: "var(--text-secondary)" }}>{c.label || <span className="ad-beta-muted">—</span>}</td>
+                  <td>
+                    {c.uses} <span className="ad-beta-muted">/ {c.maxUses}</span>
+                  </td>
+                  <td style={{ color: "var(--text-hint)", fontSize: "0.78rem" }}>{c.expiresAt ? shortDate(c.expiresAt) : "never"}</td>
+                  <td>
+                    <span className={`ad-badge ${c.active && !exhausted && !expired ? "ad-badge--active" : "ad-badge--danger"}`}>
+                      {!c.active ? "off" : expired ? "expired" : exhausted ? "full" : "live"}
+                    </span>
+                  </td>
+                  <td>
+                    <button
+                      className="ad-beta-iconbtn"
+                      onClick={() => toggle(c.id, !c.active)}
+                      aria-label={c.active ? "Deactivate" : "Activate"}
+                      title={c.active ? "Deactivate" : "Activate"}
+                    >
+                      <Power size={14} style={{ color: c.active ? "var(--success-hex)" : "var(--text-disabled)" }} />
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }

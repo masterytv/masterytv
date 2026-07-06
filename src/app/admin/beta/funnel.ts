@@ -56,8 +56,21 @@ export interface Tester {
   ritualCount: number;
   lastActivity: string | null;
   feedback: FeedbackItem[];
+  /** The invite code this tester redeemed, if any (label or raw code). */
+  codeRedeemed: string | null;
   /** Furthest funnel milestone reached, 0 (signed up) … 5 (both active). */
   stage: number;
+}
+
+export interface BetaCode {
+  id: string;
+  code: string;
+  label: string | null;
+  maxUses: number;
+  uses: number;
+  active: boolean;
+  expiresAt: string | null;
+  createdAt: string;
 }
 
 export interface CohortMetrics {
@@ -95,7 +108,7 @@ function latest(a: string | null, b: string | null): string | null {
 
 export async function getBetaFunnel(
   admin: SupabaseClient,
-): Promise<{ testers: Tester[]; metrics: CohortMetrics }> {
+): Promise<{ testers: Tester[]; metrics: CohortMetrics; codes: BetaCode[] }> {
   // Fetch the small set of spine tables in parallel. Coaching-content tables
   // (messages, ritual_responses) return ONLY user_id + created_at.
   const [
@@ -108,8 +121,9 @@ export async function getBetaFunnel(
     messagesRes,
     ritualsRes,
     feedbackRes,
+    codesRes,
   ] = await Promise.all([
-    admin.from("users").select("id, email, name, created_at, role, beta_access, decoded_tier"),
+    admin.from("users").select("id, email, name, created_at, role, beta_access, decoded_tier, beta_code_id"),
     admin.from("engagement").select("id, kind, status, metadata").eq("kind", "relationship_dyad"),
     admin.from("participant").select("engagement_id, user_id, invited_email, role, status"),
     admin.from("decoded_invites").select("id, inviter_id, recipient_id, recipient_email, created_at"),
@@ -118,12 +132,22 @@ export async function getBetaFunnel(
     admin.from("messages").select("user_id, created_at"),
     admin.from("ritual_responses").select("user_id, created_at"),
     admin.from("feedback").select("id, user_id, category, message, rating, status, created_at").order("created_at", { ascending: false }),
+    admin.from("beta_invite_codes").select("id, code, label, max_uses, uses, active, expires_at, created_at").order("created_at", { ascending: false }),
   ]);
 
   const users = (usersRes.data ?? []) as Array<{
     id: string; email: string; name: string | null; created_at: string;
-    role: string; beta_access: boolean; decoded_tier: string | null;
+    role: string; beta_access: boolean; decoded_tier: string | null; beta_code_id: string | null;
   }>;
+
+  const codes: BetaCode[] = ((codesRes.data ?? []) as Array<{
+    id: string; code: string; label: string | null; max_uses: number; uses: number;
+    active: boolean; expires_at: string | null; created_at: string;
+  }>).map((c) => ({
+    id: c.id, code: c.code, label: c.label, maxUses: c.max_uses, uses: c.uses,
+    active: c.active, expiresAt: c.expires_at, createdAt: c.created_at,
+  }));
+  const codeLabelById = new Map(codes.map((c) => [c.id, c.label || c.code]));
   const dyadEngIds = new Set((engRes.data ?? []).map((e) => e.id as string));
   const parts = ((partsRes.data ?? []) as Array<{
     engagement_id: string; user_id: string | null; invited_email: string | null; role: string; status: string;
@@ -251,6 +275,7 @@ export async function getBetaFunnel(
       ritualCount: ritualCount.get(u.id) ?? 0,
       lastActivity: latest(msgLast.get(u.id) ?? null, ritualLast.get(u.id) ?? null),
       feedback: feedbackByUser.get(u.id) ?? [],
+      codeRedeemed: u.beta_code_id ? (codeLabelById.get(u.beta_code_id) ?? null) : null,
       stage,
     });
   }
@@ -286,5 +311,5 @@ export async function getBetaFunnel(
     feedbackCount: (feedbackRes.data ?? []).length,
   };
 
-  return { testers, metrics };
+  return { testers, metrics, codes };
 }
