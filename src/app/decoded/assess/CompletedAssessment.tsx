@@ -115,7 +115,7 @@ export default function CompletedAssessment({ assessmentId, scores: initialScore
         {scoring ? (
           /* Auto-scoring in progress */
           <div className="text-center">
-            <Loader2 className="mx-auto mb-4 h-10 w-10 animate-spin text-[#a3a6ff]" />
+            <Loader2 className="mx-auto mb-4 h-10 w-10 animate-spin text-[var(--color-primary)]" />
             <h2 className="text-headline-md text-text-primary">Scoring your assessment…</h2>
             <p className="mt-2 text-sm text-text-secondary">
               Running your responses through 13 scoring instruments.
@@ -124,7 +124,7 @@ export default function CompletedAssessment({ assessmentId, scores: initialScore
         ) : navigating ? (
           /* Auto-navigating to report */
           <div className="text-center">
-            <Loader2 className="mx-auto mb-4 h-10 w-10 animate-spin text-[#a3a6ff]" />
+            <Loader2 className="mx-auto mb-4 h-10 w-10 animate-spin text-[var(--color-primary)]" />
             <h2 className="text-headline-md text-text-primary">Opening your report…</h2>
             <p className="mt-2 text-sm text-text-secondary">
               Your personalized dashboard is ready.
@@ -141,7 +141,7 @@ export default function CompletedAssessment({ assessmentId, scores: initialScore
             <div className="mt-6 flex flex-col gap-3">
               <button
                 onClick={runScoring}
-                className="rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-6 py-3 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+                className="rounded-lg bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-container)] px-6 py-3 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
               >
                 Retry scoring
               </button>
@@ -158,7 +158,7 @@ export default function CompletedAssessment({ assessmentId, scores: initialScore
         ) : (
           /* Default: loading state while useEffect kicks in */
           <div className="text-center">
-            <Loader2 className="mx-auto mb-4 h-10 w-10 animate-spin text-[#a3a6ff]" />
+            <Loader2 className="mx-auto mb-4 h-10 w-10 animate-spin text-[var(--color-primary)]" />
             <h2 className="text-headline-md text-text-primary">Preparing…</h2>
           </div>
         )}

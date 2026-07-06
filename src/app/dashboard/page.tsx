@@ -1,13 +1,15 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { headers, cookies } from "next/headers";
 import type { Metadata } from "next";
-import { claimPendingInvites } from "@/lib/decoded/claim-invites";
+import { claimPendingInvites, claimInviteById } from "@/lib/decoded/claim-invites";
 import { getActiveDyad, getDyadConsent } from "@/lib/relatti/dashboard-dyad";
 import { getRelationships } from "@/lib/relatti/relationships";
 import { syncMyReportToSpine } from "@/lib/relatti/sync-my-report";
 import { getTodaysRitual } from "@/lib/relatti/ritual";
 import { getBrand } from "@/lib/platform/brand.server";
 import { isBrandId } from "@/lib/platform/brand";
+import { originFromHeaders } from "@/lib/platform/origin";
 import DashboardHome from "./DashboardHome";
 import RelattiDashboard from "./RelattiDashboard";
 
@@ -29,7 +31,7 @@ export const metadata: Metadata = {
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ brand?: string }>;
+  searchParams: Promise<{ brand?: string; invite?: string }>;
 }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -38,6 +40,10 @@ export default async function DashboardPage({
     redirect("/decoded");
   }
 
+  // Invite/share links must use the domain the user is actually on (relatti.com
+  // for a Relatti user), NOT the static NEXT_PUBLIC_APP_URL (= masterytv.com).
+  const appUrl = originFromHeaders(await headers());
+
   // Auto-claim any pending invites for this user's email
   // and notify inviters when their recipient has completed the assessment
   if (user.email) {
@@ -45,14 +51,23 @@ export default async function DashboardPage({
 
     // Fire-and-forget notifications for newly claimed invites
     if (claimedIds.length > 0) {
-      const origin = process.env.NEXT_PUBLIC_APP_URL || 'https://masterytv.com';
       for (const inviteId of claimedIds) {
-        fetch(`${origin}/api/decoded/invite-notify`, {
+        fetch(`${appUrl}/api/decoded/invite-notify`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ inviteId }),
         }).catch((err) => console.error('[dashboard] notify error:', err));
       }
+    }
+
+    // Copy/paste (broadcast) invite links have no recipient email to match on, so
+    // claimPendingInvites can't link them. The invite id rides through sign-up +
+    // the assessment in the `pending_invite` cookie (set on the invite landing),
+    // with a ?invite= param as a fallback. Claim it by id so the dyad forms.
+    const { invite: inviteParam } = await searchParams;
+    const pendingInvite = inviteParam || (await cookies()).get("pending_invite")?.value;
+    if (pendingInvite) {
+      await claimInviteById(user.id, user.email, pendingInvite);
     }
   }
 
@@ -156,7 +171,6 @@ export default async function DashboardPage({
     .select("id")
     .single();
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://masterytv.com";
   const inviteUrl = broadcastInvite
     ? `${appUrl}/invite/${broadcastInvite.id}`
     : `${appUrl}/login`;

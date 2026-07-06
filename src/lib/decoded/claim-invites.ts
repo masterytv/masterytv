@@ -92,6 +92,74 @@ export async function claimPendingInvites(
 }
 
 /**
+ * Claim a SPECIFIC invite by id — the path for "copy/paste" (broadcast) invite
+ * links. A broadcast invite carries its id in the URL but has no real recipient
+ * email (`recipient_email = "broadcast"`), so the email-based claimPendingInvites
+ * can never link it: the recipient arrives, signs up, completes, and is silently
+ * left unconnected (the dyad never forms — the 2026-07-06 copy/paste bug).
+ *
+ * Idempotent + safe: only claims an invite that (a) exists, (b) is NOT the
+ * caller's own, and (c) is still unclaimed (recipient_id null, enforced in the
+ * UPDATE as a race guard). A broadcast invite is converted to a normal
+ * per-recipient invite (recipient_email = the claimer) so the inviter mints a
+ * fresh broadcast on their next load and the rest of the machinery
+ * (sync-my-report auto-promote, relatti_sync_invite) treats it like any invite.
+ *
+ * @returns true if this call linked the invite, false otherwise (already claimed,
+ *   own invite, missing, or lost the race).
+ */
+export async function claimInviteById(
+  userId: string,
+  userEmail: string,
+  inviteId: string,
+): Promise<boolean> {
+  if (!inviteId) return false;
+  const admin = serviceClient();
+  if (!admin) return false;
+
+  const { data: inv } = await admin
+    .from('decoded_invites')
+    .select('id, inviter_id, recipient_id, recipient_email')
+    .eq('id', inviteId)
+    .maybeSingle();
+
+  // Missing, your own invite, or already claimed → nothing to do.
+  if (!inv || inv.inviter_id === userId || inv.recipient_id) return false;
+
+  // Does the claimer already have a report? (drives completed vs pending)
+  const { data: hasReport } = await admin
+    .from('assessment_reports')
+    .select('id')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const update: Record<string, unknown> = {
+    ...buildClaimPatch(userId, hasReport?.id ?? null, new Date().toISOString()),
+  };
+  // Convert a broadcast share-link into a normal per-recipient invite.
+  if (inv.recipient_email === 'broadcast') update.recipient_email = normalizeInviteEmail(userEmail);
+
+  const { data: claimed, error } = await admin
+    .from('decoded_invites')
+    .update(update)
+    .eq('id', inviteId)
+    .is('recipient_id', null) // race guard: only claim if still unclaimed
+    .select('id');
+
+  if (error) {
+    console.error('[claimInviteById] Error:', error.message);
+    return false;
+  }
+  if (!claimed || claimed.length === 0) return false;
+
+  // Mirror into the engagement spine so the dyad forms + both participants link.
+  await syncEngagementForInvite(inviteId);
+  return true;
+}
+
+/**
  * Is this user the recipient of someone else's invitation (the invited partner
  * in a dyad)? Used to suppress the "invite someone" screen for invitees — they
  * were the one invited, so asking them to invite a partner is wrong.

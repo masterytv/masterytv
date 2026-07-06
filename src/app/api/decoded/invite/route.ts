@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { syncEngagementForInvite } from '@/lib/decoded/sync-engagement';
 import { normalizeInviteEmail, isValidInviteEmail } from '@/lib/decoded/invite-claim';
 import { resolveBrand, isBrandId, type BrandId } from '@/lib/platform/brand';
+import { originFromHeaders } from '@/lib/platform/origin';
 
 /**
  * Per-brand invite email config. Each brand sends from its OWN Resend account
@@ -141,7 +142,7 @@ export async function POST(req: NextRequest) {
       ? cookieBrand
       : resolveBrand(req.headers.get('host')).id;
     const brand = INVITE_BRANDS[brandId];
-    const appUrl = req.nextUrl.origin || process.env.NEXT_PUBLIC_APP_URL || 'https://masterytv.com';
+    const appUrl = originFromHeaders(req.headers);
 
     const ownKey = process.env[brand.keyEnv];
     const sharedKey = process.env.RESEND_API_KEY;
