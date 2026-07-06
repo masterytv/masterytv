@@ -22,8 +22,6 @@ import {
   CircleDashed,
   CircleCheck,
   Circle,
-  Eye,
-  EyeOff,
 } from "lucide-react";
 import type { Relationship, PersonStatus, AssessmentStatus } from "@/lib/relatti/relationships";
 
@@ -42,25 +40,6 @@ function AssessmentIcon({ status }: { status: AssessmentStatus }) {
   return <Circle className={common} style={{ color: "var(--color-text-muted)" }} />;
 }
 
-function ShareBadge({ on, label }: { on: boolean; label: string }) {
-  return (
-    <span
-      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.68rem] font-medium"
-      style={
-        on
-          ? {
-              background: "color-mix(in oklch, var(--color-primary) 12%, transparent)",
-              color: "var(--color-primary)",
-            }
-          : { background: "var(--color-surface-100)", color: "var(--color-text-muted)" }
-      }
-    >
-      {on ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
-      {label}
-    </span>
-  );
-}
-
 function PersonRow({ person, joined }: { person: PersonStatus; joined: boolean }) {
   return (
     <div className="rounded-xl bg-surface-100 p-4">
@@ -74,14 +53,6 @@ function PersonRow({ person, joined }: { person: PersonStatus; joined: boolean }
         <AssessmentIcon status={person.assessment} />
         {ASSESSMENT_COPY[person.assessment]}
       </div>
-      {(joined || person.isYou) && (
-        <div className="mt-2.5 flex flex-wrap gap-1.5">
-          <ShareBadge on={person.sharedWithPartner} label="With partner" />
-          {/* Coach visibility is a private, unilateral choice — only ever shown on
-              your own row, never on your partner's. */}
-          {person.isYou && <ShareBadge on={person.sharedWithCoach} label="With coach" />}
-        </div>
-      )}
     </div>
   );
 }

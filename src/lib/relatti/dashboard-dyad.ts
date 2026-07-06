@@ -87,27 +87,19 @@ export async function getActiveDyad(
 }
 
 export interface DyadConsent {
-  /** The dyad's invite row — the target for the sharing APIs. */
+  /** The dyad's invite row (identifier for the couple's connection). */
   inviteId: string;
   engagementId: string;
-  /** The other partner's display name. */
+  /** The other partner's display name (drives the informational privacy panel). */
   partnerName: string;
-  /** MY coach-visibility (per-person, unilateral): none | type_compatibility | full. */
-  coachLevel: string;
-  /** The couple's AGREED partner-visibility level (what's currently shared). */
-  partnerLevel: string;
-  /** A pending raise request awaiting agreement, if any. */
-  pending: { level: string; byMe: boolean } | null;
 }
 
 /**
- * Resolve the two-axis consent state for a dyad:
- *   • coachLevel   — this user's OWN coach-visibility (participant.coach_share_level),
- *     changed unilaterally + immediately via /api/relatti/coach-visibility.
- *   • partnerLevel — the couple's agreed partner-visibility (decoded_invites
- *     .share_with_human), raised via a request→accept handshake (a pending request
- *     lives in upgrade_requested_level/by), lowered immediately.
- * Readable via the user's own RLS (they're a party to the invite + participant).
+ * Resolve the dashboard privacy panel's data for a dyad — just the partner's
+ * display name. There are no sharing controls anymore: the coach always sees the
+ * user's full profile, and connected couples auto-share their full report +
+ * compatibility (see auto-full-sharing.ts), so the panel is purely informational.
+ * Readable via the user's own RLS (they're a party to the invite).
  */
 export async function getDyadConsent(
   supabase: SupabaseClient,
@@ -123,19 +115,11 @@ export async function getDyadConsent(
   const inviteId = eng?.source_invite_id as string | undefined;
   if (!inviteId) return null;
 
-  const [{ data: invite }, { data: myPart }] = await Promise.all([
-    supabase
-      .from("decoded_invites")
-      .select("id, share_with_human, upgrade_requested_level, upgrade_requested_by, inviter_id, recipient_id, inviter_name, recipient_email")
-      .eq("id", inviteId)
-      .maybeSingle(),
-    supabase
-      .from("participant")
-      .select("coach_share_level")
-      .eq("engagement_id", engagementId)
-      .eq("user_id", userId)
-      .maybeSingle(),
-  ]);
+  const { data: invite } = await supabase
+    .from("decoded_invites")
+    .select("id, inviter_id, inviter_name, recipient_email")
+    .eq("id", inviteId)
+    .maybeSingle();
 
   if (!invite) return null;
 
@@ -145,18 +129,10 @@ export async function getDyadConsent(
       ? invite.recipient_email?.split("@")[0]
       : invite.inviter_name || invite.recipient_email?.split("@")[0]) || "your partner";
 
-  const pendingLevel = invite.upgrade_requested_level as string | null;
-  const pending = pendingLevel
-    ? { level: pendingLevel, byMe: invite.upgrade_requested_by === userId }
-    : null;
-
   return {
     inviteId: invite.id as string,
     engagementId,
     partnerName,
-    coachLevel: (myPart?.coach_share_level as string) ?? "full",
-    partnerLevel: (invite.share_with_human as string) ?? "none",
-    pending,
   };
 }
 
