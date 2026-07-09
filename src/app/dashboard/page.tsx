@@ -16,7 +16,7 @@ import RelattiDashboard from "./RelattiDashboard";
 
 export const metadata: Metadata = {
   title: "Dashboard — Mastery",
-  description: "Your personal mastery dashboard. Assessment, report, and AI coaching in one place.",
+  description: "Your personal mastery dashboard. Assessment, report, and coaching in one place.",
   robots: { index: false, follow: false },
 };
 

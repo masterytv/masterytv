@@ -20,7 +20,7 @@ interface PageProps {
 export const metadata: Metadata = {
   title: "Join the Relatti Beta — Free Relationship Coaching",
   description:
-    "Free unlimited AI relationship coaching during the beta. In exchange: two 2-minute check-ins that tell us whether it's working.",
+    "Free unlimited relationship coaching during the beta. In exchange: two 2-minute check-ins that tell us whether it's working.",
 };
 
 export default async function BetaPage({ searchParams }: PageProps) {

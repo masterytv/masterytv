@@ -14,11 +14,11 @@ import LandingPage from "./landing";
 export const metadata: Metadata = {
   title: "MasteryTV — The Personality Test That Gives You a Coach",
   description:
-    "15 validated personality tests in 30 minutes. Get a deep report, your archetype, and an AI coach that knows everything about you. Free.",
+    "15 validated personality tests in 30 minutes. Get a deep report, your archetype, and a coach that knows everything about you. Free.",
   keywords: [
     "personality test",
     "personality assessment",
-    "AI coaching",
+    "personal coaching",
     "Big Five personality",
     "attachment style",
     "relationship compatibility",
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "MasteryTV — The Personality Test That Gives You a Coach",
     description:
-      "Know yourself deeper than ever. 15 validated instruments in 30 minutes, a personalized report, and an AI coach that remembers everything.",
+      "Know yourself deeper than ever. 15 validated instruments in 30 minutes, a personalized report, and a coach that remembers everything.",
     type: "website",
     siteName: "MasteryTV",
     locale: "en_US",
@@ -55,7 +55,7 @@ const jsonLd = {
   "@type": "SoftwareApplication",
   name: "MasteryTV — Decoded",
   description:
-    "Comprehensive personality assessment combining 15 validated instruments with AI coaching. Covers Big Five, attachment style, emotional regulation, career interests, and relationship compatibility.",
+    "Comprehensive personality assessment combining 15 validated instruments with personal coaching. Covers Big Five, attachment style, emotional regulation, career interests, and relationship compatibility.",
   applicationCategory: "LifestyleApplication",
   operatingSystem: "Web",
   offers: [
@@ -65,7 +65,7 @@ const jsonLd = {
       priceCurrency: "USD",
       name: "Free",
       description:
-        "Full personality assessment, 13-section report, archetype, 1 compatibility report, 5 AI coaching messages per day",
+        "Full personality assessment, 13-section report, archetype, 1 compatibility report, 5 coaching messages per day",
     },
   ],
   featureList: [
@@ -75,7 +75,7 @@ const jsonLd = {
     "Emotional regulation mapping",
     "Career interest alignment",
     "Relationship compatibility reports",
-    "AI coaching with full personality context",
+    "Coaching with full personality context",
     "Personalized archetype identification",
   ],
   creator: {

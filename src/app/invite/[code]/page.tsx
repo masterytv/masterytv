@@ -59,7 +59,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 
   const title = `${inviter} invited you to Decoded`;
-  const description = 'Take a free personality assessment and discover your type. Compare results and unlock AI compatibility insights.';
+  const description = 'Take a free personality assessment and discover your type. Compare results and unlock your compatibility insights.';
   const ogParams = new URLSearchParams({ archetype: archetypeSlug || 'architect', style: 'animal', format: 'og' });
   if (invite?.inviter_name) ogParams.set('name', invite.inviter_name);
   if (sublabel) ogParams.set('sublabel', sublabel);

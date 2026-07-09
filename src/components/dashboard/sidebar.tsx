@@ -256,7 +256,7 @@ export function Sidebar({ open, onClose, assessmentCompleted = false, reportId =
                   className="group flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-text-muted transition-colors hover:bg-surface-200 hover:text-text-primary"
                 >
                   <HelpCircle className="h-4 w-4 text-text-muted/60 group-hover:text-text-muted" />
-                  Why an AI coach?
+                  How the coach works
                 </Link>
               </div>
             </div>
