@@ -2,7 +2,7 @@
 
 > **Purpose:** the *one* file a new session reads to get oriented. Stable map, not a changelog.
 > For volatile "what changed this week" state, see the **`relatti-open-state`** auto-memory (the rolling log).
-> Last reviewed: 2026-07-02.
+> Last reviewed: 2026-07-09.
 
 ---
 
@@ -12,14 +12,14 @@
 
 The retention thesis: coaching products die at the ~3-week cliff because solo self-improvement has no external stake. Each stage attaches the product to a stake the user can't quietly ghost — **Stage 1's stake is the partner.**
 
-## 2. Status (as of 2026-07-02)
+## 2. Status (as of 2026-07-09)
 
 | | |
 |---|---|
-| **Branch** | **`main` = PRODUCTION, live on `relatti.com`** (merged from `staging` 2026-07-02; not shared/announced). Working branch stays **`staging`**: build → verify → merge to main. |
-| **Phase** | Phase 4 (Build) → **pre-beta hardening**. Current mission: a **20-person free test cohort** (friends/family, then Reddit); attorney/clinician review consciously deferred past it. |
+| **Branch** | **`main` = PRODUCTION, live on `relatti.com`.** Working branch stays **`staging`**: build → verify (`npm run gate` + preview) → commit → push → founder merges main. |
+| **Phase** | Phase 4 (Build) → **beta RECRUITING**. The acquisition funnel is COMPLETE + verified with a real couple: landing CTAs → `/beta?code=…` (offer page; code rides the link; before check-in pre-signup; access auto-applies post-assessment) → partner auto-enroll → day-14 after check-in → `/admin/beta` cockpit (funnel, CSI-delta marketing stats, consented testimonials). Live share link: `relatti.com/beta?code=BETA826`. Copy + runbook: [`BETA_LAUNCH_COPY.md`](BETA_LAUNCH_COPY.md). |
 | **Review** | Full independent code/product/business review (P0 leak found+fixed, prioritized roadmap): [`docs/FABLE_REVIEW_2026-07-02.md`](../docs/FABLE_REVIEW_2026-07-02.md). |
-| **Next up** | Tests + CI gate (consent/isolation/billing) → dyad e2e run → `/admin/beta` funnel cockpit → mobile pass → tester welcome + Reddit copy. Founder: beta-admission mechanics, relatti.com email aliases, LLM DPAs. |
+| **Next up** | **Marketing: recruit beta testers** (friends/family now; Reddit once founder ships `support@`/`privacy@` forwards + LLM DPAs). Housekeeping: sweep test data (partner1/partner2/relatti20 rows + TESTLOOP9 code) before quoting real stats. Deferred by decision: Stripe (tier upgrades stay free via alpha-upgrade), attorney/clinician review, SMS/E6. |
 
 ## 3. Stack & key infra
 
