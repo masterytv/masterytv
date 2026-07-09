@@ -201,7 +201,7 @@ export default function InviteLanding({
             <li className="invite-discover__item"><span className="invite-discover__dot" />Your Big Five personality profile</li>
             <li className="invite-discover__item"><span className="invite-discover__dot" />Career interests and work motivation</li>
             <li className="invite-discover__item"><span className="invite-discover__dot" />Attachment style and emotional patterns</li>
-            <li className="invite-discover__item"><span className="invite-discover__dot" />AI compatibility report with {inviterName}</li>
+            <li className="invite-discover__item"><span className="invite-discover__dot" />Your compatibility report with {inviterName}</li>
           </ul>
         </motion.div>
 

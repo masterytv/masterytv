@@ -284,7 +284,7 @@ export default function BetaCheckinPage() {
               value={testimonial}
               onChange={(e) => setTestimonial(e.target.value)}
               rows={2}
-              placeholder='e.g. "We were doubtful an AI could help — two weeks later we argue completely differently."'
+              placeholder='e.g. "We were doubtful an app could help — two weeks later we argue completely differently."'
               className="mt-3 w-full resize-none rounded-md bg-surface-100 p-3 text-sm text-text-primary outline-none placeholder:text-text-muted"
               style={{ border: "1px solid color-mix(in oklch, var(--color-primary) 12%, transparent)" }}
             />

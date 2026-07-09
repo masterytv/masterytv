@@ -204,7 +204,7 @@ const EMPTY_STATE = {
     icon: UserStar,
     heading: "Welcome to Mastery Coach",
     intro:
-      "I'm your AI executive coach. Tell me about a challenge you're facing, a goal you're working toward, or just what's on your mind.",
+      "I'm your executive coach. Tell me about a challenge you're facing, a goal you're working toward, or just what's on your mind.",
     starters: [
       "I'm a founder struggling to get my first customers",
       "I need help preparing for a difficult conversation",
@@ -455,7 +455,7 @@ export default function ChatWindow({
           </p>
         )}
         <p className="chat-disclaimer">
-          Mastery Coach is AI-powered. It&apos;s not a licensed therapist, lawyer, or financial advisor.
+          Your coach isn&apos;t a licensed therapist, lawyer, or financial advisor.
         </p>
       </form>
     </div>

@@ -366,7 +366,7 @@ export default function DashboardHome({
                   Talk to Your Coach
                 </h2>
                 <p className="mt-1.5 text-body-md text-text-secondary">
-                  Complete the assessment to unlock your AI coach.
+                  Complete the assessment to unlock your coach.
                 </p>
               </div>
             )}

@@ -4,11 +4,11 @@ import DecodedMarketingLanding from "./DecodedMarketingLanding";
 export const metadata: Metadata = {
   title: "Decoded — Finally Understand Why You Are the Way You Are",
   description:
-    "15 validated psychological instruments. One adaptive assessment. A free 30-page personalized report — and an AI coach who already knows you. Personality, attachment, emotional regulation, career interests, and more.",
+    "15 validated psychological instruments. One adaptive assessment. A free 30-page personalized report — and a coach who already knows you. Personality, attachment, emotional regulation, career interests, and more.",
   openGraph: {
     title: "Decoded — You, Decoded.",
     description:
-      "The most comprehensive personality assessment built for people who want to actually do something with it. Free core assessment and 30-page AI report.",
+      "The most comprehensive personality assessment built for people who want to actually do something with it. Free core assessment and 30-page personalized report.",
     type: "website",
     url: "https://mastery.tv/decoded/landing",
   },

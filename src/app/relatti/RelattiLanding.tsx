@@ -352,13 +352,13 @@ export default function RelattiLanding({
             >
               read the science
             </Link>
-            . Wary of AI?{" "}
+            . Skeptical?{" "}
             <Link
               href="/why-ai"
               className="underline underline-offset-2 transition-opacity hover:opacity-80"
               style={{ color: "var(--color-primary)" }}
             >
-              We answer that honestly
+              We answer the hard questions honestly
             </Link>
             .
           </p>
@@ -374,7 +374,7 @@ export default function RelattiLanding({
           </span>
           <div className="flex items-center gap-6">
             <Link href="/science" className="transition-colors hover:text-text-secondary">The science</Link>
-            <Link href="/why-ai" className="transition-colors hover:text-text-secondary">Why AI?</Link>
+            <Link href="/why-ai" className="transition-colors hover:text-text-secondary">How the coach works</Link>
             <Link href="/privacy" className="transition-colors hover:text-text-secondary">Privacy</Link>
             <Link href="/terms" className="transition-colors hover:text-text-secondary">Terms</Link>
           </div>

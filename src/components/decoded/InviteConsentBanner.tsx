@@ -192,7 +192,7 @@ export default function InviteConsentBanner({ invite, onConsented, onDismissed }
             {/* Share with Coach */}
             <div>
               <label className="text-label-sm text-text-secondary font-medium mb-2 block">
-                What do you want to share with {invite.inviterName}&apos;s AI Coach?
+                What do you want to share with {invite.inviterName}&apos;s coach?
               </label>
               <div className="space-y-2">
                 {SHARE_OPTIONS.map((opt) => (

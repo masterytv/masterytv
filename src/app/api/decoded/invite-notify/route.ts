@@ -132,7 +132,7 @@ export async function POST(req: NextRequest) {
               <p style="font-size: 14px; color: #555; margin: 0 0 4px 0; font-weight: 600;">What's next:</p>
               <ul style="font-size: 14px; color: #666; line-height: 1.8; margin: 8px 0 0 0; padding-left: 20px;">
                 <li>Request to share results with each other</li>
-                <li>Unlock your AI-generated Compatibility Report</li>
+                <li>Unlock your Compatibility Report</li>
                 <li>Discover your relationship dynamics across 5 dimensions</li>
               </ul>
             </div>

@@ -3,7 +3,7 @@ import LegacyForm from '@/components/legacy/LegacyForm';
 export const metadata = {
     title: 'Legacy Letters | Archive — A Letter From Your Future Self',
     description:
-        'Receive a deeply personal, AI-generated letter from your future self — 20 years from now, at the peak of everything you built. Backed by positive psychology.',
+        'Receive a deeply personal letter from your future self — 20 years from now, at the peak of everything you built. Backed by positive psychology.',
     openGraph: {
         title: 'Legacy Letters — Filed Without Origin',
         description:
@@ -66,7 +66,7 @@ export default function LegacyPage() {
                         <div className="doc-label">Ref #A</div>
                         <h2 className="doc-title">On the Record</h2>
                         <div className="doc-body">
-                            <p>Backed by positive psychology research. Your answers generate a deeply personal, AI-written letter from the version of you that made it.</p>
+                            <p>Backed by positive psychology research. Your answers generate a deeply personal letter from the version of you that made it.</p>
                         </div>
                     </section>
 

@@ -45,7 +45,7 @@ export const DECODED_TIERS: DecodedTierInfo[] = [
       'Attachment style mapping',
       'Your Decoded Archetype',
       '1 compatibility report',
-      '5 AI coaching messages per day',
+      '5 coaching messages per day',
     ],
   },
   {
@@ -59,7 +59,7 @@ export const DECODED_TIERS: DecodedTierInfo[] = [
       'Your emotional patterns decoded',
       'Career and motivation alignment',
       '3 compatibility reports',
-      '50 AI coaching messages per week',
+      '50 coaching messages per week',
     ],
   },
   {
@@ -73,7 +73,7 @@ export const DECODED_TIERS: DecodedTierInfo[] = [
       'Unlimited compatibility reports',
       'Relationship dynamics analysis',
       'Wellness and life satisfaction map',
-      '300 AI coaching messages per month',
+      '300 coaching messages per month',
     ],
     recommended: true,
   },
@@ -86,7 +86,7 @@ export const DECODED_TIERS: DecodedTierInfo[] = [
     features: [
       'Everything in Growth',
       'Your personalized growth roadmap',
-      'Unlimited AI coaching access',
+      'Unlimited coaching access',
       'Unlimited compatibility reports',
       'Complete coaching framework library',
     ],

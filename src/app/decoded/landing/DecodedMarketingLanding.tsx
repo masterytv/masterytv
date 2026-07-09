@@ -72,14 +72,14 @@ const VALUE_PROPS = [
     icon: FileText,
     step: "Step 02",
     title: "The Report",
-    text: "A free 30-page AI-written report that translates your results into a narrative you'll actually recognize as yourself. Big Five radar chart, attachment map, career alignment — all in language a human would use, not a clinician.",
+    text: "A free 30-page report written specifically for your results — a narrative you'll actually recognize as yourself. Big Five radar chart, attachment map, career alignment — all in language a human would use, not a clinician.",
     tag: "Free forever",
   },
   {
     icon: MessageCircle,
     step: "Step 03",
     title: "The Coach",
-    text: "An AI coach built with one purpose — helping you reach your goals. 5x more effective than uploading your report to ChatGPT. It knows you better than you know yourself, adapts to every conversation, speaks to you in the way that inspires you most, manages your calendar, keeps you focused, and remembers everything. Not a chatbot — a 24/7 success coach you won't want to live without.",
+    text: "A coach built with one purpose — helping you reach your goals. It knows you better than you know yourself, adapts to every conversation, speaks to you in the way that inspires you most, manages your calendar, keeps you focused, and remembers everything. Not a chatbot — a 24/7 success coach you won't want to live without.",
     tag: "Pre-loaded with your profile",
     accent: true,
   },
@@ -99,7 +99,7 @@ const HOW_IT_WORKS = [
   {
     step: 3,
     title: "Meet Your Coach",
-    desc: "Your AI coach already knows your personality, attachment style, and growth edges. The first message references your actual results.",
+    desc: "Your coach already knows your personality, attachment style, and growth edges. The first message references your actual results.",
   },
 ];
 
@@ -126,7 +126,7 @@ const PRICING_TIERS = [
     note: "No credit card required",
     features: [
       "Full assessment (13 instruments)",
-      "7-section AI-written report",
+      "7-section personalized report",
       "Big Five radar chart",
       "Attachment style quadrant",
       "1 compatibility report",
@@ -160,7 +160,7 @@ const PRICING_TIERS = [
       "Everything in Insight",
       "Growth Roadmap section",
       "Unlimited compatibility reports",
-      "Compare AI analysis",
+      "Side-by-side compatibility analysis",
       "300 coach messages per month",
       "Priority support",
     ],
@@ -394,7 +394,7 @@ export default function DecodedMarketingLanding() {
               12 Sections. 7 Free. All Personalized.
             </h2>
             <p className="dl__section-desc">
-              Every section is AI-written specifically for your results —
+              Every section is written specifically for your results —
               not a template with your name dropped in. Each one ends with
               the question your coach would open your first session with.
             </p>
@@ -437,7 +437,7 @@ export default function DecodedMarketingLanding() {
               A Coach That Already Knows You
             </h2>
             <p className="dl__section-desc">
-              Most AI coaches start with &ldquo;Tell me about yourself.&rdquo;
+              Most coaching apps start with &ldquo;Tell me about yourself.&rdquo;
               Yours starts with this — because it already read your
               entire report before you typed a single word.
             </p>

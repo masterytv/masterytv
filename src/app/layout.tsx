@@ -3,15 +3,15 @@ import "./globals.css";
 import { ThemeProviderWrapper } from "@/components/theme-provider-wrapper";
 
 export const metadata: Metadata = {
-  title: "Mastery Coach — AI Coaching for High-Performers",
+  title: "Mastery Coach — Coaching for High-Performers",
   description:
     "Not a chatbot. A coach that knows your name. Mastery Coach remembers your people, your goals, your fears, and your wins — and uses 20+ proven frameworks to coach you in your own style.",
   keywords: [
-    "AI coaching",
+    "personal coaching",
     "executive coaching",
     "business coaching",
     "personal development",
-    "AI coach",
+    "online coach",
     "founder coaching",
     "leadership coaching",
   ],
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     apple: "/apple-touch-icon.png",
   },
   openGraph: {
-    title: "Mastery Coach — AI Coaching for High-Performers",
+    title: "Mastery Coach — Coaching for High-Performers",
     description:
       "A coach that remembers everything that matters about you. 20+ frameworks. Adapted to how you think.",
     type: "website",
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Mastery Coach — AI Coaching for High-Performers",
+    title: "Mastery Coach — Coaching for High-Performers",
     description:
       "Not a chatbot. A coach that knows your name, your goals, and your blind spots.",
   },

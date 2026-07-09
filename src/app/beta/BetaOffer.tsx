@@ -143,7 +143,7 @@ export default function BetaOffer({ initialCode }: { initialCode: string }) {
               A coach for your relationship — free while we test it
             </h1>
             <p className="mt-4 text-base text-text-secondary">
-              Relatti is an AI relationship coach grounded in each partner&rsquo;s real
+              Relatti is a relationship coach grounded in each partner&rsquo;s real
               psychology. You take a short research-backed quiz, your partner takes theirs, and
               you get a coach that understands you both — plus your shared compatibility report.
             </p>

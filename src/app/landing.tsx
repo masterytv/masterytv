@@ -115,7 +115,7 @@ const HOW_IT_WORKS = [
     icon: MessageSquare,
     title: "Meet Your Coach",
     description:
-      "An AI coach that has read your entire report. It knows your strengths, blind spots, and how you communicate.",
+      "A coach that has read your entire report. It knows your strengths, blind spots, and how you communicate.",
   },
 ];
 
@@ -282,7 +282,7 @@ export default function LandingPage({ isLoggedIn, userName }: LandingPageProps) 
         >
           <div className="landing__hero-label">
                 <Fingerprint className="w-3.5 h-3.5" />
-                Personality Science + AI Coaching
+                Personality Science + Personal Coaching
               </div>
               <h1 className="landing__hero-title">
                 Know Thyself.
@@ -339,7 +339,7 @@ export default function LandingPage({ isLoggedIn, userName }: LandingPageProps) 
             </h2>
             <p className="landing__section-desc">
               Not just another personality label. A complete system that maps who
-              you are — and gives you an AI coach to help you grow.
+              you are — and gives you a coach to help you grow.
             </p>
           </div>
 
@@ -414,7 +414,7 @@ export default function LandingPage({ isLoggedIn, userName }: LandingPageProps) 
             </h2>
             <p className="landing__section-desc" style={{ maxWidth: "680px" }}>
               Other tests give you a label and a PDF. We give you a 13-section
-              deep report — and then an AI coach that has read every word of it.
+              deep report — and then a coach that has read every word of it.
               Your coach knows your strengths, your blind spots, your attachment
               style, and your emotional patterns. From day one.
             </p>
@@ -439,7 +439,7 @@ export default function LandingPage({ isLoggedIn, userName }: LandingPageProps) 
                 <li>15 validated instruments combined</li>
                 <li>13-section narrative report</li>
                 <li>Your unique archetype</li>
-                <li>AI coach that knows you deeply</li>
+                <li>A coach that knows you deeply</li>
                 <li>Relationship compatibility reports</li>
               </ul>
             </div>

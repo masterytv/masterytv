@@ -1209,7 +1209,7 @@ export default function ReportViewer({ report: initialReport, scores, sharedOwne
             <p className="coach-cta__text">
               {isRelationshipReport
                 ? 'Your coach has already read your profile. No awkward introductions — they understand how you love, connect, and handle conflict from day one.'
-                : 'Your AI coach has already read your full assessment. No awkward introductions — they know your personality, patterns, and priorities from day one.'}
+                : 'Your coach has already read your full assessment. No awkward introductions — they know your personality, patterns, and priorities from day one.'}
             </p>
             <a
               href={buildCoachDeepLink(

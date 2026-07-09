@@ -42,7 +42,7 @@ const DAYS = [
 const FAQ = [
   {
     q: "Is this couples therapy?",
-    a: "No. Relatti is an AI relationship coach built on published relationship science. It’s for understanding each other and handling everyday friction better — not a replacement for a therapist, and it will tell you so itself when something’s beyond it.",
+    a: "No. Relatti is a relationship coach crafted and trained on more than a century of published relationship science. It’s for understanding each other and handling everyday friction better — not a replacement for a therapist, and it will tell you so itself when something’s beyond it.",
   },
   {
     q: "What happens after the 14 days?",
@@ -224,7 +224,7 @@ export default function ChallengeLanding({ initialCode }: { initialCode: string 
           Couples take it before a wedding, after a move, at year one or year
           twenty — or just because two weeks of actually understanding each
           other sounded good. If things are genuinely hard right now, Relatti
-          can help you talk — but it&rsquo;s an AI coach, not a therapist, and
+          can help you talk — but it&rsquo;s a coach, not a therapist, and
           not a substitute for professional help. In crisis, reach a real
           person: in the US, call or text <strong>988</strong>.
         </p>
@@ -240,7 +240,7 @@ export default function ChallengeLanding({ initialCode }: { initialCode: string 
           <p className="mx-auto mt-3 max-w-xl leading-relaxed text-text-secondary">
             You&rsquo;ll each see the other&rsquo;s relationship profile —
             that&rsquo;s the point. What you each say to the coach stays
-            private, always. The straight answers about the AI:{" "}
+            private, always. The straight answers about how your coach works:{" "}
             <Link
               href="/why-ai"
               className="underline underline-offset-2 transition-opacity hover:opacity-80"
@@ -286,7 +286,7 @@ export default function ChallengeLanding({ initialCode }: { initialCode: string 
           </span>
           <div className="flex items-center gap-6">
             <Link href="/science" className="transition-colors hover:text-text-secondary">The science</Link>
-            <Link href="/why-ai" className="transition-colors hover:text-text-secondary">Why AI?</Link>
+            <Link href="/why-ai" className="transition-colors hover:text-text-secondary">How the coach works</Link>
             <Link href="/privacy" className="transition-colors hover:text-text-secondary">Privacy</Link>
             <Link href="/terms" className="transition-colors hover:text-text-secondary">Terms</Link>
           </div>

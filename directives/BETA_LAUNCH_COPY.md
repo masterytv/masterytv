@@ -53,7 +53,7 @@ Relatti is a coach for your *relationship* — not another self-improvement app 
 
 **And beyond that:** tell me the truth. What felt off, what was confusing, what you loved. There's a feedback button in the corner of every screen — use it liberally. You're shaping this.
 
-A couple of honest notes: Relatti is an AI coach, not a therapist, and not a substitute for professional help. If you're ever in crisis, please reach a real person right away — in the US, call or text **988**. And this is a beta, so you *will* hit the occasional rough edge — that's exactly what I want to hear about.
+A couple of honest notes: Relatti is a coach, not a therapist, and not a substitute for professional help (how the coaching actually works, plainly: relatti.com/why-ai). If you're ever in crisis, please reach a real person right away — in the US, call or text **988**. And this is a beta, so you *will* hit the occasional rough edge — that's exactly what I want to hear about.
 
 Thank you, genuinely.
 
@@ -73,16 +73,16 @@ Founder, Relatti
 > Lead with honesty, not a pitch.
 
 **Title options:**
-- `I built an AI relationship coach that only works if both partners use it — free beta, looking for honest feedback`
+- `I built a relationship coach that only works if both partners use it — free beta, looking for honest feedback`
 - `Coaching apps die because you use them alone. I tried to fix that with the one stake you can't ghost: your partner. [free beta]`
 
 **Body:**
 
-I've been building **Relatti**, an AI coach for a relationship rather than for one person.
+I've been building **Relatti**, a coach for a relationship rather than for one person.
 
 The itch I couldn't shake: solo self-improvement apps almost all get abandoned around week three, because there's no one on the other side. A relationship has someone on the other side by definition. So Relatti starts with a short, research-backed quiz (attachment style, personality, relationship satisfaction), and the coaching gets real once **both** partners have taken it — it can see where you two actually fit and where you'll grind, instead of guessing from one side.
 
-It's honest about what it is: an AI coach, not a therapist, and not a replacement for real help if things are serious. Couples see each other's relationship profiles — that's the point — but what each of you says to the coach stays private from your partner by design. If you want the evidence it's built on and the straight answers about the AI, those are at relatti.com/science and relatti.com/why-ai.
+It's honest about what it is: a coach, not a therapist, and not a replacement for real help if things are serious. Couples see each other's relationship profiles — that's the point — but what each of you says to the coach stays private from your partner by design. If you want the evidence it's built on and the straight answers about how the coaching works, those are at relatti.com/science and relatti.com/why-ai.
 
 It's a rough beta and it's **free** while I test it. The deal: two 2-minute check-ins (one at the start, one at two weeks) so I can measure whether it actually helps — answers only ever used anonymously and in aggregate. Beyond that I'm mostly after blunt feedback, ideally from couples who'll both try it.
 

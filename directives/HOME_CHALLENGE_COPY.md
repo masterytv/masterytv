@@ -196,22 +196,22 @@ whole reason the page exists — it arms the partner conversation.)*
 > Couples take it before a wedding, after a move, at year one or year twenty —
 > or just because two weeks of actually understanding each other sounded good.
 > If things are genuinely hard right now, Relatti can help you talk — but it's
-> an AI coach, not a therapist, and not a substitute for professional help.
+> a coach, not a therapist, and not a substitute for professional help.
 > In crisis, reach a real person: in the US, call or text **988**.
 
 ### Privacy strip (condensed from home page)
 
 > **You share a blueprint, not a transcript.** You'll each see the other's
 > relationship profile — that's the point. What you each say to the coach stays
-> private, always. The straight answers about the AI: relatti.com/why-ai
+> private, always. The straight answers about how your coach works: relatti.com/why-ai
 
 ### Mini-FAQ (four items)
 
 **Is this couples therapy?**
-No. Relatti is an AI relationship coach built on published relationship
-science. It's for understanding each other and handling everyday friction
-better — not a replacement for a therapist, and it will tell you so itself
-when something's beyond it.
+No. Relatti is a relationship coach crafted and trained on more than a century
+of published relationship science. It's for understanding each other and
+handling everyday friction better — not a replacement for a therapist, and it
+will tell you so itself when something's beyond it.
 
 **What happens after the 14 days?**
 Nothing sneaky. Your access doesn't shut off and there's no card on file. We
