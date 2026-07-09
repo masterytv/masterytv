@@ -138,8 +138,10 @@ export default function RelattiLanding({ content }: { content?: LandingContent }
               >
                 Log in
               </Link>
+              {/* BETA GATE (temporary): all start CTAs route to /beta so new
+                  signups need an invite code. At public launch: → "/assess". */}
               <Link
-                href="/assess"
+                href="/beta"
                 className="rounded-lg px-5 py-2 text-sm font-medium text-text-inverse transition-opacity hover:opacity-90"
                 style={{ background: "var(--color-primary-container)" }}
               >
@@ -174,7 +176,7 @@ export default function RelattiLanding({ content }: { content?: LandingContent }
 
         <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Link
-            href={authed ? "/dashboard" : "/assess"}
+            href={authed ? "/dashboard" : "/beta"} /* BETA GATE (temporary) */
             className="group inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-base font-semibold text-text-inverse shadow-card transition-transform hover:-translate-y-0.5"
             style={{ background: "var(--color-primary-container)" }}
           >
@@ -254,7 +256,7 @@ export default function RelattiLanding({ content }: { content?: LandingContent }
             coaching — and none would keep it this honest.
           </p>
           <Link
-            href={authed ? "/dashboard" : "/assess"}
+            href={authed ? "/dashboard" : "/beta"} /* BETA GATE (temporary) */
             className="mt-8 inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-base font-semibold text-text-inverse transition-transform hover:-translate-y-0.5"
             style={{ background: "var(--color-primary-container)" }}
           >
