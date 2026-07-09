@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import ChallengeLanding from "./ChallengeLanding";
 
 interface PageProps {
@@ -28,5 +29,9 @@ export const metadata: Metadata = {
 
 export default async function ChallengePage({ searchParams }: PageProps) {
   const params = await searchParams;
-  return <ChallengeLanding initialCode={(params.code ?? "").trim()} />;
+  // Fall back to the middleware-persisted beta_code cookie (set by any
+  // marketing link carrying ?code=) so CTAs and the copyable partner message
+  // still embed the code for visitors who arrived here without one.
+  const cookieCode = (await cookies()).get("beta_code")?.value ?? "";
+  return <ChallengeLanding initialCode={(params.code ?? "").trim() || cookieCode.trim()} />;
 }

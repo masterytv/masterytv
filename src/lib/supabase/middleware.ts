@@ -82,6 +82,29 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
+  // ── Beta invite codes ride ANY marketing link (?code=BETA826 on /, /relatti,
+  // /couples, /challenge, …). Persist the code to a cookie so /beta prefills it
+  // even when the visitor wanders the site first and reaches /beta via a CTA
+  // with no query string. OAuth codes are UUIDs; invite codes never are — the
+  // shape test keeps the auth-callback catcher below working for real auth
+  // links. Cookie set on supabaseResponse so every return path (rewrite,
+  // redirectWithCookies, plain) carries it.
+  const codeParam = request.nextUrl.searchParams.get("code")?.trim() ?? "";
+  const isOAuthShapedCode =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(codeParam);
+  if (
+    codeParam &&
+    !isOAuthShapedCode &&
+    !pathname.startsWith("/api/") &&
+    !pathname.startsWith("/auth/")
+  ) {
+    supabaseResponse.cookies.set("beta_code", codeParam, {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 30,
+      sameSite: "lax",
+    });
+  }
+
   // Root → the Relatti landing whenever the effective brand is Relatti — by
   // host (relatti.com) in prod, or by ?brand= / cookie preview on localhost +
   // staging. Uses the same resolved brandId as theming so the landing, surface,
@@ -164,16 +187,16 @@ export async function updateSession(request: NextRequest) {
   }
 
   // ── Catch auth codes landing on wrong routes ──
-  // This is for BROWSER-NAVIGATED auth links only. Exempt:
-  //   /beta       — its ?code= is a BETA INVITE code carried on shared links
-  //                 (relatti.com/beta?code=XXXX), not an OAuth code.
-  //   /challenge  — the 14-Day Challenge front door; same invite code rides
-  //                 relatti.com/challenge?code=XXXX into /beta.
-  //   /api/*      — API calls are never OAuth landings; redirecting a fetch()
-  //                 with a ?code= param silently breaks it.
-  const code = request.nextUrl.searchParams.get("code");
+  // This is for BROWSER-NAVIGATED auth links only. It fires ONLY for
+  // UUID-shaped codes (Supabase PKCE authorization codes) — beta invite codes
+  // (short alphanumerics like BETA826) are persisted to the beta_code cookie
+  // above and must reach their page untouched. Exempt regardless of shape:
+  //   /beta, /challenge — their ?code= is always a beta invite code.
+  //   /api/*            — API calls are never OAuth landings; redirecting a
+  //                       fetch() with a ?code= param silently breaks it.
   if (
-    code &&
+    codeParam &&
+    isOAuthShapedCode &&
     !pathname.startsWith("/auth/callback") &&
     !pathname.startsWith("/api/") &&
     pathname !== "/beta" &&
@@ -181,7 +204,7 @@ export async function updateSession(request: NextRequest) {
   ) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/callback";
-    url.search = `?code=${code}`;
+    url.search = `?code=${codeParam}`;
     return redirectWithCookies(url);
   }
 
