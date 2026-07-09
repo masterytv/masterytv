@@ -2,6 +2,10 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import AdminNav from "./AdminNav";
 import { Topbar } from "@/components/dashboard/topbar";
+// The ad-* styling kit for EVERY admin page. Import it here (not per-page):
+// when only some leaf pages imported it, the others (e.g. /admin/beta) rendered
+// unstyled unless you'd visited an importing page first in the same session.
+import "./admin.css";
 
 export const metadata = { title: "Admin — Mastery" };
 
