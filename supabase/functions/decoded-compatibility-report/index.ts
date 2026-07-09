@@ -178,6 +178,23 @@ const GLOBAL_VOICE_RULES = `CRITICAL WRITING RULES (apply to every voice):
 - Write in a natural, human cadence. Avoid formulaic AI patterns.`;
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Relatti couples voice — ONE fixed voice for the relationship couples report,
+// used for BOTH partners (replaces the 6 personality voices on the relationship
+// path). Keeps the two per-person reports equal in register + depth, and keeps
+// the couples report plain and warm instead of styled like a personality essay.
+// The Decoded compatibility path still uses the per-reader personality voices.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const RELATTI_COUPLES_VOICE = `VOICE & TONE: THE RELATTI COUPLES VOICE
+Write like a warm, plain-spoken couples coach talking with one person about their relationship. Picture a trusted friend who knows the research, sitting across the kitchen table. Not a personality essay, not a clinical write-up, not a greeting card.
+
+- Warm but honest and grounded. You understand them; you never flatter them.
+- Second person and direct: "You reach out. They pull back." Not "There is a dynamic in which one partner reaches while the other withdraws."
+- Show the moment, then name it, in the same register as the "It might look like this:" examples.
+- Almost no metaphor. At most one plain image in a whole section, only if it sharpens the point, never for decoration.
+- The relationship is the subject. Make it specific to THESE two people, never generic.`;
+
+// ─────────────────────────────────────────────────────────────────────────────
 // System Prompt Builder
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -395,10 +412,15 @@ ACCURACY — NON-NEGOTIABLE (this is what makes the report trustworthy):
 - The title and headline describe the RELATIONSHIP, not a mash-up of the two personality archetype names.
 - If a data point is "not available," do not invent it.
 
-READING LEVEL (important):
-- Write so a 9th grader reads it easily — aim for a Flesch-Kincaid grade of about 8-9.
-- Keep most sentences under 18 words. Vary length, but break up long, multi-clause sentences.
-- Prefer plain, warm words over clinical terms. If you use a concept like "the cycle" or "a bid for connection," say it in everyday language. Keep the warmth and your voice — just make it simpler and more direct.
+READING LEVEL & PLAIN LANGUAGE (STRICT, non-negotiable — this is what makes it land):
+- Write so a 7th grader reads it easily. Aim for a Flesch-Kincaid grade of 6 to 7. Simpler always beats more sophisticated here.
+- Most sentences under 14 words. One idea per sentence. Break every long, multi-clause sentence into two short ones.
+- Use plain, everyday words: "fits together" not "complements", "balance each other" not "complement", "naming the pattern" not "externalizing the cycle", "work together" not "harmonize", "ups and downs" not "ebbs and flows", "closeness" not "emotional intimacy", "handle" or "work through" not "navigate".
+- BANNED words and phrases, and anything like them: "complement", "complements", "harmonize", "beautifully", "perfectly", "beautiful", "dance" (as in "a dance of..."), "tapestry", "weather the storm", "ebbs and flows", "a testament to", "journey", "truly special", "flourish". They are generic filler; they read as AI, and they push the level up.
+- No cheerleading or flattery. Warmth comes from being specific and from understanding them, never from praise words.
+- Concrete beats abstract every time. The "It might look like this:" example fields below are the target register for the ENTIRE report. Write every paragraph that plainly, that grounded, that human.
+- Do NOT reuse any example wording from these instructions (for instance the sample headline). Write every line fresh for these two people.
+- Equal depth for both partners: every couples_report field that asks for "2 short paragraphs" must be EXACTLY two short paragraphs (2-3 sentences each), separated by a blank line. Do not write one paragraph, and do not write three.
 
 ILLUSTRATIVE EXAMPLES (the *_example fields):
 - For the cycle, the challenges, loving well, and repair, include ONE short, concrete everyday scene (2-4 sentences) that shows the pattern in action, grounded in YOUR actual dynamic.
@@ -739,17 +761,25 @@ ${personBlock(inviterName, inviterArchetype, inviterFacts, inviterS1, inviterSec
       Deno.env.get("OPENAI_API_KEY") ||
       "";
 
-    // ── Generate both reports in parallel (each in their own voice) ──
+    // Voice block: Decoded compatibility uses the reader's personality voice; the
+    // Relatti couples report uses ONE fixed plain-warm voice for BOTH partners, so
+    // the two sides come out equal in depth + reading level and consistently plain
+    // (the relationship is the subject, not a personality-styled essay).
+    const inviterVoiceBlock = isRelationship ? RELATTI_COUPLES_VOICE : VOICE_PROMPT_BLOCKS[inviterVoiceId];
+    const recipientVoiceBlock = isRelationship ? RELATTI_COUPLES_VOICE : VOICE_PROMPT_BLOCKS[recipientVoiceId];
+    const voiceLine = isRelationship ? "in the Relatti couples voice" : "written in your assigned voice";
+
+    // ── Generate both reports in parallel ──
     const [inviterCompatReport, recipientCompatReport] = await Promise.all([
       callOpenAI(
-        promptFor(inviterName, recipientName, VOICE_PROMPT_BLOCKS[inviterVoiceId]),
-        `Generate a ${taskWord} for ${inviterName}, written in your assigned voice.\n\n${inviterDataPayload}`,
+        promptFor(inviterName, recipientName, inviterVoiceBlock),
+        `Generate a ${taskWord} for ${inviterName}, ${voiceLine}.\n\n${inviterDataPayload}`,
         apiKey,
         isRelationship ? 0.4 : 0.7,
       ),
       callOpenAI(
-        promptFor(recipientName, inviterName, VOICE_PROMPT_BLOCKS[recipientVoiceId]),
-        `Generate a ${taskWord} for ${recipientName}, written in your assigned voice.\n\n${recipientDataPayload}`,
+        promptFor(recipientName, inviterName, recipientVoiceBlock),
+        `Generate a ${taskWord} for ${recipientName}, ${voiceLine}.\n\n${recipientDataPayload}`,
         apiKey,
         isRelationship ? 0.4 : 0.7,
       ),

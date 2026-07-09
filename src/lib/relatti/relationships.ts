@@ -26,8 +26,6 @@ export interface PersonStatus {
   isYou: boolean;
   joined: boolean; // has claimed an account on this engagement
   assessment: AssessmentStatus;
-  sharedWithCoach: boolean;
-  sharedWithPartner: boolean;
 }
 
 export interface Relationship {
@@ -42,22 +40,11 @@ export interface Relationship {
   streak: DyadStreak | null;
 }
 
-// A level exposes the profile at 'full' or 'type_compatibility'; 'none' exposes
-// nothing. The two axes are independent: the coach badge reads the per-person
-// coach axis (coach_share_level), the partner badge reads the negotiated partner
-// axis (share_level). (They used to derive from one shared value — that made a
-// user who set their coach to Private still show "With coach".)
-function isSharing(level: string | null | undefined): boolean {
-  return level === "full" || level === "type_compatibility";
-}
-
 interface ParticipantRow {
   engagement_id: string;
   user_id: string | null;
   invited_email: string | null;
   role: string;
-  share_level: string | null;
-  coach_share_level: string | null;
   report_id: string | null;
 }
 
@@ -109,7 +96,7 @@ export async function getRelationships(
   const [{ data: allParts }, { data: invites }] = await Promise.all([
     supabase
       .from("participant")
-      .select("engagement_id, user_id, invited_email, role, share_level, coach_share_level, report_id")
+      .select("engagement_id, user_id, invited_email, role, report_id")
       .in("engagement_id", engagementIds),
     inviteIds.length > 0
       ? supabase
@@ -163,16 +150,12 @@ export async function getRelationships(
             isYou: true,
             joined: true,
             assessment: myState,
-            sharedWithCoach: isSharing(mine.coach_share_level),
-            sharedWithPartner: isSharing(mine.share_level),
           },
           partner: {
             name: "your partner",
             isYou: false,
             joined: false,
             assessment: "not_started",
-            sharedWithCoach: false,
-            sharedWithPartner: false,
           },
           hasBlueprint: hasBlueprintSet.has(eng.id),
           streak: null,
@@ -217,20 +200,12 @@ export async function getRelationships(
         isYou: true,
         joined: true,
         assessment: myState,
-        sharedWithCoach: isSharing(mine.coach_share_level),
-        sharedWithPartner: isSharing(mine.share_level),
       },
       partner: {
         name: partnerName,
         isYou: false,
         joined: partnerJoined,
         assessment: partnerAssessment,
-        // The coach axis (coach_share_level) is private + unilateral — how much of
-        // their OWN profile the partner lets THEIR coach use. It's not the user's to
-        // see, so we never surface it AND never ship the real value to the client.
-        // Only "With partner" (the negotiated, mutually-agreed axis) belongs here.
-        sharedWithCoach: false,
-        sharedWithPartner: isSharing(partner.share_level),
       },
       hasBlueprint: hasBlueprintSet.has(eng.id),
       streak: await getDyadStreak(supabase, eng.id, userId),
