@@ -12,7 +12,7 @@
 1. **Make codes** in `/admin/beta` → *Invite codes*.
    - Friends/family: one code each (max uses `1`), or a single shared code (e.g. max uses `25`).
    - Reddit: one code with a cap you're comfortable paying for (e.g. max uses `50`, expires in `14` days). The cap is your cost ceiling — nobody past it can unlock.
-2. **Send the welcome email** below with that person's code (or post the Reddit copy with a public code).
+2. **Send the welcome email** below with that person's link — **relatti.com/beta?code=XXXX** (or post the Reddit copy with a public code's link). The /beta page carries the code, asks the before check-in up front, and applies free access automatically after the quiz — nobody types or remembers a code. Partners of testers are auto-enrolled when they connect (no code slot used).
 3. **Watch `/admin/beta`.** Invite → claim is the metric. The funnel bar shows where people drop off; each tester row shows whether their partner has joined, their check-in status (n/2), and their feedback inline.
 4. **The before/after loop runs itself.** Unlocking requires a 2-minute *before* check-in (their CSI-4 satisfaction baseline comes from the quiz automatically). At day 14 a cron emails them the *after* check-in (max 3 nudges, 3 days apart — soft, access never revoked) and a banner shows on their dashboard. The **Check-ins panel** in `/admin/beta` shows the marketing numbers as they accrue: **% scored happier (paired CSI-4)**, avg CSI change, % felt better, avg recommend — plus every quote-approved testimonial, ready to lift into marketing.
 5. When a code fills up (status **FULL**) or you want to stop, **deactivate** it (power toggle) or let it expire.
@@ -41,13 +41,11 @@ Relatti is a coach for your *relationship* — not another self-improvement app 
 
 **Getting started (about 10 minutes):**
 
-1. Go to **relatti.com** and create your account.
-2. Take the quiz — it's the attachment + personality science the coaching runs on.
-3. When you're asked to unlock unlimited coaching, enter your code:
+1. Open your invite link: **relatti.com/beta?code={{CODE}}**
+2. Answer the three quick questions there (that's half the deal — more below).
+3. Create your account and take the quiz — it's the attachment + personality science the coaching runs on. Your free unlimited access applies **automatically** when you finish; there's nothing to enter later.
 
-   **`{{CODE}}`**
-
-   That's your free pass for the whole beta — no card, no charge.
+(If the link ever doesn't cooperate, your code is **`{{CODE}}`** — you can enter it any time at relatti.com/dashboard/beta.)
 
 **The one thing that makes Relatti click:** invite your partner. The coach can only see the whole picture — where you two naturally fit and where you'll rub — once you've both taken the quiz. You'll each see the other's relationship profile; what you say to your coach always stays private between the two of you. (More on exactly how that works: relatti.com/why-ai)
 
@@ -88,7 +86,7 @@ It's honest about what it is: an AI coach, not a therapist, and not a replacemen
 
 It's a rough beta and it's **free** while I test it. The deal: two 2-minute check-ins (one at the start, one at two weeks) so I can measure whether it actually helps — answers only ever used anonymously and in aggregate. Beyond that I'm mostly after blunt feedback, ideally from couples who'll both try it.
 
-If you want in, the first {{N}} people can use code **`{{CODE}}`** at relatti.com to unlock it. If that's run out by the time you read this, comment or DM and I'll sort you out.
+If you want in: **relatti.com/beta?code={{CODE}}** — the first {{N}} people get free unlimited access for the whole beta (the page is upfront about the deal: two 2-minute check-ins so I can measure whether it actually helps). If it's full by the time you read this, comment or DM and I'll sort you out.
 
 Happy to answer anything — including the skeptical stuff. What would make you actually trust something like this?
 
