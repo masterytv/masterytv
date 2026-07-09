@@ -1,5 +1,5 @@
 import { createClient as createServiceClient } from "@supabase/supabase-js";
-import { getBetaFunnel } from "./funnel";
+import { getBetaFunnel, getCheckinStats } from "./funnel";
 import BetaCockpit from "./BetaCockpit";
 
 export const metadata = { title: "Beta Cockpit — Admin" };
@@ -29,7 +29,10 @@ export default async function BetaPage() {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  const { testers, metrics, codes } = await getBetaFunnel(admin);
+  const [{ testers, metrics, codes }, checkins] = await Promise.all([
+    getBetaFunnel(admin),
+    getCheckinStats(admin),
+  ]);
 
-  return <BetaCockpit testers={testers} metrics={metrics} codes={codes} />;
+  return <BetaCockpit testers={testers} metrics={metrics} codes={codes} checkins={checkins} />;
 }

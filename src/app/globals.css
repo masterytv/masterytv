@@ -666,12 +666,13 @@ body {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-/* Relatti landing: center the fixed toggle horizontally so it clears the logo
-   and the "Get started" CTA on mobile (it overlapped the CTA when right-aligned). */
-.relatti-landing .floating-theme-toggle {
-  left: 50%;
-  right: auto;
-  transform: translateX(-50%);
+/* Relatti landing: the toggle sits IN the layout flow (header on desktop,
+   footer on mobile) instead of a fixed overlay. Fixed positioning collided
+   with the nav links at some viewport width no matter where it was pinned
+   (right-aligned covered "Get started"; centered covered "Log in"). */
+.relatti-theme-inline .floating-theme-toggle {
+  position: static;
+  box-shadow: none;
 }
 
 /* When embedded in nav center, render inline instead of fixed */

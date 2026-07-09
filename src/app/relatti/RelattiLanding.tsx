@@ -101,8 +101,6 @@ export default function RelattiLanding({ content }: { content?: LandingContent }
 
   return (
     <main className="relatti-landing min-h-screen bg-surface-0 text-text-primary font-sans">
-      <FloatingThemeToggle />
-
       {/* ── Nav ── */}
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
         <Link href="/relatti" className="flex items-center gap-2.5">
@@ -114,34 +112,42 @@ export default function RelattiLanding({ content }: { content?: LandingContent }
           </span>
           <span className="font-display text-xl font-semibold tracking-tight">Relatti</span>
         </Link>
-        {authed ? (
-          <div className="flex items-center gap-4">
-            <span className="hidden text-sm text-text-muted sm:inline">You&rsquo;re signed in</span>
-            <Link
-              href="/dashboard"
-              className="rounded-lg px-5 py-2 text-sm font-medium text-text-inverse transition-opacity hover:opacity-90"
-              style={{ background: "var(--color-primary-container)" }}
-            >
-              Open dashboard
-            </Link>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2 sm:gap-4">
-            <Link
-              href="/login?mode=signin"
-              className="rounded-lg px-3 py-2 text-sm font-medium text-text-secondary transition-colors hover:text-text-primary"
-            >
-              Log in
-            </Link>
-            <Link
-              href="/assess"
-              className="rounded-lg px-5 py-2 text-sm font-medium text-text-inverse transition-opacity hover:opacity-90"
-              style={{ background: "var(--color-primary-container)" }}
-            >
-              Get started
-            </Link>
-          </div>
-        )}
+        <div className="flex items-center gap-2 sm:gap-4">
+          {/* Theme toggle lives IN the flex flow (desktop only) so it can never
+              overlap the nav links; a fixed overlay collided at some width no
+              matter where it was pinned. On mobile it moves to the footer. */}
+          <span className="relatti-theme-inline hidden sm:block">
+            <FloatingThemeToggle />
+          </span>
+          {authed ? (
+            <>
+              <span className="hidden text-sm text-text-muted sm:inline">You&rsquo;re signed in</span>
+              <Link
+                href="/dashboard"
+                className="rounded-lg px-5 py-2 text-sm font-medium text-text-inverse transition-opacity hover:opacity-90"
+                style={{ background: "var(--color-primary-container)" }}
+              >
+                Open dashboard
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/login?mode=signin"
+                className="rounded-lg px-3 py-2 text-sm font-medium text-text-secondary transition-colors hover:text-text-primary"
+              >
+                Log in
+              </Link>
+              <Link
+                href="/assess"
+                className="rounded-lg px-5 py-2 text-sm font-medium text-text-inverse transition-opacity hover:opacity-90"
+                style={{ background: "var(--color-primary-container)" }}
+              >
+                Get started
+              </Link>
+            </>
+          )}
+        </div>
       </header>
 
       {/* ── Hero ── */}
@@ -291,6 +297,11 @@ export default function RelattiLanding({ content }: { content?: LandingContent }
             <Link href="/privacy" className="transition-colors hover:text-text-secondary">Privacy</Link>
             <Link href="/terms" className="transition-colors hover:text-text-secondary">Terms</Link>
           </div>
+          {/* On mobile the theme toggle lives here (the header has no room for a
+              third control at phone widths); on sm+ it's inline in the header. */}
+          <span className="relatti-theme-inline sm:hidden">
+            <FloatingThemeToggle />
+          </span>
         </div>
       </footer>
     </main>
