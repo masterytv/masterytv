@@ -22,6 +22,7 @@ import type { RitualView } from "@/lib/relatti/ritual";
 import ConsentControl from "@/components/relatti/ConsentControl";
 import RelationshipCard from "@/components/relatti/RelationshipCard";
 import DepartedRelationshipNotice from "@/components/relatti/DepartedRelationshipNotice";
+import BetaPartnerCheckinCard from "@/components/relatti/BetaPartnerCheckinCard";
 import RitualCard from "@/components/relatti/RitualCard";
 
 interface Props {
@@ -88,31 +89,11 @@ export default function RelattiDashboard({ userName, state, reportId, relationsh
           </div>
         )}
 
-        {/* Beta: partner auto-enrolled (or legacy tester) — owes the before check-in. */}
+        {/* Beta: partner auto-enrolled (or legacy tester) — owes the before
+            check-in. The questions render INLINE: a link-away banner proved too
+            easy to scroll past on the first real dyad test. */}
         {betaNeedsCheckin && (
-          <Link
-            href="/dashboard/beta"
-            className="mb-6 flex items-center gap-4 rounded-2xl bg-surface-50 p-5 transition-colors hover:bg-surface-100"
-            style={{
-              boxShadow: "inset 0 0 0 1px color-mix(in oklch, var(--color-primary) 25%, transparent)",
-            }}
-          >
-            <span
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
-              style={{ background: "color-mix(in oklch, var(--color-primary) 12%, transparent)" }}
-            >
-              <CalendarCheck className="h-5 w-5" style={{ color: "var(--color-primary)" }} />
-            </span>
-            <span className="min-w-0">
-              <span className="block font-display text-sm font-semibold text-text-primary">
-                You have free unlimited coaching — one quick step
-              </span>
-              <span className="mt-0.5 block text-sm text-text-secondary">
-                A 2-minute check-in completes your beta setup (and one more at 2 weeks — that&rsquo;s
-                the whole deal).
-              </span>
-            </span>
-          </Link>
+          <BetaPartnerCheckinCard partnerName={relationships[0]?.partner?.name ?? null} />
         )}
 
         {/* Beta: the pre-registered code turned out dead/full — say so honestly. */}
