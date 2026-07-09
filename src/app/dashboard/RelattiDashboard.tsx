@@ -15,7 +15,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Heart, MessageCircle, FileText, ClipboardList, UserPlus, Copy, Check, Waves } from "lucide-react";
+import { Heart, MessageCircle, FileText, ClipboardList, UserPlus, Copy, Check, Waves, CalendarCheck } from "lucide-react";
 import type { DashboardDyad, DyadConsent, DyadStreak } from "@/lib/relatti/dashboard-dyad";
 import type { Relationship } from "@/lib/relatti/relationships";
 import type { RitualView } from "@/lib/relatti/ritual";
@@ -34,9 +34,11 @@ interface Props {
   consent?: DyadConsent | null;
   streak?: DyadStreak | null;
   ritual?: RitualView | null;
+  /** Beta: the day-14 after-check-in is owed (soft, persistent nudge). */
+  checkinDue?: boolean;
 }
 
-export default function RelattiDashboard({ userName, state, reportId, relationships = [], inviteUrl, consent = null, ritual = null }: Props) {
+export default function RelattiDashboard({ userName, state, reportId, relationships = [], inviteUrl, consent = null, ritual = null, checkinDue = false }: Props) {
   const [copied, setCopied] = useState(false);
   const assessed = state === "completed";
 
@@ -58,6 +60,33 @@ export default function RelattiDashboard({ userName, state, reportId, relationsh
             Hi {userName}
           </h1>
         </div>
+
+        {/* Beta: the day-14 check-in owed under the free-access deal. Soft but
+            persistent — shows until the after-survey is done (never blocks). */}
+        {checkinDue && (
+          <Link
+            href="/dashboard/beta/checkin"
+            className="mb-6 flex items-center gap-4 rounded-2xl bg-surface-50 p-5 transition-colors hover:bg-surface-100"
+            style={{
+              boxShadow: "inset 0 0 0 1px color-mix(in oklch, var(--color-primary) 25%, transparent)",
+            }}
+          >
+            <span
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+              style={{ background: "color-mix(in oklch, var(--color-primary) 12%, transparent)" }}
+            >
+              <CalendarCheck className="h-5 w-5" style={{ color: "var(--color-primary)" }} />
+            </span>
+            <span className="min-w-0">
+              <span className="block font-display text-sm font-semibold text-text-primary">
+                Your 2-week check-in is ready
+              </span>
+              <span className="mt-0.5 block text-sm text-text-secondary">
+                Three minutes — the second half of your free-beta deal.
+              </span>
+            </span>
+          </Link>
+        )}
 
         {/* Daily connection ritual — the primary recurring action (§5.9).
             Shown once the user has their relationship profile; before that the

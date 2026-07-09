@@ -2,13 +2,18 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { notifyFounder, escapeHtml } from "@/lib/relatti/notify";
+import { parseBeforeSurvey, insertBeforeSurvey } from "@/lib/relatti/beta-survey";
 
 /**
- * Free-beta unlock — now GATED behind an invite code with a per-code cap
+ * Free-beta unlock — GATED behind an invite code with a per-code cap
  * (the admission mechanic for the controlled/Reddit beta). Redemption is atomic
  * and race-safe in `redeem_beta_code` (service-role-only). On success it flips
  * users.beta_access (the coach edge fn bypasses the free-tier daily limit) and
- * records which code was used. The optional note is stored as
+ * records which code was used.
+ *
+ * The unlock also requires the BEFORE check-in (the free-access ⇄ two-surveys
+ * deal): three quick questions stored in beta_surveys with the tester's CSI-4
+ * baseline snapshotted from their assessment. The optional note is stored as
  * feedback(category='beta_signup').
  */
 
@@ -37,6 +42,14 @@ export async function POST(req: Request) {
     if (!code) {
       return NextResponse.json({ error: "Enter your invite code." }, { status: 400 });
     }
+    // The before check-in is part of the deal — required with the code.
+    const survey = parseBeforeSurvey(body.survey);
+    if (!survey) {
+      return NextResponse.json(
+        { error: "Please answer the three quick check-in questions." },
+        { status: 400 }
+      );
+    }
 
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -60,6 +73,11 @@ export async function POST(req: Request) {
     if (!outcome.ok) {
       return NextResponse.json({ error: outcome.error, status }, { status: 400 });
     }
+
+    // Record the before check-in for fresh grants AND 'already' users (existing
+    // testers backfilling the survey through the same page). Idempotent — a
+    // duplicate submit returns 'already' from the unique(user, phase) constraint.
+    await insertBeforeSurvey(admin, user.id, survey);
 
     // Fresh grant only: record the note + notify the founder. ('already' means
     // they were in already — don't double-notify or re-consume anything.)

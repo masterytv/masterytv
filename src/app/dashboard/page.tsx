@@ -215,6 +215,18 @@ export default async function DashboardPage({
     // Consent control + ritual hang off the primary (most active) relationship.
     const primaryEngagementId = relationships[0]?.engagementId ?? dyad?.engagementId ?? null;
     const consent = primaryEngagementId ? await getDyadConsent(supabase, primaryEngagementId, user.id) : null;
+
+    // Day-14 beta check-in nudge: due when the before-survey is ≥14 days old
+    // and the after-survey hasn't been done (reads the user's own rows via RLS).
+    const { data: surveyRows } = await supabase
+      .from("beta_surveys")
+      .select("phase, created_at")
+      .eq("user_id", user.id);
+    const beforeSurvey = surveyRows?.find((r) => r.phase === "before");
+    const checkinDue =
+      !!beforeSurvey &&
+      !surveyRows?.some((r) => r.phase === "after") &&
+      Date.now() - new Date(beforeSurvey.created_at).getTime() >= 14 * 86400000;
     // Daily connection ritual (§5.9) — only meaningful once they have a profile.
     const ritual =
       state === "completed" ? await getTodaysRitual(supabase, user.id, dyad) : null;
@@ -228,6 +240,7 @@ export default async function DashboardPage({
         inviteUrl={inviteUrl}
         consent={consent}
         ritual={ritual}
+        checkinDue={checkinDue}
       />
     );
   }

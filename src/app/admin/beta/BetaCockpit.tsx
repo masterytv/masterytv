@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import {
   Users, ClipboardCheck, Send, CheckCircle2, MessageSquareText,
   MessageSquare, Sunrise, Clock, UserCheck, ChevronRight, ChevronDown, Search,
-  KeyRound, Plus, Copy, Check, Power,
+  KeyRound, Plus, Copy, Check, Power, CalendarCheck, MessageSquareQuote,
 } from "lucide-react";
-import { FUNNEL_STAGES, type Tester, type CohortMetrics, type BetaCode } from "./funnel";
+import { FUNNEL_STAGES, type Tester, type CohortMetrics, type BetaCode, type CheckinStats } from "./funnel";
 
 function relativeTime(iso: string | null): string {
   if (!iso) return "—";
@@ -57,7 +57,7 @@ function MetricCard({ icon, label, value, hint }: MetricCardProps) {
   );
 }
 
-export default function BetaCockpit({ testers, metrics, codes }: { testers: Tester[]; metrics: CohortMetrics; codes: BetaCode[] }) {
+export default function BetaCockpit({ testers, metrics, codes, checkins }: { testers: Tester[]; metrics: CohortMetrics; codes: BetaCode[]; checkins: CheckinStats }) {
   const [open, setOpen] = useState<Set<string>>(new Set());
   const [query, setQuery] = useState("");
 
@@ -136,6 +136,9 @@ export default function BetaCockpit({ testers, metrics, codes }: { testers: Test
 
         {/* Invite codes */}
         <BetaCodesPanel codes={codes} />
+
+        {/* Before/after check-ins — the marketing-stat + testimonial pipeline */}
+        <CheckinsPanel checkins={checkins} />
 
         {/* Tester table */}
         <div className="ad-table-wrap">
@@ -257,6 +260,10 @@ export default function BetaCockpit({ testers, metrics, codes }: { testers: Test
                                   </span>
                                   <span style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem" }}>
                                     <Sunrise size={13} /> {t.ritualCount} ritual{t.ritualCount === 1 ? "" : "s"}
+                                  </span>
+                                  <span style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem" }}>
+                                    <CalendarCheck size={13} /> check-ins{" "}
+                                    {(checkins.byUser[t.id]?.before ? 1 : 0) + (checkins.byUser[t.id]?.after ? 1 : 0)}/2
                                   </span>
                                 </div>
                               </div>
@@ -427,6 +434,82 @@ function BetaCodesPanel({ codes }: { codes: BetaCode[] }) {
             })}
           </tbody>
         </table>
+      )}
+    </div>
+  );
+}
+
+/** Before/after check-in stats + the quote-approved testimonial pipeline.
+ *  The headline number is the paired CSI-4 delta — the defensible marketing
+ *  stat ("X% scored happier on the Couples Satisfaction Index"). */
+function CheckinsPanel({ checkins }: { checkins: CheckinStats }) {
+  const delta =
+    checkins.avgCsiDelta == null
+      ? "—"
+      : checkins.avgCsiDelta > 0
+        ? `+${checkins.avgCsiDelta}`
+        : String(checkins.avgCsiDelta);
+  return (
+    <div className="ad-table-wrap">
+      <div className="ad-table-header">
+        <span className="ad-table-header__title">
+          Check-ins (before {checkins.beforeCount} · after {checkins.afterCount})
+        </span>
+      </div>
+      <div className="ad-metrics" style={{ padding: "0.9rem 1rem" }}>
+        <MetricCard
+          icon={<CalendarCheck size={14} />}
+          label="Scored happier"
+          value={checkins.csiImprovedPct == null ? "—" : `${checkins.csiImprovedPct}%`}
+          hint={
+            checkins.pairedCount
+              ? `of ${checkins.pairedCount} paired · CSI-4 measured`
+              : "needs paired before + after"
+          }
+        />
+        <MetricCard
+          icon={<ClipboardCheck size={14} />}
+          label="Avg CSI change"
+          value={delta}
+          hint="0–21 scale"
+        />
+        <MetricCard
+          icon={<UserCheck size={14} />}
+          label="Felt better"
+          value={checkins.feltBetterPct == null ? "—" : `${checkins.feltBetterPct}%`}
+          hint="self-reported at day 14"
+        />
+        <MetricCard
+          icon={<Send size={14} />}
+          label="Recommend"
+          value={checkins.avgRecommend == null ? "—" : `${checkins.avgRecommend}/10`}
+          hint={`hopefulness going in: ${checkins.avgHopefulness ?? "—"}/5`}
+        />
+      </div>
+      {checkins.testimonials.length === 0 ? (
+        <div className="ad-beta-empty">
+          No quote-approved testimonials yet — they collect here from the day-14 check-in.
+        </div>
+      ) : (
+        <div style={{ padding: "0 1rem 1rem" }}>
+          <div className="ad-beta-detail__title" style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+            <MessageSquareQuote size={13} /> Approved quotes ({checkins.testimonials.length}) — cleared for marketing
+          </div>
+          {checkins.testimonials.map((q, i) => (
+            <div className="ad-beta-feedback" key={i}>
+              <div className="ad-beta-feedback__meta">
+                <span className="ad-badge ad-badge--free">{q.attribution}</span>
+                {q.recommend != null && (
+                  <span style={{ fontSize: "0.72rem", color: "var(--text-hint)" }}>recommend {q.recommend}/10</span>
+                )}
+                <span style={{ fontSize: "0.72rem", color: "var(--text-disabled)" }}>
+                  {q.email} · {shortDate(q.createdAt)}
+                </span>
+              </div>
+              <div className="ad-beta-feedback__msg">&ldquo;{q.quote}&rdquo;</div>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );

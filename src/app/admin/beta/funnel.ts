@@ -313,3 +313,104 @@ export async function getBetaFunnel(
 
   return { testers, metrics, codes };
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Beta check-ins (before/after surveys) — the free-access ⇄ two-surveys deal.
+// The headline stat is the paired CSI-4 delta (validated satisfaction measure:
+// before = assessment baseline snapshot, after = day-14 re-administration).
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface CheckinTestimonial {
+  email: string;
+  quote: string;
+  attribution: string; // first_name | initials | anonymous
+  recommend: number | null;
+  createdAt: string;
+}
+
+export interface CheckinStats {
+  beforeCount: number;
+  afterCount: number;
+  /** Users with BOTH csi values — the denominator for the delta stats. */
+  pairedCount: number;
+  /** % of paired users whose after CSI > before CSI ("X% scored happier"). */
+  csiImprovedPct: number | null;
+  avgCsiDelta: number | null;
+  /** % of after-respondents who FELT better (improved = much/somewhat_better). */
+  feltBetterPct: number | null;
+  avgRecommend: number | null;
+  avgHopefulness: number | null;
+  testimonials: CheckinTestimonial[];
+  /** Per-user check-in status for the tester table. */
+  byUser: Record<string, { before: boolean; after: boolean }>;
+}
+
+export async function getCheckinStats(admin: SupabaseClient): Promise<CheckinStats> {
+  const { data: rows } = await admin
+    .from("beta_surveys")
+    .select("user_id, phase, responses, csi_total, testimonial, quote_permission, quote_attribution, created_at");
+  const surveys = rows ?? [];
+
+  const userIds = [...new Set(surveys.map((s) => s.user_id as string))];
+  const emailById = new Map<string, string>();
+  if (userIds.length) {
+    const { data: users } = await admin.from("users").select("id, email").in("id", userIds);
+    for (const u of users ?? []) emailById.set(u.id as string, (u.email as string) ?? "unknown");
+  }
+
+  const byUser: CheckinStats["byUser"] = {};
+  const beforeByUser = new Map<string, { csi: number | null; hopefulness: number | null }>();
+  const afters: { userId: string; csi: number | null; improved: string; recommend: number | null }[] = [];
+  const testimonials: CheckinTestimonial[] = [];
+
+  for (const s of surveys) {
+    const uid = s.user_id as string;
+    byUser[uid] = byUser[uid] ?? { before: false, after: false };
+    const resp = (s.responses ?? {}) as Record<string, unknown>;
+    if (s.phase === "before") {
+      byUser[uid].before = true;
+      beforeByUser.set(uid, {
+        csi: s.csi_total == null ? null : Number(s.csi_total),
+        hopefulness: resp.hopefulness == null ? null : Number(resp.hopefulness),
+      });
+    } else {
+      byUser[uid].after = true;
+      afters.push({
+        userId: uid,
+        csi: s.csi_total == null ? null : Number(s.csi_total),
+        improved: String(resp.improved ?? ""),
+        recommend: resp.recommend == null ? null : Number(resp.recommend),
+      });
+      if (s.testimonial && s.quote_permission) {
+        testimonials.push({
+          email: emailById.get(uid) ?? "unknown",
+          quote: s.testimonial as string,
+          attribution: (s.quote_attribution as string) ?? "anonymous",
+          recommend: resp.recommend == null ? null : Number(resp.recommend),
+          createdAt: s.created_at as string,
+        });
+      }
+    }
+  }
+
+  const paired = afters.filter((a) => a.csi != null && beforeByUser.get(a.userId)?.csi != null);
+  const improved = paired.filter((a) => (a.csi as number) > (beforeByUser.get(a.userId)!.csi as number));
+  const deltas = paired.map((a) => (a.csi as number) - (beforeByUser.get(a.userId)!.csi as number));
+  const feltBetter = afters.filter((a) => a.improved === "much_better" || a.improved === "somewhat_better");
+  const recs = afters.map((a) => a.recommend).filter((r): r is number => r != null);
+  const hopes = [...beforeByUser.values()].map((b) => b.hopefulness).filter((h): h is number => h != null);
+  const avg = (xs: number[]) => (xs.length ? Math.round((xs.reduce((s, x) => s + x, 0) / xs.length) * 10) / 10 : null);
+
+  return {
+    beforeCount: [...Object.values(byUser)].filter((u) => u.before).length,
+    afterCount: afters.length,
+    pairedCount: paired.length,
+    csiImprovedPct: paired.length ? Math.round((improved.length / paired.length) * 100) : null,
+    avgCsiDelta: avg(deltas),
+    feltBetterPct: afters.length ? Math.round((feltBetter.length / afters.length) * 100) : null,
+    avgRecommend: avg(recs),
+    avgHopefulness: avg(hopes),
+    testimonials,
+    byUser,
+  };
+}
