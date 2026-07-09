@@ -164,8 +164,18 @@ export async function updateSession(request: NextRequest) {
   }
 
   // ── Catch auth codes landing on wrong routes ──
+  // This is for BROWSER-NAVIGATED auth links only. Exempt:
+  //   /beta   — its ?code= is a BETA INVITE code carried on shared links
+  //             (relatti.com/beta?code=XXXX), not an OAuth code.
+  //   /api/*  — API calls are never OAuth landings; redirecting a fetch()
+  //             with a ?code= param silently breaks it.
   const code = request.nextUrl.searchParams.get("code");
-  if (code && !pathname.startsWith("/auth/callback")) {
+  if (
+    code &&
+    !pathname.startsWith("/auth/callback") &&
+    !pathname.startsWith("/api/") &&
+    pathname !== "/beta"
+  ) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/callback";
     url.search = `?code=${code}`;

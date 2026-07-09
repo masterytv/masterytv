@@ -7,6 +7,7 @@ import { getActiveDyad, getDyadConsent } from "@/lib/relatti/dashboard-dyad";
 import { getRelationships } from "@/lib/relatti/relationships";
 import { syncMyReportToSpine } from "@/lib/relatti/sync-my-report";
 import { getTodaysRitual } from "@/lib/relatti/ritual";
+import { resolveBetaAccess } from "@/lib/relatti/beta-survey";
 import { getBrand } from "@/lib/platform/brand.server";
 import { isBrandId } from "@/lib/platform/brand";
 import { originFromHeaders } from "@/lib/platform/origin";
@@ -227,6 +228,18 @@ export default async function DashboardPage({
       !!beforeSurvey &&
       !surveyRows?.some((r) => r.phase === "after") &&
       Date.now() - new Date(beforeSurvey.created_at).getTime() >= 14 * 86400000;
+
+    // Beta access resolution: auto-redeem the /beta pre-registration cookie
+    // (post-assessment, so the CSI baseline exists) and auto-enroll partners
+    // of existing testers. See resolveBetaAccess for the full contract.
+    const betaState = await resolveBetaAccess(
+      { id: user.id, email: user.email },
+      {
+        assessmentCompleted: state === "completed",
+        offerCookie: (await cookies()).get("beta_offer")?.value,
+        hasBeforeSurvey: !!beforeSurvey,
+      }
+    );
     // Daily connection ritual (§5.9) — only meaningful once they have a profile.
     const ritual =
       state === "completed" ? await getTodaysRitual(supabase, user.id, dyad) : null;
@@ -241,6 +254,9 @@ export default async function DashboardPage({
         consent={consent}
         ritual={ritual}
         checkinDue={checkinDue}
+        betaJustUnlocked={betaState.justUnlocked}
+        betaNeedsCheckin={betaState.needsBeforeCheckin}
+        betaRedeemError={betaState.redeemError}
       />
     );
   }

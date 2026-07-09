@@ -15,7 +15,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Heart, MessageCircle, FileText, ClipboardList, UserPlus, Copy, Check, Waves, CalendarCheck } from "lucide-react";
+import { Heart, MessageCircle, FileText, ClipboardList, UserPlus, Copy, Check, Waves, CalendarCheck, ShieldAlert } from "lucide-react";
 import type { DashboardDyad, DyadConsent, DyadStreak } from "@/lib/relatti/dashboard-dyad";
 import type { Relationship } from "@/lib/relatti/relationships";
 import type { RitualView } from "@/lib/relatti/ritual";
@@ -36,9 +36,15 @@ interface Props {
   ritual?: RitualView | null;
   /** Beta: the day-14 after-check-in is owed (soft, persistent nudge). */
   checkinDue?: boolean;
+  /** Beta: this load auto-redeemed the /beta pre-registration — celebrate once. */
+  betaJustUnlocked?: boolean;
+  /** Beta: has access (partner auto-enroll) but owes the before check-in. */
+  betaNeedsCheckin?: boolean;
+  /** Beta: the pre-registered code failed at redemption (dead/full link). */
+  betaRedeemError?: string | null;
 }
 
-export default function RelattiDashboard({ userName, state, reportId, relationships = [], inviteUrl, consent = null, ritual = null, checkinDue = false }: Props) {
+export default function RelattiDashboard({ userName, state, reportId, relationships = [], inviteUrl, consent = null, ritual = null, checkinDue = false, betaJustUnlocked = false, betaNeedsCheckin = false, betaRedeemError = null }: Props) {
   const [copied, setCopied] = useState(false);
   const assessed = state === "completed";
 
@@ -60,6 +66,80 @@ export default function RelattiDashboard({ userName, state, reportId, relationsh
             Hi {userName}
           </h1>
         </div>
+
+        {/* Beta: the /beta pre-registration just auto-applied — one-time note. */}
+        {betaJustUnlocked && (
+          <div className="mb-6 flex items-center gap-4 rounded-2xl bg-surface-50 p-5">
+            <span
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+              style={{ background: "color-mix(in oklch, var(--color-accent-teal) 16%, transparent)" }}
+            >
+              <Check className="h-5 w-5" style={{ color: "var(--color-accent-teal)" }} />
+            </span>
+            <span className="min-w-0">
+              <span className="block font-display text-sm font-semibold text-text-primary">
+                Free unlimited coaching unlocked — you&rsquo;re a beta tester
+              </span>
+              <span className="mt-0.5 block text-sm text-text-secondary">
+                Your invite applied automatically. We&rsquo;ll email your 2-week check-in when
+                it&rsquo;s time — that completes the deal.
+              </span>
+            </span>
+          </div>
+        )}
+
+        {/* Beta: partner auto-enrolled (or legacy tester) — owes the before check-in. */}
+        {betaNeedsCheckin && (
+          <Link
+            href="/dashboard/beta"
+            className="mb-6 flex items-center gap-4 rounded-2xl bg-surface-50 p-5 transition-colors hover:bg-surface-100"
+            style={{
+              boxShadow: "inset 0 0 0 1px color-mix(in oklch, var(--color-primary) 25%, transparent)",
+            }}
+          >
+            <span
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+              style={{ background: "color-mix(in oklch, var(--color-primary) 12%, transparent)" }}
+            >
+              <CalendarCheck className="h-5 w-5" style={{ color: "var(--color-primary)" }} />
+            </span>
+            <span className="min-w-0">
+              <span className="block font-display text-sm font-semibold text-text-primary">
+                You have free unlimited coaching — one quick step
+              </span>
+              <span className="mt-0.5 block text-sm text-text-secondary">
+                A 2-minute check-in completes your beta setup (and one more at 2 weeks — that&rsquo;s
+                the whole deal).
+              </span>
+            </span>
+          </Link>
+        )}
+
+        {/* Beta: the pre-registered code turned out dead/full — say so honestly. */}
+        {betaRedeemError && (
+          <Link
+            href="/dashboard/beta"
+            className="mb-6 flex items-center gap-4 rounded-2xl bg-surface-50 p-5 transition-colors hover:bg-surface-100"
+            style={{
+              boxShadow: "inset 0 0 0 1px color-mix(in oklch, var(--color-danger) 30%, transparent)",
+            }}
+          >
+            <span
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+              style={{ background: "color-mix(in oklch, var(--color-danger) 12%, transparent)" }}
+            >
+              <ShieldAlert className="h-5 w-5" style={{ color: "var(--color-danger)" }} />
+            </span>
+            <span className="min-w-0">
+              <span className="block font-display text-sm font-semibold text-text-primary">
+                Your beta invite couldn&rsquo;t be applied
+              </span>
+              <span className="mt-0.5 block text-sm text-text-secondary">
+                {betaRedeemError} Tap here to enter a different code.
+              </span>
+            </span>
+          </Link>
+        )}
 
         {/* Beta: the day-14 check-in owed under the free-access deal. Soft but
             persistent — shows until the after-survey is done (never blocks). */}
