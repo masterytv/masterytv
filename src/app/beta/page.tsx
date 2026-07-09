@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getBrandFromRequest } from "@/lib/platform/brand.server";
 import BetaOffer from "./BetaOffer";
@@ -27,5 +28,10 @@ export default async function BetaPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const brand = await getBrandFromRequest(params.brand);
   if (brand.id !== "relatti") redirect("/");
-  return <BetaOffer initialCode={(params.code ?? "").trim()} />;
+  // A code seen on ANY marketing link (?code= on /, /relatti, /challenge, …)
+  // is persisted to the beta_code cookie by the middleware — so a visitor who
+  // wandered the site before hitting a CTA still lands here with their code.
+  // An explicit ?code= on this URL always wins.
+  const cookieCode = (await cookies()).get("beta_code")?.value ?? "";
+  return <BetaOffer initialCode={(params.code ?? "").trim() || cookieCode.trim()} />;
 }
