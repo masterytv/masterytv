@@ -10,13 +10,13 @@ import RelattiLanding from "./RelattiLanding";
  * root layout for Relatti routes — so this page stays statically rendered.
  */
 export const metadata: Metadata = {
-  title: "Relatti — The Coach That Knows Both of You",
+  title: "Relatti — The Relationship Coach for Both of You",
   description:
-    "Not couples therapy. Not a journaling app. A relationship coach grounded in both partners' psychology — it mediates real issues, runs gentle check-ins, and helps in the moment a fight is happening.",
+    "Built on a century of relationship science. Understand how you each love, bond, and handle hard moments — and turn understanding into a relationship that thrives.",
   openGraph: {
-    title: "Relatti — Stop having the same fight",
+    title: "Relatti — The best relationships aren't lucky. They're understood.",
     description:
-      "A relationship coach that knows both of you. Built on validated psychology for each partner.",
+      "A relationship coach for both of you, built on a century of relationship science.",
     type: "website",
     siteName: "Relatti",
   },

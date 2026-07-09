@@ -33,6 +33,26 @@ const PILLARS = [
   {
     icon: Users,
     title: "It knows both of you",
+    body: "Each partner takes a short, validated assessment. The coach holds both profiles at once — how you each attach, what closeness looks like to you, what you each need to feel loved.",
+  },
+  {
+    icon: MessageCircle,
+    title: "It turns friction into understanding",
+    body: "Every couple has friction — that’s two real people, not a flaw. When it flares, the coach translates instead of taking sides: “here’s what that might sound like from their side.” It coaches the relationship, not just whoever’s typing.",
+  },
+  {
+    icon: Heart,
+    title: "It’s there in the moments that matter",
+    body: "Before the big conversation. In the middle of the hard one. After the one that went sideways. Get a grounded next step — or have it read a hot message before you hit send.",
+  },
+];
+
+// Pre-2026-07 pillar copy, preserved verbatim for /samefight (the problem-first
+// entry we keep for reference and distress-intent traffic). Do not edit.
+const LEGACY_PILLARS = [
+  {
+    icon: Users,
+    title: "It knows both of you",
     body: "Each partner takes a short, validated assessment. The coach holds both profiles at once — attachment style, how you handle conflict, what you each need to feel close.",
   },
   {
@@ -57,14 +77,14 @@ const STEPS = [
   {
     icon: Send,
     step: "2",
-    title: "Invite your partner",
-    body: "Share your result. They take theirs. Now you’re linked — privately and by consent.",
+    title: "Share it with your partner",
+    body: "Your result is the conversation starter. They take theirs, and now you’re linked — privately, and by consent.",
   },
   {
     icon: Compass,
     step: "3",
     title: "Meet your coach",
-    body: "Get your shared Relationship Blueprint and a coach that understands you both.",
+    body: "Get your shared Relationship Blueprint and a coach that understands you both — where you naturally fit, and where you’ll grow.",
   },
 ];
 
@@ -76,6 +96,15 @@ export interface LandingContent {
 }
 
 const DEFAULT_CONTENT: LandingContent = {
+  eyebrow: "A coach for the two of you",
+  headlineTop: "The best relationships aren’t lucky.",
+  headlineAccent: "They’re understood.",
+  subhead:
+    "Relatti is a relationship coach for both of you — built on a century of relationship science and each partner’s real psychology. Understand how you each love, bond, and handle hard moments. Then put that understanding to work.",
+};
+
+// The pre-2026-07 problem-first hero, preserved verbatim for /samefight.
+export const SAMEFIGHT_CONTENT: LandingContent = {
   eyebrow: "A coach that knows both of you",
   headlineTop: "Stop having the same fight.",
   headlineAccent: "Start having the last one.",
@@ -83,8 +112,16 @@ const DEFAULT_CONTENT: LandingContent = {
     "Not couples therapy. Not a journaling app. A relationship coach grounded in each partner’s real psychology — that mediates issues, runs gentle check-ins, and helps the moment a fight starts.",
 };
 
-export default function RelattiLanding({ content }: { content?: LandingContent }) {
+export default function RelattiLanding({
+  content,
+  legacy = false,
+}: {
+  content?: LandingContent;
+  /** /samefight: old pillar copy, no belief block — a frozen reference page. */
+  legacy?: boolean;
+}) {
   const c = content ?? DEFAULT_CONTENT;
+  const pillars = legacy ? LEGACY_PILLARS : PILLARS;
 
   // Auth-aware chrome: signed-in visitors get "Open dashboard" instead of
   // signup CTAs (least-friction path back in; also an honest signed-in
@@ -194,12 +231,53 @@ export default function RelattiLanding({ content }: { content?: LandingContent }
         <p className="mt-5 text-sm text-text-muted">
           Free to start &middot; about 10 minutes &middot; no card required
         </p>
+
+        <p className="mt-3 text-sm">
+          <Link
+            href="/challenge"
+            className="inline-flex items-center gap-1 font-medium underline underline-offset-2 transition-opacity hover:opacity-80"
+            style={{ color: "var(--color-primary)" }}
+          >
+            Doing it together? Take the 14-Day Challenge
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </p>
       </section>
+
+      {/* ── The belief block: the mission, stated plainly ── */}
+      {!legacy && (
+        <section className="mx-auto max-w-2xl px-6 py-16 text-center sm:py-20">
+          <h2 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">
+            We believe more relationships can work.
+          </h2>
+          <div className="mt-8 space-y-4 text-lg leading-relaxed text-text-secondary">
+            <p>
+              When two people work at it <em>together</em> — not alone.
+            </p>
+            <p>When there&rsquo;s a blueprint instead of guesswork.</p>
+            <p>
+              When a hundred years of relationship science lives in your
+              pocket, not in a library.
+            </p>
+            <p>When the hard conversations happen without the dread.</p>
+            <p>
+              When anger gives way to understanding — and understanding to
+              something stronger than what you started with.
+            </p>
+          </div>
+          <p
+            className="mt-8 font-display text-xl font-semibold"
+            style={{ color: "var(--color-primary)" }}
+          >
+            That&rsquo;s the future we&rsquo;re building. One couple at a time.
+          </p>
+        </section>
+      )}
 
       {/* ── The wedge: three pillars ── */}
       <section className="mx-auto max-w-6xl px-6 py-8">
         <div className="grid gap-5 sm:grid-cols-3">
-          {PILLARS.map((p) => (
+          {pillars.map((p) => (
             <div
               key={p.title}
               className="rounded-2xl bg-surface-50 p-6 transition-colors hover:bg-surface-100"
@@ -251,9 +329,10 @@ export default function RelattiLanding({ content }: { content?: LandingContent }
             with each other.
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-text-secondary">
-            It understands both personalities and what happens between you. But each
-            partner&rsquo;s conversations stay private. No competitor does dyadic
-            coaching — and none would keep it this honest.
+            It understands both of you and what happens between you. But each
+            partner&rsquo;s conversations stay private — always. You share a
+            blueprint, not a transcript. That&rsquo;s what makes it safe to be
+            honest, and honesty is what makes it work.
           </p>
           <Link
             href={authed ? "/dashboard" : "/beta"} /* BETA GATE (temporary) */

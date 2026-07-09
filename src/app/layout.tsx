@@ -89,7 +89,7 @@ export default function RootLayout({
                   // "\/" — a single "\/" would collapse to "/" and make the
                   // emitted regex a SyntaxError that killed this whole script
                   // (brand AND theme resolution) from 2026-06-22 to 2026-07-02.
-                  var relattiPath = /^\\/(relatti|couples|engaged|premarital)(\\/|$)/.test(path);
+                  var relattiPath = /^\\/(relatti|couples|engaged|premarital|challenge|samefight)(\\/|$)/.test(path);
                   var hostBrand = (relattiHost || relattiPath) ? 'relatti' : 'masterytv';
                   var brand = (urlBrand === 'relatti' || urlBrand === 'masterytv') ? urlBrand
                     : (relattiHost || relattiPath) ? 'relatti'
