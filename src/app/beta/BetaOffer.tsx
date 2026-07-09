@@ -195,7 +195,9 @@ export default function BetaOffer({ initialCode }: { initialCode: string }) {
                   <p className="mt-6 text-sm text-danger">
                     {codeStatus === "full"
                       ? "That invite link has been fully claimed. If you have another code, enter it below — or reach out and we'll sort you out."
-                      : "That invite link is no longer active. If you have another code, enter it below."}
+                      : codeStatus === "expired"
+                        ? "That invite link is no longer active. If you have another code, enter it below."
+                        : "We don't recognize that invite code. Double-check the link, or enter a code below."}
                   </p>
                 )}
                 <label className={`${codeStatus === "none" ? "mt-6" : "mt-3"} block text-sm font-medium text-text-primary`}>
