@@ -26,6 +26,23 @@ export interface BeforeSurvey {
 
 export const RELATIONSHIP_LENGTHS = ["lt1", "y1_3", "y3_7", "y7_15", "gt15"] as const;
 
+/** Human labels for notification emails / admin surfaces. */
+export const RELATIONSHIP_LENGTH_LABELS: Record<string, string> = {
+  lt1: "under a year",
+  y1_3: "1–3 years",
+  y3_7: "3–7 years",
+  y7_15: "7–15 years",
+  gt15: "15+ years",
+};
+
+export const IMPROVED_LABELS: Record<string, string> = {
+  much_better: "a lot better",
+  somewhat_better: "somewhat better",
+  same: "about the same",
+  somewhat_worse: "somewhat worse",
+  much_worse: "a lot worse",
+};
+
 export function parseBeforeSurvey(body: unknown): BeforeSurvey | null {
   const b = (body ?? {}) as Record<string, unknown>;
   const relationshipLength = String(b.relationshipLength ?? "");
@@ -70,13 +87,14 @@ export async function getBaselineCsi(
 
 /**
  * Idempotently record the BEFORE check-in (unique user+phase — a second submit
- * returns 'already' and changes nothing, protecting the baseline).
+ * returns 'already' and changes nothing, protecting the baseline). Returns the
+ * snapshotted baseline too, so notification emails can show it.
  */
 export async function insertBeforeSurvey(
   admin: SupabaseClient,
   userId: string,
   survey: BeforeSurvey
-): Promise<"ok" | "already" | "error"> {
+): Promise<{ status: "ok" | "already" | "error"; baseline: number | null }> {
   const baseline = await getBaselineCsi(admin, userId);
   const { error } = await admin.from("beta_surveys").insert({
     user_id: userId,
@@ -88,8 +106,8 @@ export async function insertBeforeSurvey(
     },
     csi_total: baseline,
   });
-  if (!error) return "ok";
-  if (error.code === "23505") return "already"; // unique_violation
+  if (!error) return { status: "ok", baseline };
+  if (error.code === "23505") return { status: "already", baseline }; // unique_violation
   console.error("[beta-survey] before insert failed:", error.message);
-  return "error";
+  return { status: "error", baseline };
 }
