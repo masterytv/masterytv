@@ -3,6 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useUser } from "@/hooks/useUser";
+import BeforeCheckinFields, {
+  EMPTY_BEFORE_CHECKIN,
+  beforeCheckinComplete,
+  type BeforeCheckinValue,
+} from "@/components/relatti/BeforeCheckinFields";
 import { Infinity as InfinityIcon, ShieldCheck, Check, ArrowRight, KeyRound, CalendarCheck } from "lucide-react";
 
 /**
@@ -16,14 +21,6 @@ import { Infinity as InfinityIcon, ShieldCheck, Check, ArrowRight, KeyRound, Cal
  * (backfill via /api/relatti/beta-survey phase=before).
  */
 
-const LENGTH_OPTIONS = [
-  { value: "lt1", label: "Under a year" },
-  { value: "y1_3", label: "1–3 years" },
-  { value: "y3_7", label: "3–7 years" },
-  { value: "y7_15", label: "7–15 years" },
-  { value: "gt15", label: "15+ years" },
-];
-
 interface SurveyState {
   before: boolean;
   after: boolean;
@@ -33,10 +30,7 @@ interface SurveyState {
 export default function BetaUnlockPage() {
   const { user, loading } = useUser();
   const [code, setCode] = useState("");
-  const [relationshipLength, setRelationshipLength] = useState("");
-  const [hopefulness, setHopefulness] = useState(0);
-  const [topChange, setTopChange] = useState("");
-  const [ack, setAck] = useState(false);
+  const [checkin, setCheckin] = useState<BeforeCheckinValue>(EMPTY_BEFORE_CHECKIN);
   const [status, setStatus] = useState<"idle" | "sending" | "done" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [survey, setSurvey] = useState<SurveyState | null>(null);
@@ -50,14 +44,18 @@ export default function BetaUnlockPage() {
 
   const unlocked = status === "done" || !!user?.beta_access;
   const needsBackfill = unlocked && survey !== null && !survey.before && status !== "done";
-  const surveyComplete = relationshipLength && hopefulness >= 1 && topChange.trim() && ack;
+  const surveyComplete = beforeCheckinComplete(checkin);
 
   async function submit() {
     if (status === "sending" || !surveyComplete) return;
     if (!unlocked && !code.trim()) return;
     setStatus("sending");
     setErrorMsg("");
-    const surveyBody = { relationshipLength, hopefulness, topChange: topChange.trim() };
+    const surveyBody = {
+      relationshipLength: checkin.relationshipLength,
+      hopefulness: checkin.hopefulness,
+      topChange: checkin.topChange.trim(),
+    };
     try {
       const res = unlocked
         ? await fetch("/api/relatti/beta-survey", {
@@ -68,7 +66,7 @@ export default function BetaUnlockPage() {
         : await fetch("/api/relatti/beta-unlock", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ code: code.trim(), note: topChange.trim(), survey: surveyBody }),
+            body: JSON.stringify({ code: code.trim(), note: checkin.topChange.trim(), survey: surveyBody }),
           });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -181,88 +179,7 @@ export default function BetaUnlockPage() {
             )}
 
             {/* ── The before check-in ── */}
-            <label className="mt-6 block text-sm font-medium text-text-primary">
-              How long have you been with your partner?
-            </label>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {LENGTH_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => setRelationshipLength(opt.value)}
-                  className="rounded-md px-3.5 py-2 text-sm transition-colors"
-                  style={
-                    relationshipLength === opt.value
-                      ? {
-                          background: "color-mix(in oklch, var(--color-primary) 14%, transparent)",
-                          color: "var(--color-primary)",
-                          boxShadow: "inset 0 0 0 1px color-mix(in oklch, var(--color-primary) 35%, transparent)",
-                        }
-                      : { background: "var(--color-surface-100)", color: "var(--color-text-secondary)" }
-                  }
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-
-            <label className="mt-6 block text-sm font-medium text-text-primary">
-              How hopeful are you that coaching will help your relationship?
-            </label>
-            <div className="mt-2 flex gap-2">
-              {[1, 2, 3, 4, 5].map((n) => (
-                <button
-                  key={n}
-                  onClick={() => setHopefulness(n)}
-                  className="flex h-11 flex-1 items-center justify-center rounded-md text-sm font-medium transition-colors"
-                  style={
-                    hopefulness === n
-                      ? {
-                          background: "color-mix(in oklch, var(--color-primary) 14%, transparent)",
-                          color: "var(--color-primary)",
-                          boxShadow: "inset 0 0 0 1px color-mix(in oklch, var(--color-primary) 35%, transparent)",
-                        }
-                      : { background: "var(--color-surface-100)", color: "var(--color-text-secondary)" }
-                  }
-                >
-                  {n}
-                </button>
-              ))}
-            </div>
-            <div className="mt-1 flex justify-between text-xs text-text-muted">
-              <span>Honestly skeptical</span>
-              <span>Very hopeful</span>
-            </div>
-
-            <label className="mt-6 block text-sm font-medium text-text-primary">
-              What&apos;s the #1 thing you hope changes?
-            </label>
-            <textarea
-              value={topChange}
-              onChange={(e) => setTopChange(e.target.value)}
-              rows={2}
-              placeholder="In your own words — one line is plenty."
-              className="mt-2 w-full resize-none rounded-md bg-surface-100 p-3 text-sm text-text-primary outline-none placeholder:text-text-muted"
-              style={{ border: "1px solid color-mix(in oklch, var(--color-primary) 12%, transparent)" }}
-            />
-
-            <button
-              onClick={() => setAck(!ack)}
-              className="mt-5 flex w-full items-start gap-3 rounded-md bg-surface-50 p-4 text-left"
-            >
-              <span
-                className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded"
-                style={{
-                  background: ack ? "var(--color-primary)" : "transparent",
-                  boxShadow: ack ? "none" : "inset 0 0 0 1.5px var(--color-text-muted)",
-                }}
-              >
-                {ack && <Check className="h-3.5 w-3.5" style={{ color: "var(--color-text-inverse)" }} />}
-              </span>
-              <span className="text-sm text-text-secondary">
-                I&apos;ll do this check-in now and one more at the 2-week mark — that&apos;s the
-                whole deal for free unlimited access.
-              </span>
-            </button>
+            <BeforeCheckinFields value={checkin} onChange={(patch) => setCheckin((v) => ({ ...v, ...patch }))} />
 
             {status === "error" && (
               <p className="mt-3 text-sm text-danger">
