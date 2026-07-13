@@ -165,9 +165,9 @@ Phases 0–2 capture most of the value. 0 can (and arguably should) go first reg
 
 ---
 
-## 9. Status update — 2026-07-13: PC3 "executive stance parity" (built, pending deploy)
+## 9. Status update — 2026-07-13: PC3 "executive stance parity" (SHIPPED to production)
 
-Trigger: founder's executive-coach test reproduced §2 live — one message got a 5-bold-headers / 6-questions framework dump, and the post-processor birthed an OSKAR-assigned challenge from that single exchange. Epic **PC3** ([PLATFORM_SPRINT.md](PLATFORM_SPRINT.md) §3) ported the validated Relatti stance to the executive coach — implemented on `staging`, deploy pending founder go:
+Trigger: founder's executive-coach test reproduced §2 live — one message got a 5-bold-headers / 6-questions framework dump, and the post-processor birthed an OSKAR-assigned challenge from that single exchange. Epic **PC3** ([PLATFORM_SPRINT.md](PLATFORM_SPRINT.md) §3) ported the validated Relatti stance to the executive coach. **Deployed 2026-07-13** (founder go): migration applied; `coach` v81, `email-inbound` v23, `telegram-webhook` v20, `test-guardrails` v14 (all bundlers of the changed `_shared` modules). Live re-test of the exact trigger message, same conversation: ONE question, no structure, `claude-sonnet-4-6`. Follow-on epic **PC4** (Coach Pack seam = Phase 1 + finish Phase 2/4, snapshot-gated) added the same day — founder direction: source-level vertical isolation now, deploy-unit split at the 3rd vertical.
 
 - **Executive persona rewritten** (understand-first, ONE question per reply, no lists/headings, advice only with permission after understanding; exec flavor = commit to ONE step once the real issue is clear). Relationship prompt stack byte-identical.
 - **Frameworks now invisible** (Layer 2 = private continuity notes, no framework names in the prompt; Layer 3 = internal guide, ONE intervention per turn). Addresses §2.2's rendering half.

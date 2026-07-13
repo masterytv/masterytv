@@ -186,7 +186,20 @@ Added 2026-06-24. Both are platform-wide (every vertical benefits) and pair natu
 | **PC3.6** Coach-lab executive battery: `scripts/coach-lab/exec-battery.mjs` (reuses `lib.mjs` + `assertions.mjs`) — scenarios incl. the exact 2026-07-13 test message; hard checks: no lists/headings, ≤1 question, no "you should", concise, no premature advice; Haiku judge rubric; old-vs-new / gpt-4o-mini-vs-Claude A/B mode. | Battery passes on the new prompt and fails on the old (proof, not vibes). 🧪 |
 | **PC3.7** Deploy (coach edge fn + migration via Supabase CLI — **founder go required**, it's the live engine) + re-run the 2026-07-13 message against production; anneal docs (audit §8 status, memory). | Live coach answers the test message with one question and no list. |
 
-> Scope guard: no Coach Pack interface yet (audit Phase 1 stays a separate epic); crisis-kernel upgrade (audit Phase 0) unchanged and still priority-tracked elsewhere.
+> Scope guard: no Coach Pack interface yet (audit Phase 1 = PC4); crisis-kernel upgrade (audit Phase 0) unchanged and still priority-tracked elsewhere.
+>
+> **✅ SHIPPED 2026-07-13 (founder go: "deploy as-is").** Migration applied (default profiles now neutral 5/6/6/…, decoded rows untouched); `coach` v81 + `email-inbound` v23 + `telegram-webhook` v20 + `test-guardrails` v14 deployed (all four bundle the changed `_shared` modules — kernel version skew avoided). Live re-test of the exact founder message in the same conversation (old framework-dump reply in history): ONE question, no lists, `claude-sonnet-4-6`, 53 tokens out; post-processor promoted no challenge (gate held at 2 user msgs < 3).
+
+#### PC4 — Coach Pack seam: per-vertical code isolation  🟥  *(added 2026-07-13 — founder-directed after PC3: "keep the coaching engines separate"; = audit Phase 1 + finish Phase 2/4)*
+*Goal: eliminate cross-vertical edit risk at the SOURCE level — one shared kernel (transport, safety/crisis, memory plumbing, prompt-composition engine) + one pack file per vertical; editing `executivePack.ts` physically cannot change the relationship coach. Founder decision 2026-07-13: source-level isolation now; deploy-level split (separate edge functions per vertical over the shared kernel) deferred until the 3rd vertical, because N deployed copies of the SAFETY kernel that can drift is the bigger risk while there are only 2 verticals. Zero behavior change — snapshot-proven.*
+
+| Story | Done |
+|:--|:--|
+| **PC4.1** Snapshot baseline FIRST: coach-lab prompt-snapshot tests — assemble the full system prompt for fixed executive + relationship fixtures, commit golden files, wire into `npm run gate`. This is both the refactor's safety net and the permanent cross-vertical guard. | Gate fails on one byte of cross-vertical prompt drift. 🧪 |
+| **PC4.2** Define `CoachPack` (persona, layer list, guardrails overlay, model params, tool set, post-processing hooks); extract `executivePack.ts` + `relationshipPack.ts`; orchestrator composes `pack.layers`; delete every `isRelationship ? … : …` ternary in `prompt-assembler.ts` / `coach/index.ts`. | Prompts byte-identical to PC4.1 goldens; no domain ternaries left. 🧪 |
+| **PC4.3** Pack-owned post-processing: extraction schema + memory taxonomy per pack (relationship = themes/patterns/attachment cues, not business facts) — completes audit Phase 2. | Relationship convs produce relationship-shaped memory. 🧪 |
+| **PC4.4** Spine-based pack resolution (audit Phase 4): pack resolved from `engagement.kind`/workspace; client `program` string demoted to a validated hint (extends the P1 `resolveProgram` fix). 🔒 | No silent executive fallback path remains. 🧪 |
+| **PC4.5** *(deferred trigger: 3rd vertical lands)* Split deploy units: thin `coach-executive` / `coach-relationship` / `coach-career` entrypoints over the shared kernel + a `deploy-all-coaches` script so kernel/safety changes always fan out together. | Deploying one vertical never redeploys another; kernel versions never skew. |
 
 #### PV1 — New-Vertical Playbook + Experience Discovery (process)  🟦  *(added 2026-06-26)*
 *Goal: institutionalize "research the experience FIRST" so every new domain gets a vertical-first flow/assessment/results/coach-voice — not the engine's defaults re-themed. Lesson from Relatti: plumbing is ~80% reusable, the felt experience is ~80% custom (`RELATTI_EXPERIENCE.md`).*
