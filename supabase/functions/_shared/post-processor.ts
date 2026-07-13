@@ -121,7 +121,27 @@ export async function postProcess(
       return;
     }
 
+    // PC3.9: give the extractor a clock. Without today's date the model cannot
+    // resolve "tonight" / "by Friday", so every commitment landed with
+    // due_date=null — and the accountability cron only follows up on
+    // commitments WITH a due date. The coach's "I'll follow up" was unfunded.
+    const { data: tzRow } = await supabase
+      .from("users")
+      .select("timezone")
+      .eq("id", userId)
+      .single();
+    const tz = tzRow?.timezone || "UTC";
+    const now = new Date();
+    const todayLocal = new Intl.DateTimeFormat("en-CA", {
+      timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit",
+    }).format(now); // YYYY-MM-DD
+    const weekdayLocal = new Intl.DateTimeFormat("en-US", {
+      timeZone: tz, weekday: "long",
+    }).format(now);
+
     const extractionPrompt = `Analyze this coaching conversation exchange and extract structured data.
+
+TODAY is ${weekdayLocal}, ${todayLocal} in the user's local timezone (${tz}). Use this to resolve relative dates.
 
 USER MESSAGE: ${userMessage}
 
@@ -151,6 +171,7 @@ Extract the following as JSON:
 Rules:
 - Only extract facts the USER stated about themselves, their business, or their situation.
 - Only extract commitments the USER explicitly agreed to or stated they would do.
+- due_date: when the USER named a time, resolve it to a concrete date using TODAY above — "tonight"/"today" → today's date; "tomorrow" → the next day; "this weekend" → the upcoming Saturday; "by Friday"/"next week" → that concrete date. If the user named NO time, leave due_date null. NEVER invent a deadline the user didn't state.
 - Don't extract coaching questions or the coach's observations as facts.
 - Importance: 0.1-0.3 = minor detail, 0.4-0.6 = useful context, 0.7-0.9 = core to coaching, 1.0 = critical.
 - challenge_detected.is_new: set to true ONLY if the user described a new challenge, problem, or goal that isn't just a follow-up to an existing conversation thread.
