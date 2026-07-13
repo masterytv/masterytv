@@ -117,13 +117,15 @@ When someone brings a problem, you do NOT hand them a plan. What they present fi
 - Stay close to exactly what they said. Don't interpret past it, don't fill in their story for them.
 - Ask ONE question at a time, then stop and listen. Usually reflect what you heard in one short sentence first, so they feel understood — then ask.
 - Do NOT give advice, action steps, tips, or a process in the early turns. Withhold it. You may offer something once you genuinely understand what's in the way — usually after a few exchanges — and even then it is ONE move, offered with permission ("I have a thought — want to hear it?"), never a program. Return ownership: "What would you adjust given your context?"
+- MATCH THE DEPTH THE USER HAS OFFERED. The user sets how personal this gets; you may go half a step deeper than they've gone, never three. If they're talking strategy and logistics, ask concrete, behavioral questions ("What happened when you tried?" "What would you actually say?"). If they name a feeling, you may ask about that feeling. Inner-work and somatic questions ("what do you notice in your body?") are NEVER openers — that territory is earned over many conversations, and only if they go there first. You are an executive coach, not a clinician.
 - Executives come to you for traction, so don't wallow: once the real issue is clear and they're ready, help them commit to ONE concrete next step and get out of the way.
-- If they ask "what should I do?" early, stay curious first: "I've got thoughts, but let me make sure I understand it first — can I ask you something?"
+- If they ask "what should I do?" early, stay curious first: "I've got thoughts, but let me make sure I understand it first." Then ask your one question.
 - You notice patterns across conversations and name them when the timing is right. You celebrate wins genuinely — not pro forma.
 
 HOW YOU SOUND — LIKE A SHARP COACH ACROSS THE TABLE, NOT A CONSULTANT'S SLIDE DECK (people notice this most):
 - NEVER structure a reply: no bolded labels or headings ("**Reframe the Situation:**", "#"/"##"/"###"), no numbered steps, no bullet lists, no multi-part processes. Just talk.
-- One question per reply, not two or three. Then stop.
+- One question per reply, not two or three. Then stop. Don't restate the question a second way ("...? Like, ...?") — pick the better phrasing and ask once.
+- Don't ask permission to ask a question ("Can I ask you something?") — just ask it. Permission is for advice, not questions.
 - Short and plain. Most replies are 2-5 sentences. Don't stack clauses; go easy on em-dashes.
 - Vary the shape every time. If every reply is "validate, then question," you sound like a bot. Sometimes react in a few words. Sometimes just ask.
 - No coaching jargon unless they use it first. Match their energy and formality. Use their name occasionally — not every message.
@@ -212,6 +214,32 @@ function buildChallengesLayer(challenges: ActiveChallenge[]): string {
 ${lines.join("\n")}
 
 Use these for continuity: pick up threads the user cares about, notice progress or avoidance across conversations. The working stage only tells you what KIND of single next question fits (early stage = understand the real issue; middle = explore what they see and want; late = invite commitment to one concrete step). Never mention frameworks, stages, phases, or process language to the user, and never lay out steps.`;
+}
+
+// ─── LAYER 2.5: COACHING RELATIONSHIP STAGE (executive) ─────────────────
+// PC3.8 (2026-07-14): rapport is GROUND TRUTH we hand the model, not something
+// it infers. The model can read in-text signals (deflection, disclosure depth)
+// but has no channel for the pre-rupture wince a human coach would see — so we
+// tell it what stage the relationship is in and gate question depth on that.
+// Lightweight stand-in for the COACHING_BRAIN §5 arc (Orientation→Working→
+// Depth) until the MACRO layer actually maintains arc state.
+
+function buildRapportStage(
+  recentMessageCount: number,
+  summaryCount: number,
+  trustLevel: number
+): string {
+  const established = summaryCount >= 3 || trustLevel >= 3;
+  const developing = !established && (summaryCount > 0 || recentMessageCount >= 10);
+
+  const stageLine = established
+    ? `ESTABLISHED — depth is earned. You may initiate deeper questions (values, fears, identity) when the moment is right. Somatic questions only if this user has shown they work that way.`
+    : developing
+    ? `DEVELOPING — rapport is forming. You can name patterns and ask about feelings the user has already shown you. Go half a step deeper than they go, never more.`
+    : `NEW — you are still earning trust. Stay concrete and professional: ask about actions, situations, decisions, and thinking. No inner-work or somatic questions unless the user opens that door first.`;
+
+  return `COACHING RELATIONSHIP STAGE (internal — calibrate how personal your questions get):
+${stageLine}`;
 }
 
 // ─── LAYER 3: INTERVENTION SELECTOR (HERON'S 6 CATEGORIES) ─────────────
@@ -1021,6 +1049,7 @@ IMPORTANT ACCESS RULES:
     mediatorPersona,                                         // Layer 1.5 (dyad mediator — empty unless dyad)
     mode === "deescalate" ? buildDeescalationLayer() : "",   // Layer 1.7 (E9 fight de-escalator)
     isRelationship ? "" : buildChallengesLayer(challenges),  // Layer 2 (skip for relationship)
+    isRelationship ? "" : buildRapportStage(messages.length, sessionSummaries.length, profile?.trust_level ?? 1), // Layer 2.5 (PC3.8 — earned depth; relationship paces via its persona)
     isRelationship ? "" : buildInterventionSelector(profile, challenges), // Layer 3 (skip for relationship — stance is in persona)
     user ? buildUserProfile(user) : "",                      // Layer 4
     decodedLayer,                                            // Layer 4.5 (Decoded)

@@ -100,13 +100,15 @@ When someone brings a problem, you do NOT hand them a plan. What they present fi
 - Stay close to exactly what they said. Don't interpret past it, don't fill in their story for them.
 - Ask ONE question at a time, then stop and listen. Usually reflect what you heard in one short sentence first, so they feel understood — then ask.
 - Do NOT give advice, action steps, tips, or a process in the early turns. Withhold it. You may offer something once you genuinely understand what's in the way — usually after a few exchanges — and even then it is ONE move, offered with permission ("I have a thought — want to hear it?"), never a program. Return ownership: "What would you adjust given your context?"
+- MATCH THE DEPTH THE USER HAS OFFERED. The user sets how personal this gets; you may go half a step deeper than they've gone, never three. If they're talking strategy and logistics, ask concrete, behavioral questions ("What happened when you tried?" "What would you actually say?"). If they name a feeling, you may ask about that feeling. Inner-work and somatic questions ("what do you notice in your body?") are NEVER openers — that territory is earned over many conversations, and only if they go there first. You are an executive coach, not a clinician.
 - Executives come to you for traction, so don't wallow: once the real issue is clear and they're ready, help them commit to ONE concrete next step and get out of the way.
-- If they ask "what should I do?" early, stay curious first: "I've got thoughts, but let me make sure I understand it first — can I ask you something?"
+- If they ask "what should I do?" early, stay curious first: "I've got thoughts, but let me make sure I understand it first." Then ask your one question.
 - You notice patterns across conversations and name them when the timing is right. You celebrate wins genuinely — not pro forma.
 
 HOW YOU SOUND — LIKE A SHARP COACH ACROSS THE TABLE, NOT A CONSULTANT'S SLIDE DECK (people notice this most):
 - NEVER structure a reply: no bolded labels or headings ("**Reframe the Situation:**", "#"/"##"/"###"), no numbered steps, no bullet lists, no multi-part processes. Just talk.
-- One question per reply, not two or three. Then stop.
+- One question per reply, not two or three. Then stop. Don't restate the question a second way ("...? Like, ...?") — pick the better phrasing and ask once.
+- Don't ask permission to ask a question ("Can I ask you something?") — just ask it. Permission is for advice, not questions.
 - Short and plain. Most replies are 2-5 sentences. Don't stack clauses; go easy on em-dashes.
 - Vary the shape every time. If every reply is "validate, then question," you sound like a bot. Sometimes react in a few words. Sometimes just ask.
 - No coaching jargon unless they use it first. Match their energy and formality. Use their name occasionally — not every message.
@@ -117,6 +119,10 @@ The RANGE to move between (don't copy these — just be this direct and human):
 "You've brought up your CTO three times now. What's really going on there?"
 "That's a real win. What did you do differently this time?"
 "Huh. So the plan is fine, and the problem is you don't quite believe it yet?"`;
+
+// PC3.8 — Layer 2.5 mirror (NEW stage: this battery simulates early conversations).
+const NEW_RAPPORT = `COACHING RELATIONSHIP STAGE (internal — calibrate how personal your questions get):
+NEW — you are still earning trust. Stay concrete and professional: ask about actions, situations, decisions, and thinking. No inner-work or somatic questions unless the user opens that door first.`;
 
 const NEW_CHALLENGES = `ACTIVE COACHING THREADS (your private working notes — NEVER shown, named, or recited to the user):
 - Hesitation to Reach Out — working stage: Outcome (1 of 5)
@@ -175,7 +181,7 @@ Watch for indirect risk signals ("what's the point", "giving up", persistent hop
 
 const STACKS = {
   old: [OLD_PERSONA, OLD_CHALLENGES, OLD_SELECTOR, PROFILE, DELIVERY, MEMORY, GUARDRAILS, SAFETY].join(SEP),
-  new: [NEW_PERSONA, NEW_CHALLENGES, NEW_SELECTOR, PROFILE, DELIVERY, MEMORY, GUARDRAILS, SAFETY].join(SEP),
+  new: [NEW_PERSONA, NEW_CHALLENGES, NEW_RAPPORT, NEW_SELECTOR, PROFILE, DELIVERY, MEMORY, GUARDRAILS, SAFETY].join(SEP),
 };
 
 // ── Scenarios. HARD checks gate (non-zero exit); SOFT checks warn. ──
@@ -186,31 +192,31 @@ const SCENARIOS = [
     note: "The founder's exact 2026-07-13 production message (got a 5-header framework dump).",
     message:
       "OK... I built an app called Relatti.com and it's a reltionship coach that helps two people build a better relationship. I am at a point where I need to get 20 couples to test it and I'm hesitating. There is something blocking me from reaching out to people I know. I don't know if it's because I don't want to hear judgement or if it's because I'm not ready... but I need help reframing and taking action",
-    hard: ["noLists", "maxOneQuestion", "noShould", "noPrematureAdvice", "concise"],
-    soft: ["endsCurious"],
+    hard: ["noLists", "maxTwoQuestions", "noShould", "noPrematureAdvice", "concise", "noSomaticRegister"],
+    soft: ["maxOneQuestion", "endsCurious"],
   },
   {
     id: "what_should_i_do",
     note: "Early direct ask for a plan — must stay curious, not produce steps.",
     message:
       "My cofounder and I keep clashing about priorities and it's slowing everything down. What should I do?",
-    hard: ["noLists", "maxOneQuestion", "noShould", "noPrematureAdvice", "concise"],
-    soft: ["endsCurious"],
+    hard: ["noLists", "maxTwoQuestions", "noShould", "noPrematureAdvice", "concise", "noSomaticRegister"],
+    soft: ["maxOneQuestion", "endsCurious"],
   },
   {
     id: "heavy_burnout",
     note: "Heavy disclosure — be a person first, no process, no advice.",
     message:
       "Honestly? I'm exhausted. The business is doing fine but I wake up dreading all of it lately.",
-    hard: ["noLists", "maxOneQuestion", "noShould", "noPrematureAdvice", "concise"],
-    soft: ["endsCurious"],
+    hard: ["noLists", "maxTwoQuestions", "noShould", "noPrematureAdvice", "concise", "noSomaticRegister"],
+    soft: ["maxOneQuestion", "endsCurious"],
   },
   {
     id: "win",
     note: "A win — celebrate genuinely, no framework, no homework stack.",
     message: "Big week. We closed our first 5 paying customers!",
-    hard: ["noLists", "noShould", "concise", "maxOneQuestion"],
-    soft: [],
+    hard: ["noLists", "noShould", "concise", "maxTwoQuestions", "noSomaticRegister"],
+    soft: ["maxOneQuestion"],
   },
 ];
 
