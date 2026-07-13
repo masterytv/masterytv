@@ -61,6 +61,21 @@ export function isBrandId(x?: string | null): x is BrandId {
   return !!x && x in BRANDS;
 }
 
+/**
+ * Hosts where the brand PREVIEW COOKIE is honored — local dev only.
+ * Retired on deployed hosts 2026-07-14 (founder decision): a stale 30-day
+ * preview cookie silently re-skinned staging.masterytv.com as Relatti and,
+ * worse, flipped the coach `program` hint sent by the chat client. Now that
+ * relatti has its own domains, deployed hosts resolve by host alone; the
+ * explicit ?brand= param still works everywhere but no longer sticks outside
+ * localhost.
+ */
+export function isPreviewHost(host?: string | null): boolean {
+  if (!host) return false;
+  const h = host.split(":")[0].toLowerCase().trim();
+  return h === "localhost" || h === "127.0.0.1" || h === "::1" || h.endsWith(".localhost");
+}
+
 /** Pure host -> brand lookup. Unknown / missing host falls back to the default. */
 export function resolveBrand(host?: string | null): Brand {
   if (!host) return BRANDS[DEFAULT_BRAND_ID];
@@ -75,12 +90,13 @@ export function resolveBrand(host?: string | null): Brand {
  * Unified brand resolution — the single rule for middleware, server, and client.
  *
  * Precedence:
- *   1. explicit ?brand= override (dev/preview on any host)
+ *   1. explicit ?brand= override (dev/preview on any host; visible, non-sticky
+ *      outside localhost)
  *   2. a DEDICATED brand host (relatti.com) — the domain is authoritative, so a
  *      stale cookie or a stale inline script can never make it render as another
  *      brand. This is the key invariant that keeps host + chrome consistent.
- *   3. brand cookie — only on the default host (localhost / masterytv.com), which
- *      is how relatti previews there without owning the domain.
+ *   3. brand cookie — LOCALHOST ONLY (see isPreviewHost). Deployed hosts ignore
+ *      it entirely.
  *   4. default.
  */
 export function resolveBrandId(opts: {
@@ -91,6 +107,6 @@ export function resolveBrandId(opts: {
   if (isBrandId(opts.param)) return opts.param;
   const hostId = resolveBrand(opts.host).id;
   if (hostId !== DEFAULT_BRAND_ID) return hostId; // dedicated brand domain wins
-  if (isBrandId(opts.cookie)) return opts.cookie; // preview override on default host
+  if (isBrandId(opts.cookie) && isPreviewHost(opts.host)) return opts.cookie; // dev-only preview cookie
   return hostId;
 }
