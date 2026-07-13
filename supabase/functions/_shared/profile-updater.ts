@@ -6,8 +6,11 @@
  *
  * Design principles:
  * - Minimum 5 messages before any updates (avoid overreacting to first impressions)
- * - Small deltas per signal (0.02-0.05) — convergence over 20+ interactions
- * - All values clamped to [0.0, 1.0]
+ * - Small deltas per signal (0.2-0.5 on the 0-10 scale) — convergence over 20+ interactions
+ * - All values clamped to [0, 10] — the canonical dimension scale (PC3.5).
+ *   The Decoded seeder writes 1-10 and the prompt layers read >=7 / <=3
+ *   thresholds; this module's old [0,1] clamp crushed seeded dials (a warmth
+ *   of 9 became 1 on the first behavioral update).
  * - Snapshots profile history after each update for the evolution chart
  *
  * Architecture: implementation_plan.md — Component 3
@@ -19,11 +22,11 @@ import type { ProfileSignals, ProfileUpdateResult } from "./debug-types.ts";
 // Minimum messages before we start updating the profile
 const MIN_MESSAGES_FOR_UPDATE = 5;
 
-// Delta magnitudes — intentionally small for gradual adaptation
+// Delta magnitudes — intentionally small for gradual adaptation (0-10 scale)
 const DELTA = {
-  SMALL: 0.02,
-  MEDIUM: 0.03,
-  LARGE: 0.05,
+  SMALL: 0.2,
+  MEDIUM: 0.3,
+  LARGE: 0.5,
 };
 
 /**
@@ -96,8 +99,8 @@ export async function updateCoachProfile(
   const deltas: Record<string, { before: number; after: number; delta: number }> = {};
 
   function applyDelta(dimension: string, delta: number) {
-    const before = Number(profile[dimension] ?? 0.5);
-    const after = Math.max(0, Math.min(1, before + delta));
+    const before = Number(profile[dimension] ?? 5);
+    const after = Math.max(0, Math.min(10, before + delta));
     if (Math.abs(after - before) > 0.001) {
       deltas[dimension] = { before, after, delta: after - before };
     }

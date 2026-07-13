@@ -5,8 +5,8 @@
  *
  * The dashboard layout + sidebar are client components, so they can't use the
  * server getBrand(). This resolves the brand the same way everywhere, with the
- * same precedence as middleware/getBrand: ?brand= override > brand cookie >
- * data-brand attribute (set by the inline script) > host > default.
+ * same precedence as middleware/getBrand: ?brand= override > host > brand
+ * cookie (LOCALHOST ONLY — retired on deployed hosts 2026-07-14) > default.
  *
  * Reads in a useEffect (not the initial state) to avoid a hydration mismatch:
  * SSR + first client render use the default, then it re-resolves on mount.

@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { resolveBrandId, isBrandId } from "@/lib/platform/brand";
+import { resolveBrandId, isBrandId, isPreviewHost } from "@/lib/platform/brand";
 
 /**
  * Unified auth middleware for Mastery.
@@ -59,24 +59,33 @@ export async function updateSession(request: NextRequest) {
   };
 
   // PA2 + preview override: resolve the brand for this request.
-  // Precedence: ?brand= override (preview on any host) > brand cookie > host.
-  // The override persists via a cookie so previewing relatti on localhost/
-  // staging survives navigation. Production uses the host (no param/cookie).
+  // Precedence: ?brand= override > host > brand cookie (LOCALHOST ONLY) > default.
+  // The cookie preview was retired on deployed hosts 2026-07-14: a stale 30-day
+  // cookie re-skinned staging.masterytv.com as Relatti and flipped the coach
+  // `program` hint. ?brand= still works everywhere for a single request chain,
+  // but only localhost persists it.
   const paramBrand = request.nextUrl.searchParams.get("brand");
   const cookieBrand = request.cookies.get("brand")?.value;
+  const host = request.headers.get("host");
   const brandId = resolveBrandId({
-    host: request.headers.get("host"),
+    host,
     param: paramBrand,
     cookie: cookieBrand,
   });
-  // Persist a ?brand= override so it survives navigation (preview on the default
-  // host). On a dedicated brand host the host wins anyway, so this is harmless.
-  if (isBrandId(paramBrand)) {
-    supabaseResponse.cookies.set("brand", paramBrand, {
-      path: "/",
-      maxAge: 60 * 60 * 24 * 30,
-      sameSite: "lax",
-    });
+  if (isPreviewHost(host)) {
+    // Local dev: persist a ?brand= override so it survives navigation.
+    if (isBrandId(paramBrand)) {
+      supabaseResponse.cookies.set("brand", paramBrand, {
+        path: "/",
+        maxAge: 60 * 60 * 24 * 30,
+        sameSite: "lax",
+      });
+    }
+  } else if (cookieBrand) {
+    // Deployed host: the cookie is dead weight at best, a mis-brander at worst
+    // (resolveBrandId ignores it, but the inline head script and any stale
+    // client copy might not) — clear it so old browsers heal themselves.
+    supabaseResponse.cookies.set("brand", "", { path: "/", maxAge: 0 });
   }
   supabaseResponse.headers.set("x-brand", brandId);
 

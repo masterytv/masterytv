@@ -75,15 +75,16 @@ export default function RootLayout({
                   document.documentElement.className = resolved;
                 } catch(e) {}
                 // PA3/PB1: brand resolution (FOUC-free, keeps pages static).
-                // Precedence: ?brand= override > brand cookie > Relatti host/route
-                // > masterytv. Mirrors middleware + resolveBrand(); the override
-                // lets relatti preview on localhost/staging without the domain.
+                // Precedence: ?brand= override > Relatti host/route > brand
+                // cookie (LOCALHOST ONLY, retired on deployed hosts 2026-07-14)
+                // > masterytv. Mirrors middleware + resolveBrandId().
                 try {
                   var host = window.location.hostname;
                   var path = window.location.pathname;
                   var urlBrand = new URLSearchParams(window.location.search).get('brand');
+                  var isLocalHost = (host === 'localhost' || host === '127.0.0.1');
                   var ck = document.cookie.match(/(?:^|; )brand=([^;]+)/);
-                  var cookieBrand = ck ? decodeURIComponent(ck[1]) : null;
+                  var cookieBrand = (isLocalHost && ck) ? decodeURIComponent(ck[1]) : null;
                   var relattiHost = (host === 'relatti.com' || host === 'www.relatti.com' || host === 'staging.relatti.com');
                   // NOTE: this JS lives in a template literal, where "\\/" emits
                   // "\/" — a single "\/" would collapse to "/" and make the

@@ -73,8 +73,26 @@ export const CHECKS = {
     detail: "no bullets / numbered lists / headings / bold labels",
   }),
   noShould: (r) => ({
-    ok: !has(r, /\byou (should|must|need to|have to)\b/i),
+    // Negative lookbehind: "what you should do" (echoing the user's own
+    // question) is not a directive — only bare "you should/must/need to" is.
+    ok: !has(r, /(?<!what )\byou (should|must|need to|have to)\b/i),
     detail: "no directive 'you should/must/need to'",
+  }),
+  maxOneQuestion: (r) => ({
+    ok: (r.match(/\?/g) ?? []).length <= 1,
+    detail: "asks at most ONE question",
+  }),
+  // Stable hard bound for the gate: a rephrase-beat (2 ?'s) is legit variance,
+  // 3+ is the interrogation/framework regression the stance forbids.
+  maxTwoQuestions: (r) => ({
+    ok: (r.match(/\?/g) ?? []).length <= 2,
+    detail: "asks at most two questions (hard bound)",
+  }),
+  // PC3.8 — somatic/clinician register is earned, never an opener. Guards the
+  // executive coach's "what happens in your body?" failure mode (2026-07-13).
+  noSomaticRegister: (r) => ({
+    ok: !has(r, /in your body|your body (do|does|feel|tell)|notice in your (body|chest|gut)|where do you feel (it|that)|body sensat|felt sense|somatic|close your eyes|take a (deep )?breath/i),
+    detail: "no somatic/clinician-register question",
   }),
   endsCurious: (r) => ({
     ok: /\?\s*$/.test(r.trim()) || has(r, /can i ask|tell me|what'?s|how (did|do|does|long)|when did/i),
