@@ -750,7 +750,7 @@ function SettingsContent() {
                           <div className="cp-dimension__bar">
                             <div
                               className="cp-dimension__fill"
-                              style={{ width: `${Math.round(value * 100)}%` }}
+                              style={{ width: `${Math.min(100, Math.round(value * 10))}%` }}
                             />
                           </div>
                           <div className="cp-dimension__range">
@@ -805,7 +805,7 @@ function SettingsContent() {
                           <div className="cp-dimension__bar">
                             <div
                               className="cp-dimension__fill"
-                              style={{ width: `${Math.round(value * 100)}%` }}
+                              style={{ width: `${Math.min(100, Math.round(value * 10))}%` }}
                             />
                           </div>
                           <div className="cp-dimension__range">

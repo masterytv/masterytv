@@ -126,10 +126,11 @@ Deno.serve(async (req: Request) => {
       );
     }
     const program = resolved.program;
-    // E14: the relationship coach should reply short and conversational (reflect +
-    // ask, not essays). A tighter token cap backstops the persona's length rules.
+    // E14 + PC3.3: every coach replies short and conversational (reflect + ask,
+    // not essays). The tighter cap backstops the persona's length rules — the old
+    // 1024 executive budget left room for the 5-step framework dumps.
     const isRelationship = (program ?? "").toLowerCase() === "relationship";
-    const coachMaxTokens = isRelationship ? 700 : 1024;
+    const coachMaxTokens = 700;
     // The relationship coach already has the user's full Decoded profile injected
     // into the system prompt (prompt-assembler Layer 4.5) and must never quote raw
     // scores (RELATTI_EXPERIENCE §5.6), so it does NOT get lookup_assessment. Leaving
@@ -381,7 +382,11 @@ Deno.serve(async (req: Request) => {
       messages: claudeMessages,
       tools: coachTools,
       maxTokens: coachMaxTokens,
-      forceClaude: isRelationship,
+      // PC3.3: Claude for EVERY coach, not just relationship. The Relatti lab
+      // (E14) found gpt-4o-mini produced templated replies and missed safety
+      // cues — the founder's 2026-07-13 executive test reproduced exactly that
+      // voice (bold-labeled multi-step dumps). Volume is small; quality wins.
+      forceClaude: true,
     });
 
     if (!anthropicResponse.body) {
@@ -739,10 +744,12 @@ Deno.serve(async (req: Request) => {
             );
           }
 
-          // Trigger async post-processing (shared module)
+          // Trigger async post-processing (shared module). PC3.4: pass the
+          // resolved program so extraction is domain-aware (relationship convs
+          // must not spawn executive framework challenges).
           if (coachMsg?.id) {
             EdgeRuntime.waitUntil(
-              postProcess(supabase, streamUserId, conversationId, message, fullContent, coachMsg.id)
+              postProcess(supabase, streamUserId, conversationId, message, fullContent, coachMsg.id, program)
             );
           }
 

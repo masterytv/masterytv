@@ -76,6 +76,10 @@ export const CHECKS = {
     ok: !has(r, /\byou (should|must|need to|have to)\b/i),
     detail: "no directive 'you should/must/need to'",
   }),
+  maxOneQuestion: (r) => ({
+    ok: (r.match(/\?/g) ?? []).length <= 1,
+    detail: "asks at most ONE question",
+  }),
   endsCurious: (r) => ({
     ok: /\?\s*$/.test(r.trim()) || has(r, /can i ask|tell me|what'?s|how (did|do|does|long)|when did/i),
     detail: "stays curious / ends with an open question",

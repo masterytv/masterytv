@@ -162,5 +162,20 @@ Phases 0–2 capture most of the value. 0 can (and arguably should) go first reg
 - **Framework transparency:** relationship never names a modality; plain-language stance only. (Executive/career may name approaches later — a pack policy.)
 - **Testing feasibility:** ~75% is automatable — extend `scripts/coach-lab/run.mjs` (today an eyeball A/B tool) into an assertion harness: multi-turn scenario battery + deterministic rule checks (no lists/headings, no "you should", AI/not-therapist disclosure, crisis/DV resources on cue) + LLM-judge rubric + regression snapshots. The remaining ~25% (clinical correctness of a modality + the human "feel" bar) stays **manual per new modality**. This is *why* EFT-only for launch is right, and why adding models later gets cheap once the harness exists. Build the harness even for EFT-only — it guards the stance against regressions and would have caught `crisis_flags = 0`.
 - **Phasing unchanged:** Phase 0 (safety kernel) remains the priority; Phase 1 (Coach Pack seam) is unchanged and *simplified* by `frameworks: none`.
+
+---
+
+## 9. Status update — 2026-07-13: PC3 "executive stance parity" (built, pending deploy)
+
+Trigger: founder's executive-coach test reproduced §2 live — one message got a 5-bold-headers / 6-questions framework dump, and the post-processor birthed an OSKAR-assigned challenge from that single exchange. Epic **PC3** ([PLATFORM_SPRINT.md](PLATFORM_SPRINT.md) §3) ported the validated Relatti stance to the executive coach — implemented on `staging`, deploy pending founder go:
+
+- **Executive persona rewritten** (understand-first, ONE question per reply, no lists/headings, advice only with permission after understanding; exec flavor = commit to ONE step once the real issue is clear). Relationship prompt stack byte-identical.
+- **Frameworks now invisible** (Layer 2 = private continuity notes, no framework names in the prompt; Layer 3 = internal guide, ONE intervention per turn). Addresses §2.2's rendering half.
+- **Model parity:** executive also forces Claude at 700 tokens (gpt-4o-mini was the templated voice — same finding as E14).
+- **Post-processor partially domain-aware** (early slice of Phase 2): `postProcess(…, program)`; relationship conversations create NO framework challenges or AI-tool extractions (kills MI/OSKAR-on-grief); executive challenge promotion needs ≥3 user messages in the conversation.
+- **NEW finding — coach-profile scale chaos (fixed):** three scales coexisted (column defaults 0–1, profile-updater clamped [0,1], Decoded seeder + prompt reads 1–10). Default profiles read as "cold/risk-framed/challenge-first"; one behavioral update would crush a seeded warmth 9 → 1. Canonical scale now 0–10 (migration `20260713000000_coach_profile_scale_0_10.sql` + updater fix). This explains §2.5's "near-maxed dials" observation.
+- **Test harness:** `scripts/coach-lab/exec-battery.mjs` — executive stance battery (incl. the exact 2026-07-13 message) with hard checks; old stack fails, new stack passes.
+
+Still open from this audit: Phase 0 (LLM-primary crisis kernel — separate track, see COACH_SAFETY_AND_TESTING_SPEC.md), Phase 1 (Coach Pack seam), rest of Phase 2 (relationship extraction schema/memory taxonomy), Phases 3–5.
 </content>
 </invoke>

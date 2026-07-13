@@ -103,11 +103,15 @@ export async function assignFramework(
 export async function postProcess(
   supabase: ReturnType<typeof createSupabaseClient>,
   userId: string,
-  _conversationId: string,
+  conversationId: string,
   userMessage: string,
   coachResponse: string,
-  coachMessageId: string
+  coachMessageId: string,
+  // PC3.4: resolved program ("relationship" | "general" | null). Callers that
+  // have no program context (channel-router) omit it → executive behavior.
+  program: string | null = null
 ): Promise<void> {
+  const isRelationship = (program ?? "").toLowerCase() === "relationship";
   try {
     const openaiKey = Deno.env.get("OPENAI_API_KEY");
     if (!openaiKey) {
@@ -306,7 +310,34 @@ Return ONLY valid JSON, no other text.`
     });
 
     // Challenge Detection + Framework Assignment (S2.3)
+    // PC3.4 gates:
+    // - Relationship conversations NEVER create framework challenges — the
+    //   relationship coach is stance-based with `frameworks: none` (audit §8),
+    //   and the executive library (MI/OSKAR/GROW) mis-fired on grief convos.
+    // - Executive: a challenge needs to PERSIST before it's promoted. One
+    //   opening message used to birth a framework-assigned challenge, and the
+    //   next prompt then doubled down on that framework's phase. Require at
+    //   least 3 user messages in the conversation first.
+    let challengeGateOpen = !isRelationship;
     if (
+      challengeGateOpen &&
+      extracted.challenge_detected?.is_new &&
+      extracted.challenge_detected?.title
+    ) {
+      const { count: convUserMsgCount } = await supabase
+        .from("messages")
+        .select("id", { count: "exact", head: true })
+        .eq("conversation_id", conversationId)
+        .eq("role", "user");
+      if ((convUserMsgCount ?? 0) < 3) {
+        challengeGateOpen = false;
+        console.log(
+          `[post-process] Challenge candidate "${extracted.challenge_detected.title}" not promoted — only ${convUserMsgCount ?? 0} user message(s) in conversation (need 3)`
+        );
+      }
+    }
+    if (
+      challengeGateOpen &&
       extracted.challenge_detected?.is_new &&
       extracted.challenge_detected?.title
     ) {
@@ -375,8 +406,10 @@ Return ONLY valid JSON, no other text.`
       }
     }
 
-    // AI Tool Discovery (S6.6) — persist discovered tools to users.ai_tools
-    if (extracted.ai_tools_mentioned?.length > 0) {
+    // AI Tool Discovery (S6.6) — persist discovered tools to users.ai_tools.
+    // PC3.4: executive-only — tool discovery is noise for relationship coaching
+    // (the audit's "org_sop memory for a grieving spouse" class of problem).
+    if (!isRelationship && extracted.ai_tools_mentioned?.length > 0) {
       try {
         // Load current user tools
         const { data: userData } = await supabase
