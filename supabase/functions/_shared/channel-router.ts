@@ -19,6 +19,7 @@
 import { createSupabaseClient } from "./supabase.ts";
 import { callClaude, calculateCost } from "./anthropic.ts";
 import { assemblePrompt } from "./prompt-assembler.ts";
+import { resolveConversationProgram } from "./resolve-program.ts";
 import {
   generateEmbedding,
   logEmbeddingCost,
@@ -63,6 +64,13 @@ export interface CoachResult {
   messageId: string | null;
   crisisDetected: boolean;
   disclaimerShown: boolean;
+  /**
+   * Resolved program for the conversation ("relationship" | "general" | null;
+   * null = executive default). Callers brand their outbound reply with this.
+   * Early returns (rate limit, crisis hard-stop) resolve before the
+   * conversation does and report null.
+   */
+  program: string | null;
   metadata: {
     model: string;
     tokensIn: number;
@@ -166,6 +174,7 @@ export async function processCoachMessage(
       messageId: null,
       crisisDetected: false,
       disclaimerShown: false,
+      program: null,
       metadata: {
         model: "",
         tokensIn: 0,
@@ -205,6 +214,7 @@ export async function processCoachMessage(
       messageId: null,
       crisisDetected: true,
       disclaimerShown: false,
+      program: null,
       metadata: {
         model: "",
         tokensIn: 0,
@@ -222,6 +232,18 @@ export async function processCoachMessage(
     msg.channel,
     msg.conversation_id
   );
+
+  // ── 2.5 Resolve program (PC4.2) ──
+  // Email/Telegram carry no client brand hint; the conversation is the signal
+  // (stamped coach messages → engagement → spine). Before this, every inbound
+  // email reply got the executive pack + MasteryTV branding regardless of the
+  // conversation's vertical. null = executive default, same as the web path.
+  let program: string | null = null;
+  try {
+    program = await resolveConversationProgram(supabase, msg.user_id, conversationId);
+  } catch (e) {
+    console.error("[channel-router] Program resolution failed (executive default):", (e as Error).message);
+  }
 
   // ── 3. Store user message ──
   const { data: userMsgRow, error: insertError } = await supabase
@@ -276,9 +298,16 @@ export async function processCoachMessage(
   }
 
   // ── 5. Assemble prompt ──
+  // program + conversationId select the Coach Pack and its message scoping —
+  // a relationship conversation now gets the relationship persona over email.
   const { system, conversationHistory, metadata } = await assemblePrompt(
     msg.user_id,
-    msg.content
+    msg.content,
+    false,
+    null,
+    null,
+    program,
+    conversationId
   );
 
   const claudeMessages = [
@@ -395,6 +424,10 @@ export async function processCoachMessage(
     stop_reason: "end_turn",
     tokens_in: inputTokens,
     tokens_out: outputTokens,
+    // PC5-family write-path stamp (parity with coach/index.ts): persist the
+    // RESOLVED program so downstream consumers can attribute the vertical
+    // without re-deriving it. null = executive default.
+    program,
     active_challenges: metadata.activeChallenges.map((c) => ({
       title: c.title,
       framework: c.framework,
@@ -430,6 +463,8 @@ export async function processCoachMessage(
     tokens_in: inputTokens,
     tokens_out: outputTokens,
     cost_usd: costUsd,
+    // PC5.5: per-brand cost attribution at write time.
+    metadata: { program },
   });
 
   // ── 9. Post-process (async) ──
@@ -441,7 +476,8 @@ export async function processCoachMessage(
       conversationId,
       msg.content,
       fullContent,
-      coachMsgRow.id
+      coachMsgRow.id,
+      program
     ).catch((e) =>
       console.error("[channel-router] Post-process error:", e.message)
     );
@@ -466,6 +502,7 @@ export async function processCoachMessage(
     messageId: coachMsgRow?.id ?? null,
     crisisDetected: false,
     disclaimerShown,
+    program,
     metadata: {
       model,
       tokensIn: inputTokens,
