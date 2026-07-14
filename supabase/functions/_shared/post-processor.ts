@@ -94,6 +94,132 @@ export async function assignFramework(
   };
 }
 
+// ─── COMMITMENT SUPERSEDE (PC6.1) ──────────────────────────────────────
+
+/**
+ * The extractor — not a post-hoc dedup job — decides supersession, because
+ * "the plan evolved" is a semantic judgment. It sees the conversation's
+ * existing ACTIVE commitments and returns `supersedes: <id>` when the user's
+ * new statement revises one. A code-level embedding backstop catches misses:
+ * same conversation + <30 min apart + similarity > threshold → auto-supersede
+ * the older row. Superseded rows keep their audit trail (superseded_by) and
+ * drop out of every status='active' reader (crons, dashboard) automatically.
+ */
+export const SUPERSEDE_SIMILARITY = 0.86;
+export const SUPERSEDE_WINDOW_MS = 30 * 60 * 1000;
+
+export interface ActiveCommitmentRef {
+  id: string;
+  description: string;
+  due_date: string | null;
+  created_at: string;
+}
+
+export function cosineSim(a: number[], b: number[]): number {
+  let dot = 0, na = 0, nb = 0;
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i] * b[i];
+    na += a[i] * a[i];
+    nb += b[i] * b[i];
+  }
+  const denom = Math.sqrt(na) * Math.sqrt(nb);
+  return denom === 0 ? 0 : dot / denom;
+}
+
+export interface ExtractionPromptOpts {
+  userMessage: string;
+  coachResponse: string;
+  todayLocal: string; // YYYY-MM-DD in the user's timezone
+  weekdayLocal: string; // e.g. "Monday"
+  tz: string;
+  existingCommitments: ActiveCommitmentRef[];
+}
+
+/**
+ * Builds the FULL extraction prompt (including profile signals). Exported so
+ * the coach-lab replay harness runs the byte-identical prompt the production
+ * post-processor runs — replay fidelity is the PC6.1 acceptance test.
+ */
+export function buildExtractionPrompt(opts: ExtractionPromptOpts): string {
+  const { userMessage, coachResponse, todayLocal, weekdayLocal, tz, existingCommitments } = opts;
+
+  const existingBlock = existingCommitments.length > 0
+    ? `\nEXISTING ACTIVE COMMITMENTS in this conversation (id · description · due):
+${existingCommitments
+  .map((c) => `- ${c.id} · ${c.description} · ${c.due_date ?? "no due date"}`)
+  .join("\n")}\n`
+    : "";
+
+  const extractionPrompt = `Analyze this coaching conversation exchange and extract structured data.
+
+TODAY is ${weekdayLocal}, ${todayLocal} in the user's local timezone (${tz}). Use this to resolve relative dates.
+${existingBlock}
+USER MESSAGE: ${userMessage}
+
+COACH RESPONSE: ${coachResponse}
+
+Extract the following as JSON:
+{
+  "facts": [
+    { "category": "business|personal|preference|goal|challenge|win|pattern|org_sop", "subject": "brief label", "content": "the fact", "importance": 0.1-1.0 }
+  ],
+  "commitments": [
+    { "type": "goal|action_item|habit", "description": "what the user committed to", "due_date": "YYYY-MM-DD or null", "context_note": "1-sentence context: why they made this commitment or what challenge it addresses", "supersedes": "id of an EXISTING ACTIVE COMMITMENT this replaces, or null" }
+  ],
+  "challenge_detected": {
+    "is_new": true/false,
+    "title": "brief label for the challenge or goal",
+    "description": "one-sentence description",
+    "category": "business_growth|leadership|productivity|career|personal_development|relationships|health|financial"
+  },
+  "ai_tools_mentioned": [
+    { "name": "exact tool name (e.g., Claude, ChatGPT, Cursor)", "proficiency": "beginner|intermediate|advanced", "categories": ["writing", "coding", etc.] }
+  ],
+  "sentiment": "positive|neutral|negative|mixed",
+  "topics": ["topic1", "topic2"]
+}
+
+Rules:
+- Only extract facts the USER stated about themselves, their business, or their situation.
+- Only extract commitments the USER explicitly agreed to or stated they would do.
+- supersedes: when the user's new statement REVISES, REPLACES, or REFINES one of the EXISTING ACTIVE COMMITMENTS above (the plan evolved — a new deadline, a changed approach, a more specific version of the same intent), return that commitment's id in "supersedes" instead of leaving a parallel duplicate. If the new commitment is genuinely separate work, supersedes is null. Never return more than one commitment for the same underlying intent in a single response.
+- due_date: when the USER named a time, resolve it to a concrete date using TODAY above — "tonight"/"today" → today's date; "tomorrow" → the next day; "this weekend" → the upcoming Saturday; "by Friday"/"next week" → that concrete date. If the user named NO time, leave due_date null. NEVER invent a deadline the user didn't state.
+- Don't extract coaching questions or the coach's observations as facts.
+- Importance: 0.1-0.3 = minor detail, 0.4-0.6 = useful context, 0.7-0.9 = core to coaching, 1.0 = critical.
+- challenge_detected.is_new: set to true ONLY if the user described a new challenge, problem, or goal that isn't just a follow-up to an existing conversation thread.
+- ai_tools_mentioned: extract when the USER mentions using, having, or relying on ANY tool, platform, device, or software in their workflow. This includes:
+  • AI tools: Claude, ChatGPT, Cursor, Midjourney, Copilot
+  • Productivity: Notion, Trello, Asana, Todoist, Google Docs, Obsidian
+  • Communication: Slack, Discord, LinkedIn, Zoom, Teams, WhatsApp
+  • Business: HubSpot, Salesforce, Zapier, Stripe, QuickBooks, Mailchimp
+  • Development: GitHub, VS Code, Figma, Vercel, AWS
+  • Platforms/OS: Mac, Windows, iPhone, Android, iPad, Chrome
+  Only extract when the USER says THEY use it (e.g., "I use Notion", "I'm on a Mac", "we communicate via Slack"). Don't extract tools the coach recommends.
+- If nothing to extract, return empty arrays and is_new: false.
+
+Also analyze the USER's behavioral signals for coaching style adaptation:
+  "profile_signals": {
+    "directness_preference": "direct" | "diplomatic" | null,
+    "emotional_state": "positive" | "stressed" | "vulnerable" | "neutral",
+    "engagement_level": "high" | "medium" | "low",
+    "response_to_challenge": "welcomed" | "deflected" | "resisted" | null,
+    "preferred_depth": "surface" | "moderate" | "deep",
+    "action_orientation": "wants_action" | "wants_reflection" | "balanced" | null
+  }
+
+Profile signals rules:
+- directness_preference: "direct" if user writes concisely and asks for specifics. "diplomatic" if user hedges, adds qualifiers, or seems to avoid direct answers. null if unclear.
+- emotional_state: based on the user's tone and language.
+- engagement_level: "high" = long messages, follow-up questions, active engagement. "low" = short/dismissive responses. "medium" = normal.
+- response_to_challenge: how the user responds when the coach pushes them. "welcomed" = leans in. "resisted" = pushes back or shuts down. "deflected" = changes subject. null if no challenge was presented.
+- preferred_depth: "deep" = user explores underlying causes, values, emotions. "surface" = user stays practical and tactical. "moderate" = balanced.
+- action_orientation: "wants_action" = user asks for specific steps, deadlines, tools. "wants_reflection" = user wants to explore and think. "balanced" or null if unclear.
+
+Return ONLY valid JSON, no other text.`;
+
+  return extractionPrompt;
+}
+
 // ─── POST-PROCESSING ───────────────────────────────────────────────────
 
 /**
@@ -139,78 +265,36 @@ export async function postProcess(
       timeZone: tz, weekday: "long",
     }).format(now);
 
-    const extractionPrompt = `Analyze this coaching conversation exchange and extract structured data.
+    // ── PC6.1: the extractor sees this conversation's existing ACTIVE
+    // commitments so it can judge "the plan evolved" and supersede instead of
+    // duplicating. Scoped to the conversation via source_message_id → messages.
+    let existingCommitments: ActiveCommitmentRef[] = [];
+    try {
+      const { data: existingRows } = await supabase
+        .from("commitments")
+        .select(
+          "id, description, due_date, created_at, messages!commitments_source_message_id_fkey!inner(conversation_id)"
+        )
+        .eq("user_id", userId)
+        .eq("status", "active")
+        .eq("messages.conversation_id", conversationId)
+        .order("created_at", { ascending: true })
+        .limit(15);
+      existingCommitments = ((existingRows ?? []) as unknown as ActiveCommitmentRef[]).map(
+        (c) => ({ id: c.id, description: c.description, due_date: c.due_date, created_at: c.created_at })
+      );
+    } catch (e) {
+      console.warn("[post-process] Failed to load existing commitments:", (e as Error).message);
+    }
 
-TODAY is ${weekdayLocal}, ${todayLocal} in the user's local timezone (${tz}). Use this to resolve relative dates.
-
-USER MESSAGE: ${userMessage}
-
-COACH RESPONSE: ${coachResponse}
-
-Extract the following as JSON:
-{
-  "facts": [
-    { "category": "business|personal|preference|goal|challenge|win|pattern|org_sop", "subject": "brief label", "content": "the fact", "importance": 0.1-1.0 }
-  ],
-  "commitments": [
-    { "type": "goal|action_item|habit", "description": "what the user committed to", "due_date": "YYYY-MM-DD or null", "context_note": "1-sentence context: why they made this commitment or what challenge it addresses" }
-  ],
-  "challenge_detected": {
-    "is_new": true/false,
-    "title": "brief label for the challenge or goal",
-    "description": "one-sentence description",
-    "category": "business_growth|leadership|productivity|career|personal_development|relationships|health|financial"
-  },
-  "ai_tools_mentioned": [
-    { "name": "exact tool name (e.g., Claude, ChatGPT, Cursor)", "proficiency": "beginner|intermediate|advanced", "categories": ["writing", "coding", etc.] }
-  ],
-  "sentiment": "positive|neutral|negative|mixed",
-  "topics": ["topic1", "topic2"]
-}
-
-Rules:
-- Only extract facts the USER stated about themselves, their business, or their situation.
-- Only extract commitments the USER explicitly agreed to or stated they would do.
-- due_date: when the USER named a time, resolve it to a concrete date using TODAY above — "tonight"/"today" → today's date; "tomorrow" → the next day; "this weekend" → the upcoming Saturday; "by Friday"/"next week" → that concrete date. If the user named NO time, leave due_date null. NEVER invent a deadline the user didn't state.
-- Don't extract coaching questions or the coach's observations as facts.
-- Importance: 0.1-0.3 = minor detail, 0.4-0.6 = useful context, 0.7-0.9 = core to coaching, 1.0 = critical.
-- challenge_detected.is_new: set to true ONLY if the user described a new challenge, problem, or goal that isn't just a follow-up to an existing conversation thread.
-- ai_tools_mentioned: extract when the USER mentions using, having, or relying on ANY tool, platform, device, or software in their workflow. This includes:
-  • AI tools: Claude, ChatGPT, Cursor, Midjourney, Copilot
-  • Productivity: Notion, Trello, Asana, Todoist, Google Docs, Obsidian
-  • Communication: Slack, Discord, LinkedIn, Zoom, Teams, WhatsApp
-  • Business: HubSpot, Salesforce, Zapier, Stripe, QuickBooks, Mailchimp
-  • Development: GitHub, VS Code, Figma, Vercel, AWS
-  • Platforms/OS: Mac, Windows, iPhone, Android, iPad, Chrome
-  Only extract when the USER says THEY use it (e.g., "I use Notion", "I'm on a Mac", "we communicate via Slack"). Don't extract tools the coach recommends.
-- If nothing to extract, return empty arrays and is_new: false.
-
-Return ONLY valid JSON, no other text.`;
-
-    // ── Profile signals extraction (separate prompt, same call) ──
-    // We add profile_signals to the same extraction to avoid a second LLM call
-    const fullPrompt = extractionPrompt.replace(
-      'Return ONLY valid JSON, no other text.',
-      `Also analyze the USER's behavioral signals for coaching style adaptation:
-  "profile_signals": {
-    "directness_preference": "direct" | "diplomatic" | null,
-    "emotional_state": "positive" | "stressed" | "vulnerable" | "neutral",
-    "engagement_level": "high" | "medium" | "low",
-    "response_to_challenge": "welcomed" | "deflected" | "resisted" | null,
-    "preferred_depth": "surface" | "moderate" | "deep",
-    "action_orientation": "wants_action" | "wants_reflection" | "balanced" | null
-  }
-
-Profile signals rules:
-- directness_preference: "direct" if user writes concisely and asks for specifics. "diplomatic" if user hedges, adds qualifiers, or seems to avoid direct answers. null if unclear.
-- emotional_state: based on the user's tone and language.
-- engagement_level: "high" = long messages, follow-up questions, active engagement. "low" = short/dismissive responses. "medium" = normal.
-- response_to_challenge: how the user responds when the coach pushes them. "welcomed" = leans in. "resisted" = pushes back or shuts down. "deflected" = changes subject. null if no challenge was presented.
-- preferred_depth: "deep" = user explores underlying causes, values, emotions. "surface" = user stays practical and tactical. "moderate" = balanced.
-- action_orientation: "wants_action" = user asks for specific steps, deadlines, tools. "wants_reflection" = user wants to explore and think. "balanced" or null if unclear.
-
-Return ONLY valid JSON, no other text.`
-    );
+    const fullPrompt = buildExtractionPrompt({
+      userMessage,
+      coachResponse,
+      todayLocal,
+      weekdayLocal,
+      tz,
+      existingCommitments,
+    });
 
     const response = await fetch(
       "https://api.openai.com/v1/chat/completions",
@@ -280,25 +364,96 @@ Return ONLY valid JSON, no other text.`
       await supabase.from("memory_facts").insert(factsToInsert);
     }
 
-    // Store commitments
+    // Store commitments (PC6.1: per-row so a supersede can point at the new id)
     if (extracted.commitments?.length > 0) {
-      const commitmentsToInsert = extracted.commitments.map(
-        (c: {
-          type: string;
-          description: string;
-          due_date: string | null;
-          context_note?: string | null;
-        }) => ({
-          user_id: userId,
-          type: c.type,
-          description: c.description,
-          due_date: c.due_date || null,
-          context_note: c.context_note || null,
-          status: "active",
-          source_message_id: coachMessageId,
-        })
+      const validSupersedeIds = new Set(existingCommitments.map((c) => c.id));
+      const superseded = new Set<string>();
+      const insertedNew: { id: string; description: string }[] = [];
+
+      for (const c of extracted.commitments as Array<{
+        type: string;
+        description: string;
+        due_date: string | null;
+        context_note?: string | null;
+        supersedes?: string | null;
+      }>) {
+        const { data: newRow, error: insertErr } = await supabase
+          .from("commitments")
+          .insert({
+            user_id: userId,
+            type: c.type,
+            description: c.description,
+            due_date: c.due_date || null,
+            context_note: c.context_note || null,
+            status: "active",
+            source_message_id: coachMessageId,
+          })
+          .select("id")
+          .single();
+        if (insertErr || !newRow) {
+          console.error("[post-process] Commitment insert failed:", insertErr?.message);
+          continue;
+        }
+        insertedNew.push({ id: newRow.id, description: c.description });
+
+        // Extractor judgment — only ids we actually offered it are honored.
+        if (c.supersedes && validSupersedeIds.has(c.supersedes) && !superseded.has(c.supersedes)) {
+          const { error: supErr } = await supabase
+            .from("commitments")
+            .update({ status: "superseded", superseded_by: newRow.id })
+            .eq("id", c.supersedes)
+            .eq("user_id", userId)
+            .eq("status", "active");
+          if (!supErr) {
+            superseded.add(c.supersedes);
+            console.log(
+              `[post-process] Commitment ${c.supersedes} superseded by ${newRow.id} (extractor judgment)`
+            );
+          }
+        }
+      }
+
+      // ── Embedding backstop for extractor misses: same conversation, older
+      // row created <30 min ago, similarity above threshold → the plan evolved
+      // even if the extractor didn't say so. Older row loses; audit preserved.
+      const backstopCandidates = existingCommitments.filter(
+        (c) =>
+          !superseded.has(c.id) &&
+          Date.now() - new Date(c.created_at).getTime() < SUPERSEDE_WINDOW_MS
       );
-      await supabase.from("commitments").insert(commitmentsToInsert);
+      if (insertedNew.length > 0 && backstopCandidates.length > 0) {
+        try {
+          const texts = [
+            ...insertedNew.map((n) => n.description),
+            ...backstopCandidates.map((c) => c.description),
+          ];
+          const embeddings = await generateEmbeddings(texts);
+          await logEmbeddingCost(userId, "supersede-backstop", texts, program);
+          for (let i = 0; i < insertedNew.length; i++) {
+            for (let j = 0; j < backstopCandidates.length; j++) {
+              const candidate = backstopCandidates[j];
+              if (superseded.has(candidate.id)) continue;
+              const sim = cosineSim(embeddings[i], embeddings[insertedNew.length + j]);
+              if (sim > SUPERSEDE_SIMILARITY) {
+                const { error: supErr } = await supabase
+                  .from("commitments")
+                  .update({ status: "superseded", superseded_by: insertedNew[i].id })
+                  .eq("id", candidate.id)
+                  .eq("user_id", userId)
+                  .eq("status", "active");
+                if (!supErr) {
+                  superseded.add(candidate.id);
+                  console.log(
+                    `[post-process] Commitment ${candidate.id} superseded by ${insertedNew[i].id} (backstop, sim=${sim.toFixed(3)})`
+                  );
+                }
+              }
+            }
+          }
+        } catch (e) {
+          console.warn("[post-process] Supersede backstop failed:", (e as Error).message);
+        }
+      }
     }
 
     // Update message metadata with sentiment + topics
