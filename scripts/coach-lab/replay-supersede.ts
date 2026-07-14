@@ -23,6 +23,7 @@ import {
   SUPERSEDE_WINDOW_MS,
   type ActiveCommitmentRef,
 } from "../../supabase/functions/_shared/post-processor.ts";
+import { resolvePack } from "../../supabase/functions/_shared/packs/index.ts";
 
 const CONVERSATION_ID = Deno.args[0] ?? "c5c9b3a1-6d34-4ab7-8db5-2812129bade2";
 
@@ -96,6 +97,8 @@ for (const [n, ex] of exchanges.entries()) {
     weekdayLocal,
     tz: "America/New_York",
     existingCommitments: active,
+    // The 7/13 transcript is an executive-coach conversation (PC4.3).
+    extraction: resolvePack("general").extraction,
   });
 
   const r = await fetch("https://api.openai.com/v1/chat/completions", {

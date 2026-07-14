@@ -109,6 +109,20 @@ When someone asks whether this is private, who can see it, or whether you'll tel
 export const relationshipPack: CoachPack = {
   key: "relationship",
 
+  // PC4.3 — relationship-shaped memory taxonomy (audit Phase 2): themes,
+  // interaction patterns, attachment cues — never business/org facts (the
+  // "org_sop memory for a grieving spouse" class of problem). No AI-tool
+  // harvesting, no framework challenges (stance-based coaching, audit §8).
+  extraction: {
+    factCategories: "theme|attachment_cue|personal|preference|goal|challenge|win|pattern",
+    factsRule: `- Only extract facts the USER stated about themselves, their relationship, or their situation.
+- Capture the RELATIONSHIP's texture, not business data: recurring themes (category "theme" — a repeating fight, a longing, growing distance), interaction patterns (category "pattern" — pursue/withdraw, criticism→defensiveness loops, repair attempts that land or don't), and attachment cues (category "attachment_cue" — fear of abandonment, need for reassurance, discomfort with closeness or dependence). Never extract business or organizational facts (revenue, tooling, org process) — they are out of scope for this coach.`,
+    aiToolsRule:
+      "- ai_tools_mentioned: always return an empty array for this coach.",
+    extractAiTools: false,
+    frameworkChallenges: false,
+  },
+
   // E14: scope recent messages to the CURRENT conversation, so a "New
   // conversation" truly starts fresh — otherwise the last 20 messages across
   // the whole dyad engagement get replayed, and the model few-shots off old

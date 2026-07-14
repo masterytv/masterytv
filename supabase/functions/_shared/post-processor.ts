@@ -12,6 +12,8 @@ import { generateEmbeddings, logEmbeddingCost } from "./embeddings.ts";
 import { logError } from "./errors.ts";
 import { updateCoachProfile } from "./profile-updater.ts";
 import type { ProfileSignals } from "./debug-types.ts";
+import { resolvePack } from "./packs/index.ts";
+import type { PackExtraction } from "./packs/types.ts";
 
 // ─── FRAMEWORK ASSIGNMENT ──────────────────────────────────────────────
 
@@ -133,6 +135,8 @@ export interface ExtractionPromptOpts {
   weekdayLocal: string; // e.g. "Monday"
   tz: string;
   existingCommitments: ActiveCommitmentRef[];
+  /** PC4.3 — the pack's extraction schema + memory taxonomy. */
+  extraction: PackExtraction;
 }
 
 /**
@@ -141,7 +145,7 @@ export interface ExtractionPromptOpts {
  * post-processor runs — replay fidelity is the PC6.1 acceptance test.
  */
 export function buildExtractionPrompt(opts: ExtractionPromptOpts): string {
-  const { userMessage, coachResponse, todayLocal, weekdayLocal, tz, existingCommitments } = opts;
+  const { userMessage, coachResponse, todayLocal, weekdayLocal, tz, existingCommitments, extraction } = opts;
 
   const existingBlock = existingCommitments.length > 0
     ? `\nEXISTING ACTIVE COMMITMENTS in this conversation (id · description · due):
@@ -161,7 +165,7 @@ COACH RESPONSE: ${coachResponse}
 Extract the following as JSON:
 {
   "facts": [
-    { "category": "business|personal|preference|goal|challenge|win|pattern|org_sop", "subject": "brief label", "content": "the fact", "importance": 0.1-1.0 }
+    { "category": "${extraction.factCategories}", "subject": "brief label", "content": "the fact", "importance": 0.1-1.0 }
   ],
   "commitments": [
     { "type": "goal|action_item|habit", "description": "what the user committed to", "due_date": "YYYY-MM-DD or null", "context_note": "1-sentence context: why they made this commitment or what challenge it addresses", "supersedes": "id of an EXISTING ACTIVE COMMITMENT this replaces, or null" }
@@ -180,21 +184,14 @@ Extract the following as JSON:
 }
 
 Rules:
-- Only extract facts the USER stated about themselves, their business, or their situation.
+${extraction.factsRule}
 - Only extract commitments the USER explicitly agreed to or stated they would do.
 - supersedes: when the user's new statement REVISES, REPLACES, or REFINES one of the EXISTING ACTIVE COMMITMENTS above (the plan evolved — a new deadline, a changed approach, a more specific version of the same intent), return that commitment's id in "supersedes" instead of leaving a parallel duplicate. If the new commitment is genuinely separate work, supersedes is null. Never return more than one commitment for the same underlying intent in a single response.
 - due_date: when the USER named a time, resolve it to a concrete date using TODAY above — "tonight"/"today" → today's date; "tomorrow" → the next day; "this weekend" → the upcoming Saturday; "by Friday"/"next week" → that concrete date. If the user named NO time, leave due_date null. NEVER invent a deadline the user didn't state.
 - Don't extract coaching questions or the coach's observations as facts.
 - Importance: 0.1-0.3 = minor detail, 0.4-0.6 = useful context, 0.7-0.9 = core to coaching, 1.0 = critical.
 - challenge_detected.is_new: set to true ONLY if the user described a new challenge, problem, or goal that isn't just a follow-up to an existing conversation thread.
-- ai_tools_mentioned: extract when the USER mentions using, having, or relying on ANY tool, platform, device, or software in their workflow. This includes:
-  • AI tools: Claude, ChatGPT, Cursor, Midjourney, Copilot
-  • Productivity: Notion, Trello, Asana, Todoist, Google Docs, Obsidian
-  • Communication: Slack, Discord, LinkedIn, Zoom, Teams, WhatsApp
-  • Business: HubSpot, Salesforce, Zapier, Stripe, QuickBooks, Mailchimp
-  • Development: GitHub, VS Code, Figma, Vercel, AWS
-  • Platforms/OS: Mac, Windows, iPhone, Android, iPad, Chrome
-  Only extract when the USER says THEY use it (e.g., "I use Notion", "I'm on a Mac", "we communicate via Slack"). Don't extract tools the coach recommends.
+${extraction.aiToolsRule}
 - If nothing to extract, return empty arrays and is_new: false.
 
 Also analyze the USER's behavioral signals for coaching style adaptation:
@@ -237,7 +234,9 @@ export async function postProcess(
   // have no program context (channel-router) omit it → executive behavior.
   program: string | null = null
 ): Promise<void> {
-  const isRelationship = (program ?? "").toLowerCase() === "relationship";
+  // PC4.3: the pack owns the extraction schema, memory taxonomy, and the
+  // side-effect gates (framework challenges, AI-tool harvesting).
+  const pack = resolvePack(program);
   try {
     const openaiKey = Deno.env.get("OPENAI_API_KEY");
     if (!openaiKey) {
@@ -294,6 +293,7 @@ export async function postProcess(
       weekdayLocal,
       tz,
       existingCommitments,
+      extraction: pack.extraction,
     });
 
     const response = await fetch(
@@ -339,6 +339,10 @@ export async function postProcess(
         );
       }
 
+      // Clamp categories to the pack's declared set — one rogue category would
+      // fail the memory_facts_category_check and kill the whole batch insert.
+      const allowedCategories = new Set(pack.extraction.factCategories.split("|"));
+
       const factsToInsert = extracted.facts.map(
         (
           f: {
@@ -350,7 +354,7 @@ export async function postProcess(
           i: number
         ) => ({
           user_id: userId,
-          category: f.category,
+          category: allowedCategories.has(f.category) ? f.category : "personal",
           subject: f.subject,
           content: f.content,
           importance: f.importance,
@@ -488,15 +492,15 @@ export async function postProcess(
     });
 
     // Challenge Detection + Framework Assignment (S2.3)
-    // PC3.4 gates:
-    // - Relationship conversations NEVER create framework challenges — the
-    //   relationship coach is stance-based with `frameworks: none` (audit §8),
-    //   and the executive library (MI/OSKAR/GROW) mis-fired on grief convos.
+    // Gates (PC3.4, pack-owned since PC4.3):
+    // - pack.extraction.frameworkChallenges: relationship coaching is
+    //   stance-based with `frameworks: none` (audit §8) — the executive
+    //   library (MI/OSKAR/GROW) mis-fired on grief convos.
     // - Executive: a challenge needs to PERSIST before it's promoted. One
     //   opening message used to birth a framework-assigned challenge, and the
     //   next prompt then doubled down on that framework's phase. Require at
     //   least 3 user messages in the conversation first.
-    let challengeGateOpen = !isRelationship;
+    let challengeGateOpen = pack.extraction.frameworkChallenges;
     if (
       challengeGateOpen &&
       extracted.challenge_detected?.is_new &&
@@ -585,9 +589,9 @@ export async function postProcess(
     }
 
     // AI Tool Discovery (S6.6) — persist discovered tools to users.ai_tools.
-    // PC3.4: executive-only — tool discovery is noise for relationship coaching
+    // Pack-gated (PC4.3): tool discovery is noise for relationship coaching
     // (the audit's "org_sop memory for a grieving spouse" class of problem).
-    if (!isRelationship && extracted.ai_tools_mentioned?.length > 0) {
+    if (pack.extraction.extractAiTools && extracted.ai_tools_mentioned?.length > 0) {
       try {
         // Load current user tools
         const { data: userData } = await supabase
