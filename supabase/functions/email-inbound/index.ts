@@ -137,11 +137,32 @@ Deno.serve(async (req: Request) => {
       `[${FUNCTION_NAME}] Matched user ${user.id} (${user.name}) from ${senderEmail}`
     );
 
+    // ── 4.5 Thread targeting: a reply lands in the conversation it answers ──
+    // Outbound coaching emails encode the conversation two ways: the
+    // Message-ID (`coach-<uuid>@…`, echoed back in In-Reply-To/References)
+    // and the /dashboard/chat?c=<uuid> deep link quoted in the reply body.
+    // Either beats channel-router's timeout-reuse heuristic (which starts a
+    // NEW conversation when the reply comes >4h later). Ownership is verified
+    // before trusting the id — a forwarded/crafted email can't steer someone
+    // else's thread.
+    const threadConversationId = await resolveThreadedConversation(
+      supabase,
+      user.id,
+      body,
+      email
+    );
+    if (threadConversationId) {
+      console.log(
+        `[${FUNCTION_NAME}] Reply threads into conversation ${threadConversationId}`
+      );
+    }
+
     // ── 5. Process through coaching pipeline ──
     const coachMessage: CoachMessage = {
       user_id: user.id,
       channel: "email",
       content: cleanContent,
+      conversation_id: threadConversationId ?? undefined,
       metadata: {
         email_message_id: emailId,
         email_subject: email.subject,
@@ -202,6 +223,48 @@ Deno.serve(async (req: Request) => {
 });
 
 // ─── HELPERS ────────────────────────────────────────────────────────────
+
+/**
+ * Find the conversation an email reply belongs to, from the threading
+ * signals the outbound mail carried (Message-ID `coach-<uuid>` in
+ * In-Reply-To/References, or the quoted `chat?c=<uuid>` deep link). Scans the
+ * whole webhook payload + fetched email so it works regardless of which
+ * fields Resend surfaces headers in. Returns the id only if the conversation
+ * verifiably belongs to this user.
+ */
+async function resolveThreadedConversation(
+  supabase: ReturnType<typeof createSupabaseClient>,
+  userId: string,
+  webhookBody: unknown,
+  email: unknown
+): Promise<string | null> {
+  const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
+  const haystack = `${JSON.stringify(webhookBody)}\n${JSON.stringify(email)}`;
+  const match =
+    haystack.match(new RegExp(`coach-(${UUID})`, "i")) ??
+    haystack.match(new RegExp(`chat\\?c=(${UUID})`, "i"));
+  if (!match) return null;
+  const conversationId = match[1].toLowerCase();
+
+  // Ownership check — conversations row first, then (for email-originated
+  // threads that may have no row) any message in that conversation.
+  const { data: conv } = await supabase
+    .from("conversations")
+    .select("id")
+    .eq("id", conversationId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (conv) return conversationId;
+
+  const { data: msg } = await supabase
+    .from("messages")
+    .select("id")
+    .eq("conversation_id", conversationId)
+    .eq("user_id", userId)
+    .limit(1)
+    .maybeSingle();
+  return msg ? conversationId : null;
+}
 
 /**
  * Extract bare email address from RFC 822 format.

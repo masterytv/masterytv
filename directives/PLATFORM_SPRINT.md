@@ -216,6 +216,13 @@ Added 2026-06-24. Both are platform-wide (every vertical benefits) and pair natu
 
 > Sequencing: PC5.1 + PC5.3 are copy/UI-only and can ship immediately; PC5.2/5.4/5.5 add light write-path stamps (each a small, independent change). Pairs naturally with PC4 (packs make "which vertical owns Frameworks" explicit in code; this epic makes it explicit to the operator).
 
+#### PC6 — Commitment dedup/supersede  🟨  *(added 2026-07-14 — extractor created 3 overlapping commitments in ONE conversation, 7/13 19:36–19:40, as the plan evolved turn by turn)*
+*Design (approved shape, not yet implemented): the extractor — not a post-hoc dedup job — decides supersession, because "the plan evolved" is a semantic judgment. (1) The post-processor's extraction prompt gets the conversation's existing ACTIVE commitments (id + description); instruction: if the user's new statement revises/replaces one, return `supersedes: <id>` instead of a parallel commitment. (2) Post-processor marks that row `status='superseded'` + `superseded_by=<new id>` (audit trail preserved; needs a migration for the status value + column). (3) Code-level backstop for extractor misses: same conversation + <30 min apart + embedding similarity >0.86 → auto-supersede the older. Accountability/check-in crons treat `superseded` like `completed` (never nag on it).*
+
+| Story | Done |
+|:--|:--|
+| **PC6.1** Extractor supersede rule + `superseded` status + backstop, per design above. | Replaying the 7/13 19:36–19:40 transcript yields ONE active commitment; check-ins never reference a superseded row. 🧪 |
+
 #### PV1 — New-Vertical Playbook + Experience Discovery (process)  🟦  *(added 2026-06-26)*
 *Goal: institutionalize "research the experience FIRST" so every new domain gets a vertical-first flow/assessment/results/coach-voice — not the engine's defaults re-themed. Lesson from Relatti: plumbing is ~80% reusable, the felt experience is ~80% custom (`RELATTI_EXPERIENCE.md`).*
 > Seed already written: `directives/VERTICAL_PLAYBOOK.md` (the standard) — adds a mandatory **Phase 0.5 — Experience Discovery** before a vertical's surfaces are built, producing `{VERTICAL}_EXPERIENCE.md`.
