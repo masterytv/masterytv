@@ -172,6 +172,9 @@ export interface CrisisFlagContext {
   source?: "keyword" | "llm_sweep";
   coachHandled?: boolean;
   detail?: Record<string, unknown> | null;
+  // PC5.4: resolved program at detection time. null is expected on the
+  // channel-router path — Tier 1 runs before program resolution by design.
+  program?: string | null;
 }
 
 export async function logCrisisFlag(
@@ -199,6 +202,7 @@ export async function logCrisisFlag(
       source: ctx.source ?? "keyword",
       coach_handled: ctx.coachHandled ?? false,
       detail: ctx.detail ?? null,
+      program: ctx.program ?? null,
     });
   } catch (e) {
     console.error(
@@ -256,7 +260,11 @@ export async function runCrisisDetection(
   supabase: ReturnType<typeof createSupabaseClient>,
   userId: string,
   message: string,
-  ctx: { conversationId?: string | null; engagementId?: string | null } = {}
+  ctx: {
+    conversationId?: string | null;
+    engagementId?: string | null;
+    program?: string | null;
+  } = {}
 ): Promise<{
   isCrisis: boolean;
   response?: string;
@@ -309,6 +317,7 @@ export async function runCrisisDetection(
         coachHandled: true, // the canned crisis/DV response always surfaces resources
         conversationId,
         engagementId: ctx.engagementId ?? null,
+        program: ctx.program ?? null,
       }
     );
 
@@ -339,6 +348,7 @@ export async function runCrisisDetection(
       subjectScope: "self",
       conversationId,
       engagementId: ctx.engagementId ?? null,
+      program: ctx.program ?? null,
     }
   );
   console.log(

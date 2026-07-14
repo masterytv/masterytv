@@ -13,7 +13,24 @@ interface AdminUser {
   created_at: string;
   decoded_tier: string;
   daily_message_count: number;
+  signup_brand: string | null;
 }
+
+// PC5.2 — per-user brand attribution ("which users are Relatti vs MasteryTV").
+// Stamped accounts carry users.signup_brand; older accounts get a best-effort
+// derivation from /api/admin/user-brands (relationship rows → relatti).
+interface UserBrandEntry {
+  brand: string;
+  derived: boolean;
+}
+
+type BrandFilter = "all" | "relatti" | "masterytv";
+type BrandSort = "none" | "relatti" | "masterytv";
+
+const BRAND_LABELS: Record<string, string> = {
+  relatti: "Relatti",
+  masterytv: "MasteryTV",
+};
 
 const ROLE_CONFIG = {
   superadmin: { label: "Super Admin", icon: ShieldCheck, color: "#a3a6ff" },
@@ -24,6 +41,9 @@ const ROLE_CONFIG = {
 export default function UsersPage() {
   const { user: currentUser } = useUser();
   const [users, setUsers] = useState<AdminUser[]>([]);
+  const [brands, setBrands] = useState<Record<string, UserBrandEntry>>({});
+  const [brandFilter, setBrandFilter] = useState<BrandFilter>("all");
+  const [brandSort, setBrandSort] = useState<BrandSort>("none");
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
   const [toast, setToast] = useState<{ email: string; role: string } | null>(null);
@@ -32,13 +52,25 @@ export default function UsersPage() {
     const supabase = createClient();
     supabase
       .from("users")
-      .select("id, email, name, role, created_at, decoded_tier, daily_message_count")
+      .select("id, email, name, role, created_at, decoded_tier, daily_message_count, signup_brand")
       .order("created_at", { ascending: false })
       .then(({ data }) => {
         if (data) setUsers(data as AdminUser[]);
         setLoading(false);
       });
+    // Derived attribution for pre-stamp accounts (cross-user tables RLS hides).
+    fetch("/api/admin/user-brands")
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => {
+        if (data?.brands) setBrands(data.brands);
+      })
+      .catch(() => {});
   }, []);
+
+  function brandOf(u: AdminUser): UserBrandEntry {
+    if (u.signup_brand) return { brand: u.signup_brand, derived: false };
+    return brands[u.id] ?? { brand: "masterytv", derived: true };
+  }
 
   async function handleRoleChange(userId: string, newRole: "user" | "admin") {
     setUpdating(userId);
@@ -85,6 +117,19 @@ export default function UsersPage() {
         </div>
       )}
 
+      {/* PC5.2 — brand view filter (hide other brands from the table). */}
+      <div className="ad-filters">
+        {(["all", "relatti", "masterytv"] as BrandFilter[]).map(tab => (
+          <button
+            key={tab}
+            onClick={() => setBrandFilter(tab)}
+            className={`ad-filter-btn ${brandFilter === tab ? "ad-filter-btn--active" : ""}`}
+          >
+            {tab === "all" ? "All brands" : BRAND_LABELS[tab]}
+          </button>
+        ))}
+      </div>
+
       {loading ? (
         <Loader2 className="h-5 w-5 animate-spin" style={{ color: "var(--text-hint)" }} />
       ) : (
@@ -92,13 +137,34 @@ export default function UsersPage() {
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.82rem" }}>
             <thead>
               <tr style={{ borderBottom: "1px solid var(--color-surface-300)" }}>
-                {["User", "Role", "Plan", "Messages Today", "Joined", "Actions"].map(h => (
-                  <th key={h} style={{ textAlign: "left", padding: "0.75rem 1rem", color: "var(--text-hint)", fontWeight: 600, fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>{h}</th>
+                {["User", "Brand", "Role", "Plan", "Messages Today", "Joined", "Actions"].map(h => (
+                  h === "Brand" ? (
+                    <th
+                      key={h}
+                      onClick={() =>
+                        setBrandSort(s => s === "none" ? "relatti" : s === "relatti" ? "masterytv" : "none")
+                      }
+                      title="Click to sort by brand"
+                      style={{ textAlign: "left", padding: "0.75rem 1rem", color: "var(--text-hint)", fontWeight: 600, fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.04em", cursor: "pointer", userSelect: "none" }}
+                    >
+                      Brand{brandSort !== "none" ? ` · ${BRAND_LABELS[brandSort]} first` : ""}
+                    </th>
+                  ) : (
+                    <th key={h} style={{ textAlign: "left", padding: "0.75rem 1rem", color: "var(--text-hint)", fontWeight: 600, fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>{h}</th>
+                  )
                 ))}
               </tr>
             </thead>
             <tbody>
-              {users.map(u => {
+              {users
+                .filter(u => brandFilter === "all" || brandOf(u).brand === brandFilter)
+                .slice()
+                .sort((a, b) => {
+                  if (brandSort === "none") return 0; // keep created_at order
+                  const rank = (u: AdminUser) => (brandOf(u).brand === brandSort ? 0 : 1);
+                  return rank(a) - rank(b);
+                })
+                .map(u => {
                 const cfg = ROLE_CONFIG[u.role];
                 const Icon = cfg.icon;
                 const isSelf = u.id === currentUser?.id;
@@ -109,6 +175,22 @@ export default function UsersPage() {
                     <td style={{ padding: "0.75rem 1rem" }}>
                       <div style={{ color: "var(--text-body)", fontWeight: 500 }}>{u.email}</div>
                       {u.name && <div style={{ color: "var(--text-hint)", fontSize: "0.72rem" }}>{u.name}</div>}
+                    </td>
+                    <td style={{ padding: "0.75rem 1rem" }}>
+                      {(() => {
+                        const b = brandOf(u);
+                        const known = b.brand === "relatti" || b.brand === "masterytv";
+                        return (
+                          <span
+                            className={`ad-brand-chip ad-brand-chip--${known ? b.brand : "unattributed"}${b.derived ? " ad-brand-chip--derived" : ""}`}
+                            title={b.derived
+                              ? "Derived from relationship data — account pre-dates signup stamping"
+                              : "Stamped at signup"}
+                          >
+                            {BRAND_LABELS[b.brand] ?? b.brand}
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td style={{ padding: "0.75rem 1rem" }}>
                       <span style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem", color: cfg.color, fontSize: "0.78rem", fontWeight: 500 }}>

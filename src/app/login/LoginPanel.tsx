@@ -104,6 +104,10 @@ export default function LoginPanel({
             // Consent record: which legal revision the user accepted, and when.
             legal_accepted_at: new Date().toISOString(),
             legal_version: LEGAL_VERSION,
+            // PC5.2: brand the signup happened on — handle_new_user stamps it
+            // onto users.signup_brand at row creation. OAuth signups can't
+            // carry metadata; /auth/callback stamps those from the host.
+            signup_brand: brandId,
           },
           emailRedirectTo: callbackUrl(window.location.origin),
         },

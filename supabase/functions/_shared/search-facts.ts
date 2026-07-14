@@ -60,7 +60,9 @@ export interface SearchFactsResult {
  * Full implementation with Perplexity Sonar API + fact_cache.
  */
 export async function handleSearchFacts(
-  query: string
+  query: string,
+  // PC5.5: per-brand cost attribution. Callers without program context omit it.
+  program: string | null = null
 ): Promise<SearchFactsResult> {
   const supabase = createSupabaseClient();
   const perplexityKey = Deno.env.get("PERPLEXITY_API_KEY");
@@ -178,6 +180,7 @@ export async function handleSearchFacts(
       tokens_in: tokensIn,
       tokens_out: tokensOut,
       cost_usd: costUsd,
+      metadata: { program },
     });
 
     console.log(

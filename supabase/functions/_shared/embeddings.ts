@@ -186,7 +186,9 @@ export function estimateEmbeddingCost(texts: string[]): number {
 export async function logEmbeddingCost(
   userId: string,
   purpose: string,
-  texts: string[]
+  texts: string[],
+  // PC5.5: per-brand cost attribution. Callers without program context omit it.
+  program: string | null = null
 ): Promise<void> {
   const supabase = createSupabaseClient();
   const totalChars = texts.reduce((sum, t) => sum + t.length, 0);
@@ -200,5 +202,6 @@ export async function logEmbeddingCost(
     tokens_in: estimatedTokens,
     tokens_out: 0,
     cost_usd: cost,
+    metadata: { program },
   });
 }

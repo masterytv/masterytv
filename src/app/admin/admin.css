@@ -347,6 +347,51 @@
   color: var(--danger-hex);
 }
 
+/* ==========================================================================
+   BRAND ATTRIBUTION CHIPS (PC5.2/5.4/5.5) — which vertical a row belongs to
+   ========================================================================== */
+
+.ad-brand-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+/* Relatti rose — the admin surface renders under the MasteryTV brand, so the
+   [data-brand="relatti"] ramp tokens are out of scope here. Values mirror the
+   --relatti-mark-* pair (globals.css), WCAG-darkened for light mode below. */
+.ad-brand-chip--relatti {
+  background: rgba(251, 113, 133, 0.12);
+  color: #fb7185;
+}
+
+[data-theme="light"] .ad-brand-chip--relatti {
+  background: rgba(190, 18, 60, 0.08);
+  color: #be123c;
+}
+
+.ad-brand-chip--masterytv {
+  background: var(--primary-tint-10);
+  color: var(--primary-light);
+}
+
+/* No attribution possible (pre-stamp rows, Tier-1 channel flags). */
+.ad-brand-chip--unattributed {
+  background: var(--color-surface-200);
+  color: var(--text-hint);
+}
+
+/* Derived (not stamped at write time) — best-effort attribution reads softer. */
+.ad-brand-chip--derived {
+  opacity: 0.75;
+}
+
 
 /* ==========================================================================
    VERTICAL SCOPE (PC5.1/PC5.3) — one admin, explicit scope everywhere

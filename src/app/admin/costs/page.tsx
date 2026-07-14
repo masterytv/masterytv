@@ -42,8 +42,8 @@ export default async function CostDashboardPage() {
     supabase.from("cost_tracking").select(`
       user_id, cost_usd, tokens_in, purpose
     `).gte("created_at", new Date(Date.now() - 30 * 86400 * 1000).toISOString()),
-    // Model breakdown
-    supabase.from("cost_tracking").select("model, purpose, cost_usd, tokens_in, tokens_out")
+    // Model breakdown (+ metadata for the PC5.5 per-brand attribution)
+    supabase.from("cost_tracking").select("model, purpose, cost_usd, tokens_in, tokens_out, metadata")
       .gte("created_at", new Date(Date.now() - 30 * 86400 * 1000).toISOString()),
     // Summary totals
     supabase.from("cost_tracking").select("cost_usd, created_at")
@@ -66,7 +66,22 @@ export default async function CostDashboardPage() {
   const pctChange = lastMonth > 0 ? ((thisMonth - lastMonth) / lastMonth) * 100 : null;
 
   // ── Daily aggregation for chart ──
-  const rawDaily = (modelRes.data ?? []) as { model: string; purpose: string; cost_usd: number; tokens_in: number; tokens_out: number; created_at?: string }[];
+  const rawDaily = (modelRes.data ?? []) as { model: string; purpose: string; cost_usd: number; tokens_in: number; tokens_out: number; created_at?: string; metadata?: { program?: string | null } | null }[];
+
+  // ── PC5.5: per-brand spend (last 30 days) ──
+  // Write paths stamp metadata.program at cost time (coach, channel-router,
+  // post-processor, embeddings, search-facts). program "relationship" is
+  // Relatti; any other stamp is the executive/MasteryTV engine. Rows without a
+  // stamp (pre-2026-07-14, or system jobs with no conversation context) are
+  // "unattributed" — deliberately not guessed, so the brand columns stay honest
+  // and still sum to the platform total.
+  const brandTotals = { relatti: 0, masterytv: 0, unattributed: 0 };
+  rawDaily.forEach(r => {
+    const program = r.metadata?.program ?? null;
+    const bucket = !program ? "unattributed" : program === "relationship" ? "relatti" : "masterytv";
+    brandTotals[bucket] += Number(r.cost_usd);
+  });
+  const brandTotal30d = brandTotals.relatti + brandTotals.masterytv + brandTotals.unattributed;
 
   // Group by day from cost_tracking directly
   const costByDay: Record<string, number> = {};
@@ -163,6 +178,37 @@ export default async function CostDashboardPage() {
         ))}
       </div>
 
+      {/* ── PC5.5: Spend by Brand ── */}
+      <div style={{ background: "var(--color-surface-100)", borderRadius: "12px", padding: "1.5rem", marginBottom: "2rem" }}>
+        <h2 style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-body)", marginBottom: "1rem" }}>
+          Spend by Brand — Last 30 Days
+        </h2>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1rem" }}>
+          {[
+            { key: "relatti", label: "Relatti", chip: "ad-brand-chip--relatti", value: brandTotals.relatti },
+            { key: "masterytv", label: "MasteryTV", chip: "ad-brand-chip--masterytv", value: brandTotals.masterytv },
+            { key: "unattributed", label: "Unattributed", chip: "ad-brand-chip--unattributed", value: brandTotals.unattributed },
+            { key: "total", label: "Platform Total", chip: null, value: brandTotal30d },
+          ].map(col => (
+            <div key={col.key}>
+              {col.chip ? (
+                <span className={`ad-brand-chip ${col.chip}`} style={{ marginBottom: "0.4rem" }}>{col.label}</span>
+              ) : (
+                <p style={{ fontSize: "0.65rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em", color: "var(--text-hint)", marginBottom: "0.4rem" }}>{col.label}</p>
+              )}
+              <p style={{ fontSize: "1.3rem", fontWeight: 700, color: "var(--text-body)", marginTop: "0.35rem" }}>
+                {fmt(col.value)}
+              </p>
+            </div>
+          ))}
+        </div>
+        <p style={{ fontSize: "0.72rem", color: "var(--text-hint)", marginTop: "0.75rem" }}>
+          Attribution comes from the program stamped on each cost row at write time.
+          Unattributed = rows from before stamping shipped (2026-07-14) plus system jobs with no
+          conversation context. Brand columns always sum to the platform total — nothing is guessed.
+        </p>
+      </div>
+
       {/* ── Daily Spend Chart ── */}
       <div style={{ background: "var(--color-surface-100)", borderRadius: "12px", padding: "1.5rem", marginBottom: "2rem" }}>
         <h2 style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-body)", marginBottom: "1rem" }}>
@@ -187,8 +233,17 @@ export default async function CostDashboardPage() {
             </div>
           ))}
         </div>
-        <p style={{ fontSize: "0.7rem", color: "var(--text-hint)", marginTop: "0.5rem" }}>
-          🟢 under $0.10 &nbsp; 🟡 $0.10–$0.50 &nbsp; 🔴 over $0.50
+        <p style={{ fontSize: "0.7rem", color: "var(--text-hint)", marginTop: "0.5rem", display: "flex", gap: "1rem", alignItems: "center" }}>
+          {[
+            { color: "rgba(96,99,238,0.5)", label: "under $0.10" },
+            { color: "#f59e0b", label: "$0.10–$0.50" },
+            { color: "#ef4444", label: "over $0.50" },
+          ].map(l => (
+            <span key={l.label} style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem" }}>
+              <span style={{ width: "8px", height: "8px", borderRadius: "9999px", background: l.color, display: "inline-block" }} />
+              {l.label}
+            </span>
+          ))}
         </p>
       </div>
 
@@ -213,7 +268,7 @@ export default async function CostDashboardPage() {
                   <td style={{ padding: "0.6rem 0.75rem", color: "var(--text-body)" }}>{u.email}</td>
                   <td style={{ padding: "0.6rem 0.75rem", color: "var(--text-secondary)" }}>{u.requests}</td>
                   <td style={{ padding: "0.6rem 0.75rem", color: bloated ? "#f59e0b" : "var(--text-secondary)" }}>
-                    {u.avgPrompt.toLocaleString()}{bloated ? " ⚠️" : ""}
+                    {u.avgPrompt.toLocaleString()}
                   </td>
                   <td style={{ padding: "0.6rem 0.75rem", color: "var(--text-body)", fontWeight: 600 }}>{fmt(u.cost)}</td>
                   <td style={{ padding: "0.6rem 0.75rem", color: "var(--text-secondary)" }}>
@@ -228,7 +283,7 @@ export default async function CostDashboardPage() {
           </tbody>
         </table>
         <p style={{ fontSize: "0.72rem", color: "var(--text-hint)", marginTop: "0.75rem" }}>
-          ⚠️ Avg prompt &gt;12K tokens — memory may need pruning (Sprint S-COST-11)
+          &ldquo;Prompt bloat&rdquo; = avg prompt &gt;12K tokens — memory may need pruning (Sprint S-COST-11)
         </p>
       </div>
 

@@ -247,7 +247,7 @@ Return ONLY valid JSON, no other text.`
       let factEmbeddings: number[][] = [];
       try {
         factEmbeddings = await generateEmbeddings(factTexts);
-        await logEmbeddingCost(userId, "embed-facts", factTexts);
+        await logEmbeddingCost(userId, "embed-facts", factTexts, program);
       } catch (e) {
         console.warn(
           "[post-process] Failed to embed facts:",
@@ -328,6 +328,8 @@ Return ONLY valid JSON, no other text.`
       tokens_in: ppTokensIn,
       tokens_out: ppTokensOut,
       cost_usd: ppCost,
+      // PC5.5: per-brand cost attribution at write time.
+      metadata: { program },
     });
 
     // Challenge Detection + Framework Assignment (S2.3)

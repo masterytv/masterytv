@@ -27,6 +27,9 @@ interface SweepParams {
   userId: string;
   conversationId: string | null;
   engagementId: string | null;
+  // PC5.4: resolved program at detection time (both callers have it in scope
+  // by the time the sweep fires). Optional so existing call shapes stay valid.
+  program?: string | null;
 }
 
 interface Classification {
@@ -44,7 +47,7 @@ export async function runSafetySweep(
   supabase: ReturnType<typeof createSupabaseClient>,
   params: SweepParams,
 ): Promise<void> {
-  const { userId, conversationId, engagementId } = params;
+  const { userId, conversationId, engagementId, program } = params;
   try {
     if (!conversationId) return;
     const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
@@ -116,6 +119,8 @@ export async function runSafetySweep(
           message_excerpt: excerpt,
           source: "llm_sweep",
           detail: { ...detail, updated: true },
+          // Only stamp when we have one — never null out a prior attribution.
+          ...(program ? { program } : {}),
         })
         .eq("id", (existing as { id: string }).id);
     } else {
@@ -133,6 +138,7 @@ export async function runSafetySweep(
         message_excerpt: excerpt,
         reviewed: false,
         detail,
+        program: program ?? null,
       });
     }
 

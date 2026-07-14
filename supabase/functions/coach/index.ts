@@ -149,6 +149,7 @@ Deno.serve(async (req: Request) => {
     const crisis = await runCrisisDetection(supabase, userId, message, {
       conversationId: (body.conversation_id as string | null) ?? null,
       engagementId,
+      program,
     });
     const crisisMs = debugMode ? performance.now() - crisisStart : 0;
 
@@ -277,7 +278,7 @@ Deno.serve(async (req: Request) => {
               .from("messages")
               .update({ embedding: JSON.stringify(embedding) })
               .eq("id", userMsg.id);
-            await logEmbeddingCost(userId!, "embed-user-message", [message]);
+            await logEmbeddingCost(userId!, "embed-user-message", [message], program);
           } catch (e) {
             console.error("[coach] Failed to embed user message:", (e as Error).message);
           }
@@ -531,7 +532,7 @@ Deno.serve(async (req: Request) => {
               const toolCallStart = debugMode ? performance.now() : 0;
               const toolInput = JSON.parse(pendingToolUse.input || "{}");
               if (pendingToolUse.name === "search_facts") {
-                const result = await handleSearchFacts(toolInput.query ?? "");
+                const result = await handleSearchFacts(toolInput.query ?? "", program);
                 toolResult = JSON.stringify(result);
                 if (debugMode) {
                   toolCallsDebug.push({
@@ -692,6 +693,8 @@ Deno.serve(async (req: Request) => {
           tokens_in: inputTokens,
           tokens_out: outputTokens,
           cost_usd: costUsd,
+          // PC5.5: per-brand cost attribution at write time.
+          metadata: { program },
         });
 
         // Safety net: never persist a blank coach turn. If the agentic loop ended
@@ -763,6 +766,7 @@ Deno.serve(async (req: Request) => {
               userId: streamUserId,
               conversationId,
               engagementId,
+              program,
             })
           );
         }

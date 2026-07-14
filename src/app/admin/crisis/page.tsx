@@ -13,15 +13,34 @@ interface CrisisFlag {
   reviewed: boolean;
   reviewed_at: string | null;
   created_at: string;
+  // PC5.4 — resolved program stamped at detection time. null = pre-stamp row,
+  // or a channel Tier-1 flag (keyword hard-stop runs before program resolution).
+  program: string | null;
 }
 
 type FilterTab = "all" | "unresolved" | "resolved";
+type BrandTab = "all" | "relatti" | "masterytv" | "unattributed";
+
+// program → brand: the relationship program is Relatti's; everything else
+// stamped (general, …) is the executive/MasteryTV engine.
+function brandOfFlag(f: CrisisFlag): "relatti" | "masterytv" | "unattributed" {
+  if (!f.program) return "unattributed";
+  return f.program === "relationship" ? "relatti" : "masterytv";
+}
+
+const BRAND_TAB_LABELS: Record<BrandTab, string> = {
+  all: "All brands",
+  relatti: "Relatti",
+  masterytv: "MasteryTV",
+  unattributed: "Unattributed",
+};
 
 export default function AdminCrisisPage() {
   const [flags, setFlags] = useState<CrisisFlag[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterTab>("unresolved");
+  const [brandTab, setBrandTab] = useState<BrandTab>("all");
   const [resolving, setResolving] = useState<string | null>(null);
 
   const fetchFlags = useCallback(async () => {
@@ -90,9 +109,12 @@ export default function AdminCrisisPage() {
     }
   };
 
+  // Safety visibility stays UNIFIED — one list, filterable, never split per
+  // admin (PC5.4). The brand filter narrows the view; it never hides a queue.
   const filtered = flags.filter(f => {
-    if (filter === "unresolved") return !f.reviewed;
-    if (filter === "resolved") return f.reviewed;
+    if (filter === "unresolved" && f.reviewed) return false;
+    if (filter === "resolved" && !f.reviewed) return false;
+    if (brandTab !== "all" && brandOfFlag(f) !== brandTab) return false;
     return true;
   });
 
@@ -149,7 +171,7 @@ export default function AdminCrisisPage() {
               marginBottom: "1.5rem",
             }}
           >
-            ⚠️ {error}
+            {error}
           </div>
         )}
 
@@ -167,6 +189,19 @@ export default function AdminCrisisPage() {
           ))}
         </div>
 
+        {/* PC5.4 — brand filter. One unified safety list, narrowed not split. */}
+        <div className="ad-filters">
+          {(["all", "relatti", "masterytv", "unattributed"] as BrandTab[]).map(tab => (
+            <button
+              key={tab}
+              onClick={() => setBrandTab(tab)}
+              className={`ad-filter-btn ${brandTab === tab ? "ad-filter-btn--active" : ""}`}
+            >
+              {BRAND_TAB_LABELS[tab]}
+            </button>
+          ))}
+        </div>
+
         {/* Loading */}
         {loading && (
           <div>
@@ -180,8 +215,8 @@ export default function AdminCrisisPage() {
         {!loading && filtered.length === 0 && (
           <div className="ad-empty">
             {filter === "unresolved"
-              ? "🎉 No unresolved crisis flags — all clear!"
-              : "No crisis flags found."}
+              ? "No unresolved crisis flags — all clear. When Tier-1 keywords or the Tier-2 conversation sweep detect risk on any vertical (Relatti relationship coaching or the MasteryTV executive coach, across web, email, and Telegram), flags appear here with their brand."
+              : "No crisis flags found for this filter."}
           </div>
         )}
 
@@ -191,6 +226,7 @@ export default function AdminCrisisPage() {
               <thead>
                 <tr>
                   <th>Severity</th>
+                  <th>Brand</th>
                   <th>Keywords</th>
                   <th>Message Excerpt</th>
                   <th>LLM Confirmed</th>
@@ -205,6 +241,16 @@ export default function AdminCrisisPage() {
                     <td>
                       <span className={`ad-badge ad-badge--${flag.severity}`}>
                         {flag.severity}
+                      </span>
+                    </td>
+                    <td>
+                      <span
+                        className={`ad-brand-chip ad-brand-chip--${brandOfFlag(flag)}`}
+                        title={flag.program
+                          ? `Program: ${flag.program}`
+                          : "No program stamp — pre-stamp row, or a channel Tier-1 flag (keyword check runs before program resolution)"}
+                      >
+                        {BRAND_TAB_LABELS[brandOfFlag(flag)]}
                       </span>
                     </td>
                     <td>
