@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   gate:
-    name: Static gate (typecheck · tests · safety · isolation)
+    name: Static gate (typecheck · tests · safety · isolation · prompt goldens)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -25,6 +25,12 @@ jobs:
         with:
           node-version: "24" # matches dev; strips TS types for the .ts imports in coach-lab
           cache: npm
+
+      # The prompt-snapshot gate (PC4.1) runs the real edge-function prompt
+      # assembler, which is Deno code (jsr: imports).
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
 
       - name: Install deps
         run: npm ci
@@ -40,6 +46,9 @@ jobs:
 
       - name: Partner-isolation guard
         run: npm run isolation
+
+      - name: Prompt snapshot goldens (PC4.1 — byte-identical per vertical)
+        run: npm run snapshot:prompts
 
   sweep:
     name: Tier-2 safety sweep (live Haiku — advisory)
