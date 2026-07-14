@@ -1,17 +1,21 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
+import { brandPageMetadata } from "@/lib/platform/brand-metadata";
 import { claimPendingInvites } from "@/lib/decoded/claim-invites";
 import { ensureCoupleFullSharing } from "@/lib/relatti/auto-full-sharing";
 import { getBrand } from "@/lib/platform/brand.server";
 import CompatibilityHub from "./CompatibilityHub";
 import CompatibilityHubDecoded from "./CompatibilityHubDecoded";
 
-export const metadata: Metadata = {
-  title: "Compatibility — Mastery",
-  description: "See your compatibility, invite your partner, and explore your relationship dynamics.",
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const brand = await getBrand();
+  return brandPageMetadata(brand.id, {
+    title: brand.id === "relatti" ? "Your Connection — Relatti" : "Compatibility — Mastery",
+    description: "See your compatibility, invite your partner, and explore your relationship dynamics.",
+    noindex: true,
+  });
+}
 
 /**
  * /dashboard/compatibility — brand-gated.

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { relattiPageMetadata } from "@/lib/platform/brand-metadata";
 import RelattiLanding, { SAMEFIGHT_CONTENT } from "../relatti/RelattiLanding";
 
 /**
@@ -10,19 +11,14 @@ import RelattiLanding, { SAMEFIGHT_CONTENT } from "../relatti/RelattiLanding";
  * and hides the belief block. Brand themes rose via the layout inline
  * script's Relatti-path match.
  */
-export const metadata: Metadata = {
+export const metadata: Metadata = relattiPageMetadata({
   title: "Relatti — The Coach That Knows Both of You",
   description:
     "Not couples therapy. Not a journaling app. A relationship coach grounded in both partners' psychology — it mediates real issues, runs gentle check-ins, and helps in the moment a fight is happening.",
-  openGraph: {
-    title: "Relatti — Stop having the same fight",
-    description:
-      "A relationship coach that knows both of you. Built on validated psychology for each partner.",
-    type: "website",
-    siteName: "Relatti",
-  },
-  robots: { index: true, follow: true },
-};
+  ogTitle: "Relatti — Stop having the same fight",
+  ogDescription:
+    "A relationship coach that knows both of you. Built on validated psychology for each partner.",
+});
 
 export default function SameFightPage() {
   return <RelattiLanding content={SAMEFIGHT_CONTENT} legacy />;

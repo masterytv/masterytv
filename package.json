@@ -12,7 +12,9 @@
     "test:watch": "vitest",
     "safety": "node scripts/coach-lab/safety-battery.mjs",
     "isolation": "node scripts/coach-lab/isolation-check.mjs",
-    "gate": "npm run typecheck && npm run test && npm run safety && npm run isolation"
+    "snapshot:prompts": "deno run --node-modules-dir=none --allow-net --allow-env --allow-read --allow-write scripts/coach-lab/prompt-snapshot.ts",
+    "check:metadata": "node scripts/check-brand-metadata.mjs",
+    "gate": "npm run typecheck && npm run test && npm run safety && npm run isolation && npm run check:metadata && npm run snapshot:prompts"
   },
   "dependencies": {
     "@react-pdf/renderer": "^4.0.0",

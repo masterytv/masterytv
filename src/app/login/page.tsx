@@ -2,13 +2,17 @@ import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
+import { brandPageMetadata } from "@/lib/platform/brand-metadata";
 import LoginPanel from "./LoginPanel";
 import { getBrand } from "@/lib/platform/brand.server";
 
-export const metadata: Metadata = {
-  title: "Sign in",
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const brand = await getBrand();
+  return brandPageMetadata(brand.id, {
+    title: brand.id === "relatti" ? "Sign in — Relatti" : "Sign in — Mastery Coach",
+    noindex: true,
+  });
+}
 
 interface PageProps {
   searchParams: Promise<{ next?: string; invite?: string; mode?: string }>;

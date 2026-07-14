@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { brandPageMetadata } from "@/lib/platform/brand-metadata";
 import { getBrandFromRequest } from "@/lib/platform/brand.server";
 import { LEGAL_CONTACT } from "@/lib/platform/legal";
 import MasteryTerms from "../_content/MasteryTerms";
@@ -18,10 +19,10 @@ export async function generateMetadata({
 }: PageProps): Promise<Metadata> {
   const brand = await getBrandFromRequest((await searchParams).brand);
   const { product } = LEGAL_CONTACT[brand.id];
-  return {
+  return brandPageMetadata(brand.id, {
     title: `Terms of Service — ${product}`,
     description: `Terms and conditions for using the ${product} platform.`,
-  };
+  });
 }
 
 export default async function TermsPage({ searchParams }: PageProps) {

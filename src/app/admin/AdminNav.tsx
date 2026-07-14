@@ -12,14 +12,27 @@ interface AdminNavProps {
 export default function AdminNav({ role, email }: AdminNavProps) {
   const pathname = usePathname();
 
-  const links = [
-    { href: "/admin/beta", label: "Beta Cockpit", icon: Gauge },
-    { href: "/admin/costs", label: "Cost Dashboard", icon: BarChart2 },
-    { href: "/admin/crisis", label: "Crisis Flags", icon: AlertTriangle },
-    { href: "/admin/frameworks", label: "Frameworks", icon: Layers },
-    ...(role === "superadmin"
-      ? [{ href: "/admin/users", label: "User Management", icon: Users }]
-      : []),
+  // PC5.1 — one admin, explicit scope: platform-wide tools first, then each
+  // vertical's own machinery under its brand.
+  const groups = [
+    {
+      label: "Platform",
+      links: [
+        { href: "/admin/costs", label: "Cost Dashboard", icon: BarChart2 },
+        { href: "/admin/crisis", label: "Crisis Flags", icon: AlertTriangle },
+        ...(role === "superadmin"
+          ? [{ href: "/admin/users", label: "User Management", icon: Users }]
+          : []),
+      ],
+    },
+    {
+      label: "MasteryTV · Executive",
+      links: [{ href: "/admin/frameworks", label: "Frameworks", icon: Layers }],
+    },
+    {
+      label: "Relatti",
+      links: [{ href: "/admin/beta", label: "Beta Cockpit", icon: Gauge }],
+    },
   ];
 
   return (
@@ -47,33 +60,49 @@ export default function AdminNav({ role, email }: AdminNavProps) {
         </div>
       </div>
 
-      {/* Nav links */}
+      {/* Nav links, grouped by scope */}
       <nav style={{ flex: 1, padding: "0.75rem 0.5rem" }}>
-        {links.map(({ href, label, icon: Icon }) => {
-          const active = pathname.startsWith(href);
-          return (
-            <Link
-              key={href}
-              href={href}
+        {groups.map(({ label: groupLabel, links }) => (
+          <div key={groupLabel} style={{ marginBottom: "0.75rem" }}>
+            <div
               style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.625rem",
-                padding: "0.5rem 0.75rem",
-                borderRadius: "8px",
-                fontSize: "0.82rem",
-                fontWeight: active ? 600 : 400,
-                color: active ? "var(--color-primary)" : "var(--text-secondary)",
-                background: active ? "rgba(96,99,238,0.08)" : "transparent",
-                marginBottom: "0.125rem",
-                textDecoration: "none",
+                padding: "0.4rem 0.75rem 0.3rem",
+                fontSize: "0.62rem",
+                fontWeight: 600,
+                letterSpacing: "0.07em",
+                textTransform: "uppercase",
+                color: "var(--text-hint)",
               }}
             >
-              <Icon size={15} />
-              {label}
-            </Link>
-          );
-        })}
+              {groupLabel}
+            </div>
+            {links.map(({ href, label, icon: Icon }) => {
+              const active = pathname.startsWith(href);
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.625rem",
+                    padding: "0.5rem 0.75rem",
+                    borderRadius: "8px",
+                    fontSize: "0.82rem",
+                    fontWeight: active ? 600 : 400,
+                    color: active ? "var(--color-primary)" : "var(--text-secondary)",
+                    background: active ? "rgba(96,99,238,0.08)" : "transparent",
+                    marginBottom: "0.125rem",
+                    textDecoration: "none",
+                  }}
+                >
+                  <Icon size={15} />
+                  {label}
+                </Link>
+              );
+            })}
+          </div>
+        ))}
       </nav>
 
       {/* Footer: back link + email */}

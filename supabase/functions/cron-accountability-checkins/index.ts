@@ -28,12 +28,23 @@ interface CommitmentWithUser {
   id: string;
   user_id: string;
   description: string;
+  context_note: string | null;
+  source_message_id: string | null;
   due_date: string;
   type: string;
   status: string;
   user_name: string;
   user_timezone: string;
   subscription_tier: string;
+}
+
+/** Where a commitment came from — brand + conversation, for context + linking. */
+interface CommitmentSource {
+  brand: "relatti" | "masterytv";
+  conversationId: string | null;
+  conversationTitle: string | null;
+  /** Last few turns of the source conversation, chronological, truncated. */
+  snippet: string;
 }
 
 Deno.serve(async (req: Request) => {
@@ -55,6 +66,8 @@ Deno.serve(async (req: Request) => {
         id,
         user_id,
         description,
+        context_note,
+        source_message_id,
         due_date,
         type,
         status,
@@ -94,6 +107,8 @@ Deno.serve(async (req: Request) => {
         id: c.id,
         user_id: c.user_id,
         description: c.description,
+        context_note: c.context_note ?? null,
+        source_message_id: c.source_message_id ?? null,
         due_date: c.due_date,
         type: c.type,
         status: c.status,
@@ -152,15 +167,26 @@ Deno.serve(async (req: Request) => {
           continue;
         }
 
+        // ── 4.5 Resolve where the commitment came from (brand + conversation) ──
+        // Context makes the check-in specific ("the test for your brother")
+        // instead of a vague echo of the extracted description, the brand picks
+        // the right email chrome/domain, and the conversation id lets the email
+        // deep-link back AND threads the check-in into the original conversation.
+        const source = await resolveCommitmentSource(supabase, userCommitments);
+
         // ── 5. Generate check-in message ──
         const checkin = await generateCheckinMessage(
           userCommitments[0].user_name,
           userCommitments,
-          nagging.tone
+          nagging.tone,
+          source
         );
 
         // ── 6. Queue in scheduled_messages ──
-        const conversationId = crypto.randomUUID();
+        // Reuse the SOURCE conversation so the check-in (and any email reply)
+        // lands in the thread the commitment came from.
+        const conversationId = source.conversationId ?? crypto.randomUUID();
+        const origin = source.brand === "relatti" ? "https://relatti.com" : "https://masterytv.com";
         const { error: insertError } = await supabase
           .from("scheduled_messages")
           .insert({
@@ -172,6 +198,10 @@ Deno.serve(async (req: Request) => {
               content: checkin.content,
               subject: checkin.subject,
               conversation_id: conversationId,
+              brand: source.brand,
+              conversation_url: source.conversationId
+                ? `${origin}/dashboard/chat?c=${source.conversationId}`
+                : null,
               commitment_ids: userCommitments.map((c) => c.id),
             },
             retry_count: 0,
@@ -221,6 +251,90 @@ Deno.serve(async (req: Request) => {
   }
 });
 
+// ─── SOURCE RESOLUTION ───────────────────────────────────────────────────
+
+/**
+ * Resolve the conversation a user's commitments came from, plus the vertical
+ * (brand) that conversation belongs to.
+ *
+ * Brand resolution, most→least authoritative:
+ * 1. The source coach message's `metadata.program` (stamped by coach/index.ts
+ *    since 2026-07-14 — the coach's own resolveProgram verdict).
+ * 2. The message/conversation's engagement → kind `relationship_dyad`.
+ * 3. Default: executive (masterytv).
+ */
+async function resolveCommitmentSource(
+  supabase: ReturnType<typeof createSupabaseClient>,
+  commitments: CommitmentWithUser[]
+): Promise<CommitmentSource> {
+  const result: CommitmentSource = {
+    brand: "masterytv",
+    conversationId: null,
+    conversationTitle: null,
+    snippet: "",
+  };
+
+  const sourceMessageId = commitments.find((c) => c.source_message_id)?.source_message_id;
+  if (!sourceMessageId) return result;
+
+  try {
+    const { data: msg } = await supabase
+      .from("messages")
+      .select("conversation_id, engagement_id, metadata")
+      .eq("id", sourceMessageId)
+      .maybeSingle();
+    if (!msg) return result;
+
+    result.conversationId = msg.conversation_id ?? null;
+
+    // 1. Program stamp on the source message
+    const stampedProgram = (msg.metadata as Record<string, unknown> | null)?.program;
+    let engagementId: string | null = msg.engagement_id ?? null;
+
+    if (result.conversationId) {
+      const { data: conv } = await supabase
+        .from("conversations")
+        .select("title, engagement_id")
+        .eq("id", result.conversationId)
+        .maybeSingle();
+      result.conversationTitle = conv?.title ?? null;
+      engagementId = engagementId ?? conv?.engagement_id ?? null;
+
+      // Last few turns, chronological, for check-in specificity.
+      const { data: recent } = await supabase
+        .from("messages")
+        .select("role, content")
+        .eq("conversation_id", result.conversationId)
+        .order("created_at", { ascending: false })
+        .limit(6);
+      result.snippet = (recent ?? [])
+        .slice()
+        .reverse()
+        .map((m) => `${m.role === "coach" ? "Coach" : "User"}: ${String(m.content).slice(0, 220)}`)
+        .join("\n");
+    }
+
+    if (typeof stampedProgram === "string" && stampedProgram) {
+      result.brand = stampedProgram.toLowerCase() === "relationship" ? "relatti" : "masterytv";
+      return result;
+    }
+
+    // 2. Engagement kind fallback (pre-stamp messages)
+    if (engagementId) {
+      const { data: eng } = await supabase
+        .from("engagement")
+        .select("kind")
+        .eq("id", engagementId)
+        .maybeSingle();
+      if (eng?.kind === "relationship_dyad") result.brand = "relatti";
+    }
+  } catch (e) {
+    console.error(`[${FUNCTION_NAME}] Source resolution failed:`, (e as Error).message);
+  }
+
+  return result;
+}
+
 // ─── CHECK-IN GENERATION ─────────────────────────────────────────────────
 
 interface GeneratedCheckin {
@@ -235,7 +349,8 @@ interface GeneratedCheckin {
 async function generateCheckinMessage(
   userName: string,
   commitments: CommitmentWithUser[],
-  tone: "initial" | "softer" | "final_pause"
+  tone: "initial" | "softer" | "final_pause",
+  source?: CommitmentSource
 ): Promise<GeneratedCheckin> {
   const now = new Date();
 
@@ -257,9 +372,17 @@ async function generateCheckinMessage(
         diffHours < 0
           ? `overdue by ${Math.abs(diffHours)}h`
           : `due in ${diffHours}h`;
-      return `- ${c.description} (${status})`;
+      const note = c.context_note ? ` — context: ${c.context_note}` : "";
+      return `- ${c.description} (${status})${note}`;
     })
     .join("\n");
+
+  // The conversation the commitment came from — so the check-in can name
+  // specifics ("the Relatti test for your brother") instead of parroting the
+  // extracted description, which often reads as vague out of context.
+  const sourceBlock = source?.snippet
+    ? `\nWHERE THIS CAME FROM (${source.conversationTitle ? `conversation: "${source.conversationTitle}"` : "recent conversation"}):\n${source.snippet}\n`
+    : "";
 
   // Adjust tone based on nagging state
   const toneInstructions = {
@@ -275,7 +398,7 @@ async function generateCheckinMessage(
 
 COMMITMENTS:
 ${commitmentList}
-
+${sourceBlock}
 CONTEXT:
 - ${approaching.length} commitment(s) approaching deadline
 - ${overdue.length} commitment(s) overdue
@@ -284,7 +407,8 @@ TONE: ${toneInstructions[tone]}
 
 INSTRUCTIONS:
 - Keep it to 2-4 sentences
-- Reference the most important/urgent commitment by name
+- BE SPECIFIC: use the conversation above to name what the commitment is actually about (the people, the thing, the plan) — the user reads this cold, hours or days later, so "the test you needed to send" is too vague if you know it's "sending your brother the Relatti test"
+- Reference the most important/urgent commitment
 - If overdue: don't guilt-trip, ask what happened and offer to adjust
 - If approaching: create helpful urgency, ask about progress
 - End with a specific question

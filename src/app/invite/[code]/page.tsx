@@ -2,6 +2,7 @@ import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 import { redirect, notFound } from 'next/navigation';
 import type { Metadata } from 'next';
+import { brandPageMetadata } from '@/lib/platform/brand-metadata';
 import InviteLanding from './InviteLanding';
 import { getBrand } from '@/lib/platform/brand.server';
 import './invite-landing.css';
@@ -40,7 +41,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (isRelatti) {
     const title = `${inviter} invited you to understand your relationship together`;
     const description = 'Take the Relatti relationship quiz so your coach can understand you both — your archetype, attachment, and where you click and clash.';
-    return { title, description, openGraph: { title, description, type: 'website' }, twitter: { card: 'summary', title, description } };
+    return brandPageMetadata('relatti', { title, description });
   }
 
   // MasteryTV — archetype card preview

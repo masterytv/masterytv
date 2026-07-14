@@ -349,6 +349,61 @@
 
 
 /* ==========================================================================
+   VERTICAL SCOPE (PC5.1/PC5.3) — one admin, explicit scope everywhere
+   ========================================================================== */
+
+/* Scope banner: which vertical a page's machinery belongs to. Tonal, no hard
+   border (BRAND §4.1); tokens adapt to both themes. */
+.ad-scope {
+  display: flex;
+  align-items: baseline;
+  gap: 0.65rem;
+  padding: 0.7rem 1rem;
+  border-radius: var(--radius-md);
+  background: var(--primary-tint-10);
+  margin-bottom: 1.5rem;
+}
+
+.ad-scope__brand {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  white-space: nowrap;
+}
+
+.ad-scope__text {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* Explainer block: what a page's controls actually do (PC5.3). */
+.ad-explainer {
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-50);
+  margin-bottom: 1.5rem;
+}
+
+.ad-explainer p {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+.ad-explainer p + p {
+  margin-top: 0.5rem;
+}
+
+.ad-explainer strong {
+  color: var(--text-heading);
+  font-weight: 600;
+}
+
+
+/* ==========================================================================
    CRISIS LOG — Emergency status styles
    ========================================================================== */
 

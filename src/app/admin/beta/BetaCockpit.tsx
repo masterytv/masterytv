@@ -95,9 +95,15 @@ export default function BetaCockpit({ testers, metrics, codes, checkins }: { tes
     <div className="ad-content">
       <div className="ad-content__inner">
         <h1 className="ad-page-title">Beta Cockpit</h1>
-        <p style={{ color: "var(--text-hint)", fontSize: "0.85rem", marginTop: "-1.25rem", marginBottom: "1.75rem" }}>
+        <p style={{ color: "var(--text-hint)", fontSize: "0.85rem", marginTop: "-1.25rem", marginBottom: "1rem" }}>
           The tester funnel, reconstructed from the spine. Invite&nbsp;→&nbsp;claim is the metric that matters.
         </p>
+        <div className="ad-scope">
+          <span className="ad-scope__brand">Relatti</span>
+          <span className="ad-scope__text">
+            Relatti beta program only — MasteryTV has no beta funnel. Everything on this page (testers, codes, check-ins) is relatti.com data.
+          </span>
+        </div>
 
         {/* Cohort metrics */}
         <div className="ad-metrics">
