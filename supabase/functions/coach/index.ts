@@ -23,6 +23,7 @@ import { handleSearchFacts } from "../_shared/search-facts.ts";
 import { handleLookupAssessment } from "../_shared/lookup-assessment.ts";
 import { handleLookupRelationship } from "../_shared/lookup-relationship.ts";
 import { resolvePack } from "../_shared/packs/index.ts";
+import { resolveProgram } from "../_shared/resolve-program.ts";
 import {
   resolveConversation,
   COACHING_DISCLAIMER,
@@ -805,64 +806,8 @@ Deno.serve(async (req: Request) => {
   }
 });
 
-// ─── PROGRAM / ENGAGEMENT RESOLUTION (P1 fail-open fix) ────────────────
-
-// Program hints the client may name directly. 'general' = the executive coach
-// (the MasteryTV brand sends it explicitly, so Decoded users keep their coach).
-// Anything else — including a missing hint — falls through to the spine check,
-// so a stripped/forged body can't silently select the executive persona for a
-// Relatti user.
-const KNOWN_PROGRAM_HINTS = new Set(["relationship", "general"]);
-
-async function resolveProgram(
-  supabase: ReturnType<typeof createSupabaseClient>,
-  userId: string,
-  clientProgram: string | null,
-  engagementId: string | null,
-): Promise<{ ok: false } | { ok: true; program: string | null }> {
-  // 1. An engagement is authoritative — but only if the caller belongs to it.
-  //    (Also stops service-role writes to messages/engagement_activity being
-  //    attributed to an engagement the caller isn't part of.)
-  if (engagementId) {
-    const { data: membership } = await supabase
-      .from("participant")
-      .select("id, engagement:engagement_id(program:program_id(slug))")
-      .eq("engagement_id", engagementId)
-      .eq("user_id", userId)
-      .limit(1)
-      .maybeSingle();
-    if (!membership) return { ok: false };
-    const slug = (membership as {
-      engagement?: { program?: { slug?: string } | null } | null;
-    }).engagement?.program?.slug;
-    // Every engagement today is a relationship dyad; default that way if the
-    // nested join comes back thin.
-    return { ok: true, program: slug ?? "relationship" };
-  }
-
-  // 2. A recognized client hint is honored as sent.
-  const hint = (clientProgram ?? "").toLowerCase();
-  if (KNOWN_PROGRAM_HINTS.has(hint)) {
-    return { ok: true, program: hint };
-  }
-
-  // 3. No usable hint → the spine decides. Any participant or invite row means
-  //    this user is in the relationship product; never hand them the executive
-  //    persona + business guardrails by default.
-  const { count: participantCount } = await supabase
-    .from("participant")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", userId);
-  if ((participantCount ?? 0) > 0) return { ok: true, program: "relationship" };
-
-  const { count: inviteCount } = await supabase
-    .from("decoded_invites")
-    .select("id", { count: "exact", head: true })
-    .or(`inviter_id.eq.${userId},recipient_id.eq.${userId}`);
-  if ((inviteCount ?? 0) > 0) return { ok: true, program: "relationship" };
-
-  return { ok: true, program: clientProgram };
-}
+// Program/engagement resolution moved to _shared/resolve-program.ts (PC4.2)
+// so channel-router (email/Telegram) resolves identically to the web coach.
 
 // ─── FREE TIER LIMIT CHECK (S5.9) ──────────────────────────────────────
 

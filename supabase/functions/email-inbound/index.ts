@@ -151,9 +151,14 @@ Deno.serve(async (req: Request) => {
     const result = await processCoachMessage(coachMessage);
 
     // ── 6. Send coaching response back via email ──
+    // Brand follows the conversation's resolved program (channel-router 2.5) —
+    // a Relatti conversation replies as Relatti, from mail.relatti.com.
+    // reply-to stays coach@mail.masterytv.com: the only inbound domain.
+    const brand = result.program === "relationship" ? "relatti" as const : "masterytv" as const;
+    const brandName = brand === "relatti" ? "Relatti" : "Mastery Coach";
     const subject = email.subject?.startsWith("Re:")
       ? email.subject
-      : `Re: ${email.subject || "Mastery Coach"}`;
+      : `Re: ${email.subject || brandName}`;
 
     // Build response with optional disclaimer
     let responseText = result.response;
@@ -164,7 +169,8 @@ Deno.serve(async (req: Request) => {
     const html = buildCoachingEmailHtml(
       responseText,
       user.name || "there",
-      result.conversationId
+      result.conversationId,
+      { brand }
     );
 
     const threadHeaders = buildThreadHeaders(
@@ -177,6 +183,7 @@ Deno.serve(async (req: Request) => {
       subject,
       html,
       text: responseText,
+      brand,
       replyTo: "coach@mail.masterytv.com",
       headers: threadHeaders,
     });
