@@ -1,16 +1,23 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
+import { brandPageMetadata } from "@/lib/platform/brand-metadata";
 import AssessmentEngine from "@/app/decoded/assess/AssessmentEngine";
 import { getBrand } from "@/lib/platform/brand.server";
 import { getBattery } from "@/lib/decoded/instruments/batteries";
 import { claimPendingInvites, isUserInvitee } from "@/lib/decoded/claim-invites";
 
-export const metadata: Metadata = {
-  title: "Decoded — Assessment",
-  description: "Complete your Decoded personality assessment.",
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const brand = await getBrand();
+  return brandPageMetadata(brand.id, {
+    title: brand.id === "relatti" ? "Your Assessment — Relatti" : "Decoded — Assessment",
+    description:
+      brand.id === "relatti"
+        ? "Complete your Relatti relationship assessment."
+        : "Complete your Decoded personality assessment.",
+    noindex: true,
+  });
+}
 
 /**
  * /assess — Distraction-free assessment page (no sidebar, no nav).

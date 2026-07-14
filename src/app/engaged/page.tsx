@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { relattiPageMetadata } from "@/lib/platform/brand-metadata";
 import RelattiLanding from "../relatti/RelattiLanding";
 
 /**
@@ -6,17 +7,13 @@ import RelattiLanding from "../relatti/RelattiLanding";
  * clear trigger (the wedding). Brand themes rose via the inline script's
  * Relatti-path match. Deeper entry_segment content is GTM (out of scope).
  */
-export const metadata: Metadata = {
+export const metadata: Metadata = relattiPageMetadata({
   title: "Relatti for Engaged Couples — Start marriage already understanding each other",
   description:
     "Premarital coaching grounded in both partners' psychology. Understand how you'll handle conflict, money, and closeness — before the wedding, not after.",
-  openGraph: {
-    title: "Relatti for Engaged Couples",
-    description: "Walk into marriage already understanding each other.",
-    type: "website",
-    siteName: "Relatti",
-  },
-};
+  ogTitle: "Relatti for Engaged Couples",
+  ogDescription: "Walk into marriage already understanding each other.",
+});
 
 export default function EngagedPage() {
   return (

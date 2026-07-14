@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { brandPageMetadata } from "@/lib/platform/brand-metadata";
 import { getBrandFromRequest } from "@/lib/platform/brand.server";
 import { LEGAL_CONTACT } from "@/lib/platform/legal";
 import MasteryPrivacy from "../_content/MasteryPrivacy";
@@ -19,10 +20,10 @@ export async function generateMetadata({
 }: PageProps): Promise<Metadata> {
   const brand = await getBrandFromRequest((await searchParams).brand);
   const { product } = LEGAL_CONTACT[brand.id];
-  return {
+  return brandPageMetadata(brand.id, {
     title: `Privacy Policy — ${product}`,
     description: `How ${product} collects, uses, and protects your personal information.`,
-  };
+  });
 }
 
 export default async function PrivacyPage({ searchParams }: PageProps) {

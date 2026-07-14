@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { brandPageMetadata } from "@/lib/platform/brand-metadata";
 import { getBrandFromRequest } from "@/lib/platform/brand.server";
 import { LEGAL_CONTACT } from "@/lib/platform/legal";
 import MasteryDisclaimer from "../_content/MasteryDisclaimer";
@@ -17,10 +18,10 @@ export async function generateMetadata({
 }: PageProps): Promise<Metadata> {
   const brand = await getBrandFromRequest((await searchParams).brand);
   const { product } = LEGAL_CONTACT[brand.id];
-  return {
+  return brandPageMetadata(brand.id, {
     title: `AI & Coaching Disclaimer — ${product}`,
     description: `What ${product} is — and is not. AI coaching, not professional or crisis care.`,
-  };
+  });
 }
 
 export default async function DisclaimerPage({ searchParams }: PageProps) {

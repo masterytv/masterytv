@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { headers, cookies } from "next/headers";
 import type { Metadata } from "next";
+import { brandPageMetadata } from "@/lib/platform/brand-metadata";
 import { claimPendingInvites, claimInviteById } from "@/lib/decoded/claim-invites";
 import { getActiveDyad, getDyadConsent } from "@/lib/relatti/dashboard-dyad";
 import { getRelationships } from "@/lib/relatti/relationships";
@@ -14,11 +15,17 @@ import { originFromHeaders } from "@/lib/platform/origin";
 import DashboardHome from "./DashboardHome";
 import RelattiDashboard from "./RelattiDashboard";
 
-export const metadata: Metadata = {
-  title: "Dashboard — Mastery",
-  description: "Your personal mastery dashboard. Assessment, report, and coaching in one place.",
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const brand = await getBrand();
+  return brandPageMetadata(brand.id, {
+    title: brand.id === "relatti" ? "Dashboard — Relatti" : "Dashboard — Mastery",
+    description:
+      brand.id === "relatti"
+        ? "Your relationship dashboard. Assessment, blueprint, and coaching in one place."
+        : "Your personal mastery dashboard. Assessment, report, and coaching in one place.",
+    noindex: true,
+  });
+}
 
 /**
  * /dashboard — Unified home page.

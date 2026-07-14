@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { relattiPageMetadata } from "@/lib/platform/brand-metadata";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getBrandFromRequest } from "@/lib/platform/brand.server";
@@ -18,11 +19,11 @@ interface PageProps {
  * their assessment is done (see dashboard/page.tsx). Signed-in visitors
  * unlock immediately. Relatti-only; MasteryTV bounces home.
  */
-export const metadata: Metadata = {
+export const metadata: Metadata = relattiPageMetadata({
   title: "Join the Relatti Beta — Free Relationship Coaching",
   description:
     "Free unlimited relationship coaching during the beta. In exchange: two 2-minute check-ins that tell us whether it's working.",
-};
+});
 
 export default async function BetaPage({ searchParams }: PageProps) {
   const params = await searchParams;

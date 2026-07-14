@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { relattiPageMetadata } from "@/lib/platform/brand-metadata";
 import RelattiLanding from "./RelattiLanding";
 
 /**
@@ -9,19 +10,14 @@ import RelattiLanding from "./RelattiLanding";
  * rose) is applied via data-brand="relatti", set by the inline script in the
  * root layout for Relatti routes — so this page stays statically rendered.
  */
-export const metadata: Metadata = {
+export const metadata: Metadata = relattiPageMetadata({
   title: "Relatti — The Relationship Coach for Both of You",
   description:
     "Built on a century of relationship science. Understand how you each love, bond, and handle hard moments — and turn understanding into a relationship that thrives.",
-  openGraph: {
-    title: "Relatti — The best relationships aren't lucky. They're understood.",
-    description:
-      "A relationship coach for both of you, built on a century of relationship science.",
-    type: "website",
-    siteName: "Relatti",
-  },
-  robots: { index: true, follow: true },
-};
+  ogTitle: "Relatti — The best relationships aren't lucky. They're understood.",
+  ogDescription:
+    "A relationship coach for both of you, built on a century of relationship science.",
+});
 
 export default function RelattiPage() {
   return <RelattiLanding />;

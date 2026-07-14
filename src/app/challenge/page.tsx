@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { relattiPageMetadata } from "@/lib/platform/brand-metadata";
 import { cookies } from "next/headers";
 import ChallengeLanding from "./ChallengeLanding";
 
@@ -14,18 +15,13 @@ interface PageProps {
  * which owns redemption + the before check-in. Brand themes rose via the
  * layout inline script's Relatti-path match (like /couples, /engaged).
  */
-export const metadata: Metadata = {
+export const metadata: Metadata = relattiPageMetadata({
   title: "The Relatti 14-Day Challenge — Fourteen Days. The Two of You.",
   description:
     "Take the free 14-day relationship challenge together: one quiz each, a map of how you two work, and a coach that knows you both. See what two weeks changes.",
-  openGraph: {
-    title: "The Relatti 14-Day Challenge",
-    description: "Fourteen days. The two of you. See what changes.",
-    type: "website",
-    siteName: "Relatti",
-  },
-  robots: { index: true, follow: true },
-};
+  ogTitle: "The Relatti 14-Day Challenge",
+  ogDescription: "Fourteen days. The two of you. See what changes.",
+});
 
 export default async function ChallengePage({ searchParams }: PageProps) {
   const params = await searchParams;

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { relattiPageMetadata } from "@/lib/platform/brand-metadata";
 import RelattiLanding from "../relatti/RelattiLanding";
 
 /**
@@ -6,17 +7,13 @@ import RelattiLanding from "../relatti/RelattiLanding";
  * via the inline script's Relatti-path match. Segment copy below; deeper
  * entry_segment-driven content is GTM (out of architecture scope).
  */
-export const metadata: Metadata = {
+export const metadata: Metadata = relattiPageMetadata({
   title: "Relatti for Couples — Stop having the same fight",
   description:
     "A relationship coach that knows both of you. Built on each partner's validated psychology — it mediates the recurring fight instead of taking sides.",
-  openGraph: {
-    title: "Relatti for Couples",
-    description: "A coach that knows both of you — and helps you stop having the same fight.",
-    type: "website",
-    siteName: "Relatti",
-  },
-};
+  ogTitle: "Relatti for Couples",
+  ogDescription: "A coach that knows both of you — and helps you stop having the same fight.",
+});
 
 export default function CouplesPage() {
   return (

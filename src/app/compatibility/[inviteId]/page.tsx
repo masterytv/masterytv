@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { redirect, notFound } from 'next/navigation';
 import type { Metadata } from 'next';
+import { brandPageMetadata } from '@/lib/platform/brand-metadata';
 import CompatibilityReportViewer from './CompatibilityReportViewer';
 import GenerateReport from './GenerateReport';
 import { getBrand } from '@/lib/platform/brand.server';
@@ -9,13 +10,13 @@ import { getBrand } from '@/lib/platform/brand.server';
 export async function generateMetadata(): Promise<Metadata> {
   const brand = await getBrand();
   const isRelatti = brand.id === 'relatti';
-  return {
+  return brandPageMetadata(brand.id, {
     title: isRelatti ? 'Your Connection — Relatti' : 'Compatibility Report — Decoded by MasteryTV',
     description: isRelatti
       ? 'A deep look at the two of you — what clicks, where it gets hard, and how to love each other well.'
       : 'See how two personalities interact — what clicks, where you clash, and your superpower together.',
-    robots: { index: false, follow: false },
-  };
+    noindex: true,
+  });
 }
 
 interface PageProps {
