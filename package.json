@@ -12,7 +12,7 @@
     "test:watch": "vitest",
     "safety": "node scripts/coach-lab/safety-battery.mjs",
     "isolation": "node scripts/coach-lab/isolation-check.mjs",
-    "snapshot:prompts": "deno run --allow-net --allow-env --allow-read --allow-write scripts/coach-lab/prompt-snapshot.ts",
+    "snapshot:prompts": "deno run --node-modules-dir=none --allow-net --allow-env --allow-read --allow-write scripts/coach-lab/prompt-snapshot.ts",
     "gate": "npm run typecheck && npm run test && npm run safety && npm run isolation && npm run snapshot:prompts"
   },
   "dependencies": {
