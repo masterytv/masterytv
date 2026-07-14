@@ -18,6 +18,13 @@ import { sendMessage as sendTelegramMessage, formatCoachResponseForTelegram } fr
 
 type Channel = "email" | "telegram" | "web";
 
+export interface ProactiveDeliveryOptions {
+  /** Vertical the message belongs to — picks the email chrome + from-domain. */
+  brand?: "relatti" | "masterytv";
+  /** Deep link to the source conversation, rendered as a CTA in the email. */
+  conversationUrl?: string;
+}
+
 export interface DeliveryResult {
   channel: Channel;
   success: boolean;
@@ -93,7 +100,8 @@ export async function deliverProactiveMessage(
   user: UserDeliveryInfo,
   content: string,
   subject: string,
-  conversationId?: string
+  conversationId?: string,
+  options: ProactiveDeliveryOptions = {}
 ): Promise<DeliveryResult> {
   const channel = await resolveDeliveryChannel(supabase, user);
 
@@ -112,19 +120,19 @@ export async function deliverProactiveMessage(
           console.warn(
             `[channel-delivery] Telegram send failed for ${user.id}, falling back to email`
           );
-          return deliverViaEmail(user, content, subject, conversationId);
+          return deliverViaEmail(user, content, subject, conversationId, options);
         }
 
         return { channel: "telegram", success: true };
       }
 
       case "email": {
-        return deliverViaEmail(user, content, subject, conversationId);
+        return deliverViaEmail(user, content, subject, conversationId, options);
       }
 
       default: {
         // Shouldn't happen, but fallback to email
-        return deliverViaEmail(user, content, subject, conversationId);
+        return deliverViaEmail(user, content, subject, conversationId, options);
       }
     }
   } catch (error) {
@@ -136,7 +144,7 @@ export async function deliverProactiveMessage(
     // If primary channel failed and it wasn't email, try email
     if (channel !== "email") {
       try {
-        return deliverViaEmail(user, content, subject, conversationId);
+        return deliverViaEmail(user, content, subject, conversationId, options);
       } catch (emailError) {
         return {
           channel: "email",
@@ -160,9 +168,14 @@ async function deliverViaEmail(
   user: UserDeliveryInfo,
   content: string,
   subject: string,
-  conversationId?: string
+  conversationId?: string,
+  options: ProactiveDeliveryOptions = {}
 ): Promise<DeliveryResult> {
-  const html = buildCoachingEmailHtml(content, user.name, conversationId ?? "proactive");
+  const brand = options.brand ?? "masterytv";
+  const html = buildCoachingEmailHtml(content, user.name, conversationId ?? "proactive", {
+    brand,
+    conversationUrl: options.conversationUrl,
+  });
   const headers = conversationId
     ? buildThreadHeaders(conversationId)
     : {};
@@ -172,6 +185,11 @@ async function deliverViaEmail(
     subject,
     html,
     headers,
+    brand,
+    // Inbound email processing only exists on mail.masterytv.com today, so
+    // Relatti-branded sends route replies there to keep "just reply" true.
+    // Drop this once coach@mail.relatti.com has an inbound webhook.
+    replyTo: brand === "relatti" ? "Relatti Coach <coach@mail.masterytv.com>" : undefined,
   });
 
   return {

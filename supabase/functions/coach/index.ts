@@ -635,6 +635,11 @@ Deno.serve(async (req: Request) => {
           stop_reason: stopReason,
           tokens_in: inputTokens,
           tokens_out: outputTokens,
+          // PC5-family write-path stamp: persist the RESOLVED program so
+          // downstream consumers (accountability check-ins, cost/brand
+          // attribution) can tell which vertical a conversation belongs to
+          // without re-deriving it. null = executive default.
+          program,
           active_challenges: metadata.activeChallenges.map((c) => ({
             title: c.title,
             framework: c.framework,

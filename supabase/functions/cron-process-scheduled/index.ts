@@ -107,12 +107,15 @@ Deno.serve(async (req: Request) => {
 
         // ── 5. Deliver ──
         const conversationId = (msg.context?.conversation_id as string) || crypto.randomUUID();
+        const brand = msg.context?.brand === "relatti" ? "relatti" as const : "masterytv" as const;
+        const conversationUrl = (msg.context?.conversation_url as string | null) ?? undefined;
         const result = await deliverProactiveMessage(
           supabase,
           user,
           content,
           subject,
-          conversationId
+          conversationId,
+          { brand, conversationUrl }
         );
 
         if (result.success) {

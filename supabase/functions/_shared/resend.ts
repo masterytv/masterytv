@@ -192,15 +192,48 @@ export function stripEmailNoise(text: string): string {
 
 // ─── HTML EMAIL TEMPLATE ────────────────────────────────────────────────
 
+/** Per-brand coaching-email chrome. Origins double as the deep-link base. */
+const EMAIL_BRANDS = {
+  masterytv: {
+    name: "Mastery Coach",
+    origin: "https://masterytv.com",
+    gradient: "linear-gradient(135deg, #667eea, #764ba2)",
+    darkGradient: "linear-gradient(135deg, #1a1a3e, #2d1b69)",
+    accent: "#764ba2",
+    link: "#667eea",
+    footerLine:
+      "Mastery Coach by MasteryTV · You're receiving this because you enabled email coaching.",
+  },
+  relatti: {
+    name: "Relatti",
+    origin: "https://relatti.com",
+    gradient: "linear-gradient(135deg, #f43f5e, #be123c)",
+    darkGradient: "linear-gradient(135deg, #3f1120, #4c0519)",
+    accent: "#be123c",
+    link: "#e11d48",
+    footerLine:
+      "Relatti · You're receiving this because you enabled email coaching.",
+  },
+} as const;
+
+export interface CoachingEmailOptions {
+  /** Which vertical's chrome to render (default masterytv). */
+  brand?: keyof typeof EMAIL_BRANDS;
+  /** Deep link to the conversation this message belongs to. */
+  conversationUrl?: string;
+}
+
 /**
  * Build a premium HTML email template for a coaching response.
- * Mobile-responsive, dark-mode aware, branded.
+ * Mobile-responsive, dark-mode aware, branded per vertical.
  */
 export function buildCoachingEmailHtml(
   coachResponse: string,
   userName: string,
-  conversationId: string
+  conversationId: string,
+  options: CoachingEmailOptions = {}
 ): string {
+  const brand = EMAIL_BRANDS[options.brand ?? "masterytv"];
   // Convert markdown-like formatting to HTML
   const htmlBody = coachResponse
     .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") // Bold
@@ -211,6 +244,12 @@ export function buildCoachingEmailHtml(
     .replace(/\n/g, "<br>") // Line breaks
     .replace(/🆘|💬|🌍|📞|💛|🎯|✅|🔥|💡|🚀/g, (emoji) => `<span style="font-size:1.2em">${emoji}</span>`); // Enlarge emoji
 
+  const conversationCta = options.conversationUrl
+    ? `<div class="conversation-cta">
+        <a href="${options.conversationUrl}">See the conversation this refers to →</a>
+      </div>`
+    : "";
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -218,7 +257,7 @@ export function buildCoachingEmailHtml(
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="light dark">
   <meta name="supported-color-schemes" content="light dark">
-  <title>Mastery Coach</title>
+  <title>${brand.name}</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 
@@ -236,7 +275,7 @@ export function buildCoachingEmailHtml(
     @media (prefers-color-scheme: dark) {
       body { background-color: #0d0d1a; color: #e8e8f0; }
       .email-container { background-color: #16162a !important; }
-      .header-bar { background: linear-gradient(135deg, #1a1a3e, #2d1b69) !important; }
+      .header-bar { background: ${brand.darkGradient} !important; }
       .footer { color: #666 !important; }
     }
 
@@ -254,7 +293,7 @@ export function buildCoachingEmailHtml(
     }
 
     .header-bar {
-      background: linear-gradient(135deg, #667eea, #764ba2);
+      background: ${brand.gradient};
       padding: 24px 32px;
       text-align: center;
     }
@@ -276,7 +315,19 @@ export function buildCoachingEmailHtml(
     .body-content p { margin: 0 0 16px 0; }
     .body-content ul { padding-left: 20px; margin: 0 0 16px 0; }
     .body-content li { margin-bottom: 8px; }
-    .body-content strong { color: #764ba2; }
+    .body-content strong { color: ${brand.accent}; }
+
+    .conversation-cta {
+      text-align: center;
+      padding: 0 32px 8px;
+    }
+
+    .conversation-cta a {
+      font-size: 13px;
+      font-weight: 500;
+      color: ${brand.link};
+      text-decoration: none;
+    }
 
     .reply-cta {
       text-align: center;
@@ -297,7 +348,7 @@ export function buildCoachingEmailHtml(
       border-top: 1px solid #eee;
     }
 
-    .footer a { color: #667eea; text-decoration: none; }
+    .footer a { color: ${brand.link}; text-decoration: none; }
 
     @media only screen and (max-width: 480px) {
       .email-wrapper { padding: 8px; }
@@ -310,21 +361,22 @@ export function buildCoachingEmailHtml(
   <div class="email-wrapper">
     <div class="email-container">
       <div class="header-bar">
-        <h1>Mastery Coach</h1>
+        <h1>${brand.name}</h1>
       </div>
       <div class="body-content">
         <p>${htmlBody}</p>
       </div>
+      ${conversationCta}
       <div class="reply-cta">
         <p>💬 Just reply to this email to continue the conversation</p>
       </div>
       <div class="footer">
         <p>
-          <a href="https://masterytv.com/coachapp/dashboard">Open Dashboard</a> · 
-          <a href="https://masterytv.com/coachapp/settings">Settings</a>
+          <a href="${brand.origin}/dashboard">Open Dashboard</a> ·
+          <a href="${brand.origin}/dashboard/settings">Settings</a>
         </p>
         <p style="margin-top: 8px;">
-          Mastery Coach by MasteryTV · You're receiving this because you enabled email coaching.
+          ${brand.footerLine}
         </p>
       </div>
     </div>
