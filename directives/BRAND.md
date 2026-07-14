@@ -3,7 +3,7 @@
 > **Creative North Star: "The Kinetic Curator"**
 > An AI coaching interface that bridges high-velocity SaaS functionality with premium editorial storytelling. The system rejects clinical coldness — opting for **kinetic energy**, where elements feel captured in a moment of purposeful movement. Intentional asymmetry, tonal depth, and authoritative typography create a curated narrative, not a static grid.
 
-> **Last Updated:** April 2, 2026  
+> **Last Updated:** July 14, 2026 (added §15 — Page Metadata & Link Previews)  
 > **Sources:** Stitch Design System (Light + Dark), Existing Codebase (`globals.css`, `onboarding.css`, `chat.css`)  
 > **Status:** Canonical — All Sprint 6+ UI must conform to this guide
 
@@ -556,3 +556,40 @@ Before adding any icon, illustration, or decorative element:
 
 > [!IMPORTANT]
 > **This applies retroactively.** Any existing component using banned icons or the AI aesthetic must be updated in the next sprint that touches that component. Do not leave old violations in place and do not add new ones.
+
+---
+
+## 15. Page Metadata & Link Previews (MANDATORY for every new page)
+
+> [!CAUTION]
+> **Every new page MUST set its metadata through `src/lib/platform/brand-metadata.ts`.** Never export a bare `{ title: … }`. This rule exists because we shipped relatti.com pages whose iMessage previews showed the MasteryTV icon and the title "Mastery Coach — Coaching for High-Performers" (found live by the founder, 2026-07-14).
+
+### 15.1 Why a bare `title` ships the wrong brand
+
+Two mechanics conspire, and neither is visible in the browser:
+
+1. **Next.js merges metadata per TOP-LEVEL key.** A page that exports only `title` inherits the root layout's entire `openGraph` object and `icons` set — which are Mastery Coach. Preview crawlers (iMessage, Slack, WhatsApp, X) prefer `og:title` over `<title>`, so the page previews as Mastery Coach even when its tab title is right.
+2. **Link-preview crawlers never run JavaScript.** The client-side brand script in `layout.tsx` swaps favicons in the browser, so everything *looks* right in dev and in your own tab — but crawlers only see the server-rendered head. Client-side fixes do not exist for bots.
+
+### 15.2 The rule
+
+| Page type | Pattern |
+|:---|:---|
+| **Relatti-only page** (marketing, static) | `export const metadata: Metadata = relattiPageMetadata({ title, description, ogTitle?, ogDescription? })` — pure data, page stays statically rendered |
+| **Page served by BOTH brands** (legal, login, dashboard, invite…) | `export async function generateMetadata()` → resolve the brand (`getBrand()` / `getBrandFromRequest(param)`) → `return brandPageMetadata(brand.id, { … })` |
+| **MasteryTV-only page** | Root-layout defaults are MasteryTV, so inheritance is safe — but prefer the helper anyway for og completeness |
+
+The helper emits `title` + `openGraph` (incl. `siteName`) + `twitter` + the brand's icon set **as one unit**, so no key can fall back to the wrong brand. Brand icon assets: MasteryTV at `/favicon.png` + `/apple-touch-icon.png`; Relatti under `/public/relatti/` (regenerate with sharp from `icon.svg`, geometry v2).
+
+### 15.3 Verify like a crawler, not like a browser
+
+Before shipping any page with a shareable URL:
+
+```bash
+curl -sL "http://localhost:3000/<path>?brand=relatti" | \
+  grep -oE '<title>[^<]*</title>|property="og:(title|site_name)" content="[^"]*"|rel="apple-touch-icon" href="[^"]*"'
+```
+
+Expect the brand's title, `og:site_name`, and icon path. (Shared pages that resolve brand via `getBrand()` take a `-H "Cookie: brand=relatti"` header instead of the `?brand=` param.) A browser check is NOT sufficient — the client script masks exactly this bug.
+
+Remember: iMessage caches previews per URL — repaste in a new thread after deploying to see a change.

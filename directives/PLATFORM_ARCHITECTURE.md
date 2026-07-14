@@ -96,6 +96,8 @@ export async function middleware(req: NextRequest) {
 
 Vercel: attach all custom domains to the one `mastery-tv` project. No new Vercel/Supabase project per brand.
 
+> **🔴 Gotcha — page metadata does NOT follow the brand automatically (hit live 2026-07-14).** Next merges metadata per top-level key, so any page exporting a bare `{ title }` inherits the root layout's Mastery Coach `openGraph` + `icons` wholesale — and link-preview crawlers (iMessage/Slack) never run the client-side brand script that swaps favicons in the browser. relatti.com links previewed with the MasteryTV icon and title until every page went through `src/lib/platform/brand-metadata.ts`. Rule + patterns + crawler-style verification: **BRAND.md §15** (mandatory for every new page).
+
 ---
 
 ## 5. Theme layer = the white-label mechanism (decision P4)
