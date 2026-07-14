@@ -583,6 +583,8 @@ Two mechanics conspire, and neither is visible in the browser:
 
 The helper emits `title` + `openGraph` (incl. `siteName`) + `twitter` + the brand's icon set **as one unit**, so no key can fall back to the wrong brand. Brand icon assets: MasteryTV at `/favicon.png` + `/apple-touch-icon.png`; Relatti under `/public/relatti/` (regenerate with sharp from `icon.svg`, geometry v2).
 
+**Rich preview cards are automatic.** Every indexable page gets a generated 1200×630 `og:image` (`/api/og?brand=…&title=…`, rendered by `src/app/api/og/route.tsx` from the brand palette — gradient + wordmark + page title, typography only, no icons). Noindex pages get none by design; pass `ogImage: false` to opt a public page out, or `ogImage: "Custom card text"` to override. A white-label tenant gets correct cards the moment its palette entry exists in the og route — no per-customer design work. og:image URLs are emitted ABSOLUTE against the brand origin (crawlers resolve nothing, and Next's inferred metadataBase would point at the vercel.app host).
+
 ### 15.3 Verify like a crawler, not like a browser
 
 Before shipping any page with a shareable URL:
