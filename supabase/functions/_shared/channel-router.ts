@@ -265,7 +265,7 @@ export async function processCoachMessage(
 
   // Embed user message (async, don't block)
   if (userMsgRow?.id) {
-    embedMessageAsync(supabase, msg.user_id, msg.content, userMsgRow.id);
+    embedMessageAsync(supabase, msg.user_id, msg.content, userMsgRow.id, program);
   }
 
   // ── 4. Check disclaimer ──
@@ -358,7 +358,7 @@ export async function processCoachMessage(
       try {
         if (toolUseBlock.name === "search_facts") {
           const input = toolUseBlock.input as { query: string };
-          const result = await handleSearchFacts(input?.query ?? "");
+          const result = await handleSearchFacts(input?.query ?? "", program);
           toolResult = JSON.stringify(result);
         } else {
           toolResult = JSON.stringify({
@@ -490,6 +490,7 @@ export async function processCoachMessage(
       userId: msg.user_id,
       conversationId,
       engagementId: null,
+      program,
     }).catch((e) =>
       console.error("[channel-router] safety-sweep error:", e.message)
     );
@@ -526,7 +527,8 @@ function embedMessageAsync(
   supabase: ReturnType<typeof createSupabaseClient>,
   userId: string,
   content: string,
-  messageId: string
+  messageId: string,
+  program: string | null = null
 ): void {
   (async () => {
     try {
@@ -535,7 +537,7 @@ function embedMessageAsync(
         .from("messages")
         .update({ embedding: JSON.stringify(embedding) })
         .eq("id", messageId);
-      await logEmbeddingCost(userId, "embed-user-message", [content]);
+      await logEmbeddingCost(userId, "embed-user-message", [content], program);
     } catch (e) {
       console.error(
         "[channel-router] Failed to embed message:",

@@ -68,6 +68,9 @@ const CATEGORY_LABELS: Record<string, string> = {
   pattern: "Pattern",
   preference: "Preference",
   org_sop: "Process",
+  // PC4.3 — relationship-pack memory taxonomy
+  theme: "Theme",
+  attachment_cue: "Attachment cue",
 };
 
 // ─── Fact Item Component ─────────────────────────────────────────────────

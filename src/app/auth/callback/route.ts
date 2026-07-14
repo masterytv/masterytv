@@ -1,7 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { createClient as createServiceClient } from "@supabase/supabase-js";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { resolveBrandId } from "@/lib/platform/brand";
 
 /**
  * E15.5 — record legal acceptance for OAuth (Google) sign-ups. The email path
@@ -28,6 +30,45 @@ async function recordLegalAck(
     }
   } catch {
     // Consent recording is best-effort — never fail the sign-in over it.
+  }
+}
+
+/**
+ * PC5.2 — stamp users.signup_brand for signups that can't carry it in signUp
+ * metadata (OAuth, magic link). The callback always lands on the brand's own
+ * origin, so the request host IS the brand signal. Guarded to freshly-created
+ * rows so an existing user logging in via another brand's domain is never
+ * relabeled — signup_brand records where the account was BORN, not last seen.
+ * Password signups are already stamped by handle_new_user (metadata path) and
+ * skip on the `signup_brand IS NULL` guard. Best-effort, never blocks auth.
+ */
+async function stampSignupBrand(
+  supabase: SupabaseClient,
+  requestUrl: string,
+): Promise<void> {
+  try {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !key) return;
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+    const brandId = resolveBrandId({ host: new URL(requestUrl).host });
+    const admin = createServiceClient(url, key, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+    await admin
+      .from("users")
+      .update({ signup_brand: brandId })
+      .eq("id", user.id)
+      .is("signup_brand", null)
+      .gte(
+        "created_at",
+        new Date(Date.now() - 15 * 60 * 1000).toISOString(),
+      );
+  } catch {
+    // Attribution is best-effort — never fail the sign-in over it.
   }
 }
 
@@ -59,6 +100,7 @@ export async function GET(request: Request) {
       if (type === "recovery") {
         return NextResponse.redirect(`${origin}/auth/reset-password`);
       }
+      await stampSignupBrand(supabase, request.url);
       return NextResponse.redirect(`${origin}${next}`);
     }
   }
@@ -72,6 +114,7 @@ export async function GET(request: Request) {
     if (!error) {
       const res = NextResponse.redirect(`${origin}${next}`);
       await recordLegalAck(supabase, res);
+      await stampSignupBrand(supabase, request.url);
       return res;
     }
   }

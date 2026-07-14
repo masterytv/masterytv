@@ -49,8 +49,34 @@ export interface PackPromptContext {
   mediatorPersona: string;
 }
 
+/**
+ * PC4.3 — pack-owned post-processing. The extractor's memory taxonomy is a
+ * vertical decision: executive memory is business-shaped (org facts, tools),
+ * relationship memory is texture-shaped (themes, interaction patterns,
+ * attachment cues). The post-processor composes its extraction prompt and
+ * gates its side effects from THIS config — no domain ternaries there.
+ *
+ * NOTE: fact categories must stay within the memory_facts_category_check DB
+ * constraint (migration 20260714220000 lists the allowed set).
+ */
+export interface PackExtraction {
+  /** Enum string for the extractor's fact `category` JSON field. */
+  factCategories: string;
+  /** The fact-extraction rule bullet(s), domain-shaped. Verbatim prompt text. */
+  factsRule: string;
+  /** The ai_tools_mentioned rule bullet (or an always-empty instruction). */
+  aiToolsRule: string;
+  /** Persist tool/platform mentions to users.ai_tools (executive behavior). */
+  extractAiTools: boolean;
+  /** May a detected challenge spawn a framework-assigned coaching challenge? */
+  frameworkChallenges: boolean;
+}
+
 export interface CoachPack {
   key: "executive" | "relationship";
+
+  /** PC4.3 — post-processing extraction schema + memory taxonomy. */
+  extraction: PackExtraction;
 
   /**
    * How the last-20 recent messages are scoped.

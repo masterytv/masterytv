@@ -327,6 +327,24 @@ After providing any factual information, always pivot back to coaching:
 export const executivePack: CoachPack = {
   key: "executive",
 
+  // PC4.3 — business-shaped memory taxonomy. Text is verbatim what the
+  // post-processor sent before packs owned it (behavior-preserving).
+  extraction: {
+    factCategories: "business|personal|preference|goal|challenge|win|pattern|org_sop",
+    factsRule:
+      "- Only extract facts the USER stated about themselves, their business, or their situation.",
+    aiToolsRule: `- ai_tools_mentioned: extract when the USER mentions using, having, or relying on ANY tool, platform, device, or software in their workflow. This includes:
+  • AI tools: Claude, ChatGPT, Cursor, Midjourney, Copilot
+  • Productivity: Notion, Trello, Asana, Todoist, Google Docs, Obsidian
+  • Communication: Slack, Discord, LinkedIn, Zoom, Teams, WhatsApp
+  • Business: HubSpot, Salesforce, Zapier, Stripe, QuickBooks, Mailchimp
+  • Development: GitHub, VS Code, Figma, Vercel, AWS
+  • Platforms/OS: Mac, Windows, iPhone, Android, iPad, Chrome
+  Only extract when the USER says THEY use it (e.g., "I use Notion", "I'm on a Mac", "we communicate via Slack"). Don't extract tools the coach recommends.`,
+    extractAiTools: true,
+    frameworkChallenges: true,
+  },
+
   // Engagement/null-thread scoping — cross-session continuity in-prompt.
   recentMessageScope: "engagement",
 
