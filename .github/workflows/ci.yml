@@ -47,6 +47,9 @@ jobs:
       - name: Partner-isolation guard
         run: npm run isolation
 
+      - name: Brand-metadata gate (BRAND.md §15 — no bare metadata exports)
+        run: npm run check:metadata
+
       - name: Prompt snapshot goldens (PC4.1 — byte-identical per vertical)
         run: npm run snapshot:prompts
 

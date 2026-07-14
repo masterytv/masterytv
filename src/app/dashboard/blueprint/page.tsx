@@ -1,13 +1,14 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
+import { relattiPageMetadata } from "@/lib/platform/brand-metadata";
 import { getActiveDyad } from "@/lib/relatti/dashboard-dyad";
 import BlueprintView from "./BlueprintView";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = relattiPageMetadata({
   title: "Your Relationship Blueprint — Relatti",
-  robots: { index: false, follow: false },
-};
+  noindex: true,
+});
 
 /**
  * /dashboard/blueprint (PB3) — the productized Relationship Blueprint.

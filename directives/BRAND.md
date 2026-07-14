@@ -563,6 +563,8 @@ Before adding any icon, illustration, or decorative element:
 
 > [!CAUTION]
 > **Every new page MUST set its metadata through `src/lib/platform/brand-metadata.ts`.** Never export a bare `{ title: … }`. This rule exists because we shipped relatti.com pages whose iMessage previews showed the MasteryTV icon and the title "Mastery Coach — Coaching for High-Performers" (found live by the founder, 2026-07-14).
+>
+> **Mechanically enforced:** `npm run gate` / CI runs `scripts/check-brand-metadata.mjs` — any `page.tsx`/`layout.tsx` exporting metadata without the helper fails the build unless it's on the script's reviewed ALLOWLIST (reserved for provably MasteryTV-only surfaces). With white-label tenants this bug class would leak our brand onto a customer's domain, which is why it's a hard gate, not a convention.
 
 ### 15.1 Why a bare `title` ships the wrong brand
 
