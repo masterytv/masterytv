@@ -112,6 +112,29 @@ export default function AdminFrameworksPage() {
           </p>
         </div>
 
+        {/* PC5.1/PC5.3 — scope + what this page actually controls */}
+        <div className="ad-scope">
+          <span className="ad-scope__brand">MasteryTV · Executive</span>
+          <span className="ad-scope__text">
+            Executive (MasteryTV) engine only — Relatti runs stance-based coaching with no
+            framework library, by design (COACH_ARCHITECTURE_AUDIT §8).
+          </span>
+        </div>
+        <div className="ad-explainer">
+          <p>
+            <strong>What this library does:</strong> when the coach&rsquo;s post-processor detects a
+            new challenge in a conversation, it auto-assigns a framework to it
+            (<strong>assignFramework()</strong>: the challenge&rsquo;s category picks the default
+            framework, gated by the user&rsquo;s trust tier). The coach never names frameworks to the
+            user — they only shape what kind of question it asks next.
+          </p>
+          <p>
+            <strong>Active</strong> removes a framework from that auto-assignment pool (challenges
+            already assigned to it keep it). <strong>Weight</strong> biases selection when several
+            frameworks fit a category.
+          </p>
+        </div>
+
         {/* Error */}
         {error && (
           <div
@@ -124,7 +147,7 @@ export default function AdminFrameworksPage() {
               marginBottom: "1.5rem",
             }}
           >
-            ⚠️ {error}
+            Error: {error}
           </div>
         )}
 
@@ -160,6 +183,10 @@ export default function AdminFrameworksPage() {
               <thead>
                 <tr>
                   <th>Framework</th>
+                  {/* PC5.3: engine/vertical column — static today (framework_config is
+                      executive-only); a Relatti or career library slots in visibly
+                      once PC4.3 domain-scopes the table. */}
+                  <th>Engine</th>
                   <th>Tier</th>
                   <th>Category</th>
                   <th>Trust Req</th>
@@ -193,6 +220,9 @@ export default function AdminFrameworksPage() {
                           {fw.description}
                         </div>
                       )}
+                    </td>
+                    <td>
+                      <span className="ad-badge ad-badge--free">Executive</span>
                     </td>
                     <td>
                       <span
