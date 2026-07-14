@@ -1489,6 +1489,10 @@ Deno.serve(async (req: Request) => {
 > **MCP deploy:** `verify_jwt: false`
 >
 > *Lesson learned: Sprint 5 E2E (2026-04-02) — all webhook deliveries failed with 401.*
+> *Recurred 2026-07-14: `email-inbound`/`telegram-webhook` were redeployed "plain" (a runbook note said
+> only cron fns need the flag), flipping them back to `verify_jwt: true` — inbound email replies had
+> **never** completed in production as a result. If a function's auth is an in-code HMAC/signature check,
+> the `--no-verify-jwt` flag is part of its deploy command, permanently.*
 
 ### 8.2 Naming Conventions
 

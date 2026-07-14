@@ -50,12 +50,23 @@ Deno.serve(async (req: Request) => {
     }
 
     // Deduplicate user IDs
-    const uniqueUserIds = [
+    const activeIds = [
       ...new Set(activeUserIds.map((r) => r.user_id)),
     ] as string[];
 
+    // Proactive-email pause switch (founder decision 2026-07-14): the weekly
+    // session email is not yet brand-aware, so it follows the same opt-in as
+    // morning briefings — users with morning_briefing_time NULL are excluded.
+    const { data: optedIn } = await supabase
+      .from("users")
+      .select("id")
+      .in("id", activeIds)
+      .not("morning_briefing_time", "is", null);
+
+    const uniqueUserIds = (optedIn ?? []).map((u) => u.id) as string[];
+
     console.log(
-      `[${FUNCTION_NAME}] Planning sessions for ${uniqueUserIds.length} users`
+      `[${FUNCTION_NAME}] Planning sessions for ${uniqueUserIds.length} of ${activeIds.length} active users (proactive opt-in gate)`
     );
 
     let processed = 0;

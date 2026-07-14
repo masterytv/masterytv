@@ -19,9 +19,10 @@ import { logError, errorResponse } from "../_shared/errors.ts";
 import { callClaudeStreaming, calculateCost } from "../_shared/anthropic.ts";
 import { assemblePrompt } from "../_shared/prompt-assembler.ts";
 import { generateEmbedding, logEmbeddingCost } from "../_shared/embeddings.ts";
-import { SEARCH_FACTS_TOOL, handleSearchFacts } from "../_shared/search-facts.ts";
-import { LOOKUP_ASSESSMENT_TOOL, handleLookupAssessment } from "../_shared/lookup-assessment.ts";
-import { LOOKUP_RELATIONSHIP_TOOL, handleLookupRelationship } from "../_shared/lookup-relationship.ts";
+import { handleSearchFacts } from "../_shared/search-facts.ts";
+import { handleLookupAssessment } from "../_shared/lookup-assessment.ts";
+import { handleLookupRelationship } from "../_shared/lookup-relationship.ts";
+import { resolvePack } from "../_shared/packs/index.ts";
 import {
   resolveConversation,
   COACHING_DISCLAIMER,
@@ -126,20 +127,14 @@ Deno.serve(async (req: Request) => {
       );
     }
     const program = resolved.program;
+    // PC4.2: the pack owns every vertical-specific decision (tool set, model
+    // params, prompt layers via assemblePrompt). No `isRelationship` checks here.
+    const pack = resolvePack(program);
     // E14 + PC3.3: every coach replies short and conversational (reflect + ask,
     // not essays). The tighter cap backstops the persona's length rules — the old
     // 1024 executive budget left room for the 5-step framework dumps.
-    const isRelationship = (program ?? "").toLowerCase() === "relationship";
     const coachMaxTokens = 700;
-    // The relationship coach already has the user's full Decoded profile injected
-    // into the system prompt (prompt-assembler Layer 4.5) and must never quote raw
-    // scores (RELATTI_EXPERIENCE §5.6), so it does NOT get lookup_assessment. Leaving
-    // it in made the model preamble "let me pull up your profile" and tool-fetch the
-    // profile every turn instead of reading what's already in context. The executive
-    // coach keeps the full deep-lookup tool set.
-    const coachTools = isRelationship
-      ? [SEARCH_FACTS_TOOL, LOOKUP_RELATIONSHIP_TOOL]
-      : [SEARCH_FACTS_TOOL, LOOKUP_ASSESSMENT_TOOL, LOOKUP_RELATIONSHIP_TOOL];
+    const coachTools = pack.tools;
 
     // ── 2.5 Free tier message limit check (S5.9) ──
     // Sprint 0.4: Deep link messages from report CTAs get bonus allowance
@@ -609,7 +604,7 @@ Deno.serve(async (req: Request) => {
               messages: toolUseMessages,
               tools: nextTools,
               maxTokens: coachMaxTokens,
-              forceClaude: isRelationship,
+              forceClaude: pack.forceClaudeOnToolContinuation,
             });
 
             stopReason = "";
