@@ -8,6 +8,7 @@ import RelattiLanding from "../relatti/RelattiLanding";
  * entry_segment-driven content is GTM (out of architecture scope).
  */
 export const metadata: Metadata = relattiPageMetadata({
+  canonical: "/couples",
   title: "Relatti for Couples — Stop having the same fight",
   description:
     "A relationship coach that knows both of you. Built on each partner's validated psychology — it mediates the recurring fight instead of taking sides.",

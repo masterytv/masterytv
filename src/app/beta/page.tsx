@@ -20,6 +20,7 @@ interface PageProps {
  * unlock immediately. Relatti-only; MasteryTV bounces home.
  */
 export const metadata: Metadata = relattiPageMetadata({
+  canonical: "/beta",
   title: "Join the Relatti Beta — Free Relationship Coaching",
   description:
     "Free unlimited relationship coaching during the beta. In exchange: two 2-minute check-ins that tell us whether it's working.",

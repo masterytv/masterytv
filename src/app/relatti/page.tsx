@@ -11,6 +11,7 @@ import RelattiLanding from "./RelattiLanding";
  * root layout for Relatti routes — so this page stays statically rendered.
  */
 export const metadata: Metadata = relattiPageMetadata({
+  canonical: "/",
   title: "Relatti — The Relationship Coach for Both of You",
   description:
     "Built on a century of relationship science. Understand how you each love, bond, and handle hard moments — and turn understanding into a relationship that thrives.",

@@ -39,10 +39,23 @@ const SITE_NAME: Record<BrandId, string> = {
   relatti: "Relatti",
 };
 
-// og:image URLs must be ABSOLUTE — crawlers resolve nothing, and Next's
-// inferred metadataBase would point at the vercel.app deployment host, not
-// the brand's custom domain.
-const BRAND_ORIGINS: Record<BrandId, string> = {
+// Tab-title suffix — shorter than SITE_NAME so titles survive tab truncation
+// ("Coach — Mastery", not "Coach — Mastery Coach").
+const TITLE_SUFFIX: Record<BrandId, string> = {
+  masterytv: "Mastery",
+  relatti: "Relatti",
+};
+
+/** "{Page} — {Brand}" tab title, e.g. brandTitle("relatti", "Coach") → "Coach — Relatti". */
+export function brandTitle(brandId: BrandId, page: string): string {
+  return `${page} — ${TITLE_SUFFIX[brandId]}`;
+}
+
+// og:image / canonical / sitemap URLs must be ABSOLUTE — crawlers resolve
+// nothing, and Next's inferred metadataBase would point at the vercel.app
+// deployment host, not the brand's custom domain. Exported for the
+// brand-aware robots.txt + sitemap.xml route handlers.
+export const BRAND_ORIGINS: Record<BrandId, string> = {
   masterytv: "https://masterytv.com",
   relatti: "https://relatti.com",
 };
@@ -60,6 +73,13 @@ export interface BrandPageMeta {
    * opt a public page out, or a string to override the card's text.
    */
   ogImage?: boolean | string;
+  /**
+   * Canonical PATH ("/" or "/couples") — emitted absolute against the brand
+   * origin. Set on indexable pages reachable at more than one URL (e.g. the
+   * Relatti landing serves at relatti.com/, relatti.com/relatti AND
+   * masterytv.com/relatti — canonical "/" points crawlers at relatti.com/).
+   */
+  canonical?: string;
 }
 
 export function brandPageMetadata(brandId: BrandId, page: BrandPageMeta): Metadata {
@@ -93,6 +113,9 @@ export function brandPageMetadata(brandId: BrandId, page: BrandPageMeta): Metada
       ...(imageUrl ? { images: [imageUrl] } : {}),
     },
     ...(page.noindex ? { robots: { index: false, follow: false } } : {}),
+    ...(page.canonical
+      ? { alternates: { canonical: new URL(page.canonical, BRAND_ORIGINS[brandId]).toString() } }
+      : {}),
   };
 }
 

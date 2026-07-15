@@ -12,6 +12,7 @@ import RelattiLanding, { SAMEFIGHT_CONTENT } from "../relatti/RelattiLanding";
  * script's Relatti-path match.
  */
 export const metadata: Metadata = relattiPageMetadata({
+  canonical: "/samefight",
   title: "Relatti — The Coach That Knows Both of You",
   description:
     "Not couples therapy. Not a journaling app. A relationship coach grounded in both partners' psychology — it mediates real issues, runs gentle check-ins, and helps in the moment a fight is happening.",

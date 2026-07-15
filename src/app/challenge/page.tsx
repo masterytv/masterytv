@@ -16,6 +16,7 @@ interface PageProps {
  * layout inline script's Relatti-path match (like /couples, /engaged).
  */
 export const metadata: Metadata = relattiPageMetadata({
+  canonical: "/challenge",
   title: "The Relatti 14-Day Challenge — Fourteen Days. The Two of You.",
   description:
     "Take the free 14-day relationship challenge together: one quiz each, a map of how you two work, and a coach that knows you both. See what two weeks changes.",
