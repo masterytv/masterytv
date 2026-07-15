@@ -2,19 +2,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { originFromHeaders } from '@/lib/platform/origin';
+import { resolveBrand, isBrandId, type BrandId } from '@/lib/platform/brand';
+import { sendBrandInviteNotifyEmail } from '@/lib/decoded/invite-email';
 
 /**
  * POST /api/decoded/invite-notify
  *
- * Sends an email notification to the inviter when their recipient
- * completes the Decoded assessment. Idempotent — checks notified_at
- * to prevent duplicate emails.
+ * Sends an email notification to the inviter when their recipient completes
+ * their assessment. Idempotent — checks notified_at to prevent duplicates.
  *
  * Body: { inviteId: string }
  *
- * Email rules (GEMINI.md):
- * - From: Decoded by MasteryTV <donotreply@mail.masterytv.com>
- * - Domain: @mail.masterytv.com only (verified with Resend)
+ * Brand-aware: the email matches the INVITER's brand (Relatti → rose "Relatti"
+ * note from mail.relatti.com; MasteryTV → indigo "Decoded" note). Resolution +
+ * theming live in src/lib/decoded/invite-email.ts (shared with the invite send).
  */
 export async function POST(req: NextRequest) {
   try {
@@ -89,74 +90,37 @@ export async function POST(req: NextRequest) {
     const appUrl = originFromHeaders(req.headers);
     const compatibilityUrl = `${appUrl}/dashboard/compatibility`;
 
-    const resendKey = process.env.RESEND_API_KEY;
-    if (!resendKey) {
-      console.error('[invite-notify] RESEND_API_KEY not configured');
-      return NextResponse.json({ error: 'Email service not configured' }, { status: 500 });
+    // Resolve the INVITER's brand — the note goes to them. Prefer their durable
+    // signup_brand; fall back to the host the recipient completed on (a dyad
+    // shares one brand). Mirrors the invite-send brand resolution.
+    let brandId: BrandId = resolveBrand(req.headers.get('host')).id;
+    const { data: inviterRow } = await admin
+      .from('users')
+      .select('signup_brand')
+      .eq('id', invite.inviter_id)
+      .single();
+    const inviterBrand = inviterRow?.signup_brand;
+    if (isBrandId(inviterBrand)) {
+      brandId = inviterBrand;
     }
 
-    // Build the notification email
-    const archetypeLine = recipientArchetype
-      ? `They got <strong>The ${recipientArchetype}</strong>${recipientSublabel ? ` — ${recipientSublabel}` : ''}.`
-      : '';
+    // The personality-archetype line only fits the Decoded framing; Relatti
+    // leads with the relationship, not the archetype name.
+    const archetypeLine =
+      brandId === 'masterytv' && recipientArchetype
+        ? `They got <strong>The ${recipientArchetype}</strong>${recipientSublabel ? ` — ${recipientSublabel}` : ''}.`
+        : '';
 
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${resendKey}`,
-      },
-      body: JSON.stringify({
-        from: 'Decoded by MasteryTV <donotreply@mail.masterytv.com>',
-        to: [invite.inviter_email],
-        subject: `${recipientName} just completed their Decoded assessment!`,
-        html: `
-          <div style="font-family: 'Inter', system-ui, -apple-system, sans-serif; max-width: 520px; margin: 0 auto; padding: 40px 20px; color: #1a1a2e; background: #ffffff;">
-            
-            <div style="text-align: center; margin-bottom: 32px;">
-              <div style="display: inline-block; background: linear-gradient(135deg, #a3a6ff, #6063ee); border-radius: 12px; padding: 12px;">
-                <span style="font-size: 24px; color: white; font-weight: 700;">D</span>
-              </div>
-            </div>
-
-            <h1 style="font-size: 22px; font-weight: 700; color: #1a1a2e; margin-bottom: 8px; text-align: center;">
-              ${recipientName} is decoded!
-            </h1>
-            
-            <p style="font-size: 16px; line-height: 1.6; color: #555; text-align: center; margin-bottom: 24px;">
-              Great news, ${invite.inviter_name || 'there'}. ${recipientName} just completed their Decoded personality assessment.
-              ${archetypeLine}
-            </p>
-
-            <div style="background: #f8f9ff; border-radius: 12px; padding: 20px; margin-bottom: 24px; border: 1px solid #e8eaff;">
-              <p style="font-size: 14px; color: #555; margin: 0 0 4px 0; font-weight: 600;">What's next:</p>
-              <ul style="font-size: 14px; color: #666; line-height: 1.8; margin: 8px 0 0 0; padding-left: 20px;">
-                <li>Request to share results with each other</li>
-                <li>Unlock your Compatibility Report</li>
-                <li>Discover your relationship dynamics across 5 dimensions</li>
-              </ul>
-            </div>
-
-            <div style="text-align: center; margin-bottom: 24px;">
-              <a href="${compatibilityUrl}" style="display: inline-block; background: linear-gradient(135deg, #a3a6ff, #6063ee); color: white; font-size: 16px; font-weight: 600; padding: 14px 32px; border-radius: 10px; text-decoration: none;">
-                View Compatibility Hub →
-              </a>
-            </div>
-
-            <hr style="border: none; border-top: 1px solid #eee; margin: 32px 0 16px 0;" />
-            
-            <p style="font-size: 12px; color: #bbb; text-align: center;">
-              Decoded by MasteryTV · Personality science for personal growth
-            </p>
-          </div>
-        `,
-      }),
+    const sent = await sendBrandInviteNotifyEmail(brandId, {
+      recipientName,
+      inviterName: invite.inviter_name || 'there',
+      inviterEmail: invite.inviter_email,
+      archetypeLine,
+      ctaUrl: compatibilityUrl,
     });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('[invite-notify] Resend error:', errorText);
-      // Don't block on email failure — mark as attempted anyway
+    if (!sent.ok) {
+      // Don't block on email failure — mark as attempted anyway.
+      console.error('[invite-notify] send failed:', sent.error);
     }
 
     // Mark as notified (idempotency)
