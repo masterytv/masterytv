@@ -72,11 +72,62 @@ export interface PackExtraction {
   frameworkChallenges: boolean;
 }
 
+/**
+ * What the morning-briefing cron loads for every eligible user. Executive-
+ * shaped fields stay empty for relationship users (their post-processor
+ * creates no commitments/goals); partnerName is spine-derived and null
+ * unless the user has an active dyad.
+ */
+export interface BriefingContext {
+  userName: string;
+  partnerName: string | null;
+  activeCommitments: Array<{
+    description: string;
+    due_date: string | null;
+    type: string;
+  }>;
+  recentWins: Array<{ name: string; attributes: Record<string, unknown> }>;
+  stalledGoals: Array<{ name: string; attributes: Record<string, unknown> }>;
+  coachingAgenda: {
+    priority_topic: string | null;
+    coaching_questions: string[] | null;
+  } | null;
+}
+
+/**
+ * Pack-owned proactive briefing (the PC4 follow-on to 05713ad): the morning
+ * template was executive-flavored (commitments/goals/wins) for every
+ * vertical. What a proactive touchpoint SAYS is a vertical decision, so the
+ * pack authors it; the cron stays vertical-blind (load context → resolve
+ * pack → compose → deliver).
+ *
+ * Relationship packs must stay LOW-DISCLOSURE: briefings arrive by email,
+ * which lock screens and shared devices expose — never reference specific
+ * session content (same invariant as 92d221d: user content stays in-product).
+ */
+export interface PackBriefing {
+  /** Whether this vertical sends proactive morning briefings at all. */
+  enabled: boolean;
+  /** System prompt for the briefing generator model call. */
+  system: string;
+  /** Compose the generation prompt. dateLine = long-form local date. */
+  buildPrompt(ctx: BriefingContext, greeting: string, dateLine: string): string;
+  /** Email subject. todayShort = short local date (e.g. "Wed, Jul 15"). */
+  subject(ctx: BriefingContext, greeting: string, todayShort: string): string;
+  /** Deterministic fallback content when the model returns nothing. */
+  fallback(ctx: BriefingContext, greeting: string): string;
+  /** The engagement-decay meta check-in message, in this vertical's voice. */
+  metaCheckin: string;
+}
+
 export interface CoachPack {
   key: "executive" | "relationship";
 
   /** PC4.3 — post-processing extraction schema + memory taxonomy. */
   extraction: PackExtraction;
+
+  /** Pack-authored proactive morning briefing. */
+  briefing: PackBriefing;
 
   /**
    * How the last-20 recent messages are scoped.

@@ -345,6 +345,64 @@ export const executivePack: CoachPack = {
     frameworkChallenges: true,
   },
 
+  // Pack-authored morning briefing — text is verbatim what
+  // cron-morning-briefings sent before packs owned it (behavior-preserving).
+  briefing: {
+    enabled: true,
+    system:
+      "You are a coaching assistant generating brief daily check-in messages. Be warm, specific, and actionable.",
+    buildPrompt(ctx, greeting, dateLine) {
+      const commitmentsList = ctx.activeCommitments
+        .map((c) => {
+          const due = c.due_date ? ` (due: ${c.due_date})` : "";
+          return `- ${c.description}${due}`;
+        })
+        .join("\n");
+      const winsList = ctx.recentWins.map((w) => `- ${w.name}`).join("\n");
+      const stalledList = ctx.stalledGoals.map((g) => `- ${g.name}`).join("\n");
+      const agendaTopic = ctx.coachingAgenda?.priority_topic
+        ? `\nCOACHING PRIORITY: ${ctx.coachingAgenda.priority_topic}`
+        : "";
+
+      return `Generate a brief, warm morning coaching briefing for ${ctx.userName}.
+
+CONTEXT:
+${greeting}, it's ${dateLine}.
+
+ACTIVE COMMITMENTS:
+${commitmentsList || "No active commitments tracked."}
+
+RECENT WINS (past 7 days):
+${winsList || "None tracked yet."}
+
+STALLED GOALS (not mentioned in 3+ days):
+${stalledList || "None detected."}
+${agendaTopic}
+
+INSTRUCTIONS:
+- Start with a time-appropriate greeting using their name
+- If there are wins, celebrate briefly (1 sentence max)
+- Surface the most important commitment or stalled goal
+- End with ONE specific, actionable question that moves them forward
+- Keep it to 3-5 sentences max. Be warm but concise.
+- Don't use bullet points — write conversational prose
+- Use emoji sparingly (1-2 max)
+- If there are no commitments or wins, focus on an encouraging open-ended question
+
+OUTPUT FORMAT: Just the briefing text, no labels or headers.`;
+    },
+    subject(ctx, greeting, todayShort) {
+      return ctx.activeCommitments.length > 0
+        ? `Your ${todayShort} Coaching Brief`
+        : `${greeting}, ${ctx.userName}`;
+    },
+    fallback(ctx, greeting) {
+      return `${greeting}, ${ctx.userName}! Ready to make today count? What's your #1 priority?`;
+    },
+    metaCheckin:
+      "I've noticed I haven't heard much from you lately. No pressure at all — I just want to make sure my check-ins are helpful, not overwhelming. Should I adjust how often I reach out? 💬",
+  },
+
   // Engagement/null-thread scoping — cross-session continuity in-prompt.
   recentMessageScope: "engagement",
 

@@ -123,6 +123,51 @@ export const relationshipPack: CoachPack = {
     frameworkChallenges: false,
   },
 
+  // Pack-authored morning briefing. NOT the executive commitments/goals/wins
+  // recap — a small daily nudge of attention toward the relationship, in the
+  // coach's own voice. LOW-DISCLOSURE by design: this arrives by email, which
+  // lock screens and shared devices expose, so it must never reference
+  // anything specific the user has told the coach (the 92d221d invariant:
+  // user content stays in-product). The context fields exist but are unused
+  // here on purpose.
+  briefing: {
+    enabled: true,
+    system:
+      "You are a warm relationship coach writing a short good-morning note to someone you coach. You sound like a real person, never a script or a productivity app. You are not a therapist and you never give clinical advice. HARD PRIVACY RULE: this note travels by email, so never mention, quote, or hint at anything specific from coaching conversations — no topics, no fights, no feelings they disclosed. Keep the content universal and gentle.",
+    buildPrompt(ctx, greeting, dateLine) {
+      const partnerLine = ctx.partnerName
+        ? `Their partner's name is ${ctx.partnerName}; you may use it naturally, or not at all.`
+        : `You don't know their partner's name — say "your partner" if you mention them.`;
+
+      return `Write a short good-morning note to ${ctx.userName}.
+
+CONTEXT:
+${greeting}, it's ${dateLine}. ${partnerLine}
+
+INSTRUCTIONS:
+- 2 to 4 short sentences, conversational prose. No bullet points, no headings, no bold labels.
+- Offer ONE tiny, concrete moment of attention toward the relationship today — the kind that takes under a minute. Examples of the register (don't copy them verbatim): notice one thing you appreciate and say it out loud; ask one real question at dinner and just listen; a 20-second hug before you leave.
+- Keep it an invitation, never homework. No "you should", no streaks, no goals, no progress language.
+- Do NOT reference anything from past coaching conversations — not even vaguely.
+- You may close with a soft open door ("if anything's on your mind today, I'm here"), but don't make the note about you.
+- Warm, plain language. Use their name once at most after the greeting. Use emoji sparingly (0-1).
+
+OUTPUT FORMAT: Just the note text, no labels or headers.`;
+    },
+    // Always the generic subject — a subject line is lock-screen-visible, so
+    // it carries nothing beyond a greeting.
+    subject(ctx, greeting, _todayShort) {
+      return `${greeting}, ${ctx.userName}`;
+    },
+    fallback(ctx, greeting) {
+      return `${greeting}, ${ctx.userName}. A small thought for today: find one moment to really notice ${
+        ctx.partnerName ?? "your partner"
+      } — one thing you appreciate, said out loud. And if anything's on your mind, I'm here.`;
+    },
+    metaCheckin:
+      "It's been quiet here, and that's completely fine. I just want to check — are these morning notes helpful, or would you rather I ease off? Either answer is a good one. And whenever you feel like talking something through, I'm here.",
+  },
+
   // E14: scope recent messages to the CURRENT conversation, so a "New
   // conversation" truly starts fresh — otherwise the last 20 messages across
   // the whole dyad engagement get replayed, and the model few-shots off old
