@@ -230,6 +230,13 @@
   text-align: left;
 }
 
+/* The user bubble always has white text on a dark/saturated accent fill (every
+   brand + theme), so its timestamp reads as translucent white — dimmer than the
+   message, never the dark --text-hint (which vanished on the fill). */
+.chat-bubble-user .chat-time {
+  color: rgba(255, 255, 255, 0.7);
+}
+
 /* ─── TYPING INDICATOR ────────────────────────────────────────────────── */
 
 .chat-typing {
