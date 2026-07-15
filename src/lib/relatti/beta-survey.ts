@@ -161,7 +161,7 @@ export async function redeemBetaOffer(
 
   // Record the before check-in for fresh grants AND 'already' users (existing
   // testers backfilling through the same flow). Idempotent via unique(user, phase).
-  const { baseline } = await insertBeforeSurvey(admin, user.id, survey);
+  await insertBeforeSurvey(admin, user.id, survey);
 
   if (s === "ok") {
     if (opts.note) {
@@ -184,23 +184,22 @@ export async function redeemBetaOffer(
       | null;
 
     const email = user.email ?? "unknown";
-    const lengthLabel = RELATIONSHIP_LENGTH_LABELS[survey.relationshipLength] ?? survey.relationshipLength;
+    // Privacy invariant (founder, 2026-07-15): notification emails carry the
+    // FUNNEL EVENT only — never check-in answers, scores, or quotes. The
+    // check-in form promises answers are "used only anonymously, in
+    // aggregate"; identified responses live behind the authenticated admin
+    // cockpit, not in email.
     await notifyFounder(
       `Beta: new tester unlocked — ${email}`,
       `<div style="font-family:system-ui,sans-serif;max-width:560px;line-height:1.6;color:#1a1a2e">
         <p style="margin:0 0 12px;font-size:12px;color:#888;text-transform:uppercase;letter-spacing:0.05em">Relatti beta · internal notification · no action needed</p>
         <p style="margin:0 0 16px"><strong>${escapeHtml(email)}</strong> redeemed an invite code and completed the <em>before</em> check-in (1 of 2) — they now have free unlimited coaching for the beta. Their 2-week check-in schedules itself: a dashboard banner plus up to 3 email nudges starting on day 14. Nothing for you to do.</p>
-        <div style="background:#f6f7f9;border-radius:10px;padding:14px 16px;margin:0 0 16px">
-          <p style="margin:0 0 6px"><strong>Where they're starting:</strong></p>
-          <p style="margin:0 0 4px">Together ${escapeHtml(lengthLabel)} · hopefulness <strong>${survey.hopefulness}/5</strong> · satisfaction baseline ${baseline == null ? "not captured (no completed assessment yet)" : `<strong>${baseline}/21</strong> (CSI-4; 13.5 is the distress cutoff)`}</p>
-          <p style="margin:0">Wants to change: &ldquo;${escapeHtml(survey.topChange)}&rdquo;</p>
-        </div>
         ${
           codeInfo
             ? `<p style="margin:0 0 12px;font-size:13px;color:#555">Code used: <strong>${escapeHtml(codeInfo.code)}</strong>${codeInfo.label ? ` (${escapeHtml(codeInfo.label)})` : ""} — ${codeInfo.uses}/${codeInfo.max_uses} slots taken${opts.source === "/beta" ? " · came in through the /beta offer page" : ""}.</p>`
             : ""
         }
-        <p style="margin:0;font-size:12px;color:#888">Funnel + check-in stats aggregate in the <a href="https://relatti.com/admin/beta">beta cockpit</a>.</p>
+        <p style="margin:0;font-size:12px;color:#888">Their check-in answers stay out of email by design — funnel + check-in stats aggregate in the <a href="https://relatti.com/admin/beta">beta cockpit</a>.</p>
       </div>`
     );
   }

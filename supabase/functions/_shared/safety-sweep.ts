@@ -258,15 +258,19 @@ export async function sendSafetyEscalationEmail(
       ? "Tier 1 (synchronous keyword hard-stop)"
       : "Tier 2 (async LLM sweep)";
     const subject = `[Relatti safety] ${info.risk} (${info.severity}) — about ${info.subject_scope}`;
+    // Privacy invariant (founder, 2026-07-15): the email is a POINTER, not the
+    // record. No conversation excerpts or classifier rationale in email —
+    // email is the least-controlled channel we touch (external provider,
+    // cached, indexed). The full flag (excerpt + rationale) lives in
+    // crisis_flags and is reviewed in the authenticated /admin/crisis queue.
     const html = `<h2>Safety flag — review</h2>
 <p><strong>Detected by:</strong> ${tierLabel}</p>
 <p><strong>Risk:</strong> ${info.risk} &middot; <strong>Severity:</strong> ${info.severity} &middot; <strong>About:</strong> ${info.subject_scope}</p>
 <p><strong>Coach surfaced resources:</strong> ${info.coach_handled ? "yes" : "NO — check the reply"}</p>
 <p><strong>User:</strong> ${who} (${userId})</p>
-<p><strong>Why:</strong> ${info.rationale}</p>
-<p><strong>Excerpt:</strong> ${info.excerpt}</p>
+<p><strong>Detail:</strong> review the full flag in the <a href="https://relatti.com/admin/crisis">admin crisis queue</a> — conversation context is deliberately not emailed.</p>
 <hr>
-<p style="color:#666">Internal audit alert only. The user was routed to crisis resources in-product; there is no promised human follow-up. Review in the admin crisis queue (/admin/crisis).</p>`;
+<p style="color:#666">Internal audit alert only. The user was routed to crisis resources in-product; there is no promised human follow-up.</p>`;
 
     // brand: relatti → sends from the verified mail.relatti.com domain
     // (falls back to the shared MasteryTV account if the key is unset).
