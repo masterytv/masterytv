@@ -182,14 +182,20 @@ Deno.serve(async (req: Request) => {
         if (result.success) {
           // Store outbound message for coaching context. The program stamp
           // lets a reply that threads into this conversation resolve the
-          // right Coach Pack (resolve-program step 1).
+          // right Coach Pack (resolve-program step 1) — executive stamps
+          // "general" (matching the web coach's hint) so the stamp is a
+          // positive signal, not an ambiguous null.
           await storeOutboundMessage(
             supabase,
             user.id,
             result.channel,
             briefing.content,
             conversationId,
-            { type: "morning_briefing", subject: briefing.subject, program }
+            {
+              type: "morning_briefing",
+              subject: briefing.subject,
+              program: program ?? "general",
+            }
           );
 
           // Record strike (tracks unanswered proactive messages)
@@ -210,8 +216,9 @@ Deno.serve(async (req: Request) => {
           tokens_in: briefing.tokensIn,
           tokens_out: briefing.tokensOut,
           cost_usd: briefing.costUsd,
-          // PC5.5: per-brand cost attribution at write time.
-          metadata: { program },
+          // PC5.5: per-brand cost attribution at write time ("general" =
+          // the MasteryTV column, mirroring the web coach's executive stamp).
+          metadata: { program: program ?? "general" },
         });
       } catch (error) {
         console.error(

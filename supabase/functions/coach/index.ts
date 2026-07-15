@@ -114,10 +114,10 @@ Deno.serve(async (req: Request) => {
     // silently gave a Relatti user the EXECUTIVE persona, business guardrails,
     // and lookup_assessment (fail-open — COACH_ARCHITECTURE_AUDIT §2.2). And
     // `engagement_id` was written under the service role with no membership
-    // check. Now: an engagement must belong to the caller (403 otherwise) and
-    // its program is authoritative; with no usable hint the spine decides
-    // before any executive fallback. Full pack resolution arrives with the
-    // Coach Pack refactor (audit Phase 4).
+    // check. Now (PC4.4): an engagement must belong to the caller (403
+    // otherwise) and its program is authoritative; participant membership
+    // outranks the client hint; signup_brand covers solo users; junk strings
+    // resolve to null. No silent executive fallback path remains.
     const resolved = await resolveProgram(supabase, userId, clientProgram, engagementId);
     if (!resolved.ok) {
       return errorResponse(
