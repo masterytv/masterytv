@@ -70,9 +70,10 @@ export default function RelattiDisclaimer() {
             Your one-on-one coaching conversations are{" "}
             <strong>private from your partner</strong> — that is the one privacy
             promise we guarantee. Beyond that: your messages are processed by AI
-            providers and stored securely by us, and a small internal team may
-            review conversations flagged for safety. We will never tell you that
-            &quot;no one can ever see this.&quot; For details, read our{" "}
+            providers and stored securely by us. No person reads them as part of
+            operating the service, but they exist on our systems and can be
+            disclosed if the law requires it — so we will never tell you that
+            &quot;no one could ever see this.&quot; For details, read our{" "}
             <LegalLink href="/privacy">Privacy Policy</LegalLink>.
           </p>
         </section>
