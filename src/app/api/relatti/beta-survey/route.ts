@@ -5,8 +5,6 @@ import { scoreCSI4 } from "@/lib/decoded/scoring/engine";
 import {
   parseBeforeSurvey,
   insertBeforeSurvey,
-  RELATIONSHIP_LENGTH_LABELS,
-  IMPROVED_LABELS,
 } from "@/lib/relatti/beta-survey";
 import { notifyFounder, escapeHtml } from "@/lib/relatti/notify";
 
@@ -150,41 +148,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Could not save. Please try again." }, { status: 500 });
     }
 
-    // Founder notification — written for a reader with zero context: what
-    // happened, the before → after story, what may (and may not) be used.
-    const before = (beforeRow.responses ?? {}) as Record<string, unknown>;
-    const baseline = beforeRow.csi_total == null ? null : Number(beforeRow.csi_total);
-    const delta = baseline == null ? null : csiTotal - baseline;
-    const deltaStr = delta == null ? "" : delta > 0 ? ` (up ${delta})` : delta < 0 ? ` (down ${Math.abs(delta)})` : " (no change)";
-    const csiLine =
-      baseline == null
-        ? `<strong>${csiTotal}/21</strong> now (no baseline was captured)`
-        : `<strong>${baseline}/21</strong> at the start → <strong>${csiTotal}/21</strong> now${deltaStr}`;
-    const improvedLabel = IMPROVED_LABELS[improved] ?? improved;
-    const hopefulness = before.hopefulness != null ? `${before.hopefulness}/5` : "—";
-    const topChange = String(before.topChange ?? "");
+    // Founder notification — the FUNNEL EVENT only (privacy invariant,
+    // founder 2026-07-15): the check-in form promises answers are "used only
+    // anonymously, in aggregate", so no scores, answers, or quotes travel by
+    // email. Identified responses (including cleared testimonials) live
+    // behind the authenticated admin cockpit.
     const email = user.email ?? "unknown";
-
     await notifyFounder(
-      `Beta check-in 2/2 — ${email}${delta != null && delta > 0 ? ` (CSI +${delta})` : ""}`,
+      `Beta check-in 2/2 — ${email}`,
       `<div style="font-family:system-ui,sans-serif;max-width:560px;line-height:1.6;color:#1a1a2e">
         <p style="margin:0 0 12px;font-size:12px;color:#888;text-transform:uppercase;letter-spacing:0.05em">Relatti beta · internal notification · no action needed</p>
-        <p style="margin:0 0 16px"><strong>${escapeHtml(email)}</strong> just completed their 2-week check-in — the second half of the beta deal (free unlimited access in exchange for a before + after check-in). That's both check-ins done for this tester. This email is your copy of what they submitted; everything below also aggregates automatically in the <a href="https://relatti.com/admin/beta">beta cockpit</a>.</p>
-        <div style="background:#f6f7f9;border-radius:10px;padding:14px 16px;margin:0 0 16px">
-          <p style="margin:0 0 6px"><strong>Relationship satisfaction (CSI-4, higher is better; 13.5 is the distress cutoff):</strong><br/>${csiLine}</p>
-          <p style="margin:0 0 6px"><strong>They say things feel:</strong> ${escapeHtml(improvedLabel)} · <strong>would recommend:</strong> ${recommend}/10</p>
-          <p style="margin:0"><strong>Where they started:</strong> hopefulness ${escapeHtml(String(hopefulness))} going in${topChange ? `, wanting to change: &ldquo;${escapeHtml(topChange)}&rdquo;` : ""}</p>
-        </div>
-        ${whatChanged ? `<p style="margin:0 0 12px"><strong>What changed for them:</strong><br/>${escapeHtml(whatChanged)}</p>` : ""}
-        ${shouldFix ? `<p style="margin:0 0 12px"><strong>What they want fixed:</strong><br/>${escapeHtml(shouldFix)}</p>` : ""}
-        ${
-          testimonial
-            ? quotePermission
-              ? `<div style="border-left:3px solid #059669;padding:2px 0 2px 12px;margin:0 0 12px"><p style="margin:0 0 4px;font-size:12px;color:#059669;font-weight:600">QUOTE — CLEARED FOR MARKETING (attribute as: ${escapeHtml(quoteAttribution ?? "anonymous")})</p><p style="margin:0">&ldquo;${escapeHtml(testimonial)}&rdquo;</p></div>`
-              : `<div style="border-left:3px solid #dc2626;padding:2px 0 2px 12px;margin:0 0 12px"><p style="margin:0 0 4px;font-size:12px;color:#dc2626;font-weight:600">QUOTE — NOT CLEARED. Do not use publicly.</p><p style="margin:0">&ldquo;${escapeHtml(testimonial)}&rdquo;</p></div>`
-            : ""
-        }
-        <p style="margin:0;font-size:12px;color:#888">Only the quote block above (when cleared) may be shared publicly. Everything else is aggregate-only, per the promise on the check-in form.</p>
+        <p style="margin:0 0 16px"><strong>${escapeHtml(email)}</strong> just completed their 2-week check-in — the second half of the beta deal (free unlimited access in exchange for a before + after check-in). That's both check-ins done for this tester.${testimonial && quotePermission ? " They also cleared a testimonial quote for marketing use." : ""}</p>
+        <p style="margin:0;font-size:12px;color:#888">Their answers stay out of email by design — the before &rarr; after story, aggregate stats, and any cleared quotes are in the <a href="https://relatti.com/admin/beta">beta cockpit</a>.</p>
       </div>`
     );
 

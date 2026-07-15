@@ -4,6 +4,9 @@
 > **NOT clinical or legal advice.** This protocol must be reviewed by the licensed couples/crisis clinician (E15.6) before public launch. It describes what the system does *today*.
 > **Source:** `directives/PRIVACY_TERMS_LIABILITY_PLAN.md` §3.2/§4/§6; `COACH_SAFETY_AND_TESTING_SPEC.md`.
 
+> **🔴 POSTURE CHANGE 2026-07-15 (founder decision — E15.6 attorney/clinician deferred until revenue):**
+> Detection + in-product crisis routing are UNCHANGED, but escalation is now **LOG-ONLY: no human is alerted and no conversation content reaches any person.** `sendSafetyEscalationEmail` is a deliberate no-op (see its docstring in `_shared/safety-sweep.ts`); flags still write to `crisis_flags` as an audit trail. Rationale: an unlicensed AI coaching product has no Tarasoff/mandated-reporting duty, but a *human who acquires knowledge* can (universal-reporting states: NJ/WY/IN/NC), and promising review the company doesn't perform creates voluntary-undertaking liability. The privacy policy §5/§7, disclaimer, /why-ai, and the coach's honesty script were all rewritten the same day to say exactly this (no "small team may review" claim remains). Any references to "founder alert email" in the sections below are **historical** — restore the email + re-align the copy only when counsel + a clinician sign off (E15.6).
+
 ---
 
 ## 1. What we detect

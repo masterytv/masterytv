@@ -154,9 +154,10 @@ export default function RelattiWhyAI() {
           <p className="mt-3">
             Beyond that, we tell you the truth rather than a comforting
             absolute: your messages are processed by AI providers under
-            business terms that do not allow training on your data, stored
-            securely by us, and a small team may review conversations flagged
-            for safety. You can delete your account and data whenever you want.
+            business terms that do not allow training on your data, and stored
+            securely by us. No person reads your conversations as part of
+            operating the service — safety screening is automated — but they
+            exist on our systems and can be disclosed if the law requires it. You can delete your account and data whenever you want.
             The details live in the{" "}
             <LegalLink href="/privacy">Privacy Policy</LegalLink> — the coach
             itself is instructed to give you this same honest answer if you ask

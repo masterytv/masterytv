@@ -5,8 +5,8 @@
  * ZERO user-facing latency. It reads the recent conversation window + the coach's
  * reply and logs a `crisis_flag` for the cases the Tier 1 keyword hard-stop is
  * deliberately blind to: THIRD-PERSON disclosures ("my husband hinted at ending his
- * life"), indirect ideation, and emotional-abuse-in-context. High-severity self-harm
- * or abuse also emails an internal alert.
+ * life"), indirect ideation, and emotional-abuse-in-context. Flags are LOG-ONLY:
+ * no human is alerted (founder decision 2026-07-15 — see sendSafetyEscalationEmail).
  *
  * Domain-agnostic on purpose — safety is a KERNEL concern shared by every coach pack.
  * Runs on Claude Haiku (stronger safety recall than gpt-4o-mini, which has missed
@@ -14,13 +14,11 @@
  */
 
 import { createSupabaseClient } from "./supabase.ts";
-import { sendEmail } from "./resend.ts";
 import { logError } from "./errors.ts";
 
 const HAIKU_MODEL = "claude-haiku-4-5-20251001";
 const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
 const WINDOW = 8; // recent turns to consider
-const ESCALATION_TO = "tom@relatti.com";
 const DEDUP_WINDOW_MS = 12 * 60 * 60 * 1000;
 
 interface SweepParams {
@@ -240,41 +238,28 @@ export interface SafetyEscalation {
   excerpt: string;
 }
 
+/**
+ * DELIBERATE NO-OP — founder decision 2026-07-15 (E15.6 deferred until
+ * revenue): no human receives safety alerts or conversation content. The
+ * legal analysis behind it: an unlicensed AI coaching product has no
+ * Tarasoff/mandated-reporting duty, but a HUMAN who acquires knowledge can
+ * (universal-reporting states) — and promising review the company doesn't
+ * perform creates liability. So the posture is: the user is routed to crisis
+ * resources in-product, the flag is LOGGED to crisis_flags (audit trail,
+ * viewable in /admin/crisis if ever deliberately opened), and nobody is
+ * alerted. The privacy policy §5 and the coach's honesty script say exactly
+ * this. When counsel + a clinician sign off on a review protocol (E15.6),
+ * restore the email from git history (removed in this commit) and re-align
+ * the copy.
+ */
 export async function sendSafetyEscalationEmail(
-  supabase: ReturnType<typeof createSupabaseClient>,
-  userId: string,
+  _supabase: ReturnType<typeof createSupabaseClient>,
+  _userId: string,
   info: SafetyEscalation,
 ): Promise<void> {
-  try {
-    const { data: u } = await supabase
-      .from("users")
-      .select("email, name")
-      .eq("id", userId)
-      .single();
-    const who = (u as { name?: string; email?: string } | null)?.name ||
-      (u as { email?: string } | null)?.email || userId;
-
-    const tierLabel = info.source === "tier1_keyword"
-      ? "Tier 1 (synchronous keyword hard-stop)"
-      : "Tier 2 (async LLM sweep)";
-    const subject = `[Relatti safety] ${info.risk} (${info.severity}) — about ${info.subject_scope}`;
-    const html = `<h2>Safety flag — review</h2>
-<p><strong>Detected by:</strong> ${tierLabel}</p>
-<p><strong>Risk:</strong> ${info.risk} &middot; <strong>Severity:</strong> ${info.severity} &middot; <strong>About:</strong> ${info.subject_scope}</p>
-<p><strong>Coach surfaced resources:</strong> ${info.coach_handled ? "yes" : "NO — check the reply"}</p>
-<p><strong>User:</strong> ${who} (${userId})</p>
-<p><strong>Why:</strong> ${info.rationale}</p>
-<p><strong>Excerpt:</strong> ${info.excerpt}</p>
-<hr>
-<p style="color:#666">Internal audit alert only. The user was routed to crisis resources in-product; there is no promised human follow-up. Review in the admin crisis queue (/admin/crisis).</p>`;
-
-    // brand: relatti → sends from the verified mail.relatti.com domain
-    // (falls back to the shared MasteryTV account if the key is unset).
-    await sendEmail({ to: ESCALATION_TO, subject, html, brand: "relatti" });
-    console.log("[safety-escalation] emailed to", ESCALATION_TO, "source:", info.source);
-  } catch (e) {
-    console.error("[safety-escalation] email failed:", (e as Error).message);
-  }
+  console.log(
+    `[safety-escalation] suppressed by policy (log-only): ${info.risk}/${info.severity} about ${info.subject_scope}, source=${info.source}`,
+  );
 }
 
 // Tier 2 adapter — kept so the sweep call site reads unchanged.

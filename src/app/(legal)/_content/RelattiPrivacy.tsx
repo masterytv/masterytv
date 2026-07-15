@@ -12,7 +12,8 @@ import { DocMeta, EmergencyResources, LegalLink } from "./shared";
  *
  * The honest confidentiality posture must match the coach's own words
  * (prompt-assembler.ts buildRelationshipGuardrails) — private *from the
- * partner*, but processed/stored by us and reviewable by a small safety team.
+ * partner*, but processed/stored by us; safety screening is automated and
+ * LOG-ONLY (founder decision 2026-07-15 — no human review, no alerts).
  */
 export default function RelattiPrivacy() {
   const c = LEGAL_CONTACT.relatti;
@@ -245,29 +246,34 @@ export default function RelattiPrivacy() {
               real crisis resources (see below).
             </li>
             <li>
-              A safety record is logged, and{" "}
+              A safety record is logged for audit purposes.{" "}
               <strong>
-                a small internal team may review conversations flagged for
-                safety
+                This screening is automated: no person reads your conversations
+                as part of operating the Service, and safety flags do not send
+                your conversation content to anyone
               </strong>
-              . High-severity flags may generate an internal alert to our team.
+              .
             </li>
             <li>
-              This review is the mechanism behind our honesty about privacy: the
-              coach will tell you your conversation is private from your partner,
-              but it will never tell you &quot;no one sees this&quot; — because a
-              safety reviewer might.
+              Our honesty about privacy still stands: the coach will tell you
+              your conversation is private from your partner, but it will never
+              tell you &quot;no one could ever see this&quot; — your
+              conversations exist on our systems, and stored data can be
+              disclosed where Section 9 applies (for example, if the law
+              requires it).
             </li>
           </ul>
           <p className="mt-4">
             <strong>What we do not do.</strong> Relatti is{" "}
-            <strong>not a crisis service</strong>. We do not provide 24/7
-            monitoring or emergency response, we do not guarantee that anyone
-            will contact you after a flag, and we do not notify your partner,
-            family, employer, or the authorities from within the product. Our
-            safety review is an internal audit signal, not a promise of
-            intervention. For how we handle disclosures involving children or
-            other third parties, see Section 7.
+            <strong>not a crisis service</strong>. We do not provide human
+            monitoring, review, 24/7 supervision, or emergency response; we do
+            not guarantee that anyone will see a safety flag or contact you
+            after one; and we do not notify your partner, family, employer, or
+            the authorities from within the product. Safety flags are an
+            automated audit record, not a promise of intervention. If you or
+            someone you know is in danger, use the resources below — they reach
+            real people; this product does not. For how we handle disclosures
+            involving children or other third parties, see Section 7.
           </p>
           <EmergencyResources />
         </section>
@@ -330,10 +336,11 @@ export default function RelattiPrivacy() {
             </li>
             <li>
               Where a disclosure suggests a child or other person may be at
-              risk, our safety team may review it (Section 5). As an AI coaching
-              product we are not a mandated reporter and we do not contact
-              authorities or third parties on your behalf; any such action is a
-              separate human decision made with appropriate advice.
+              risk, the automated safety screening logs a flag and the coach
+              points you to appropriate resources (Section 5) — no person is
+              alerted. As an AI coaching product we are not a mandated reporter
+              and we do not contact authorities or third parties on your
+              behalf.
             </li>
             <li>
               If you believe someone has shared information about you through the
