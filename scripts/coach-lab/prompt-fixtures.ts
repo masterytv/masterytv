@@ -300,21 +300,30 @@ const DYAD_PARTNER = "44444444-4444-4444-8444-444444444404";
 const DYAD_ASSESSMENT = "33333333-3333-4333-8333-3333333333a3";
 const DYAD_ENGAGEMENT = "33333333-3333-4333-8333-3333333333e3";
 const DYAD_PARTNER_REPORT = "44444444-4444-4444-8444-4444444444b4";
+const DYAD_PARTNER_ASSESSMENT = "44444444-4444-4444-8444-4444444444a4";
 const DYAD_CONVERSATION = "33333333-3333-4333-8333-3333333333f3";
 
 const DYAD_TABLES: Record<string, TableFixture> = {
   assessments: [{ id: DYAD_ASSESSMENT }],
-  users: [
-    {
-      id: DYAD_USER,
-      name: "Sam",
-      email: "sam@fixture.test",
-      timezone: "America/New_York",
-      preferred_channel: "email",
-      subscription_tier: "premium",
-      ai_tools: [],
-    },
-  ],
+  // id-aware: dyad-context resolves the PARTNER's display name from users.name
+  // (service role) — an unfiltered array would hand back Sam's row for the
+  // partner query and the coach would call the partner "Sam".
+  users: (params: URLSearchParams) => {
+    if (params.get("id") === `eq.${DYAD_PARTNER}`) {
+      return [{ id: DYAD_PARTNER, name: "Jordan" }];
+    }
+    return [
+      {
+        id: DYAD_USER,
+        name: "Sam",
+        email: "sam@fixture.test",
+        timezone: "America/New_York",
+        preferred_channel: "email",
+        subscription_tier: "premium",
+        ai_tools: [],
+      },
+    ];
+  },
   coach_profiles: [
     {
       directness: 5,
@@ -379,6 +388,18 @@ const DYAD_TABLES: Record<string, TableFixture> = {
         return [{ subscale_scores: { anxiety: 2.2, avoidance: 5.1 } }];
       }
     }
+    // Partner's scored instruments — shared with the coach at share level
+    // "full" (the user can already see these numbers on their own screen).
+    if (params.get("assessment_id") === `eq.${DYAD_PARTNER_ASSESSMENT}`) {
+      return [
+        {
+          instrument_id: "ipip50",
+          total_score: 148,
+          percentile_scores: { openness: 45, conscientiousness: 85, extraversion: 30, agreeableness: 55, neuroticism: 25 },
+          interpretation: null,
+        },
+      ];
+    }
     return [];
   },
   assessment_reports: (params: URLSearchParams) => {
@@ -398,6 +419,7 @@ const DYAD_TABLES: Record<string, TableFixture> = {
           archetype_base: "The Independent",
           archetype_sublabel: "The Steady Independent",
           archetype_tagline: "Finds calm in space, loyal at the core.",
+          assessment_id: DYAD_PARTNER_ASSESSMENT,
           sections: {
             S1: { content_markdown: "Jordan steadies under pressure by stepping back, and shows love through reliability more than words." },
           },
@@ -537,9 +559,11 @@ export const SCENARIOS: Scenario[] = [
       "warm relationship coach",
       "RELATIONSHIP DYAD MODE",
       "LAYER 4.6 — RELATIONSHIP DYAD CONTEXT",
-      "jordan",
+      "with **Jordan**", // real account name, not the invited_email prefix
       "The Independent",
-      "Relationship Blueprint:",
+      "Their compatibility report",
+      'assessment scores (shared at "full"', // partner percentiles at full share
+      "never ask the user who their partner is",
       "THE STAKE:",
       "SAFETY RULES:",
     ],

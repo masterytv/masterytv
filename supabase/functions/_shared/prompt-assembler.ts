@@ -27,6 +27,7 @@ import {
   buildDyadCoachLayer,
   buildMediatorPersona,
   loadRelationshipStyle,
+  renderCompatibilityDigest,
   type DyadContext,
 } from "./dyad-context.ts";
 import type { PromptDebugTrace } from "./debug-types.ts";
@@ -360,15 +361,26 @@ export async function assemblePrompt(
 
       for (const inv of sharedInvites) {
         const isInviter = inv.inviter_id === userId;
-        const partnerName = isInviter
-          ? (inv.recipient_email?.split("@")[0] || "Partner")
-          : (inv.inviter_name || "Partner");
         const shareLevel = inv.share_with_human;
 
         let partnerContext = "";
 
         // Load partner's report based on share level
         const partnerId = isInviter ? inv.recipient_id : inv.inviter_id;
+
+        // Partner name: account name first (email prefixes read like
+        // usernames and made the coach ask "what's their name?").
+        let partnerName = isInviter
+          ? (inv.recipient_email?.split("@")[0] || "Partner")
+          : (inv.inviter_name || "Partner");
+        if (partnerId) {
+          const { data: pu } = await supabase
+            .from("users")
+            .select("name")
+            .eq("id", partnerId)
+            .maybeSingle();
+          if (pu?.name) partnerName = pu.name;
+        }
         if (partnerId && (shareLevel === "type_compatibility" || shareLevel === "full")) {
           const { data: partnerReport } = await supabase
             .from("assessment_reports")
@@ -395,17 +407,12 @@ Full profile summary: ${JSON.stringify(partnerReport.sections?.S1?.content_markd
           }
         }
 
-        // Add compatibility report if available
+        // Add compatibility report if available (shape-aware: legacy Decoded
+        // fields OR the Relatti couples_report shape)
         let compatContext = "";
         if (inv.compatibility_report) {
-          const cr = inv.compatibility_report as Record<string, unknown>;
-          compatContext = `
-Compatibility Report:
-- Dynamic: ${cr.headline || ""}
-- Chemistry: ${cr.chemistry || ""}
-- Friction: ${cr.friction || ""}
-- Superpower: ${cr.superpower || ""}
-- Watch out: ${cr.watch_out || ""}`;
+          const digest = renderCompatibilityDigest(inv.compatibility_report);
+          if (digest) compatContext = `\nCompatibility Report:\n${digest}`;
         }
 
         relationshipParts.push(`## Relationship with ${partnerName}
@@ -433,6 +440,7 @@ IMPORTANT ACCESS RULES:
 - Respect the sharing level for each connection:
   * "type_compatibility" = You can see their archetype and the compatibility report. You do NOT have access to their full Decoded assessment. Do not claim knowledge of their detailed scores.
   * "full" = You can see their full profile, archetype, and compatibility analysis.
+- Everything above is ALREADY in your context — never ask permission to "look up" these connections and never ask the user for a name you already have here.
 - Use this data naturally in conversation — discuss their dynamic, offer relationship-specific coaching.
 - Do NOT volunteer this data unprompted. Wait for the user to bring up the relationship, then enrich your responses.
 - If the user asks about details you don't have access to at the current sharing level, say so: "I don't have access to that level of detail about [name]'s profile."`;
