@@ -378,8 +378,8 @@
 
 /* ── Light mode overrides ── */
 [data-theme="light"] .coach-question {
-  background: rgba(0, 7, 103, 0.04);
-  border-color: rgba(0, 7, 103, 0.08);
+  background: color-mix(in oklch, var(--color-primary-container) 4%, transparent);
+  border-color: color-mix(in oklch, var(--color-primary-container) 8%, transparent);
 }
 
 [data-theme="light"] .report-disclaimer {
@@ -388,8 +388,8 @@
 }
 
 [data-theme="light"] .upgrade-gate {
-  background: linear-gradient(135deg, rgba(0, 7, 103, 0.04), rgba(5, 150, 105, 0.03));
-  border-color: rgba(0, 7, 103, 0.1);
+  background: linear-gradient(135deg, color-mix(in oklch, var(--color-primary-container) 4%, transparent), color-mix(in oklch, var(--color-success) 3%, transparent));
+  border-color: color-mix(in oklch, var(--color-primary-container) 10%, transparent);
 }
 
 [data-theme="light"] .locked-section__overlay {
@@ -830,8 +830,8 @@
 }
 
 [data-theme="light"] .coach-question--clickable:hover {
-  border-color: rgba(0, 7, 103, 0.15);
-  background: rgba(0, 7, 103, 0.06);
+  border-color: color-mix(in oklch, var(--color-primary-container) 15%, transparent);
+  background: color-mix(in oklch, var(--color-primary-container) 6%, transparent);
 }
 
 /* =============================================================
@@ -992,23 +992,23 @@
 
 /* ── Light mode ── */
 [data-theme="light"] .voice-selector {
-  background: rgba(0, 7, 103, 0.02);
-  border-color: rgba(0, 7, 103, 0.08);
+  background: color-mix(in oklch, var(--color-primary-container) 2%, transparent);
+  border-color: color-mix(in oklch, var(--color-primary-container) 8%, transparent);
 }
 
 [data-theme="light"] .voice-pill {
-  background: rgba(0, 7, 103, 0.04);
-  border-color: rgba(0, 7, 103, 0.1);
+  background: color-mix(in oklch, var(--color-primary-container) 4%, transparent);
+  border-color: color-mix(in oklch, var(--color-primary-container) 10%, transparent);
 }
 
 [data-theme="light"] .voice-pill--active {
-  background: rgba(0, 62, 199, 0.1);
-  border-color: rgba(0, 62, 199, 0.25);
+  background: color-mix(in oklch, var(--color-primary-container) 10%, transparent);
+  border-color: color-mix(in oklch, var(--color-primary-container) 25%, transparent);
 }
 
 [data-theme="light"] .voice-selector__tooltip {
   background: #fff;
-  border-color: rgba(0, 7, 103, 0.1);
+  border-color: color-mix(in oklch, var(--color-primary-container) 10%, transparent);
 }
 
 /* ── Reduced motion ── */
@@ -1120,8 +1120,8 @@
 
 /* ── Light mode ── */
 [data-theme="light"] .share-type-footer {
-  background: rgba(0, 7, 103, 0.02);
-  border-color: rgba(0, 7, 103, 0.08);
+  background: color-mix(in oklch, var(--color-primary-container) 2%, transparent);
+  border-color: color-mix(in oklch, var(--color-primary-container) 8%, transparent);
 }
 
 /* ═══════════════════════════════════════════════
@@ -1338,8 +1338,8 @@
 
 /* Light mode overrides */
 [data-theme="light"] .big-five-context__intro {
-  background: rgba(0, 7, 103, 0.03);
-  border-color: rgba(0, 7, 103, 0.08);
+  background: color-mix(in oklch, var(--color-primary-container) 3%, transparent);
+  border-color: color-mix(in oklch, var(--color-primary-container) 8%, transparent);
 }
 
 /* Print: show expanded, hide chevrons */

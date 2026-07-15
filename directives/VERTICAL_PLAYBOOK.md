@@ -148,7 +148,7 @@ This extends the BMAD phases in `CLAUDE.md §8` with one **mandatory new phase**
 - [ ] Program seed row + module/battery config in the DB where applicable.
 
 ### 5.10 The launch verification sweep (do ALL of these, in this order)
-1. `npm run gate` green (tsc · vitest · safety · isolation · `check:resolve` · goldens byte-identical for existing verticals).
+1. `npm run gate` green (tsc · vitest · safety · isolation · `check:resolve` · goldens byte-identical for existing verticals · **`check:colors`** = no incumbent-brand color literal in any shared surface · **`check:brand-tokens`** = the new brand's `[data-brand]` block overrides the full identity token set in BOTH light and dark). If the new brand legitimately needs literal hex (email HTML, the OG image), allowlist those files in `scripts/check-brand-colors.mjs` — never the shared components.
 2. **Dual-brand user pass:** one account on the new domain + an old one; carry every gated URL across domains both directions; open the coach on both — conversations, voice/widgets, tier labels, theme all isolated.
 3. **Crawler pass:** `curl` og:title/site_name/icons on every shareable page of the new domain.
 4. **Proactive pass:** a fresh assessment-only signup gets NOTHING at 8am; a coached user gets the new vertical's briefing voice from the new brand's from-domain.

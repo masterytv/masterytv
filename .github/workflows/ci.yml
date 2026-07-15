@@ -50,6 +50,12 @@ jobs:
       - name: Brand-metadata gate (BRAND.md §15 — no bare metadata exports)
         run: npm run check:metadata
 
+      - name: Brand-color gate (BRAND.md §14 — no hardcoded brand-identity colors)
+        run: npm run check:colors
+
+      - name: Brand-token coverage (each brand overrides the full identity set)
+        run: npm run check:brand-tokens
+
       - name: Program-resolution precedence (PC4.4 — spine outranks the client hint)
         run: npm run check:resolve
 

@@ -471,6 +471,13 @@ Add to `globals.css` `@theme`:
 > [!CAUTION]
 > This section documents design patterns that are **permanently banned** across all Mastery Coach and Decoded products. Violating these rules makes the product look like a generic AI SaaS from 2023. That is the worst possible outcome for a premium brand.
 
+> [!IMPORTANT]
+> **Colors are gate-enforced, not just convention — the §15 metadata gate's twin.** `npm run gate` (and CI) run two brand-color checks, so a leak fails the build:
+> - **`check:colors`** — no hardcoded brand-identity color (`#6063ee`, `rgba(96, 99, 238, …)`, the Tailwind-arbitrary `text-[#a3a6ff]`, the light-mode navy `rgba(0, 62, 199, …)`, or *any* brand's palette) may appear in a component or shared CSS. Use a semantic token: `var(--color-primary)` / `var(--color-primary-container)`, a `color-mix(in oklch, var(--color-primary-container) N%, transparent)` tint, or a Tailwind token utility (`text-primary`, `bg-primary-container/10`). The ban-set is **derived from `globals.css`**, so a new brand's palette is covered automatically.
+> - **`check:brand-tokens`** — every `[data-brand]` block must override the *full* identity token set in **both** light and dark, so a brand can never silently fall back to the incumbent's color (the exact bug that made Relatti-dark render indigo accents).
+>
+> The reviewed allowlist for unavoidable literal hex (token definitions, email HTML, the OG image, provably single-brand surfaces) lives in `scripts/check-brand-colors.mjs`. This closes the color-leak class the July 2026 Relatti sweep had to clean up by hand.
+
 ### 14.1 The "AI Aesthetic" Problem
 
 The visual language of AI startups has converged into a recognizable, now-dated style. It signals "cheap product" to any design-literate user:

@@ -181,7 +181,7 @@
   background: var(--color-primary, #b4c5ff);
   border-radius: 50%;
   transform: translateX(-50%);
-  box-shadow: 0 0 6px rgba(66, 120, 255, 0.4);
+  box-shadow: 0 0 6px color-mix(in oklch, var(--color-primary-container) 40%, transparent);
 }
 
 .v2-trait-card__body {
@@ -327,7 +327,7 @@
   width: 2px;
   background: linear-gradient(
     180deg,
-    rgba(66, 120, 255, 0.3),
+    color-mix(in oklch, var(--color-primary-container) 30%, transparent),
     rgba(255, 183, 77, 0.3)
   );
 }
@@ -542,8 +542,8 @@
   margin-top: 1.5rem;
   padding: 1.25rem 1.5rem;
   border-radius: var(--radius-lg, 12px);
-  background: linear-gradient(135deg, rgba(66, 120, 255, 0.06), rgba(78, 222, 163, 0.04));
-  border: 1px solid rgba(66, 120, 255, 0.12);
+  background: linear-gradient(135deg, color-mix(in oklch, var(--color-primary-container) 6%, transparent), rgba(78, 222, 163, 0.04));
+  border: 1px solid color-mix(in oklch, var(--color-primary-container) 12%, transparent);
 }
 
 .v2-named-pattern__name {
@@ -762,7 +762,7 @@
 [data-theme="light"] .v2-fight-stages__list::before {
   background: linear-gradient(
     180deg,
-    rgba(0, 62, 199, 0.2),
+    color-mix(in oklch, var(--color-primary-container) 20%, transparent),
     rgba(180, 90, 0, 0.2)
   );
 }
@@ -784,12 +784,12 @@
 }
 
 [data-theme="light"] .v2-named-pattern {
-  background: linear-gradient(135deg, rgba(0, 62, 199, 0.04), rgba(0, 128, 80, 0.03));
-  border-color: rgba(0, 62, 199, 0.1);
+  background: linear-gradient(135deg, color-mix(in oklch, var(--color-primary-container) 4%, transparent), color-mix(in oklch, var(--color-success) 3%, transparent));
+  border-color: color-mix(in oklch, var(--color-primary-container) 10%, transparent);
 }
 
 [data-theme="light"] .v2-challenge {
-  background: linear-gradient(135deg, rgba(200, 150, 0, 0.06), rgba(0, 128, 80, 0.03));
+  background: linear-gradient(135deg, rgba(200, 150, 0, 0.06), color-mix(in oklch, var(--color-success) 3%, transparent));
   border-color: rgba(200, 150, 0, 0.1);
 }
 
@@ -845,7 +845,7 @@
 
 /* Dimension badge bg → forest green tint */
 [data-theme="light"] .v2-dimension-item__label {
-  background: rgba(5, 150, 105, 0.1);
+  background: color-mix(in oklch, var(--color-success) 10%, transparent);
 }
 
 /* Orange/amber → deep amber for light mode (WCAG AA: 4.5:1 on white) */
