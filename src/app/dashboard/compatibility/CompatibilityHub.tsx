@@ -3,13 +3,15 @@
 /**
  * CompatibilityHub — the couples relationship hub (Relatti).
  *
- * A couples product = one relationship, so this is a single linear flow with no
- * sharing-level negotiation (connected partners auto-see each other's full report
- * + compatibility — see ensureCoupleFullSharing):
+ * A couples product = one relationship with ONE sharing level (full), but
+ * connecting requires the right consent for how the pair met (2026-07-15):
  *   • no partner        → Invite Someone
  *   • invited, waiting  → status + Remind (max 3) / Change email / Uninvite
- *   • partner joined    → "finishing their quiz"
- *   • connected         → View Compatibility Report
+ *   • partner joined    → "finishing their quiz" (invite-link flow: taking the
+ *                         quiz through the invite IS the consent → auto-full)
+ *   • existing member   → connect REQUEST: they Accept/Decline here; nothing
+ *                         is shared until they accept
+ *   • connected         → View Compatibility Report / Remove (revocable)
  * A "Talk to your coach" link is always present at the bottom.
  */
 
@@ -32,6 +34,8 @@ interface SentInvite {
   completed_at: string | null;
   consented_at: string | null;
   reminder_count: number | null;
+  upgrade_requested_by: string | null;
+  revoked_at: string | null;
 }
 
 interface ReceivedInvite {
@@ -42,6 +46,9 @@ interface ReceivedInvite {
   status: string;
   created_at: string;
   consented_at: string | null;
+  recipient_report_id: string | null;
+  upgrade_requested_by: string | null;
+  revoked_at: string | null;
 }
 
 interface Props {
@@ -53,11 +60,19 @@ interface Props {
 
 const MAX_REMINDERS = 3;
 
-type PartnerState = 'invited' | 'joined' | 'connected' | 'pending_me';
+type PartnerState =
+  | 'invited'      // sent, no account yet
+  | 'joined'       // sent, account exists, quiz unfinished (invite-link flow)
+  | 'connected'    // both consented — sharing
+  | 'pending_me'   // received via invite link — finish quiz
+  | 'request_in'   // they asked to connect — Accept / Decline
+  | 'request_out'  // I asked to connect — waiting on them
+  | 'removed';     // disconnected (revoked) — can re-invite
 
 interface PartnerRow {
   inviteId: string;
   label: string;
+  email?: string;
   state: PartnerState;
   reminderCount: number;
 }
@@ -66,29 +81,91 @@ function isConnected(status: string): boolean {
   return status === 'consented' || status === 'connected';
 }
 
-export default function CompatibilityHub({ sentInvites, receivedInvites }: Props) {
+export default function CompatibilityHub({ userId, sentInvites, receivedInvites }: Props) {
   const router = useRouter();
   const [showShareModal, setShowShareModal] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
+  const [confirmingRemove, setConfirmingRemove] = useState<string | null>(null);
   const [newEmail, setNewEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   // ── Derive the (usually single) relationship from both sides ──
+  // Consent states (2026-07-15): an invite to an EXISTING member carries
+  // upgrade_requested_by (a connect request) — it never auto-connects; the
+  // recipient Accepts/Declines. revoked_at marks removed/declined connections.
   const sentPartners: PartnerRow[] = sentInvites.map((inv) => ({
     inviteId: inv.id,
     label: inv.recipient_email,
-    state: isConnected(inv.status) ? 'connected' : inv.recipient_id ? 'joined' : 'invited',
+    state: isConnected(inv.status) ? 'connected'
+      : inv.revoked_at ? 'removed'
+      : inv.upgrade_requested_by === userId && inv.recipient_id ? 'request_out'
+      : inv.recipient_id ? 'joined'
+      : 'invited',
     reminderCount: inv.reminder_count ?? 0,
   }));
-  const receivedPartners: PartnerRow[] = receivedInvites.map((inv) => ({
-    inviteId: inv.id,
-    label: inv.inviter_name || inv.inviter_email?.split('@')[0] || 'Your partner',
-    state: isConnected(inv.status) ? 'connected' : 'pending_me',
-    reminderCount: 0,
-  }));
+  const receivedPartners: PartnerRow[] = receivedInvites
+    // A declined/removed received request disappears for the recipient.
+    .filter((inv) => !(inv.revoked_at && !isConnected(inv.status)))
+    .map((inv) => ({
+      inviteId: inv.id,
+      label: inv.inviter_name || inv.inviter_email?.split('@')[0] || 'Your partner',
+      email: inv.inviter_email ?? undefined,
+      state: isConnected(inv.status) ? 'connected'
+        : inv.upgrade_requested_by && inv.upgrade_requested_by !== userId
+          ? (inv.recipient_report_id ? 'request_in' : 'pending_me')
+          : 'pending_me',
+      reminderCount: 0,
+    }));
   const partners = [...sentPartners, ...receivedPartners];
   const showInvite = partners.length === 0;
+
+  // ── Consent actions: accept a request / decline / remove a connection ──
+  async function consent(inviteId: string, level: 'full' | 'none') {
+    setBusy(inviteId);
+    setError(null);
+    try {
+      const res = await fetch('/api/decoded/invite-consent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inviteId, shareLevel: level }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error || 'Something went wrong. Please try again.');
+        return;
+      }
+      setConfirmingRemove(null);
+      router.refresh();
+    } catch {
+      setError('Something went wrong. Please try again.');
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  // Re-invite after a removal — same email, fresh request.
+  async function reinvite(email: string) {
+    setBusy(email);
+    setError(null);
+    try {
+      const res = await fetch('/api/decoded/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error || 'Something went wrong. Please try again.');
+        return;
+      }
+      router.refresh();
+    } catch {
+      setError('Something went wrong. Please try again.');
+    } finally {
+      setBusy(null);
+    }
+  }
 
   // ── Manage actions (invited state only) ──
   async function manage(inviteId: string, action: 'remind' | 'uninvite' | 'changeEmail', email?: string) {
@@ -165,18 +242,77 @@ export default function CompatibilityHub({ sentInvites, receivedInvites }: Props
                     </div>
                     <div className="min-w-0">
                       <p className="text-body-md text-text-primary font-medium truncate">{p.label}</p>
-                      <StatusLine state={p.state} />
+                      <StatusLine state={p.state} email={p.email} />
                     </div>
                   </div>
 
                   {p.state === 'connected' && (
-                    <Link
-                      href={`/compatibility/${p.inviteId}`}
-                      className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-                      style={ctaGradient}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Link
+                        href={`/compatibility/${p.inviteId}`}
+                        className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                        style={ctaGradient}
+                      >
+                        View Compatibility Report <ArrowRight className="h-4 w-4" />
+                      </Link>
+                      {confirmingRemove === p.inviteId ? (
+                        <span className="flex items-center gap-2">
+                          <button
+                            onClick={() => consent(p.inviteId, 'none')}
+                            disabled={busy === p.inviteId}
+                            className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                            style={{ background: 'var(--color-danger)' }}
+                          >
+                            {busy === p.inviteId ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <X className="h-3.5 w-3.5" />}
+                            Yes, remove
+                          </button>
+                          <button
+                            onClick={() => setConfirmingRemove(null)}
+                            className="rounded-lg px-2 py-2 text-xs font-medium text-text-muted hover:text-text-primary"
+                          >
+                            Cancel
+                          </button>
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmingRemove(p.inviteId)}
+                          className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-text-muted hover:text-danger transition-colors"
+                        >
+                          <X className="h-3.5 w-3.5" /> Remove
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  {p.state === 'request_in' && (
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => consent(p.inviteId, 'full')}
+                        disabled={busy === p.inviteId}
+                        className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                        style={ctaGradient}
+                      >
+                        {busy === p.inviteId ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                        Accept
+                      </button>
+                      <button
+                        onClick={() => consent(p.inviteId, 'none')}
+                        disabled={busy === p.inviteId}
+                        className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-text-muted hover:text-danger transition-colors disabled:opacity-50"
+                      >
+                        <X className="h-4 w-4" /> Decline
+                      </button>
+                    </div>
+                  )}
+                  {p.state === 'removed' && (
+                    <button
+                      onClick={() => reinvite(p.label)}
+                      disabled={busy === p.label}
+                      className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-50"
+                      style={softPrimary}
                     >
-                      View Compatibility Report <ArrowRight className="h-4 w-4" />
-                    </Link>
+                      {busy === p.label ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                      Invite again
+                    </button>
                   )}
                   {p.state === 'pending_me' && (
                     <Link
@@ -281,11 +417,35 @@ export default function CompatibilityHub({ sentInvites, receivedInvites }: Props
   );
 }
 
-function StatusLine({ state }: { state: PartnerState }) {
+function StatusLine({ state, email }: { state: PartnerState; email?: string }) {
   if (state === 'connected') {
     return (
       <span className="flex items-center gap-1.5 text-body-sm" style={{ color: 'var(--color-primary)' }}>
         <Heart className="h-3.5 w-3.5" /> Connected — you can see each other fully
+      </span>
+    );
+  }
+  if (state === 'request_in') {
+    return (
+      <span className="flex items-start gap-1.5 text-body-sm text-text-secondary">
+        <Heart className="h-3.5 w-3.5 mt-0.5 shrink-0" style={{ color: 'var(--color-primary)' }} />
+        <span>
+          {email ? `(${email}) ` : ''}wants to connect and share assessments and a compatibility report
+        </span>
+      </span>
+    );
+  }
+  if (state === 'request_out') {
+    return (
+      <span className="flex items-center gap-1.5 text-body-sm text-text-secondary">
+        <Clock className="h-3.5 w-3.5" /> Request sent — waiting for them to accept
+      </span>
+    );
+  }
+  if (state === 'removed') {
+    return (
+      <span className="flex items-center gap-1.5 text-body-sm text-text-muted">
+        <X className="h-3.5 w-3.5" /> Disconnected — you no longer share
       </span>
     );
   }
