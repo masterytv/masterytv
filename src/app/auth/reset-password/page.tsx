@@ -119,7 +119,7 @@ export default function ResetPasswordPage() {
               Your password has been reset successfully. You can now sign in with your new password.
             </p>
             <a
-              href="/decoded"
+              href="/login?mode=signin"
               className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-primary to-primary-container px-4 py-2.5 text-sm font-medium text-white hover:opacity-90 transition-opacity"
             >
               Sign In
@@ -232,7 +232,7 @@ export default function ResetPasswordPage() {
               This password reset link has expired or is invalid. Request a new one from the sign-in page.
             </p>
             <a
-              href="/decoded"
+              href="/login?mode=signin"
               className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-primary to-primary-container px-4 py-2.5 text-sm font-medium text-white hover:opacity-90 transition-opacity"
             >
               Back to sign in

@@ -6,6 +6,7 @@ import { Sidebar } from "@/components/dashboard/sidebar";
 import { Topbar } from "@/components/dashboard/topbar";
 import { createClient } from "@/lib/supabase/client";
 import ShareModal from "@/components/decoded/ShareModal";
+import PartnerInviteModal from "@/components/relatti/PartnerInviteModal";
 import { FeedbackWidget } from "@/components/relatti/FeedbackWidget";
 import { useBrand } from "@/hooks/useBrand";
 
@@ -107,13 +108,23 @@ export default function DashboardLayoutClient({
       {/* Beta feedback widget — Relatti only */}
       {brand.id === "relatti" && <FeedbackWidget />}
 
-      {/* Share modal — triggered from sidebar Share button */}
-      <ShareModal
-        isOpen={showShareModal}
-        onClose={() => setShowShareModal(false)}
-        onUnlock={() => setShowShareModal(false)}
-        shareUrl={broadcastInviteUrl || `${typeof window !== 'undefined' ? window.location.origin : 'https://masterytv.com'}/decoded`}
-      />
+      {/* Invite/Share modal — triggered from the sidebar Share button. Relatti
+          gets the partner-invite (the Decoded viral share is off-brand there);
+          MasteryTV keeps the Decoded archetype share. */}
+      {brand.id === "relatti" ? (
+        <PartnerInviteModal
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          inviteUrl={broadcastInviteUrl || `${typeof window !== 'undefined' ? window.location.origin : 'https://relatti.com'}/assess`}
+        />
+      ) : (
+        <ShareModal
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          onUnlock={() => setShowShareModal(false)}
+          shareUrl={broadcastInviteUrl || `${typeof window !== 'undefined' ? window.location.origin : 'https://masterytv.com'}/decoded`}
+        />
+      )}
     </div>
   );
 }
