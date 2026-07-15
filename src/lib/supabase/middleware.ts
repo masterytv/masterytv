@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { resolveBrandId, isBrandId, isPreviewHost } from "@/lib/platform/brand";
+import { modulesForBrand, moduleForPath } from "@/lib/platform/modules";
 
 /**
  * Unified auth middleware for Mastery.
@@ -239,6 +240,20 @@ export async function updateSession(request: NextRequest) {
   if (user && pathname === "/decoded/login") {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
+    return redirectWithCookies(url);
+  }
+
+  // ── Module gate (brand isolation): pages whose module isn't enabled for the
+  // resolved brand redirect to the dashboard. Nav already hides them; this
+  // closes direct URL access — a dual-brand user must never open a MasteryTV
+  // surface (commitments/progress/coaching-letter) on relatti.com, nor a
+  // Relatti surface (blueprint/beta) on masterytv.com. After the auth check so
+  // logged-out visitors still land on /login with their intended destination.
+  const requiredModule = moduleForPath(pathname);
+  if (requiredModule && !modulesForBrand(brandId).has(requiredModule)) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/dashboard";
+    url.search = "";
     return redirectWithCookies(url);
   }
 

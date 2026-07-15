@@ -29,6 +29,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { CoachVoiceId } from "@/lib/coach/voice-config";
 import { getActiveDyad, type DashboardDyad } from "@/lib/relatti/dashboard-dyad";
 import { resolveBrandClient } from "@/hooks/useBrand";
+import { useBrandModules } from "@/hooks/useBrandModules";
 import { Heart, Waves } from "lucide-react";
 
 // Lazy-load debug panel — only shipped to admin users who activate debug mode
@@ -63,6 +64,9 @@ function ChatPageInner() {
   const [traceHistory, setTraceHistory] = useState<DebugSummary[]>([]);
 
   // ── Voice style state ──
+  // The six voices are executive coach personas — module-gated off on Relatti
+  // (one deliberate counselling stance, no user-tunable voice).
+  const enabledModules = useBrandModules();
   const [activeVoiceId, setActiveVoiceId] = useState<CoachVoiceId | null>(null);
 
   // ── Dyad + thread scope (PB2.2 + PA5) ──
@@ -348,9 +352,9 @@ function ChatPageInner() {
     [conversationId, debugMode, isAdmin, engagementId, mode]
   );
 
-  // ── Load active voice on mount ──
+  // ── Load active voice on mount (voice-enabled brands only) ──
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id || !enabledModules.has("coach_voices")) return;
     const supabase = createClient();
     supabase
       .from("coach_profiles")
@@ -406,10 +410,12 @@ function ChatPageInner() {
             Couples coach · with {dyad.partnerName}
           </span>
         )}
-        <CoachVoiceSelector
-          activeVoiceId={activeVoiceId}
-          onVoiceChanged={(voiceId) => setActiveVoiceId(voiceId)}
-        />
+        {enabledModules.has("coach_voices") && (
+          <CoachVoiceSelector
+            activeVoiceId={activeVoiceId}
+            onVoiceChanged={(voiceId) => setActiveVoiceId(voiceId)}
+          />
+        )}
       </div>
 
       {showDebugPanel ? (
