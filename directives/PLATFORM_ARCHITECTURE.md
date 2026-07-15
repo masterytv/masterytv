@@ -7,6 +7,7 @@
 > **Sibling (the data spine this sits on):** [RELATIONSHIP_ARCHITECTURE.md](file:///Users/thomaswood/Documents/Antigravity/MasteryTV/directives/RELATIONSHIP_ARCHITECTURE.md) ✅ (the polymorphic DB spine — `workspace`/`program`/`engagement`/`participant` — is LIVE).
 > **Engine reference (still valid):** `ARCHITECTURE.md` (§2 stack, §6 security), `BRAND.md` (design tokens).
 > **Scope rule:** Design the platform so new verticals are **config, not codebases**. Build only what Relatti (Stage 1) needs now; everything else is designed-for and defaulted.
+> **Launching a vertical on this platform:** follow [VERTICAL_PLAYBOOK.md](file:///Users/thomaswood/Documents/Antigravity/MasteryTV/directives/VERTICAL_PLAYBOOK.md) — Phase 0.5 Experience Discovery first, then its **§5 Launch Checklist** (every brand-coupled seam a new domain must opt into) + §5.10 verification sweep. "Config, not codebases" is the architecture; the playbook is how you exercise every config point without inheriting another vertical's behavior.
 
 ---
 
