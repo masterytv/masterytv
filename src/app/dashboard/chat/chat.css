@@ -14,6 +14,35 @@
   height: calc(100vh - 64px); /* Account for topbar */
   background: linear-gradient(180deg, var(--color-surface-0) 0%, #0a1025 50%, var(--color-surface-0) 100%);
   position: relative;
+
+  /* Signature "you" gradient (user bubble, send button, coach-avatar accent),
+     defined per brand + theme so one set of rules serves both. Default here is
+     MasteryTV dark indigo; the overrides below re-point it for light mode and
+     for Relatti (rose) without touching the consuming rules. */
+  --chat-accent-from: #a3a6ff;
+  --chat-accent-to: #6063ee;
+  --chat-accent-glow: rgba(96, 99, 238, 0.25);
+}
+
+/* MasteryTV light — intentionally a deep near-black bubble, not the mid blue. */
+[data-theme="light"] .chat-window {
+  --chat-accent-from: #000000;
+  --chat-accent-to: #000767;
+  --chat-accent-glow: rgba(0, 7, 103, 0.15);
+}
+
+/* Relatti — rose in both themes. Deep enough that the white bubble text clears
+   WCAG AA (the lighter #ff9db0 primary is an on-dark accent tone, too pale to
+   sit white text on). */
+[data-brand="relatti"] .chat-window {
+  --chat-accent-from: #e75c79;
+  --chat-accent-to: #c23e5b;
+  --chat-accent-glow: rgba(231, 92, 121, 0.30);
+}
+[data-brand="relatti"][data-theme="light"] .chat-window {
+  --chat-accent-from: #9f1239;
+  --chat-accent-to: #e11d48;
+  --chat-accent-glow: rgba(190, 18, 60, 0.18);
 }
 
 .chat-messages {
@@ -80,10 +109,10 @@
 }
 
 .chat-avatar-coach {
-  /* Signature gradient */
-  background: linear-gradient(135deg, #1c253e, #6063ee);
-  color: #a3a6ff;
-  box-shadow: 0 2px 8px rgba(96, 99, 238, 0.3);
+  /* Dark surface → brand accent; the letter takes the light accent tone. */
+  background: linear-gradient(135deg, var(--color-surface-100), var(--chat-accent-to));
+  color: var(--chat-accent-from);
+  box-shadow: 0 2px 8px var(--chat-accent-glow);
 }
 
 .chat-avatar-user {
@@ -104,11 +133,11 @@
 }
 
 .chat-bubble-user {
-  /* Signature gradient — indigo */
-  background: linear-gradient(135deg, #a3a6ff, #6063ee);
+  /* Signature gradient — brand accent (indigo MTV / rose Relatti, per theme) */
+  background: linear-gradient(135deg, var(--chat-accent-from), var(--chat-accent-to));
   color: #ffffff;
   border-bottom-right-radius: 6px;
-  box-shadow: 0 2px 12px rgba(96, 99, 238, 0.25);
+  box-shadow: 0 2px 12px var(--chat-accent-glow);
 }
 
 .chat-bubble-user p {
@@ -221,7 +250,8 @@
 .typing-dots span {
   width: 8px;
   height: 8px;
-  background: rgba(163, 166, 255, 0.4);
+  background: var(--color-primary);
+  opacity: 0.5;
   border-radius: 50%;
   display: inline-block;
 }
@@ -250,7 +280,7 @@
 }
 
 .chat-input-wrapper:focus-within {
-  border-color: rgba(96, 99, 238, 0.2);
+  border-color: var(--primary-tint-20);
   box-shadow: 0 0 0 4px var(--primary-glow-ring);
 }
 
@@ -276,8 +306,8 @@
   width: 40px;
   height: 40px;
   border-radius: 12px;
-  /* Signature gradient */
-  background: linear-gradient(135deg, #a3a6ff, #6063ee);
+  /* Signature gradient — brand accent (indigo MTV / rose Relatti, per theme) */
+  background: linear-gradient(135deg, var(--chat-accent-from), var(--chat-accent-to));
   border: none;
   color: white;
   cursor: pointer;
@@ -561,11 +591,11 @@
   background: rgba(0, 0, 0, 0.18);
 }
 
-/* Coach avatar */
+/* Coach avatar — deep accent gradient with white ink (works both brands). */
 [data-theme="light"] .chat-avatar-coach {
-  background: linear-gradient(135deg, #000767, #000000);
+  background: linear-gradient(135deg, var(--chat-accent-to), var(--chat-accent-from));
   color: #ffffff;
-  box-shadow: 0 2px 8px rgba(0, 7, 103, 0.15);
+  box-shadow: 0 2px 8px var(--chat-accent-glow);
 }
 
 /* User avatar */
@@ -574,11 +604,8 @@
   color: #6b7280;
 }
 
-/* User bubble — gradient stays consistent */
-[data-theme="light"] .chat-bubble-user {
-  background: linear-gradient(135deg, #000000, #000767);
-  box-shadow: 0 2px 12px rgba(0, 7, 103, 0.15);
-}
+/* User bubble background/shadow now come from the --chat-accent-* vars
+   (redefined per brand + theme on .chat-window), so no light override needed. */
 
 /* Coach bubble — white card on light */
 [data-theme="light"] .chat-bubble-coach {
@@ -613,10 +640,7 @@
   text-decoration-color: #000767;
 }
 
-/* Typing indicator dots */
-[data-theme="light"] .typing-dots span {
-  background: rgba(0, 7, 103, 0.2);
-}
+/* Typing indicator dots now use var(--color-primary) (brand + theme aware). */
 
 /* Input area */
 [data-theme="light"] .chat-input-area {
@@ -642,10 +666,10 @@
   color: #9ca3af;
 }
 
-/* Send button */
+/* Send button — background/shadow come from the --chat-accent-* vars; only the
+   light-specific drop shadow differs. */
 [data-theme="light"] .chat-send-btn {
-  background: linear-gradient(135deg, #000000, #000767);
-  box-shadow: 0 2px 6px rgba(0, 7, 103, 0.15);
+  box-shadow: 0 2px 6px var(--chat-accent-glow);
 }
 
 /* Disclaimer */
@@ -968,4 +992,23 @@
     width: calc(100vw - 32px);
     max-width: 300px;
   }
+}
+
+/* ─── RELATTI BRAND — rose the remaining accents ────────────────────────────
+   The prominent chrome (user bubble, send button, coach avatar, typing dots,
+   focus ring) is already brand-aware via --chat-accent-* + the now-rose
+   --primary-* tint tokens. These last few in-chat accents were hardcoded
+   MasteryTV indigo/navy; re-point them to the brand primary for Relatti only,
+   so MasteryTV is untouched. Token-based → correct in light AND dark. Placed
+   last so it wins over the earlier [data-theme="light"] rules by source order. */
+[data-brand="relatti"] .chat-markdown .chat-link {
+  color: var(--color-primary);
+  text-decoration-color: var(--primary-tint-20);
+}
+[data-brand="relatti"] .chat-empty-icon {
+  background: var(--primary-tint-10);
+  color: var(--color-primary);
+}
+[data-brand="relatti"] .chat-loading-spinner {
+  border-top-color: var(--color-primary);
 }
