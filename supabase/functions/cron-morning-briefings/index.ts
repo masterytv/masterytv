@@ -9,11 +9,14 @@
  *
  * Flow:
  * 1. Query users whose morning_briefing_time is NOW (timezone-adjusted)
- * 2. For each user: check nagging state, check engagement rate
+ * 2. For each user: require an existing coaching relationship (≥1 user
+ *    message ever — users.morning_briefing_time defaults to 08:00 at signup,
+ *    so without this gate every assessment-only signup gets briefed),
+ *    then check nagging state and engagement rate
  * 3. Load active commitments, recent wins, stalled goals
  * 4. Generate briefing via Claude (short, actionable, ~200 tokens)
- * 5. Deliver via preferred channel
- * 6. Store outbound message for coaching context
+ * 5. Deliver via preferred channel, branded per the user's program
+ * 6. Store outbound message (program-stamped) for coaching context
  */
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
@@ -109,7 +112,25 @@ Deno.serve(async (req: Request) => {
 
     for (const user of eligibleUsers) {
       try {
-        // ── 2. Check nagging state ──
+        // ── 2a. Require a coaching relationship ──
+        // Proactive touchpoints continue a conversation the user started.
+        // Someone who has never messaged the coach (assessment-only beta
+        // signups) gets nothing proactive — no briefing, no meta check-in.
+        const { count: userMsgCount } = await supabase
+          .from("messages")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user.id)
+          .eq("role", "user");
+        if (!userMsgCount) {
+          skipped++;
+          continue;
+        }
+
+        // ── 2b. Resolve program → brand for delivery + attribution ──
+        const program = await resolveBriefingProgram(supabase, user.id);
+        const brand = program === "relationship" ? "relatti" : "masterytv";
+
+        // ── 2c. Check nagging state ──
         const nagging = await checkNaggingState(
           supabase,
           user.id,
@@ -132,7 +153,9 @@ Deno.serve(async (req: Request) => {
               supabase,
               user,
               "I've noticed I haven't heard much from you lately. No pressure at all — I just want to make sure my check-ins are helpful, not overwhelming. Should I adjust how often I reach out? 💬",
-              "Quick Check-in"
+              "Quick Check-in",
+              undefined,
+              { brand }
             );
           }
           skipped++;
@@ -152,18 +175,21 @@ Deno.serve(async (req: Request) => {
           user,
           briefing.content,
           briefing.subject,
-          conversationId
+          conversationId,
+          { brand }
         );
 
         if (result.success) {
-          // Store outbound message for coaching context
+          // Store outbound message for coaching context. The program stamp
+          // lets a reply that threads into this conversation resolve the
+          // right Coach Pack (resolve-program step 1).
           await storeOutboundMessage(
             supabase,
             user.id,
             result.channel,
             briefing.content,
             conversationId,
-            { type: "morning_briefing", subject: briefing.subject }
+            { type: "morning_briefing", subject: briefing.subject, program }
           );
 
           // Record strike (tracks unanswered proactive messages)
@@ -184,6 +210,8 @@ Deno.serve(async (req: Request) => {
           tokens_in: briefing.tokensIn,
           tokens_out: briefing.tokensOut,
           cost_usd: briefing.costUsd,
+          // PC5.5: per-brand cost attribution at write time.
+          metadata: { program },
         });
       } catch (error) {
         console.error(
@@ -209,6 +237,59 @@ Deno.serve(async (req: Request) => {
     );
   }
 });
+
+// ─── PROGRAM RESOLUTION ─────────────────────────────────────────────────
+
+/**
+ * Which program (vertical) a user's proactive briefing belongs to.
+ *
+ * Briefings have no conversation context, so this resolves at the USER
+ * level. Precedence:
+ * 1. users.signup_brand — stamped at auth (PC5.2), authoritative once set.
+ * 2. The latest program-stamped coach message — the user's live coaching
+ *    relationship (web coach + channel-router stamp metadata.program).
+ * 3. participant membership — a spine row means the relationship product.
+ * 4. null — the executive default.
+ *
+ * Deliberately NOT the shared resolve-program heuristic: its decoded_invites
+ * check classifies anyone who ever SENT a Relatti invite as a relationship
+ * user, which mis-brands the founder's own executive briefing.
+ */
+async function resolveBriefingProgram(
+  supabase: ReturnType<typeof createSupabaseClient>,
+  userId: string
+): Promise<string | null> {
+  const { data: u } = await supabase
+    .from("users")
+    .select("signup_brand")
+    .eq("id", userId)
+    .maybeSingle();
+  if (u?.signup_brand === "relatti") return "relationship";
+  if (u?.signup_brand === "masterytv") return null;
+
+  const { data: stamped } = await supabase
+    .from("messages")
+    .select("metadata")
+    .eq("user_id", userId)
+    .eq("role", "coach")
+    .not("metadata->>program", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const stampedProgram = (stamped?.metadata as Record<string, unknown> | null)
+    ?.program;
+  if (typeof stampedProgram === "string" && stampedProgram) {
+    return stampedProgram.toLowerCase();
+  }
+
+  const { count: participantCount } = await supabase
+    .from("participant")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId);
+  if ((participantCount ?? 0) > 0) return "relationship";
+
+  return null;
+}
 
 // ─── BRIEFING CONTEXT ─────────────────────────────────────────────────
 
@@ -240,7 +321,9 @@ async function loadBriefingContext(
     .order("due_date", { ascending: true, nullsFirst: false })
     .limit(5);
 
-  // Recent wins (past 7 days)
+  // Recent wins (past 7 days) — tracked win entities plus commitments the
+  // user completed (a checked-off commitment IS a win; without this the
+  // briefing claims "no recent wins" the morning after one lands)
   const sevenDaysAgo = new Date(
     Date.now() - 7 * 24 * 60 * 60 * 1000
   ).toISOString();
@@ -251,6 +334,23 @@ async function loadBriefingContext(
     .eq("entity_type", "win")
     .gte("created_at", sevenDaysAgo)
     .limit(3);
+
+  const { data: completedCommitments } = await supabase
+    .from("commitments")
+    .select("description, completed_at")
+    .eq("user_id", userId)
+    .eq("status", "completed")
+    .gte("completed_at", sevenDaysAgo)
+    .order("completed_at", { ascending: false })
+    .limit(3);
+
+  const winEntries = [
+    ...(wins ?? []),
+    ...(completedCommitments ?? []).map((c) => ({
+      name: `Completed: ${c.description}`,
+      attributes: {} as Record<string, unknown>,
+    })),
+  ].slice(0, 5);
 
   // Stalled goals (not mentioned in 3+ days)
   const threeDaysAgo = new Date(
@@ -283,7 +383,7 @@ async function loadBriefingContext(
 
   return {
     activeCommitments: commitments ?? [],
-    recentWins: wins ?? [],
+    recentWins: winEntries,
     stalledGoals: stalledGoals ?? [],
     coachingAgenda: agenda,
     userName: user?.name ?? "there",
