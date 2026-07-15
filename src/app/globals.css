@@ -123,6 +123,12 @@
   --color-info: #ff9db0;
   --shadow-glow: 0 0 20px rgba(255, 157, 176, 0.15);
 
+  /* Rose the shared accent tints/glows (else they stay MasteryTV indigo on
+     Relatti — e.g. the chat input focus ring and starter-button tints). */
+  --primary-glow-ring: rgba(231, 92, 121, 0.12);
+  --primary-tint-10: rgba(231, 92, 121, 0.10);
+  --primary-tint-20: rgba(231, 92, 121, 0.20);
+
   /* Relatti brand mark ("The Held Heart", RelattiMark.tsx) — two-half heart;
      lighter rose tones on dark surfaces, deeper on light. */
   --relatti-mark-left: #fb7185;
@@ -150,6 +156,10 @@
   --accent-primary-bg: rgba(190, 18, 60, 0.06);
   --accent-primary-bg-hover: rgba(190, 18, 60, 0.1);
   --accent-primary-ring: rgba(190, 18, 60, 0.08);
+
+  --primary-glow-ring: rgba(190, 18, 60, 0.08);
+  --primary-tint-10: rgba(190, 18, 60, 0.06);
+  --primary-tint-20: rgba(190, 18, 60, 0.12);
 
   --cta-from: #f43f5e;
   --cta-to: #be123c;
