@@ -8,6 +8,7 @@ import RelattiLanding from "../relatti/RelattiLanding";
  * Relatti-path match. Deeper entry_segment content is GTM (out of scope).
  */
 export const metadata: Metadata = relattiPageMetadata({
+  canonical: "/engaged",
   title: "Relatti for Engaged Couples — Start marriage already understanding each other",
   description:
     "Premarital coaching grounded in both partners' psychology. Understand how you'll handle conflict, money, and closeness — before the wedding, not after.",

@@ -3,7 +3,7 @@
 > **Creative North Star: "The Kinetic Curator"**
 > An AI coaching interface that bridges high-velocity SaaS functionality with premium editorial storytelling. The system rejects clinical coldness — opting for **kinetic energy**, where elements feel captured in a moment of purposeful movement. Intentional asymmetry, tonal depth, and authoritative typography create a curated narrative, not a static grid.
 
-> **Last Updated:** July 14, 2026 (added §15 — Page Metadata & Link Previews)  
+> **Last Updated:** July 15, 2026 (§15 v2 — client-page metadata trap closed, route-level gate, brand-aware robots/sitemap/canonicals)  
 > **Sources:** Stitch Design System (Light + Dark), Existing Codebase (`globals.css`, `onboarding.css`, `chat.css`)  
 > **Status:** Canonical — All Sprint 6+ UI must conform to this guide
 
@@ -564,22 +564,26 @@ Before adding any icon, illustration, or decorative element:
 > [!CAUTION]
 > **Every new page MUST set its metadata through `src/lib/platform/brand-metadata.ts`.** Never export a bare `{ title: … }`. This rule exists because we shipped relatti.com pages whose iMessage previews showed the MasteryTV icon and the title "Mastery Coach — Coaching for High-Performers" (found live by the founder, 2026-07-14).
 >
-> **Mechanically enforced:** `npm run gate` / CI runs `scripts/check-brand-metadata.mjs` — any `page.tsx`/`layout.tsx` exporting metadata without the helper fails the build unless it's on the script's reviewed ALLOWLIST (reserved for provably MasteryTV-only surfaces). With white-label tenants this bug class would leak our brand onto a customer's domain, which is why it's a hard gate, not a convention.
+> **Mechanically enforced:** `npm run gate` / CI runs `scripts/check-brand-metadata.mjs`, which checks **routes, not just files**: (RULE 1) any `page.tsx`/`layout.tsx` exporting metadata without the helper fails the build, and (RULE 2) any page ROUTE with **no brand-aware metadata anywhere below the root layout** — the typical state of a `"use client"` page, which cannot export metadata at all — also fails. Escape hatch: the script's reviewed ALLOWLIST (reserved for provably MasteryTV-only surfaces; an allowlisted `layout.tsx` covers its whole subtree). With white-label tenants this bug class would leak our brand onto a customer's domain, which is why it's a hard gate, not a convention.
 
-### 15.1 Why a bare `title` ships the wrong brand
+### 15.1 Why a bare `title` — or NO title — ships the wrong brand
 
-Two mechanics conspire, and neither is visible in the browser:
+Three mechanics conspire, and none is visible in the browser:
 
 1. **Next.js merges metadata per TOP-LEVEL key.** A page that exports only `title` inherits the root layout's entire `openGraph` object and `icons` set — which are Mastery Coach. Preview crawlers (iMessage, Slack, WhatsApp, X) prefer `og:title` over `<title>`, so the page previews as Mastery Coach even when its tab title is right.
-2. **Link-preview crawlers never run JavaScript.** The client-side brand script in `layout.tsx` swaps favicons in the browser, so everything *looks* right in dev and in your own tab — but crawlers only see the server-rendered head. Client-side fixes do not exist for bots.
+2. **Client components can't export metadata AT ALL.** A `"use client"` page silently inherits the root layout's *entire* head — title included. This is how relatti.com/dashboard/chat shipped with a "Mastery Coach — Coaching for High-Performers" browser tab (found live by the founder, 2026-07-15) even after the 7/14 sweep: the v1 gate only inspected files that *did* export metadata, so a missing export passed silently. The fix is a **metadata-only `layout.tsx` in the page's segment** (see below).
+3. **Link-preview crawlers never run JavaScript.** The client-side brand script in `layout.tsx` swaps favicons in the browser, so everything *looks* right in dev and in your own tab — but crawlers only see the server-rendered head. Client-side fixes do not exist for bots.
 
 ### 15.2 The rule
 
 | Page type | Pattern |
 |:---|:---|
-| **Relatti-only page** (marketing, static) | `export const metadata: Metadata = relattiPageMetadata({ title, description, ogTitle?, ogDescription? })` — pure data, page stays statically rendered |
+| **Relatti-only page** (marketing, static) | `export const metadata: Metadata = relattiPageMetadata({ title, description, canonical?, ogTitle?, ogDescription? })` — pure data, page stays statically rendered |
 | **Page served by BOTH brands** (legal, login, dashboard, invite…) | `export async function generateMetadata()` → resolve the brand (`getBrand()` / `getBrandFromRequest(param)`) → `return brandPageMetadata(brand.id, { … })` |
+| **`"use client"` page** (chat, settings, onboarding…) | The page CANNOT export metadata. Add a **metadata-only `layout.tsx` in its segment** that exports `generateMetadata()` via the helper and returns `children` untouched — pattern: [`src/app/dashboard/chat/layout.tsx`](../src/app/dashboard/chat/layout.tsx). If the whole subtree is client-side (like `/dashboard`), split its layout into a server shell (metadata) + `*LayoutClient.tsx` (interactivity) — pattern: [`src/app/dashboard/layout.tsx`](../src/app/dashboard/layout.tsx) |
 | **MasteryTV-only page** | Root-layout defaults are MasteryTV, so inheritance is safe — but prefer the helper anyway for og completeness |
+
+**Tab titles:** use `brandTitle(brand.id, "Coach")` → `"Coach — Relatti"` / `"Coach — Mastery"` — one convention, no per-page ternaries. Authed/private pages always pass `noindex: true`.
 
 The helper emits `title` + `openGraph` (incl. `siteName`) + `twitter` + the brand's icon set **as one unit**, so no key can fall back to the wrong brand. Brand icon assets: MasteryTV at `/favicon.png` + `/apple-touch-icon.png`; Relatti under `/public/relatti/` (regenerate with sharp from `icon.svg`, geometry v2).
 
@@ -587,7 +591,19 @@ The helper emits `title` + `openGraph` (incl. `siteName`) + `twitter` + the bran
 
 **Adding a brand (white-label tenant) to the cards = two things, no designer:** (1) an `OG_BRANDS` palette entry in the og route (name, two gradient stops, accent, domain, optional `markBadge` when the logo's palette matches the gradient — e.g. Relatti's rose heart sits in a light circle); (2) the tenant's mark copied into `src/app/api/og/assets/` (highest-quality PNG-on-transparent or the raw SVG; assets are function-BUNDLED via `fetch(new URL(…, import.meta.url))` because the edge runtime can't read `public/`).
 
-### 15.3 Verify like a crawler, not like a browser
+### 15.3 SEO & AEO — canonicals, robots, sitemap (brand-aware, host-resolved)
+
+Every route in this app is technically reachable on **every** brand's domain (masterytv.com/couples renders the Relatti couples page). Search engines punish that as duplicate content, so the discoverability layer is host-aware:
+
+| Surface | Where | Rule |
+|:---|:---|:---|
+| **Canonical URL** | `canonical: "/path"` in the helper call | Set on every **indexable** page. Emitted absolute against the brand origin, so masterytv.com/couples declares `https://relatti.com/couples` as the real URL. The Relatti landing uses `canonical: "/"` because middleware serves `/relatti` at the root of relatti.com. Noindex pages don't need one. |
+| **robots.txt** | `src/app/robots.txt/route.ts` | Brand-aware by host. Production domains: crawl allowed, private surfaces (`/dashboard/`, `/admin/`, `/api/`, `/auth/`, `/onboarding`, `/coachapp/`) disallowed, AI answer-engine crawlers (GPTBot, ClaudeBot, PerplexityBot) explicitly welcomed (AEO). **Staging/preview/localhost hosts get `Disallow: /`** so preview deployments never enter the index. Do NOT add a static `public/robots.txt` — it conflicts with the route and can't vary by brand (the old static one advertised MasteryTV on relatti.com). |
+| **sitemap.xml** | `src/app/sitemap.xml/route.ts` | Brand-aware by host. **When you ship a new public page, add it to `PUBLIC_PATHS` there** — the metadata gate guarantees the page's head, but only the sitemap gets it crawled. Authed/noindex pages never go in it. |
+
+New white-label tenant checklist: brand entry in `brand.ts` + icons + `OG_BRANDS` palette (§15.2) **and** an origin in `BRAND_ORIGINS` (brand-metadata.ts), a production-host entry in the robots route, and a `PUBLIC_PATHS` list in the sitemap route.
+
+### 15.4 Verify like a crawler, not like a browser
 
 Before shipping any page with a shareable URL:
 

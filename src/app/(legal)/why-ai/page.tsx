@@ -19,6 +19,7 @@ export async function generateMetadata({
   const brand = await getBrandFromRequest((await searchParams).brand);
   if (brand.id !== "relatti") return brandPageMetadata("masterytv", { title: "Why AI" });
   return brandPageMetadata("relatti", {
+    canonical: "/why-ai",
     title: "Why an AI Coach? — Honest Answers to Fair Questions | Relatti",
     description:
       "Shouldn't we just see a therapist? Is it safe? Where does what I share go? The real objections to AI relationship coaching, answered plainly — including what an AI can't do.",

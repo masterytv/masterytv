@@ -19,6 +19,7 @@ export async function generateMetadata({
   const brand = await getBrandFromRequest((await searchParams).brand);
   if (brand.id !== "relatti") return brandPageMetadata("masterytv", { title: "Science" });
   return brandPageMetadata("relatti", {
+    canonical: "/science",
     title: "The Science Behind Relatti — Validated Instruments, EFT & Gottman Research",
     description:
       "The published research Relatti is built on: ECR-R attachment, the Couples Satisfaction Index, EFT and Gottman findings, and the first RCT of a relationship chatbot — plus what the evidence doesn't show yet.",
