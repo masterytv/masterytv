@@ -27,6 +27,7 @@ import {
 } from './v2-components';
 import { createClient } from '@/lib/supabase/client';
 import ShareModal from '@/components/decoded/ShareModal';
+import PartnerInviteModal from '@/components/relatti/PartnerInviteModal';
 import ArchetypeCard from './ArchetypeCard';
 import { attachmentDisplay } from '@/lib/decoded/report/attachment-style';
 import {
@@ -80,6 +81,12 @@ interface ReportViewerProps {
   scores: ScoreRow[];
   /** When viewing someone else's shared report, their name or email */
   sharedOwnerName?: string;
+  /**
+   * Relationship profiles only: the owner's stable broadcast partner-invite URL
+   * (copy-link path for PartnerInviteModal). Absent on Decoded reports and
+   * shared views — those keep the Decoded share flow.
+   */
+  inviteUrl?: string;
 }
 
 // Relationship-report content (order, titles, normalize copy) lives in
@@ -513,11 +520,12 @@ function RetakeAssessmentCTA({ isRelationship }: { isRelationship: boolean }) {
   );
 }
 
-export default function ReportViewer({ report: initialReport, scores, sharedOwnerName }: ReportViewerProps) {
+export default function ReportViewer({ report: initialReport, scores, sharedOwnerName, inviteUrl }: ReportViewerProps) {
   const [report, setReport] = useState<ReportData>(initialReport);
   const [readingProgress, setReadingProgress] = useState(0);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showPartnerInvite, setShowPartnerInvite] = useState(false);
   const [shareUnlocked, setShareUnlocked] = useState(false);
   const [userName, setUserName] = useState<string | undefined>(undefined);
   const [userTier, setUserTier] = useState<ReportTier>('free');
@@ -1135,7 +1143,7 @@ export default function ReportViewer({ report: initialReport, scores, sharedOwne
             <div className="report-section__header">
               <h2 className="report-section__title">Your Type, to Share</h2>
               <p className="report-section__subtitle">
-                A snapshot of who you are — share it, or invite your partner to find theirs.
+                A snapshot of who you are — invite your partner to find theirs, and see how you fit.
               </p>
             </div>
             <ArchetypeCard
@@ -1148,11 +1156,11 @@ export default function ReportViewer({ report: initialReport, scores, sharedOwne
             {!sharedOwnerName && (
               <button
                 className="share-type-prompt"
-                onClick={() => setShowShareModal(true)}
+                onClick={() => setShowPartnerInvite(true)}
                 style={{ marginTop: '1rem' }}
               >
                 <Heart size={15} className="share-type-prompt__icon" />
-                Share your type, or invite your partner
+                Invite your partner
               </button>
             )}
           </div>
@@ -1250,6 +1258,16 @@ export default function ReportViewer({ report: initialReport, scores, sharedOwne
         shareUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/decoded`}
         archetype={report.archetype_base}
       />
+
+      {/* Relatti partner-invite — the relationship-native replacement for the
+          Decoded share gate (only mounted when we have the owner's invite URL). */}
+      {isRelationshipReport && inviteUrl && (
+        <PartnerInviteModal
+          isOpen={showPartnerInvite}
+          onClose={() => setShowPartnerInvite(false)}
+          inviteUrl={inviteUrl}
+        />
+      )}
     </>
   );
 }

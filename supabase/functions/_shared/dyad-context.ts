@@ -85,6 +85,13 @@ export interface DyadContext {
   partnerShareLevel: ShareLevel;     // what the partner consented to share with the coach
   partnerArchetype?: { base: string | null; sublabel: string | null; tagline: string | null };
   partnerProfileSummary?: string;    // only when share level = full
+  /** Partner's scored instruments (percentiles etc.) — only at share level = full. */
+  partnerScores?: Array<{
+    instrument_id: string;
+    total_score: number | null;
+    percentile_scores: Record<string, unknown> | null;
+    interpretation: string | Record<string, unknown> | null;
+  }>;
   readerStyle?: RelationshipStyle;   // the coached user's own attachment style
   partnerStyle?: RelationshipStyle;  // partner's attachment style (gated by share level)
   blueprint?: Record<string, unknown> | null;
@@ -101,7 +108,7 @@ export async function resolveDyadContext(userId: string): Promise<DyadContext | 
   // 1. The user's participant rows in relationship dyads they're active in.
   const { data: myParts } = await supabase
     .from("participant")
-    .select("engagement_id, role, engagement:engagement_id(id, kind, status, created_at)")
+    .select("engagement_id, role, engagement:engagement_id(id, kind, status, created_at, source_invite_id)")
     .eq("user_id", userId)
     .in("status", ["active", "consented"]);
 
@@ -113,7 +120,7 @@ export async function resolveDyadContext(userId: string): Promise<DyadContext | 
       engagement_id: p.engagement_id as string,
       role: p.role as string,
       eng: (Array.isArray(p.engagement) ? p.engagement[0] : p.engagement) as
-        | { id: string; kind: string; status: string; created_at: string }
+        | { id: string; kind: string; status: string; created_at: string; source_invite_id: string | null }
         | null,
     }))
     .filter((d) => d.eng?.kind === "relationship_dyad");
@@ -141,8 +148,23 @@ export async function resolveDyadContext(userId: string): Promise<DyadContext | 
   if (!partner) return null;
 
   const partnerShareLevel = (partner.share_level ?? "none") as ShareLevel;
-  const partnerName =
-    (partner.invited_email ? partner.invited_email.split("@")[0] : null) || "Partner";
+
+  // Partner name: their account name first — invited_email is null for
+  // participants who signed up directly (both-joined-separately dyads), which
+  // used to make the coach believe the partner is literally named "Partner"
+  // and ask the user for the name (2026-07-15 tester1/tester2 chat).
+  let partnerName = partner.invited_email
+    ? partner.invited_email.split("@")[0]
+    : "";
+  if (partner.user_id) {
+    const { data: pu } = await supabase
+      .from("users")
+      .select("name")
+      .eq("id", partner.user_id)
+      .maybeSingle();
+    if (pu?.name) partnerName = pu.name;
+  }
+  partnerName = partnerName || "their partner";
 
   const ctx: DyadContext = {
     engagementId,
@@ -156,7 +178,7 @@ export async function resolveDyadContext(userId: string): Promise<DyadContext | 
   if (partner.report_id && (partnerShareLevel === "type_compatibility" || partnerShareLevel === "full")) {
     const { data: report } = await supabase
       .from("assessment_reports")
-      .select("archetype_base, archetype_sublabel, archetype_tagline, sections")
+      .select("archetype_base, archetype_sublabel, archetype_tagline, sections, assessment_id")
       .eq("id", partner.report_id)
       .maybeSingle();
     if (report) {
@@ -168,6 +190,19 @@ export async function resolveDyadContext(userId: string): Promise<DyadContext | 
       if (partnerShareLevel === "full") {
         const sections = (report.sections ?? {}) as Record<string, { content_markdown?: string }>;
         ctx.partnerProfileSummary = sections.S1?.content_markdown ?? undefined;
+
+        // "full" means the coach knows what the USER can already see of their
+        // partner — including the scored numbers (the 2026-07-15 tester chat
+        // had to refuse an Openness-percentile question it was entitled to).
+        if (report.assessment_id) {
+          const { data: scores } = await supabase
+            .from("assessment_scores")
+            .select("instrument_id, total_score, percentile_scores, interpretation")
+            .eq("assessment_id", report.assessment_id);
+          if (scores && scores.length > 0) {
+            ctx.partnerScores = scores as DyadContext["partnerScores"];
+          }
+        }
       }
     }
   }
@@ -179,7 +214,10 @@ export async function resolveDyadContext(userId: string): Promise<DyadContext | 
     ctx.partnerStyle = (await loadRelationshipStyle(supabase, partner.user_id as string)) ?? undefined;
   }
 
-  // 4. Blueprint artifact (shared) + 5. stake.
+  // 4. Blueprint + 5. stake. The compatibility report is per-user (each
+  // partner reads a version written for them) — prefer THIS user's version
+  // from the source invite so the coach sees exactly what the user sees;
+  // fall back to the promoted Blueprint artifact.
   const [{ data: artifact }, { data: stake }] = await Promise.all([
     supabase
       .from("engagement_artifact")
@@ -198,6 +236,19 @@ export async function resolveDyadContext(userId: string): Promise<DyadContext | 
   ]);
 
   ctx.blueprint = (artifact?.content as Record<string, unknown> | undefined) ?? null;
+  if (chosen.eng?.source_invite_id) {
+    const { data: inv } = await supabase
+      .from("decoded_invites")
+      .select("inviter_id, compatibility_report, compatibility_report_inviter, compatibility_report_recipient")
+      .eq("id", chosen.eng.source_invite_id)
+      .maybeSingle();
+    if (inv) {
+      const mine = inv.inviter_id === userId
+        ? (inv.compatibility_report_inviter ?? inv.compatibility_report)
+        : (inv.compatibility_report_recipient ?? inv.compatibility_report);
+      if (mine) ctx.blueprint = { compatibility_report: mine };
+    }
+  }
   ctx.stakeActive = stake?.status === "active";
 
   return ctx;
@@ -246,14 +297,27 @@ export function buildDyadCoachLayer(dyad: DyadContext): string {
   if (dyad.blueprint) {
     const b = dyad.blueprint as Record<string, unknown>;
     const cr = (b.compatibility_report ?? b.compatibility_report_inviter ?? {}) as Record<string, unknown>;
-    if (cr.headline || cr.chemistry || cr.friction || cr.superpower || cr.watch_out) {
-      parts.push(`Relationship Blueprint:
-- Dynamic: ${cr.headline ?? ""}
-- Chemistry: ${cr.chemistry ?? ""}
-- Friction: ${cr.friction ?? ""}
-- Superpower: ${cr.superpower ?? ""}
-- Watch out: ${cr.watch_out ?? ""}`);
+    const digest = renderCompatibilityDigest(cr);
+    if (digest) {
+      parts.push(`Their compatibility report (what the user reads on their Compatibility page — you know all of it):\n${digest}`);
     }
+  }
+
+  if (dyad.partnerScores && dyad.partnerScores.length > 0) {
+    const scoreLines = dyad.partnerScores.map((s) => {
+      const pctJson = s.percentile_scores ? JSON.stringify(s.percentile_scores) : "";
+      const pct = pctJson && pctJson !== "{}" ? ` percentiles: ${pctJson}` : "";
+      // interpretation is JSONB — a string in some instruments, an object in
+      // others; an empty object renders as noise.
+      const interpJson = typeof s.interpretation === "string"
+        ? s.interpretation
+        : s.interpretation
+          ? JSON.stringify(s.interpretation)
+          : "";
+      const interp = interpJson && interpJson !== "{}" ? ` — ${interpJson}` : "";
+      return `- ${s.instrument_id}: score ${s.total_score ?? "n/a"}${pct}${interp}`;
+    });
+    parts.push(`${dyad.partnerName}'s assessment scores (shared at "full" — the same numbers the user can see):\n${scoreLines.join("\n")}`);
   }
 
   if (dyad.stakeActive) {
@@ -264,7 +328,55 @@ export function buildDyadCoachLayer(dyad: DyadContext): string {
 - "type_compatibility" = you see ${dyad.partnerName}'s archetype + the Blueprint, NOT their full assessment. Don't claim detailed scores.
 - "full" = you see their full profile + archetype + Blueprint.
 - Current level for ${dyad.partnerName}: ${dyad.partnerShareLevel}.
+- Everything above is ALREADY in your context. Never ask permission to "look up" or "pull up" this relationship, and never ask the user who their partner is or to confirm the name — you know it: ${dyad.partnerName}. Tools are only for OTHER connections beyond this one.
+- If asked for a specific number that is not listed above, say you don't have that one — never invent scores.
 - Use this naturally — discuss the dynamic, offer relationship-specific coaching. Don't volunteer it unprompted.`);
 
   return parts.join("\n\n");
+}
+
+/**
+ * Render a compatibility report JSONB into prompt lines, handling BOTH shapes:
+ * the legacy Decoded shape ({headline, chemistry, friction, superpower,
+ * watch_out}) and the Relatti couples shape ({headline, couples_report:{...},
+ * intimate:{...}}). The 2026-07-15 tester dyad exposed that the coach rendered
+ * only `headline` for couples reports — the shape this engine actually ships.
+ */
+export function renderCompatibilityDigest(raw: unknown): string {
+  const cr = (raw ?? {}) as Record<string, unknown>;
+  const s = (v: unknown): string => (typeof v === "string" ? v.trim() : "");
+  const lines: string[] = [];
+
+  if (s(cr.headline)) lines.push(`- Dynamic: ${s(cr.headline)}`);
+
+  // Legacy Decoded fields
+  const LEGACY: Array<[string, string]> = [
+    ["chemistry", "Chemistry"],
+    ["friction", "Friction"],
+    ["superpower", "Superpower"],
+    ["watch_out", "Watch out"],
+  ];
+  for (const [key, label] of LEGACY) {
+    if (s(cr[key])) lines.push(`- ${label}: ${s(cr[key])}`);
+  }
+
+  // Relatti couples report fields
+  const couples = (cr.couples_report ?? {}) as Record<string, unknown>;
+  const COUPLES: Array<[string, string]> = [
+    ["dynamic", "The dynamic between them"],
+    ["empathy", "Seeing it from both sides"],
+    ["strengths", "Strengths"],
+    ["challenges", "Challenges"],
+    ["repair", "Repair"],
+    ["loving_well", "Loving each other well"],
+  ];
+  for (const [key, label] of COUPLES) {
+    if (s(couples[key])) lines.push(`- ${label}: ${s(couples[key])}`);
+  }
+
+  const intimate = (cr.intimate ?? {}) as Record<string, unknown>;
+  if (s(intimate.friction)) lines.push(`- Partnership friction: ${s(intimate.friction)}`);
+  if (s(intimate.strength)) lines.push(`- Partnership strength: ${s(intimate.strength)}`);
+
+  return lines.join("\n");
 }

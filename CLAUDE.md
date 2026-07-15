@@ -1,8 +1,8 @@
 # **Claude Code Guidelines: CLAUDE.md**
 
-> ## 📍 Current direction (updated June 16, 2026)
+> ## 📍 Current direction (updated June 29, 2026)
 > The project has **detoured to Relatti** (relationship coaching) — Stage 1 of a Relationship → Career → White-Label roadmap. The Decoded + Mastery Coach **engine is reused**; the product direction is new.
-> **Read first — current source of truth:** [`directives/STRATEGY.md`](directives/STRATEGY.md) (direction, roadmap, and a doc map classifying every other file as reusable-engine vs. superseded) and [`directives/RELATIONSHIP_PRD.md`](directives/RELATIONSHIP_PRD.md). **Next to build:** `directives/RELATIONSHIP_ARCHITECTURE.md`.
+> **Read first — single entry point:** [`directives/ORIENT.md`](directives/ORIENT.md). It's the ~1,300-word briefing (status, stack, the DB spine) plus a "doing X → read Y" router into the deeper docs. Read only what your task needs; superseded pre-detour docs are in [`directives/archive/`](directives/archive/). For rolling "what changed this week" state, the `relatti-open-state` auto-memory is the live log.
 
 ## **1\. IDENTITY & OPERATING PHILOSOPHY**
 
@@ -123,7 +123,9 @@ All **Development Projects** (see §9 for classification) follow a structured, p
 
 ### Phase Awareness
 
-At the start of each session involving a Development Project, determine the current phase by checking which artifacts exist:
+> **Current project (Relatti):** phase is tracked explicitly in [`directives/STRATEGY.md`](directives/STRATEGY.md) §6 and summarized in [`directives/ORIENT.md`](directives/ORIENT.md) — it is **Phase 4 (Build)**. The active artifacts are the `RELATIONSHIP_*` / `PLATFORM_*` docs; the generic phase-named docs below (`DISCOVERY.md`, `PRD.md`, `SPRINT.md`) were the *pre-detour* set and now live in `directives/archive/`. Do **not** infer phase from their absence in `directives/` — the heuristic table below applies only to a *brand-new* Development Project that has no STRATEGY.md/ORIENT.md.
+
+For a new Development Project with no STRATEGY.md, determine the current phase by checking which artifacts exist:
 
 | Condition | Current Phase |
 |:---|:---|
@@ -132,6 +134,10 @@ At the start of each session involving a Development Project, determine the curr
 | `PRD.md` exists, no `ARCHITECTURE.md` | **Phase 2: Architecture** |
 | `ARCHITECTURE.md` exists, no `SPRINT.md` | **Phase 3: Sprint Planning** |
 | `SPRINT.md` exists | **Phase 4: Build** |
+
+### New vertical / new domain? → the Vertical Playbook is MANDATORY
+
+> Launching a new domain on the platform (career, white-label tenant, …) follows [`directives/VERTICAL_PLAYBOOK.md`](directives/VERTICAL_PLAYBOOK.md): **Phase 0.5 Experience Discovery first** (`{VERTICAL}_EXPERIENCE.md`, founder-approved, before any surface is built), then the **§5 Launch Checklist** (brand · SEO/AEO · assessment · coach pack · dashboard/modules · consent/privacy · proactive/email · admin · infra) and the **§5.10 verification sweep** before any public link. The engine defaults to the existing verticals at every seam — anything skipped silently ships the wrong vertical's behavior in front of the new domain's users. Advisory gate: skipping requires an explicit founder "skip gate".
 
 ### Gate Enforcement: Advisory Mode
 

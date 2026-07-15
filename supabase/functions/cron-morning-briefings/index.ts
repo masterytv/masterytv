@@ -27,6 +27,9 @@ import {
   storeOutboundMessage,
 } from "../_shared/channel-delivery.ts";
 import { checkNaggingState, recordStrike } from "../_shared/nagging.ts";
+import { resolvePack, type CoachPack } from "../_shared/packs/index.ts";
+import type { BriefingContext } from "../_shared/packs/types.ts";
+import { resolveDyadContext } from "../_shared/dyad-context.ts";
 
 const FUNCTION_NAME = "cron-morning-briefings";
 
@@ -126,9 +129,17 @@ Deno.serve(async (req: Request) => {
           continue;
         }
 
-        // ── 2b. Resolve program → brand for delivery + attribution ──
+        // ── 2b. Resolve program → pack + brand ──
+        // The pack authors WHAT a proactive touchpoint says (subject, prompt,
+        // meta check-in) and whether this vertical sends briefings at all;
+        // this cron stays vertical-blind.
         const program = await resolveBriefingProgram(supabase, user.id);
         const brand = program === "relationship" ? "relatti" : "masterytv";
+        const pack = resolvePack(program);
+        if (!pack.briefing.enabled) {
+          skipped++;
+          continue;
+        }
 
         // ── 2c. Check nagging state ──
         const nagging = await checkNaggingState(
@@ -148,11 +159,11 @@ Deno.serve(async (req: Request) => {
         const engagementOk = await checkEngagement(supabase, user.id);
         if (!engagementOk.shouldSend) {
           if (engagementOk.sendMetaCheckin) {
-            // Send meta check-in instead of briefing
+            // Send meta check-in instead of briefing (pack-voiced)
             await deliverProactiveMessage(
               supabase,
               user,
-              "I've noticed I haven't heard much from you lately. No pressure at all — I just want to make sure my check-ins are helpful, not overwhelming. Should I adjust how often I reach out? 💬",
+              pack.briefing.metaCheckin,
               "Quick Check-in",
               undefined,
               { brand }
@@ -163,10 +174,10 @@ Deno.serve(async (req: Request) => {
         }
 
         // ── 3. Load context for briefing generation ──
-        const context = await loadBriefingContext(supabase, user.id);
+        const context = await loadBriefingContext(supabase, user.id, pack);
 
         // ── 4. Generate briefing via Claude ──
-        const briefing = await generateBriefing(user, context);
+        const briefing = await generateBriefing(user, context, pack);
 
         // ── 5. Deliver via preferred channel ──
         const conversationId = crypto.randomUUID();
@@ -299,25 +310,12 @@ async function resolveBriefingProgram(
 }
 
 // ─── BRIEFING CONTEXT ─────────────────────────────────────────────────
-
-interface BriefingContext {
-  activeCommitments: Array<{
-    description: string;
-    due_date: string | null;
-    type: string;
-  }>;
-  recentWins: Array<{ name: string; attributes: Record<string, unknown> }>;
-  stalledGoals: Array<{ name: string; attributes: Record<string, unknown> }>;
-  coachingAgenda: {
-    priority_topic: string | null;
-    coaching_questions: string[] | null;
-  } | null;
-  userName: string;
-}
+// Shape lives in packs/types.ts (BriefingContext) — the pack composes from it.
 
 async function loadBriefingContext(
   supabase: ReturnType<typeof createSupabaseClient>,
-  userId: string
+  userId: string,
+  pack: CoachPack
 ): Promise<BriefingContext> {
   // Active commitments (due soon or active)
   const { data: commitments } = await supabase
@@ -388,12 +386,25 @@ async function loadBriefingContext(
     .eq("id", userId)
     .single();
 
+  // Partner name (relationship only) — canonical spine resolution; null when
+  // no dyad exists. Non-fatal: a briefing without the name still reads fine.
+  let partnerName: string | null = null;
+  if (pack.key === "relationship") {
+    try {
+      const dyad = await resolveDyadContext(userId);
+      partnerName = dyad?.partnerName ?? null;
+    } catch {
+      /* keep null */
+    }
+  }
+
   return {
     activeCommitments: commitments ?? [],
     recentWins: winEntries,
     stalledGoals: stalledGoals ?? [],
     coachingAgenda: agenda,
     userName: user?.name ?? "there",
+    partnerName,
   };
 }
 
@@ -410,7 +421,8 @@ interface GeneratedBriefing {
 
 async function generateBriefing(
   user: { name: string; timezone: string },
-  context: BriefingContext
+  context: BriefingContext,
+  pack: CoachPack
 ): Promise<GeneratedBriefing> {
   // Determine time of day for greeting
   const userNow = new Date(
@@ -422,56 +434,22 @@ async function generateBriefing(
   const greeting =
     hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
-  const commitmentsList = context.activeCommitments
-    .map((c) => {
-      const due = c.due_date ? ` (due: ${c.due_date})` : "";
-      return `- ${c.description}${due}`;
-    })
-    .join("\n");
-
-  const winsList = context.recentWins
-    .map((w) => `- ${w.name}`)
-    .join("\n");
-
-  const stalledList = context.stalledGoals
-    .map((g) => `- ${g.name}`)
-    .join("\n");
-
-  const agendaTopic = context.coachingAgenda?.priority_topic
-    ? `\nCOACHING PRIORITY: ${context.coachingAgenda.priority_topic}`
-    : "";
-
-  const prompt = `Generate a brief, warm morning coaching briefing for ${context.userName}.
-
-CONTEXT:
-${greeting}, it's ${userNow.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}.
-
-ACTIVE COMMITMENTS:
-${commitmentsList || "No active commitments tracked."}
-
-RECENT WINS (past 7 days):
-${winsList || "None tracked yet."}
-
-STALLED GOALS (not mentioned in 3+ days):
-${stalledList || "None detected."}
-${agendaTopic}
-
-INSTRUCTIONS:
-- Start with a time-appropriate greeting using their name
-- If there are wins, celebrate briefly (1 sentence max)
-- Surface the most important commitment or stalled goal
-- End with ONE specific, actionable question that moves them forward
-- Keep it to 3-5 sentences max. Be warm but concise.
-- Don't use bullet points — write conversational prose
-- Use emoji sparingly (1-2 max)
-- If there are no commitments or wins, focus on an encouraging open-ended question
-
-OUTPUT FORMAT: Just the briefing text, no labels or headers.`;
+  const dateLine = userNow.toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
+  const todayShort = userNow.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
 
   const response = await callClaude({
-    system:
-      "You are a coaching assistant generating brief daily check-in messages. Be warm, specific, and actionable.",
-    messages: [{ role: "user", content: prompt }],
+    system: pack.briefing.system,
+    messages: [
+      { role: "user", content: pack.briefing.buildPrompt(context, greeting, dateLine) },
+    ],
     maxTokens: 300,
   });
 
@@ -479,24 +457,14 @@ OUTPUT FORMAT: Just the briefing text, no labels or headers.`;
     response.content
       .filter((b) => b.type === "text")
       .map((b) => b.text)
-      .join("") || `${greeting}, ${context.userName}! Ready to make today count? What's your #1 priority?`;
+      .join("") || pack.briefing.fallback(context, greeting);
 
   const usage = response.usage;
   const costUsd = calculateCost(usage);
 
-  // Generate email subject line
-  const today = userNow.toLocaleDateString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
-  const subject = context.activeCommitments.length > 0
-    ? `Your ${today} Coaching Brief`
-    : `${greeting}, ${context.userName}`;
-
   return {
     content,
-    subject,
+    subject: pack.briefing.subject(context, greeting, todayShort),
     model: response.model,
     tokensIn: usage.input_tokens,
     tokensOut: usage.output_tokens,

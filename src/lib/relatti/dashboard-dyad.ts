@@ -66,8 +66,19 @@ export async function getActiveDyad(
     .eq("engagement_id", engagementId);
 
   const partner = (parts ?? []).find((p) => p.user_id !== userId);
-  const partnerName =
+  // Real display name via the membership-verified RPC (users RLS is self-only,
+  // so a direct join can't see the partner's name); email prefix, then the
+  // generic fallback, when the partner hasn't claimed an account yet.
+  let partnerName =
     (partner?.invited_email ? partner.invited_email.split("@")[0] : null) || "your partner";
+  try {
+    const { data: rpcName } = await supabase.rpc("get_engagement_partner_name", {
+      p_engagement_id: engagementId,
+    });
+    if (typeof rpcName === "string" && rpcName.trim()) partnerName = rpcName.trim();
+  } catch {
+    /* keep fallback */
+  }
 
   // 3. Does a shared Blueprint exist?
   const { count } = await supabase

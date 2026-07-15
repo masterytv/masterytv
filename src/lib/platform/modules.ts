@@ -21,10 +21,12 @@ export type ModuleId =
   | "commitments"
   | "progress"
   | "coaching_letters"
+  | "coach_voices"
   // Relationship (Relatti)
   | "partner_invite"
   | "dyad"
-  | "blueprint";
+  | "blueprint"
+  | "beta_program";
 
 const CORE: ModuleId[] = ["assessment", "coach", "report", "settings"];
 
@@ -36,6 +38,7 @@ export const PROGRAM_MODULES: Record<string, ModuleId[]> = {
     "commitments",
     "progress",
     "coaching_letters",
+    "coach_voices",
     "partner_invite",
   ],
   relationship: [
@@ -44,9 +47,36 @@ export const PROGRAM_MODULES: Record<string, ModuleId[]> = {
     "dyad",
     "blueprint",
     "compatibility",
-    // commitments / progress / coaching_letters intentionally OFF (PRD §6 / founder)
+    "beta_program",
+    // commitments / progress / coaching_letters intentionally OFF (PRD §6 / founder).
+    // coach_voices OFF: the six voices are executive coach personas; Relatti has
+    // one deliberate counselling stance (RELATTI_EXPERIENCE §5.6.1).
   ],
 };
+
+/**
+ * Route → required module, longest-prefix wins. The middleware enforces this
+ * for direct URL access (nav hiding alone is not brand isolation: a dual-brand
+ * user can carry a masterytv URL onto relatti.com and vice versa). Keep in
+ * sync with the sidebar's nav `module` tags.
+ */
+export const ROUTE_MODULES: Array<[prefix: string, module: ModuleId]> = [
+  ["/dashboard/commitments", "commitments"],
+  ["/dashboard/progress", "progress"],
+  ["/dashboard/coaching-letter", "coaching_letters"],
+  ["/dashboard/compatibility", "compatibility"],
+  ["/dashboard/blueprint", "blueprint"],
+  ["/dashboard/beta", "beta_program"],
+  ["/compatibility", "compatibility"],
+];
+
+/** The module a path requires, or null when the path is core/unmapped. */
+export function moduleForPath(pathname: string): ModuleId | null {
+  for (const [prefix, mod] of ROUTE_MODULES) {
+    if (pathname === prefix || pathname.startsWith(`${prefix}/`)) return mod;
+  }
+  return null;
+}
 
 export function modulesForProgram(programSlug: string): Set<ModuleId> {
   return new Set(PROGRAM_MODULES[programSlug] ?? PROGRAM_MODULES.general);

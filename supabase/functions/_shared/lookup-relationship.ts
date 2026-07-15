@@ -22,17 +22,17 @@ import { createSupabaseClient } from "./supabase.ts";
 export const LOOKUP_RELATIONSHIP_TOOL: AnthropicTool = {
   name: "lookup_relationship",
   description:
-    "Look up relationship and compatibility data between the user and someone they've shared their Decoded assessment with. Use this when the user mentions a person by name in a relationship context (e.g., arguing, dating, working with, family tension). Searches for matching connections and returns compatibility analysis (friction points, superpowers, advice) and the other person's personality archetype if shared. IMPORTANT: Only call this with a person's name or email — not a generic query.",
+    "Look up relationship and compatibility data between the user and someone they've shared their assessment with. IMPORTANT: if your system prompt already contains a RELATIONSHIP DYAD CONTEXT or SHARED RELATIONSHIP PROFILES section, that data is current and complete — answer from it directly and do NOT call this tool for that relationship. Use this only for OTHER connections not in your context. Call it silently — never ask the user for permission to look something up, and NEVER ask the user for a person's name just to call this tool: omit person_name and it returns all of the user's connections.",
   input_schema: {
     type: "object" as const,
     properties: {
       person_name: {
         type: "string",
         description:
-          "The name or email of the person the user is asking about. Match is case-insensitive and partial (e.g., 'Tom' matches 'Tom Wood' or 'tom@email.com'). Use the name exactly as the user mentioned it.",
+          "Optional. The name or email of the person the user is asking about. Match is case-insensitive and partial (e.g., 'Tom' matches 'Tom Wood' or 'tom@email.com'). Omit to get the user's connections — if they have exactly one, its full data is returned.",
       },
     },
-    required: ["person_name"],
+    required: [],
   },
 };
 
@@ -40,14 +40,10 @@ export const LOOKUP_RELATIONSHIP_TOOL: AnthropicTool = {
 
 export async function handleLookupRelationship(
   userId: string,
-  input: { person_name: string }
+  input: { person_name?: string }
 ): Promise<{ data: unknown; found: boolean }> {
   const supabase = createSupabaseClient();
-  const searchName = input.person_name.toLowerCase().trim();
-
-  if (!searchName || searchName.length < 2) {
-    return { data: "Please provide a name or email to search for.", found: false };
-  }
+  const searchName = (input.person_name ?? "").toLowerCase().trim();
 
   // Search for connections where the user is either inviter or recipient
   // and the OTHER person's name/email matches the search
@@ -68,19 +64,24 @@ export async function handleLookupRelationship(
     };
   }
 
-  // Find invites where the OTHER person matches the search name
-  const matches = invites.filter((invite) => {
-    const isInviter = invite.inviter_id === userId;
-    if (isInviter) {
-      // User is the inviter — search the recipient's email
-      const email = invite.recipient_email?.toLowerCase() ?? "";
-      return email.includes(searchName) || email.split("@")[0]?.includes(searchName);
-    } else {
-      // User is the recipient — search the inviter's name
-      const name = invite.inviter_name?.toLowerCase() ?? "";
-      return name.includes(searchName);
-    }
-  });
+  // Find invites where the OTHER person matches the search name.
+  // No name given: a single connection is unambiguous — return it; multiple
+  // connections fall through to the "list them" branch below so the model can
+  // disambiguate from data instead of interrogating the user.
+  const matches = searchName.length < 2
+    ? (invites.length === 1 ? invites : [])
+    : invites.filter((invite) => {
+        const isInviter = invite.inviter_id === userId;
+        if (isInviter) {
+          // User is the inviter — search the recipient's email
+          const email = invite.recipient_email?.toLowerCase() ?? "";
+          return email.includes(searchName) || email.split("@")[0]?.includes(searchName);
+        } else {
+          // User is the recipient — search the inviter's name
+          const name = invite.inviter_name?.toLowerCase() ?? "";
+          return name.includes(searchName);
+        }
+      });
 
   if (matches.length === 0) {
     // List available connections so Claude can suggest the right one
@@ -93,7 +94,9 @@ export async function handleLookupRelationship(
 
     return {
       data: {
-        message: `No connection found matching "${input.person_name}". The user's Decoded connections are: ${connections.join(", ")}. Try searching with one of these names instead.`,
+        message: searchName.length < 2
+          ? `The user has ${connections.length} connections: ${connections.join(", ")}. Call again with the one that fits the conversation — do not ask the user to pick unless the conversation genuinely doesn't say.`
+          : `No connection found matching "${input.person_name}". The user's connections are: ${connections.join(", ")}. Try searching with one of these names instead.`,
         available_connections: connections,
       },
       found: false,
@@ -103,9 +106,19 @@ export async function handleLookupRelationship(
   // Use the first match (most likely the one they mean)
   const invite = matches[0];
   const isInviter = invite.inviter_id === userId;
-  const otherName = isInviter
+  let otherName = isInviter
     ? (invite.recipient_email?.split("@")[0] ?? "Unknown")
     : (invite.inviter_name ?? "Unknown");
+  // Prefer the account name — email prefixes read like usernames.
+  const otherId = isInviter ? invite.recipient_id : invite.inviter_id;
+  if (otherId) {
+    const { data: other } = await supabase
+      .from("users")
+      .select("name")
+      .eq("id", otherId)
+      .maybeSingle();
+    if (other?.name) otherName = other.name;
+  }
 
   // Get the user's personalized compatibility report
   const compatReport = isInviter

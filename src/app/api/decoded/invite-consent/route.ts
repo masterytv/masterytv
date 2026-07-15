@@ -109,6 +109,32 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, status: 'revoked' });
     }
 
+    // Two-party consent is REQUIRED (founder, 2026-07-15): consenting here only
+    // completes a connection when the OTHER party has already asked for one
+    // (upgrade_requested_by). Without that, this call records the caller's own
+    // preference as a pending request and connects nothing — one party's click
+    // must never share both people's data (the tester1/tester2 auto-connect).
+    const otherPartyRequested =
+      !!invite.upgrade_requested_by && invite.upgrade_requested_by !== user.id;
+    if (!otherPartyRequested) {
+      const { error: requestError } = await supabase
+        .from('decoded_invites')
+        .update({
+          upgrade_requested_level: shareLevel,
+          upgrade_requested_by: user.id,
+        })
+        .eq('id', inviteId);
+      if (requestError) {
+        console.error('[invite-consent] Request-record error:', requestError.message);
+        return NextResponse.json({ error: 'Failed to save request' }, { status: 500 });
+      }
+      return NextResponse.json({
+        success: true,
+        status: 'requested',
+        message: 'Request recorded — the connection completes when the other person accepts.',
+      });
+    }
+
     // Compute the effective level: mutual minimum of both parties' preferences
     const requesterLevel = invite.upgrade_requested_level || shareLevel;
     const effectiveLevel = minLevel(requesterLevel, shareLevel);

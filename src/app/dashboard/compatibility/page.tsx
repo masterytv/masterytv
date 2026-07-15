@@ -50,14 +50,14 @@ export default async function CompatibilityPage() {
 
     const { data: sentInvites } = await supabase
       .from("decoded_invites")
-      .select("id, recipient_email, recipient_id, recipient_report_id, status, created_at, completed_at, consented_at, reminder_count")
+      .select("id, recipient_email, recipient_id, recipient_report_id, status, created_at, completed_at, consented_at, reminder_count, upgrade_requested_by, revoked_at")
       .eq("inviter_id", user.id)
       .neq("recipient_email", "broadcast")
       .order("created_at", { ascending: false });
 
     const { data: receivedInvites } = await supabase
       .from("decoded_invites")
-      .select("id, inviter_id, inviter_name, inviter_email, status, created_at, consented_at")
+      .select("id, inviter_id, inviter_name, inviter_email, status, created_at, consented_at, recipient_report_id, upgrade_requested_by, revoked_at")
       .eq("recipient_id", user.id)
       .order("created_at", { ascending: false });
 
