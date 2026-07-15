@@ -81,7 +81,7 @@ export default function GenerateReport({ inviteId }: Props) {
       <div className="compat-loading">
         {status === 'generating' ? (
           <>
-            <Loader2 className="h-8 w-8 text-[#a3a6ff] animate-spin" />
+            <Loader2 className="h-8 w-8 text-primary animate-spin" />
             <p className="compat-loading__text">
               Writing your couples report...
             </p>
@@ -97,7 +97,7 @@ export default function GenerateReport({ inviteId }: Props) {
                 triggered.current = false;
                 triggerGeneration();
               }}
-              className="flex items-center gap-2 rounded-lg bg-[rgba(96,99,238,0.1)] px-4 py-2.5 text-sm font-medium text-[#a3a6ff] hover:bg-[rgba(96,99,238,0.15)] transition-colors"
+              className="flex items-center gap-2 rounded-lg bg-primary-container/10 px-4 py-2.5 text-sm font-medium text-primary hover:bg-primary-container/15 transition-colors"
             >
               <RefreshCw className="h-4 w-4" />
               Try Again

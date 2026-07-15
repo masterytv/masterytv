@@ -26,6 +26,15 @@ interface VariantCopy {
   timeNote: string;
 }
 
+/** Copy for the "your recipient just completed" notification (sent to the inviter). */
+interface NotifyCopy {
+  subject: (recipientName: string) => string;
+  heading: (recipientName: string) => string;
+  intro: (recipientName: string, inviterName: string) => string;
+  whatsNext: string[];
+  cta: string;
+}
+
 export interface InviteBrand {
   keyEnv: string;
   from: string;
@@ -41,6 +50,7 @@ export interface InviteBrand {
   footer: string;
   connectRequest: VariantCopy;
   connectNoReport: VariantCopy;
+  notify: NotifyCopy;
 }
 
 export const INVITE_BRANDS: Record<BrandId, InviteBrand> = {
@@ -62,6 +72,18 @@ export const INVITE_BRANDS: Record<BrandId, InviteBrand> = {
     cta: "Take the Assessment",
     timeNote: "It takes about 15 minutes. Your results are completely private — you decide if and when to share them.",
     footer: "Decoded by MasteryTV · Personality science for personal growth",
+    notify: {
+      subject: (r) => `${r} just completed their Decoded assessment!`,
+      heading: (r) => `${r} is decoded!`,
+      intro: (r, inviter) =>
+        `Great news, ${inviter}. ${r} just completed their Decoded personality assessment.`,
+      whatsNext: [
+        "Request to share results with each other",
+        "Unlock your Compatibility Report",
+        "Discover your relationship dynamics across 5 dimensions",
+      ],
+      cta: "View Compatibility Hub",
+    },
     connectRequest: {
       subject: (s) => `${s} wants to compare results with you`,
       intro: (s) => `${s} wants to connect on <strong>Decoded</strong> — share assessments and see a compatibility report together. You already have your results, so it's your call.`,
@@ -93,6 +115,18 @@ export const INVITE_BRANDS: Record<BrandId, InviteBrand> = {
     cta: "Take the quiz",
     timeNote: "It takes about 10 minutes. Your results are private — you choose what to share with each other.",
     footer: "Relatti · A coach that knows both of you",
+    notify: {
+      subject: (r) => `${r} just took their Relatti quiz`,
+      heading: () => `You're both in`,
+      intro: (r, inviter) =>
+        `Great news, ${inviter}. ${r} just finished their relationship profile — now your coach can understand you both.`,
+      whatsNext: [
+        "See your compatibility — where you click, and where you clash",
+        "Understand how you each bond and handle closeness",
+        "Talk to a coach who finally knows both of you",
+      ],
+      cta: "See your compatibility",
+    },
     connectRequest: {
       subject: (s) => `${s} wants to connect with you on Relatti`,
       intro: (s) => `${s} wants to connect on <strong>Relatti</strong> — share your assessments and see your compatibility report together, so your coach can understand you both.`,
@@ -201,6 +235,96 @@ export async function sendBrandInviteEmail(
   if (!response.ok) {
     const errorText = await response.text().catch(() => "");
     console.error("[invite-email] Resend error:", errorText);
+    return { ok: false, error: `Email service error: ${errorText}` };
+  }
+  return { ok: true };
+}
+
+/**
+ * The "your recipient just completed their assessment" notification, sent TO the
+ * inviter. Brand-aware — reuses the invite email's visual identity + Resend
+ * account fallback, so a Relatti inviter gets a rose "Relatti" note, never the
+ * indigo "Decoded by MasteryTV" one.
+ */
+export function buildInviteNotifyHtml(
+  brand: InviteBrand,
+  opts: { recipientName: string; inviterName: string; archetypeLine?: string; ctaUrl: string },
+): string {
+  const c = brand.notify;
+  const bullets = c.whatsNext.map((b) => `<li>${b}</li>`).join("");
+  const archetype = opts.archetypeLine ? ` ${opts.archetypeLine}` : "";
+  return `
+    <div style="font-family: 'Inter', system-ui, -apple-system, sans-serif; max-width: 520px; margin: 0 auto; padding: 40px 20px; color: #1a1a2e; background: #ffffff;">
+      <div style="text-align: center; margin-bottom: 32px;">
+        <div style="display: inline-block; background: ${brand.soft}; border-radius: 12px; width: 48px; height: 48px; line-height: 48px;">
+          <span style="font-size: 22px; color: ${brand.color}; font-weight: 700;">${brand.badge}</span>
+        </div>
+      </div>
+      <h1 style="font-size: 22px; font-weight: 700; color: #1a1a2e; margin-bottom: 8px; text-align: center;">
+        ${c.heading(opts.recipientName)}
+      </h1>
+      <p style="font-size: 16px; line-height: 1.6; color: #555; text-align: center; margin-bottom: 24px;">
+        ${c.intro(opts.recipientName, opts.inviterName)}${archetype}
+      </p>
+      <div style="background: ${brand.soft}; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+        <p style="font-size: 14px; color: #555; margin: 0 0 4px 0; font-weight: 600;">What's next:</p>
+        <ul style="font-size: 14px; color: #666; line-height: 1.8; margin: 8px 0 0 0; padding-left: 20px;">
+          ${bullets}
+        </ul>
+      </div>
+      <div style="text-align: center; margin-bottom: 24px;">
+        <a href="${opts.ctaUrl}" style="display: inline-block; background: ${brand.color}; color: white; font-size: 16px; font-weight: 600; padding: 14px 32px; border-radius: 10px; text-decoration: none;">
+          ${c.cta} →
+        </a>
+      </div>
+      <hr style="border: none; border-top: 1px solid #eee; margin: 32px 0 16px 0;" />
+      <p style="font-size: 12px; color: #bbb; text-align: center;">
+        ${brand.footer}
+      </p>
+    </div>
+  `;
+}
+
+/**
+ * Send the branded completion notification via the brand's Resend account,
+ * falling back to the shared account. Mirrors sendBrandInviteEmail. Never throws.
+ */
+export async function sendBrandInviteNotifyEmail(
+  brandId: BrandId,
+  opts: { recipientName: string; inviterName: string; inviterEmail: string; archetypeLine?: string; ctaUrl: string },
+): Promise<{ ok: boolean; error?: string }> {
+  const brand = INVITE_BRANDS[brandId];
+  const ownKey = process.env[brand.keyEnv];
+  const sharedKey = process.env.RESEND_API_KEY;
+  if (!ownKey && !sharedKey) {
+    return { ok: false, error: "Email service not configured." };
+  }
+
+  const subject = brand.notify.subject(opts.recipientName);
+  const html = buildInviteNotifyHtml(brand, opts);
+
+  async function sendVia(apiKey: string, from: string): Promise<Response> {
+    return fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({ from, to: [opts.inviterEmail], subject, html }),
+    });
+  }
+
+  let response: Response;
+  if (ownKey) {
+    response = await sendVia(ownKey, brand.from);
+    if (!response.ok && sharedKey) {
+      console.warn(`[invite-notify] ${brandId} own account failed (${response.status}); falling back to shared`);
+      response = await sendVia(sharedKey, brand.fallbackFrom);
+    }
+  } else {
+    response = await sendVia(sharedKey as string, brand.fallbackFrom);
+  }
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => "");
+    console.error("[invite-notify] Resend error:", errorText);
     return { ok: false, error: `Email service error: ${errorText}` };
   }
   return { ok: true };

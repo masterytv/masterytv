@@ -154,7 +154,7 @@ export default function AttachmentQuadrant({
             y={q.y}
             width={q.w}
             height={q.h}
-            fill={activeQuadrant === q.key ? 'rgba(96, 99, 238, 0.06)' : 'transparent'}
+            fill={activeQuadrant === q.key ? 'color-mix(in oklch, var(--color-primary-container) 6%, transparent)' : 'transparent'}
             stroke="none"
             style={{ cursor: 'pointer', transition: 'fill 0.15s ease' }}
             onMouseEnter={() => handleMouseEnter(q.key)}

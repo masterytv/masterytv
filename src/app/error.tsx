@@ -42,13 +42,13 @@ export default function Error({
         style={{
           padding: "0.75rem 2rem",
           borderRadius: "0.75rem",
-          background: "linear-gradient(135deg, #a3a6ff, #6063ee)",
+          background: "linear-gradient(135deg, var(--color-primary), var(--color-primary-container))",
           color: "#fff",
           border: "none",
           cursor: "pointer",
           fontWeight: 600,
           fontSize: "1rem",
-          boxShadow: "0 4px 16px rgba(96, 99, 238, 0.3)",
+          boxShadow: "0 4px 16px color-mix(in oklch, var(--color-primary-container) 30%, transparent)",
         }}
       >
         Try Again

@@ -47,7 +47,7 @@
   transform: translateX(-50%);
   width: 700px;
   height: 700px;
-  background: rgba(96, 99, 238, 0.06);
+  background: color-mix(in oklch, var(--color-primary-container) 6%, transparent);
 }
 
 .invite-page__glow-orb--accent {
@@ -87,7 +87,7 @@
   width: 2.5rem;
   height: 2.5rem;
   border-radius: 0.75rem;
-  background: rgba(96, 99, 238, 0.1);
+  background: color-mix(in oklch, var(--color-primary-container) 10%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -310,7 +310,7 @@
 }
 
 [data-theme="light"] .invite-badge__icon svg {
-  color: #003ec7;
+  color: var(--color-primary);
 }
 
 [data-theme="light"] .invite-badge__label {
@@ -326,7 +326,7 @@
 }
 
 [data-theme="light"] .invite-card__archetype {
-  color: #003ec7;
+  color: var(--color-primary);
 }
 
 [data-theme="light"] .invite-card__teaser {
@@ -346,7 +346,7 @@
 }
 
 [data-theme="light"] .invite-discover__dot {
-  background: #003ec7;
+  background: var(--color-primary);
 }
 
 [data-theme="light"] .invite-cta {

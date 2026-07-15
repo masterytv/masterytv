@@ -209,8 +209,8 @@ export default function ScoreDashboard({ scores, archetypeBase, archetypeSublabe
               color: 'var(--text-body)',
               margin: '0 0 1rem',
               padding: '0.875rem 1rem',
-              background: 'rgba(96, 99, 238, 0.05)',
-              border: '1px solid rgba(96, 99, 238, 0.1)',
+              background: 'color-mix(in oklch, var(--color-primary-container) 5%, transparent)',
+              border: '1px solid color-mix(in oklch, var(--color-primary-container) 10%, transparent)',
               borderRadius: 'var(--radius-md)',
             }}>
               There are no &ldquo;good&rdquo; or &ldquo;bad&rdquo; scores here. Each percentage shows where you naturally sit on a spectrum — and <strong style={{ color: 'var(--text-heading)' }}>every position brings its own strengths</strong>. Tap any trait below to learn more.
@@ -369,8 +369,8 @@ export default function ScoreDashboard({ scores, archetypeBase, archetypeSublabe
               color: 'var(--text-body)',
               margin: '0 0 1rem',
               padding: '0.875rem 1rem',
-              background: 'rgba(96, 99, 238, 0.05)',
-              border: '1px solid rgba(96, 99, 238, 0.1)',
+              background: 'color-mix(in oklch, var(--color-primary-container) 5%, transparent)',
+              border: '1px solid color-mix(in oklch, var(--color-primary-container) 10%, transparent)',
               borderRadius: 'var(--radius-md)',
             }}>
               {isRelationship ? 'Your relationship style describes' : 'Your attachment style describes'}{' '}
@@ -410,8 +410,8 @@ export default function ScoreDashboard({ scores, archetypeBase, archetypeSublabe
               color: 'var(--text-body)',
               margin: '0 0 0.75rem',
               padding: '0.75rem 0.875rem',
-              background: 'rgba(96, 99, 238, 0.05)',
-              border: '1px solid rgba(96, 99, 238, 0.1)',
+              background: 'color-mix(in oklch, var(--color-primary-container) 5%, transparent)',
+              border: '1px solid color-mix(in oklch, var(--color-primary-container) 10%, transparent)',
               borderRadius: 'var(--radius-md)',
             }}>
               This measures <strong style={{ color: 'var(--text-heading)' }}>generalized anxiety</strong> — racing thoughts, restlessness, and persistent worry. It&rsquo;s different from the <em>attachment anxiety</em> in your relationship map, which is about fear of rejection in close bonds. You can score low here and high there — they&rsquo;re independent.
@@ -510,8 +510,8 @@ export default function ScoreDashboard({ scores, archetypeBase, archetypeSublabe
               color: 'var(--text-body)',
               margin: '0 0 0.75rem',
               padding: '0.75rem 0.875rem',
-              background: 'rgba(96, 99, 238, 0.05)',
-              border: '1px solid rgba(96, 99, 238, 0.1)',
+              background: 'color-mix(in oklch, var(--color-primary-container) 5%, transparent)',
+              border: '1px solid color-mix(in oklch, var(--color-primary-container) 10%, transparent)',
               borderRadius: 'var(--radius-md)',
             }}>
               Self-compassion measures <strong style={{ color: 'var(--text-heading)' }}>how you relate to yourself during hard times</strong> — with kindness or criticism. It&rsquo;s one of the strongest predictors of emotional resilience. Tap any subscale to learn more.
@@ -660,8 +660,8 @@ export default function ScoreDashboard({ scores, archetypeBase, archetypeSublabe
               color: 'var(--text-body)',
               margin: '0 0 0.75rem',
               padding: '0.75rem 0.875rem',
-              background: 'rgba(96, 99, 238, 0.05)',
-              border: '1px solid rgba(96, 99, 238, 0.1)',
+              background: 'color-mix(in oklch, var(--color-primary-container) 5%, transparent)',
+              border: '1px solid color-mix(in oklch, var(--color-primary-container) 10%, transparent)',
               borderRadius: 'var(--radius-md)',
             }}>
               This measures <strong style={{ color: 'var(--text-heading)' }}>how effectively you manage difficult emotions</strong>. Lower scores are better here — they mean your emotional regulation toolkit is well-developed. Tap any subscale to learn more.
@@ -810,8 +810,8 @@ export default function ScoreDashboard({ scores, archetypeBase, archetypeSublabe
               color: 'var(--text-body)',
               margin: '0 0 1rem',
               padding: '0.75rem 0.875rem',
-              background: 'rgba(96, 99, 238, 0.05)',
-              border: '1px solid rgba(96, 99, 238, 0.1)',
+              background: 'color-mix(in oklch, var(--color-primary-container) 5%, transparent)',
+              border: '1px solid color-mix(in oklch, var(--color-primary-container) 10%, transparent)',
               borderRadius: 'var(--radius-md)',
             }}>
               These two validated scales measure <strong style={{ color: 'var(--text-heading)' }}>how you feel about your life overall</strong> and whether you experience a deep sense of meaning, purpose, and connection.
@@ -877,8 +877,8 @@ export default function ScoreDashboard({ scores, archetypeBase, archetypeSublabe
               color: 'var(--text-body)',
               margin: '0 0 1rem',
               padding: '0.875rem 1rem',
-              background: 'rgba(96, 99, 238, 0.05)',
-              border: '1px solid rgba(96, 99, 238, 0.1)',
+              background: 'color-mix(in oklch, var(--color-primary-container) 5%, transparent)',
+              border: '1px solid color-mix(in oklch, var(--color-primary-container) 10%, transparent)',
               borderRadius: 'var(--radius-md)',
             }}>
               Your Holland Code reveals <strong style={{ color: 'var(--text-heading)' }}>which types of work environments energize you most</strong>. The three-letter code below represents your top interests — tap any dimension to learn what it means.
@@ -1019,8 +1019,8 @@ export default function ScoreDashboard({ scores, archetypeBase, archetypeSublabe
               color: 'var(--text-body)',
               margin: '0 0 0.75rem',
               padding: '0.75rem 0.875rem',
-              background: 'rgba(96, 99, 238, 0.05)',
-              border: '1px solid rgba(96, 99, 238, 0.1)',
+              background: 'color-mix(in oklch, var(--color-primary-container) 5%, transparent)',
+              border: '1px solid color-mix(in oklch, var(--color-primary-container) 10%, transparent)',
               borderRadius: 'var(--radius-md)',
             }}>
               This measures <strong style={{ color: 'var(--text-heading)' }}>why you work — not how hard</strong>. Research shows that the <em>source</em> of your motivation matters more than the amount. Tap any type to learn more.
@@ -1194,8 +1194,8 @@ export default function ScoreDashboard({ scores, archetypeBase, archetypeSublabe
               color: 'var(--text-body)',
               margin: '0 0 0.75rem',
               padding: '0.75rem 0.875rem',
-              background: 'rgba(96, 99, 238, 0.05)',
-              border: '1px solid rgba(96, 99, 238, 0.1)',
+              background: 'color-mix(in oklch, var(--color-primary-container) 5%, transparent)',
+              border: '1px solid color-mix(in oklch, var(--color-primary-container) 10%, transparent)',
               borderRadius: 'var(--radius-md)',
             }}>
               This is a snapshot of <strong style={{ color: 'var(--text-heading)' }}>your lifestyle and daily habits right now</strong> — not a permanent label. Each dimension is scored 0–100. Tap any dimension to understand what your score means.

@@ -881,8 +881,8 @@ export default function ReportViewer({ report: initialReport, scores, sharedOwne
           margin: '1.5rem 0',
           padding: '1rem 1.25rem',
           borderRadius: 'var(--radius-md)',
-          background: 'rgba(96, 99, 238, 0.06)',
-          border: '1px solid rgba(96, 99, 238, 0.15)',
+          background: 'color-mix(in oklch, var(--color-primary-container) 6%, transparent)',
+          border: '1px solid color-mix(in oklch, var(--color-primary-container) 15%, transparent)',
           fontSize: '0.8125rem',
           color: 'var(--color-text-secondary)',
           lineHeight: 1.6,
@@ -919,7 +919,7 @@ export default function ReportViewer({ report: initialReport, scores, sharedOwne
               <div style={{
                 display: 'flex', alignItems: 'center', gap: '0.625rem',
                 padding: '0.625rem 1.25rem',
-                background: 'rgba(96, 99, 238, 0.08)',
+                background: 'color-mix(in oklch, var(--color-primary-container) 8%, transparent)',
                 borderRadius: 'var(--radius-md)',
                 fontSize: '0.8125rem',
                 color: 'var(--color-primary)',
@@ -1120,7 +1120,7 @@ export default function ReportViewer({ report: initialReport, scores, sharedOwne
                     onClick={() => setShowUpgradeModal(true)}
                     style={{
                       display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
-                      background: 'linear-gradient(135deg, #a3a6ff, #6063ee)',
+                      background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-container))',
                       color: 'white', padding: '0.75rem 2rem',
                       borderRadius: 'var(--radius-lg)', border: 'none',
                       fontWeight: 600, fontSize: '0.9375rem', cursor: 'pointer',

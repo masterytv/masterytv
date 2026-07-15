@@ -1012,6 +1012,9 @@
   color: var(--color-primary);
   text-decoration-color: var(--primary-tint-20);
 }
+[data-brand="relatti"] .chat-markdown .chat-link:hover {
+  text-decoration-color: var(--color-primary);
+}
 [data-brand="relatti"] .chat-empty-icon {
   background: var(--primary-tint-10);
   color: var(--color-primary);

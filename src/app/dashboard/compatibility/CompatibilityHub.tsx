@@ -22,7 +22,7 @@ import {
   Send, Loader2, Clock, ArrowRight, Mail, Heart, UserCheck,
   MessageSquare, Bell, Pencil, X, Check,
 } from 'lucide-react';
-import ShareModal from '@/components/decoded/ShareModal';
+import PartnerInviteModal from '@/components/relatti/PartnerInviteModal';
 
 interface SentInvite {
   id: string;
@@ -194,6 +194,12 @@ export default function CompatibilityHub({ userId, sentInvites, receivedInvites 
 
   const ctaGradient = { background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-container))' };
   const softPrimary = { background: 'color-mix(in oklch, var(--color-primary) 12%, transparent)', color: 'var(--color-primary)' };
+
+  // Broadcast invite link for PartnerInviteModal's copy path (its email path always works).
+  const broadcastInvite = sentInvites.find((i) => i.recipient_email === 'broadcast');
+  const inviteUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}${broadcastInvite ? `/invite/${broadcastInvite.id}` : '/assess'}`
+    : '';
 
   return (
     <div className="h-full overflow-y-auto">
@@ -407,11 +413,11 @@ export default function CompatibilityHub({ userId, sentInvites, receivedInvites 
         </div>
       </div>
 
-      <ShareModal
+      <PartnerInviteModal
         isOpen={showShareModal}
         onClose={() => setShowShareModal(false)}
-        onUnlock={() => { setShowShareModal(false); router.refresh(); }}
-        shareUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/dashboard`}
+        onSent={() => { setShowShareModal(false); router.refresh(); }}
+        inviteUrl={inviteUrl}
       />
     </div>
   );
