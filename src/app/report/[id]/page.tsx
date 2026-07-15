@@ -3,6 +3,9 @@ import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { redirect, notFound } from 'next/navigation';
 import ReportViewer from './ReportViewer';
 import { getBrand } from '@/lib/platform/brand.server';
+import { getOrCreateBroadcastInviteUrl } from '@/lib/relatti/broadcast-invite';
+import { originFromHeaders } from '@/lib/platform/origin';
+import { headers } from 'next/headers';
 import type { Metadata } from 'next';
 
 interface PageProps {
@@ -177,10 +180,25 @@ export default async function ReportPage({ params, searchParams }: PageProps) {
       .select('instrument_id, total_score, subscale_scores, percentile_scores, interpretation')
       .eq('assessment_id', ownReport.assessment_id);
 
+    // Relationship profiles get a real Relatti partner-invite (not the Decoded
+    // share-to-unlock gate). The owner needs their stable broadcast invite link
+    // for the modal's copy-link path; the email path is brand-aware server-side.
+    const brand = await getBrand();
+    const isRelationship = brand.programSlug === 'relationship';
+    const inviteUrl = isRelationship
+      ? await getOrCreateBroadcastInviteUrl(
+          supabase,
+          user,
+          originFromHeaders(await headers()),
+          ownReport.id,
+        )
+      : undefined;
+
     return (
       <ReportViewer
         report={ownReport}
         scores={scores ?? []}
+        inviteUrl={inviteUrl}
       />
     );
   }

@@ -15,7 +15,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Heart, MessageCircle, FileText, ClipboardList, UserPlus, Copy, Check, Waves, CalendarCheck, ShieldAlert } from "lucide-react";
+import { Heart, MessageCircle, FileText, ClipboardList, UserPlus, Check, Waves, CalendarCheck, ShieldAlert } from "lucide-react";
 import type { DashboardDyad, DyadConsent, DyadStreak } from "@/lib/relatti/dashboard-dyad";
 import type { Relationship } from "@/lib/relatti/relationships";
 import type { RitualView } from "@/lib/relatti/ritual";
@@ -24,6 +24,7 @@ import RelationshipCard from "@/components/relatti/RelationshipCard";
 import DepartedRelationshipNotice from "@/components/relatti/DepartedRelationshipNotice";
 import BetaPartnerCheckinCard from "@/components/relatti/BetaPartnerCheckinCard";
 import RitualCard from "@/components/relatti/RitualCard";
+import PartnerInviteModal from "@/components/relatti/PartnerInviteModal";
 
 interface Props {
   userName: string;
@@ -46,14 +47,8 @@ interface Props {
 }
 
 export default function RelattiDashboard({ userName, state, reportId, relationships = [], inviteUrl, consent = null, ritual = null, checkinDue = false, betaJustUnlocked = false, betaNeedsCheckin = false, betaRedeemError = null }: Props) {
-  const [copied, setCopied] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
   const assessed = state === "completed";
-
-  function copyInvite() {
-    navigator.clipboard.writeText(inviteUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }
 
   return (
     <div className="h-full overflow-y-auto">
@@ -176,16 +171,16 @@ export default function RelattiDashboard({ userName, state, reportId, relationsh
               Invite your partner
             </h2>
             <p className="mt-1 text-sm text-text-secondary">
-              Relatti works best with both of you. Share your link so your partner can
-              take their quiz and join — your coach will then understand you both.
+              Relatti works best with both of you. Invite your partner to take their own
+              profile and join — your coach will then understand you both.
             </p>
             <button
-              onClick={copyInvite}
+              onClick={() => setInviteOpen(true)}
               className="mt-4 inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-text-inverse transition-transform hover:-translate-y-0.5"
               style={{ background: "var(--color-primary-container)" }}
             >
-              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-              {copied ? "Link copied" : "Copy your invite link"}
+              <UserPlus className="h-4 w-4" />
+              Invite your partner
             </button>
           </section>
         )}
@@ -263,6 +258,12 @@ export default function RelattiDashboard({ userName, state, reportId, relationsh
           Relatti — a coach that knows both of you
         </p>
       </div>
+
+      <PartnerInviteModal
+        isOpen={inviteOpen}
+        onClose={() => setInviteOpen(false)}
+        inviteUrl={inviteUrl}
+      />
     </div>
   );
 }

@@ -14,6 +14,7 @@ import { isBrandId } from "@/lib/platform/brand";
 import { originFromHeaders } from "@/lib/platform/origin";
 import DashboardHome from "./DashboardHome";
 import RelattiDashboard from "./RelattiDashboard";
+import { getOrCreateBroadcastInviteUrl } from "@/lib/relatti/broadcast-invite";
 
 export async function generateMetadata(): Promise<Metadata> {
   const brand = await getBrand();
@@ -157,31 +158,9 @@ export default async function DashboardPage({
     .neq("recipient_email", "broadcast")
     .order("created_at", { ascending: false });
 
-  // Create or fetch a stable "broadcast" invite for social/copy-link sharing.
-  // This gives the user a persistent /decoded/invite/[id] URL that works
-  // for social posts, clipboard copies, and anywhere a specific recipient
-  // isn't known upfront.
-  const senderName = user.user_metadata?.display_name
-    || user.user_metadata?.full_name
-    || user.email?.split("@")[0]
-    || "Someone";
-
-  const { data: broadcastInvite } = await supabase
-    .from("decoded_invites")
-    .upsert({
-      inviter_id: user.id,
-      recipient_email: "broadcast",
-      inviter_name: senderName,
-      inviter_email: user.email ?? "",
-      inviter_report_id: reportId,
-      status: "pending",
-    }, { onConflict: "inviter_id,recipient_email" })
-    .select("id")
-    .single();
-
-  const inviteUrl = broadcastInvite
-    ? `${appUrl}/invite/${broadcastInvite.id}`
-    : `${appUrl}/login`;
+  // Stable "broadcast" invite for copy-link sharing (persistent /invite/[id]
+  // URL that works for clipboard copies where a recipient isn't known upfront).
+  const inviteUrl = await getOrCreateBroadcastInviteUrl(supabase, user, appUrl, reportId);
 
   // Load invites sent TO this user that need consent (for consent banner)
   const { data: receivedInvites } = await supabase
