@@ -298,15 +298,15 @@
 }
 
 [data-theme="light"] .invite-page__glow-orb--primary {
-  background: rgba(0, 62, 199, 0.04);
+  background: color-mix(in oklch, var(--color-primary-container) 4%, transparent);
 }
 
 [data-theme="light"] .invite-page__glow-orb--accent {
-  background: rgba(5, 150, 105, 0.03);
+  background: color-mix(in oklch, var(--color-success) 3%, transparent);
 }
 
 [data-theme="light"] .invite-badge__icon {
-  background: rgba(0, 62, 199, 0.08);
+  background: color-mix(in oklch, var(--color-primary-container) 8%, transparent);
 }
 
 [data-theme="light"] .invite-badge__icon svg {

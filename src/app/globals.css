@@ -129,6 +129,17 @@
   --primary-tint-10: rgba(231, 92, 121, 0.10);
   --primary-tint-20: rgba(231, 92, 121, 0.20);
 
+  /* Dark-mode accent/CTA layer. The default :root defines these in indigo, so a
+     brand block MUST re-declare them or they leak the incumbent color in dark
+     mode (light values are in the combined block below). Enforced by the
+     check-brand-tokens gate. */
+  --accent-primary: #ff9db0;
+  --accent-primary-bg: rgba(231, 92, 121, 0.10);
+  --accent-primary-bg-hover: rgba(231, 92, 121, 0.15);
+  --accent-primary-ring: rgba(231, 92, 121, 0.12);
+  --cta-from: #ff9db0;
+  --cta-to: #e75c79;
+
   /* Relatti brand mark ("The Held Heart", RelattiMark.tsx) — two-half heart;
      lighter rose tones on dark surfaces, deeper on light. */
   --relatti-mark-left: #fb7185;
