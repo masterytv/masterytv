@@ -115,8 +115,15 @@ function ChatPageInner() {
         let activeId: string;
         let history: ChatMessage[] = [];
         if (requestedC) {
+          const loaded = await loadConversationHistory(requestedC, engagementId);
+          if (loaded.wrongBrand) {
+            // Brand isolation: this conversation belongs to the other
+            // vertical — drop the id and land on this brand's own thread.
+            if (!cancelled) router.replace("/dashboard/chat", { scroll: false });
+            return;
+          }
           activeId = requestedC;
-          history = (await loadConversationHistory(requestedC, engagementId)).messages;
+          history = loaded.messages;
         } else {
           const list = await listConversations(engagementId);
           if (list.length > 0) {

@@ -77,14 +77,18 @@ export function Sidebar({ open, onClose, assessmentCompleted = false, reportId =
   const isRelatti = brand.id === "relatti";
   const brandLabel = isRelatti ? "Relatti" : "Mastery";
 
-  // Map decoded_tier to display label
+  // Map decoded_tier to display label. Tier names are MasteryTV product names —
+  // on Relatti they'd read as another brand's plan (brand-isolation invariant),
+  // so Relatti shows its beta label until it has its own paid tiers.
   const tierLabels: Record<string, string> = {
     free: 'Free Plan',
     insight: 'Insight Plan',
     growth: 'Growth Plan',
     mastery: 'Mastery Plan',
   };
-  const tierLabel = tierLabels[user?.decoded_tier ?? 'free'] ?? 'Free Plan';
+  const tierLabel = isRelatti
+    ? 'Relatti Beta'
+    : tierLabels[user?.decoded_tier ?? 'free'] ?? 'Free Plan';
 
   return (
     <>

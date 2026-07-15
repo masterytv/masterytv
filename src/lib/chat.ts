@@ -200,9 +200,23 @@ export interface ConversationSummary {
 }
 
 /**
+ * Brand isolation: the PostgREST `or` filter matching conversations that
+ * belong to the CURRENT brand's vertical. Relatti = program 'relationship';
+ * MasteryTV = 'general' plus NULL (rows predating the program stamp are all
+ * executive — the backfill set them 'general', NULL is belt-and-braces).
+ * A user with accounts on both brands must never see the other vertical's
+ * conversations (founder invariant, 2026-07-15).
+ */
+function brandProgramFilter(): string {
+  return resolveBrandClient().id === "relatti"
+    ? "program.eq.relationship"
+    : "program.eq.general,program.is.null";
+}
+
+/**
  * List the user's conversations in the active thread (PC1), most-recent first.
- * Scoped per thread: the relationship dyad (engagement_id = engagementId) or the
- * general thread (NULL). RLS scopes to the current user.
+ * Scoped per thread — the relationship dyad (engagement_id = engagementId) or
+ * the general thread (NULL) — AND per brand. RLS scopes to the current user.
  */
 export async function listConversations(
   engagementId?: string | null
@@ -212,7 +226,8 @@ export async function listConversations(
     .from("conversations")
     .select("id, title, updated_at")
     .eq("channel", "web")
-    .eq("archived", false);
+    .eq("archived", false)
+    .or(brandProgramFilter());
   q = engagementId ? q.eq("engagement_id", engagementId) : q.is("engagement_id", null);
   const { data, error } = await q.order("updated_at", { ascending: false }).limit(50);
   if (error) {
@@ -224,30 +239,53 @@ export async function listConversations(
 
 /**
  * Loads conversation history for the current user.
+ *
+ * `wrongBrand: true` means the requested conversation exists but belongs to
+ * the OTHER brand's vertical (e.g. a masterytv.com executive conversation id
+ * opened on relatti.com) — the caller must not render it; drop the id and
+ * land on this brand's own thread instead.
  */
 export async function loadConversationHistory(
   conversationId?: string,
   engagementId?: string | null
-): Promise<{ messages: ChatMessage[]; conversationId: string | null }> {
+): Promise<{ messages: ChatMessage[]; conversationId: string | null; wrongBrand?: boolean }> {
   const supabase = createClient();
 
-  // If no conversation_id, find the most recent one IN THIS THREAD (PA5):
-  // the relationship dyad (engagement_id = engagementId) or general (NULL).
+  // If no conversation_id, find the most recent one IN THIS THREAD (PA5) and
+  // THIS BRAND: the relationship dyad (engagement_id = engagementId) or
+  // general (NULL), never the other vertical's conversations.
   if (!conversationId) {
     let q = supabase
-      .from("messages")
-      .select("conversation_id")
-      .eq("channel", "web");
+      .from("conversations")
+      .select("id")
+      .eq("channel", "web")
+      .or(brandProgramFilter());
     q = engagementId ? q.eq("engagement_id", engagementId) : q.is("engagement_id", null);
-    const { data: lastMsg } = await q
-      .order("created_at", { ascending: false })
+    const { data: lastConv } = await q
+      .order("updated_at", { ascending: false })
       .limit(1)
       .maybeSingle();
 
-    if (!lastMsg) {
+    if (!lastConv) {
       return { messages: [], conversationId: null };
     }
-    conversationId = lastMsg.conversation_id;
+    conversationId = lastConv.id;
+  } else {
+    // Direct ?c= load — verify the conversation belongs to THIS brand. A row
+    // from the other vertical must not render here (brand-isolation
+    // invariant). No row at all = a fresh draft id, which is fine.
+    const { data: conv } = await supabase
+      .from("conversations")
+      .select("id, program")
+      .eq("id", conversationId)
+      .maybeSingle();
+    if (conv) {
+      const isRelatti = resolveBrandClient().id === "relatti";
+      const convIsRelationship = conv.program === "relationship";
+      if (convIsRelationship !== isRelatti) {
+        return { messages: [], conversationId: null, wrongBrand: true };
+      }
+    }
   }
 
   const { data: messages, error } = await supabase
