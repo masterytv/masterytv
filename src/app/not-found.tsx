@@ -20,7 +20,7 @@ export default function NotFound() {
         style={{
           fontSize: "6rem",
           fontWeight: 800,
-          background: "linear-gradient(135deg, #a3a6ff, #6063ee)",
+          background: "linear-gradient(135deg, var(--color-primary), var(--color-primary-container))",
           WebkitBackgroundClip: "text",
           WebkitTextFillColor: "transparent",
           margin: 0,
@@ -44,12 +44,12 @@ export default function NotFound() {
         style={{
           padding: "0.75rem 2rem",
           borderRadius: "0.75rem",
-          background: "linear-gradient(135deg, #a3a6ff, #6063ee)",
+          background: "linear-gradient(135deg, var(--color-primary), var(--color-primary-container))",
           color: "#fff",
           textDecoration: "none",
           fontWeight: 600,
           fontSize: "1rem",
-          boxShadow: "0 4px 16px rgba(96, 99, 238, 0.3)",
+          boxShadow: "0 4px 16px color-mix(in oklch, var(--color-primary-container) 30%, transparent)",
           transition: "opacity 0.2s",
         }}
       >

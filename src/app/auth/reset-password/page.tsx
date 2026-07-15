@@ -84,7 +84,7 @@ export default function ResetPasswordPage() {
   if (checking) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[#a3a6ff]" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -93,7 +93,7 @@ export default function ResetPasswordPage() {
     <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
       <FloatingThemeToggle />
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute -top-1/2 left-1/2 h-[800px] w-[800px] -translate-x-1/2 rounded-full bg-[rgba(96,99,238,0.06)] blur-[140px]" />
+        <div className="absolute -top-1/2 left-1/2 h-[800px] w-[800px] -translate-x-1/2 rounded-full bg-primary-container/6 blur-[140px]" />
       </div>
 
       <motion.div
@@ -120,7 +120,7 @@ export default function ResetPasswordPage() {
             </p>
             <a
               href="/decoded"
-              className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-4 py-2.5 text-sm font-medium text-white hover:opacity-90 transition-opacity"
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-primary to-primary-container px-4 py-2.5 text-sm font-medium text-white hover:opacity-90 transition-opacity"
             >
               Sign In
               <ArrowRight className="h-4 w-4" />
@@ -130,8 +130,8 @@ export default function ResetPasswordPage() {
           /* ── Password form ── */
           <>
             <div className="mb-6 text-center">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[rgba(96,99,238,0.1)] ring-1 ring-[rgba(96,99,238,0.15)]">
-                <Lock className="h-7 w-7 text-[#a3a6ff]" strokeWidth={1.5} />
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-container/10 ring-1 ring-primary-container/15">
+                <Lock className="h-7 w-7 text-primary" strokeWidth={1.5} />
               </div>
               <h2 className="text-lg font-semibold text-text-primary">
                 Set a new password
@@ -158,7 +158,7 @@ export default function ResetPasswordPage() {
                     placeholder="At least 6 characters"
                     required
                     minLength={6}
-                    className="w-full rounded-lg bg-surface-100 px-4 py-2.5 pr-10 text-sm text-text-primary placeholder:text-text-muted focus:bg-surface-0 focus:outline-none focus:ring-1 focus:ring-[rgba(96,99,238,0.2)] transition-all"
+                    className="w-full rounded-lg bg-surface-100 px-4 py-2.5 pr-10 text-sm text-text-primary placeholder:text-text-muted focus:bg-surface-0 focus:outline-none focus:ring-1 focus:ring-primary-container/20 transition-all"
                   />
                   <button
                     type="button"
@@ -189,7 +189,7 @@ export default function ResetPasswordPage() {
                   placeholder="Type it again"
                   required
                   minLength={6}
-                  className="w-full rounded-lg bg-surface-100 px-4 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:bg-surface-0 focus:outline-none focus:ring-1 focus:ring-[rgba(96,99,238,0.2)] transition-all"
+                  className="w-full rounded-lg bg-surface-100 px-4 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:bg-surface-0 focus:outline-none focus:ring-1 focus:ring-primary-container/20 transition-all"
                 />
               </div>
 
@@ -206,7 +206,7 @@ export default function ResetPasswordPage() {
               <button
                 type="submit"
                 disabled={loading || !password || !confirmPassword}
-                className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-4 py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-primary to-primary-container px-4 py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
               >
                 {loading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -233,7 +233,7 @@ export default function ResetPasswordPage() {
             </p>
             <a
               href="/decoded"
-              className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-4 py-2.5 text-sm font-medium text-white hover:opacity-90 transition-opacity"
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-primary to-primary-container px-4 py-2.5 text-sm font-medium text-white hover:opacity-90 transition-opacity"
             >
               Back to sign in
               <ArrowRight className="h-4 w-4" />

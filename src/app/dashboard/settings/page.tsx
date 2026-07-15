@@ -439,7 +439,7 @@ function SettingsContent() {
                   ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
                   : toast.type === "error"
                     ? "bg-red-500/10 text-red-400 border border-red-500/20"
-                    : "bg-[rgba(96,99,238,0.1)] text-[#a3a6ff]"
+                    : "bg-primary-container/10 text-primary"
               }`}
             >
               <span>{toast.message}</span>
@@ -503,21 +503,21 @@ function SettingsContent() {
                     className={`
                       relative rounded-xl p-5 transition-all
                       ${isCurrent
-                        ? "bg-[rgba(96,99,238,0.08)] ring-1 ring-[rgba(96,99,238,0.3)]"
+                        ? "bg-primary-container/8 ring-1 ring-primary-container/30"
                         : isRecommended
-                          ? "bg-surface-100 ring-1 ring-[rgba(96,99,238,0.2)]"
+                          ? "bg-surface-100 ring-1 ring-primary-container/20"
                           : "bg-surface-100"
                       }
                     `}
                   >
                     {/* Current / Recommended badge */}
                     {isCurrent && (
-                      <div className="absolute -top-2.5 left-4 px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-[rgba(96,99,238,0.15)] text-[#a3a6ff]">
+                      <div className="absolute -top-2.5 left-4 px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-primary-container/15 text-primary">
                         Current Plan
                       </div>
                     )}
                     {isRecommended && !isCurrent && (
-                      <div className="absolute -top-2.5 left-4 px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-[#6063ee] text-white">
+                      <div className="absolute -top-2.5 left-4 px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-primary-container text-white">
                         Recommended
                       </div>
                     )}
@@ -559,7 +559,7 @@ function SettingsContent() {
 
                     {/* CTA */}
                     {isCurrent ? (
-                      <div className="flex w-full items-center justify-center gap-2 rounded-lg bg-[rgba(96,99,238,0.1)] px-4 py-2.5 text-sm font-medium text-[#a3a6ff]">
+                      <div className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary-container/10 px-4 py-2.5 text-sm font-medium text-primary">
                         <Check className="h-4 w-4" />
                         Active
                       </div>
@@ -572,7 +572,7 @@ function SettingsContent() {
                         className={`
                           flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all disabled:opacity-50
                           ${canUpgrade && isRecommended
-                            ? "bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] text-white shadow-lg shadow-[rgba(96,99,238,0.2)]"
+                            ? "bg-gradient-to-r from-primary to-primary-container text-white shadow-lg shadow-primary-container/20"
                             : "bg-surface-200 text-text-primary hover:bg-surface-300"
                           }
                         `}
@@ -618,7 +618,7 @@ function SettingsContent() {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full max-w-md rounded-lg bg-surface-100 px-4 py-2.5 text-sm text-text-primary focus:bg-surface-0 focus:outline-none focus:ring-1 focus:ring-[rgba(96,99,238,0.2)] transition-all"
+                  className="w-full max-w-md rounded-lg bg-surface-100 px-4 py-2.5 text-sm text-text-primary focus:bg-surface-0 focus:outline-none focus:ring-1 focus:ring-primary-container/20 transition-all"
                 />
               </div>
               <div>
@@ -647,7 +647,7 @@ function SettingsContent() {
                   id="timezone"
                   value={timezone}
                   onChange={(e) => setTimezone(e.target.value)}
-                  className="w-full max-w-md rounded-lg bg-surface-100 px-4 py-2.5 text-sm text-text-primary focus:bg-surface-0 focus:outline-none focus:ring-1 focus:ring-[rgba(96,99,238,0.2)] transition-all"
+                  className="w-full max-w-md rounded-lg bg-surface-100 px-4 py-2.5 text-sm text-text-primary focus:bg-surface-0 focus:outline-none focus:ring-1 focus:ring-primary-container/20 transition-all"
                 >
                   {TIMEZONES.map((tz) => (
                     <option key={tz} value={tz}>
@@ -670,7 +670,7 @@ function SettingsContent() {
                         flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all
                         ${
                           preferredChannel === ch.value
-                            ? "bg-[rgba(96,99,238,0.1)] text-[#a3a6ff] ring-1 ring-[rgba(96,99,238,0.2)]"
+                            ? "bg-primary-container/10 text-primary ring-1 ring-primary-container/20"
                             : "bg-surface-100 text-text-secondary hover:bg-surface-200"
                         }
                       `}
@@ -694,7 +694,7 @@ function SettingsContent() {
                   type="time"
                   value={briefingTime}
                   onChange={(e) => setBriefingTime(e.target.value)}
-                  className="w-full max-w-xs rounded-lg bg-surface-100 px-4 py-2.5 text-sm text-text-primary focus:bg-surface-0 focus:outline-none focus:ring-1 focus:ring-[rgba(96,99,238,0.2)] transition-all"
+                  className="w-full max-w-xs rounded-lg bg-surface-100 px-4 py-2.5 text-sm text-text-primary focus:bg-surface-0 focus:outline-none focus:ring-1 focus:ring-primary-container/20 transition-all"
                 />
                 <p className="mt-1 text-xs text-text-muted">
                   When you&apos;d like to receive your daily coaching briefing
@@ -709,7 +709,7 @@ function SettingsContent() {
               onClick={handleSave}
               disabled={saving}
               whileTap={{ scale: 0.98 }}
-              className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-6 py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+              className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-primary to-primary-container px-6 py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
             >
               {saving ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -1002,8 +1002,8 @@ function SettingsContent() {
               className="w-full max-w-sm rounded-2xl border border-surface-300 bg-surface-50 p-6 shadow-2xl"
             >
               <div className="flex items-start gap-3 mb-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[rgba(96,99,238,0.1)]">
-                  <AlertTriangle className="h-5 w-5 text-[#a3a6ff]" />
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-container/10">
+                  <AlertTriangle className="h-5 w-5 text-primary" />
                 </div>
                 <div>
                   <h3 className="text-base font-semibold text-text-primary">Unsaved changes</h3>
@@ -1033,7 +1033,7 @@ function SettingsContent() {
                     setPendingNav(null);
                   }}
                   disabled={saving}
-                  className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#a3a6ff] to-[#6063ee] px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+                  className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-primary to-primary-container px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
                 >
                   {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                   {saving ? "Saving…" : "Save & Continue"}

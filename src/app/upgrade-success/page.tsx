@@ -82,7 +82,7 @@ export default function UpgradeSuccessPage() {
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '0.5rem',
-                  background: 'linear-gradient(135deg, #a3a6ff, #6063ee)',
+                  background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-container))',
                   color: 'white',
                   padding: '0.75rem 2rem',
                   borderRadius: 'var(--radius-lg)',

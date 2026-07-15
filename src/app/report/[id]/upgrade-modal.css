@@ -89,12 +89,12 @@
 }
 
 .upgrade-tier-card:hover {
-  border-color: rgba(96, 99, 238, 0.3);
+  border-color: color-mix(in oklch, var(--color-primary-container) 30%, transparent);
 }
 
 .upgrade-tier-card--recommended {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 1px var(--color-primary), 0 8px 24px rgba(96, 99, 238, 0.1);
+  box-shadow: 0 0 0 1px var(--color-primary), 0 8px 24px color-mix(in oklch, var(--color-primary-container) 10%, transparent);
 }
 
 .upgrade-tier-card__badge {
