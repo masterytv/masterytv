@@ -236,6 +236,10 @@ Deno.serve(async (req: Request) => {
           engagement_id: engagementId,
           channel,
           title: message.slice(0, 60),
+          // Brand isolation: the RESOLVED program (PC4.4) is stamped on the
+          // conversation itself so dashboard reads scope by brand — a Relatti
+          // conversation never lists or loads on masterytv.com, and vice versa.
+          program: program ?? "general",
         },
         { onConflict: "id", ignoreDuplicates: true }
       );
