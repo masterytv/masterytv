@@ -91,16 +91,6 @@ export default async function InvitePage({ params }: PageProps) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (user) {
-    const { data: existingReport } = await supabase
-      .from('assessment_reports')
-      .select('id')
-      .eq('user_id', user.id)
-      .limit(1)
-      .maybeSingle();
-    if (existingReport) redirect('/dashboard');
-  }
-
   const admin = createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -108,11 +98,25 @@ export default async function InvitePage({ params }: PageProps) {
 
   const { data: invite, error } = await admin
     .from('decoded_invites')
-    .select('id, inviter_name, inviter_report_id, status')
+    .select('id, inviter_name, inviter_report_id, status, program')
     .eq('id', code)
     .single();
 
   if (!invite || error) notFound();
+
+  // "Already done" is judged against THIS INVITE's program, not "any report"
+  // (PC2.1h §6.4): a Decoded-report holder opening a Relatti invite must reach
+  // the relationship battery, not get bounced to /dashboard.
+  if (user) {
+    const { data: existingReport } = await supabase
+      .from('assessment_reports')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('program', invite.program)
+      .limit(1)
+      .maybeSingle();
+    if (existingReport) redirect('/dashboard');
+  }
 
   // Inviter's archetype (used by the MasteryTV variant only)
   let archetypeName: string | null = null;

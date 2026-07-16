@@ -55,32 +55,55 @@ export async function claimPendingInvites(
   const admin = serviceClient();
   if (!admin) return [];
 
-  // Does the user have a completed report yet? (drives "completed" vs "pending")
-  const { data: hasReport } = await admin
-    .from('assessment_reports')
-    .select('id')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  const { data, error } = await admin
+  // Each invite belongs to a program (PC2.1h), and "does the claimer have a
+  // report yet" — which drives "completed" vs "pending" AND which report id
+  // lands on the invite — must be judged per invite, against THAT invite's
+  // program. A claimer holding only a Decoded report is still "pending" on a
+  // relationship invite (they haven't taken that battery).
+  const { data: pending, error: pendingError } = await admin
     .from('decoded_invites')
-    .update(buildClaimPatch(userId, hasReport?.id ?? null, new Date().toISOString()))
+    .select('id, program')
     .eq('recipient_email', normalizeInviteEmail(userEmail))
-    .is('recipient_id', null)
-    .select('id');
+    .is('recipient_id', null);
 
-  if (error) {
-    console.error('[claimPendingInvites] Error:', error.message);
+  if (pendingError) {
+    console.error('[claimPendingInvites] Error:', pendingError.message);
     return [];
   }
+  if (!pending || pending.length === 0) return [];
 
-  if (data && data.length > 0) {
-    console.log(`[claimPendingInvites] Claimed ${data.length} invite(s) for ${userEmail}`);
+  // One report lookup per distinct program among the pending invites.
+  const reportByProgram = new Map<string, string | null>();
+  for (const prog of new Set(pending.map((inv) => inv.program))) {
+    const { data: report } = await admin
+      .from('assessment_reports')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('program', prog)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    reportByProgram.set(prog, report?.id ?? null);
   }
 
-  const claimedIds = data?.map((row) => row.id) ?? [];
+  const claimedIds: string[] = [];
+  for (const inv of pending) {
+    const { data: claimed, error } = await admin
+      .from('decoded_invites')
+      .update(buildClaimPatch(userId, reportByProgram.get(inv.program) ?? null, new Date().toISOString()))
+      .eq('id', inv.id)
+      .is('recipient_id', null) // race guard: only claim if still unclaimed
+      .select('id');
+    if (error) {
+      console.error('[claimPendingInvites] Error:', error.message);
+      continue;
+    }
+    if (claimed && claimed.length > 0) claimedIds.push(inv.id);
+  }
+
+  if (claimedIds.length > 0) {
+    console.log(`[claimPendingInvites] Claimed ${claimedIds.length} invite(s) for ${userEmail}`);
+  }
 
   // E3 dual-write: a claim sets recipient_id/report — mirror each into the spine
   // so the partner participant gets linked (non-fatal).
@@ -119,18 +142,20 @@ export async function claimInviteById(
 
   const { data: inv } = await admin
     .from('decoded_invites')
-    .select('id, inviter_id, recipient_id, recipient_email')
+    .select('id, inviter_id, recipient_id, recipient_email, program')
     .eq('id', inviteId)
     .maybeSingle();
 
   // Missing, your own invite, or already claimed → nothing to do.
   if (!inv || inv.inviter_id === userId || inv.recipient_id) return false;
 
-  // Does the claimer already have a report? (drives completed vs pending)
+  // Does the claimer already have a report OF THIS INVITE's program?
+  // (drives completed vs pending — PC2.1h invariant 3)
   const { data: hasReport } = await admin
     .from('assessment_reports')
     .select('id')
     .eq('user_id', userId)
+    .eq('program', inv.program)
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();

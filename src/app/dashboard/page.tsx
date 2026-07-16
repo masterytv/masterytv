@@ -10,7 +10,7 @@ import { syncMyReportToSpine } from "@/lib/relatti/sync-my-report";
 import { getTodaysRitual } from "@/lib/relatti/ritual";
 import { resolveBetaAccess } from "@/lib/relatti/beta-survey";
 import { getBrand } from "@/lib/platform/brand.server";
-import { isBrandId, BRANDS } from "@/lib/platform/brand";
+import { isBrandId, BRANDS, byBrand } from "@/lib/platform/brand";
 import { originFromHeaders } from "@/lib/platform/origin";
 import DashboardHome from "./DashboardHome";
 import RelattiDashboard from "./RelattiDashboard";
@@ -19,7 +19,7 @@ import { getOrCreateBroadcastInviteUrl } from "@/lib/relatti/broadcast-invite";
 export async function generateMetadata(): Promise<Metadata> {
   const brand = await getBrand();
   return brandPageMetadata(brand.id, {
-    title: brand.id === "relatti" ? "Dashboard — Relatti" : "Dashboard — Mastery",
+    title: byBrand({ relatti: "Dashboard — Relatti", masterytv: "Dashboard — Mastery" }, brand.id),
     description:
       brand.id === "relatti"
         ? "Your relationship dashboard. Assessment, blueprint, and coaching in one place."
@@ -179,7 +179,7 @@ export default async function DashboardPage({
 
   // Stable "broadcast" invite for copy-link sharing (persistent /invite/[id]
   // URL that works for clipboard copies where a recipient isn't known upfront).
-  const inviteUrl = await getOrCreateBroadcastInviteUrl(supabase, user, appUrl, reportId);
+  const inviteUrl = await getOrCreateBroadcastInviteUrl(supabase, user, appUrl, reportId, program);
 
   // Load invites sent TO this user that need consent (for consent banner)
   const { data: receivedInvites } = await supabase

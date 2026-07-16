@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { originFromHeaders } from '@/lib/platform/origin';
-import { resolveBrand, isBrandId, type BrandId } from '@/lib/platform/brand';
+import { brandForProgram, type BrandId } from '@/lib/platform/brand';
 import { sendBrandInviteNotifyEmail } from '@/lib/decoded/invite-email';
 
 /**
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     // Load the invite with idempotency check
     const { data: invite, error: inviteError } = await admin
       .from('decoded_invites')
-      .select('id, inviter_id, inviter_email, inviter_name, recipient_id, recipient_email, status, notified_at')
+      .select('id, inviter_id, inviter_email, inviter_name, recipient_id, recipient_email, status, notified_at, program')
       .eq('id', inviteId)
       .single();
 
@@ -63,7 +63,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
     }
 
-    // Get recipient's archetype from their report
+    // Get recipient's archetype from their report OF THIS INVITE'S PROGRAM —
+    // a dual-brand recipient's other-program archetype must not leak into this
+    // notification (PC2.1h).
     let recipientArchetype = '';
     let recipientSublabel = '';
     if (invite.recipient_id) {
@@ -71,6 +73,7 @@ export async function POST(req: NextRequest) {
         .from('assessment_reports')
         .select('archetype_base, archetype_sublabel')
         .eq('user_id', invite.recipient_id)
+        .eq('program', invite.program)
         .order('created_at', { ascending: false })
         .limit(1)
         .single();
@@ -90,19 +93,10 @@ export async function POST(req: NextRequest) {
     const appUrl = originFromHeaders(req.headers);
     const compatibilityUrl = `${appUrl}/dashboard/compatibility`;
 
-    // Resolve the INVITER's brand — the note goes to them. Prefer their durable
-    // signup_brand; fall back to the host the recipient completed on (a dyad
-    // shares one brand). Mirrors the invite-send brand resolution.
-    let brandId: BrandId = resolveBrand(req.headers.get('host')).id;
-    const { data: inviterRow } = await admin
-      .from('users')
-      .select('signup_brand')
-      .eq('id', invite.inviter_id)
-      .single();
-    const inviterBrand = inviterRow?.signup_brand;
-    if (isBrandId(inviterBrand)) {
-      brandId = inviterBrand;
-    }
+    // Resolve the brand from the INVITE's own program (PC2.1h) — more specific
+    // than the inviter's signup_brand (a dual-brand user's relationship invite
+    // must notify in Relatti voice regardless of where they first signed up).
+    const brandId: BrandId = brandForProgram(invite.program).id;
 
     // The personality-archetype line only fits the Decoded framing; Relatti
     // leads with the relationship, not the archetype name.

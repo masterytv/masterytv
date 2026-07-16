@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { brandForProgram } from "@/lib/platform/brand";
 
 interface CrisisFlag {
   id: string;
@@ -21,11 +22,11 @@ interface CrisisFlag {
 type FilterTab = "all" | "unresolved" | "resolved";
 type BrandTab = "all" | "relatti" | "masterytv" | "unattributed";
 
-// program → brand: the relationship program is Relatti's; everything else
-// stamped (general, …) is the executive/MasteryTV engine.
+// program → brand via the registry (brandForProgram); unstamped flags are
+// deliberately "unattributed", never guessed.
 function brandOfFlag(f: CrisisFlag): "relatti" | "masterytv" | "unattributed" {
   if (!f.program) return "unattributed";
-  return f.program === "relationship" ? "relatti" : "masterytv";
+  return brandForProgram(f.program).id;
 }
 
 const BRAND_TAB_LABELS: Record<BrandTab, string> = {

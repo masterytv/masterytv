@@ -28,6 +28,7 @@ import {
 } from "../_shared/channel-delivery.ts";
 import { checkNaggingState, recordStrike } from "../_shared/nagging.ts";
 import { resolvePack, type CoachPack } from "../_shared/packs/index.ts";
+import { brandForProgram } from "../_shared/brands.ts";
 import type { BriefingContext } from "../_shared/packs/types.ts";
 import { resolveDyadContext } from "../_shared/dyad-context.ts";
 
@@ -134,7 +135,7 @@ Deno.serve(async (req: Request) => {
         // meta check-in) and whether this vertical sends briefings at all;
         // this cron stays vertical-blind.
         const program = await resolveBriefingProgram(supabase, user.id);
-        const brand = program === "relationship" ? "relatti" : "masterytv";
+        const brand = brandForProgram(program).id;
         const pack = resolvePack(program);
         if (!pack.briefing.enabled) {
           skipped++;

@@ -17,7 +17,9 @@
     "check:metadata": "node scripts/check-brand-metadata.mjs",
     "check:colors": "node scripts/check-brand-colors.mjs",
     "check:brand-tokens": "node scripts/check-brand-tokens.mjs",
-    "gate": "npm run typecheck && npm run test && npm run safety && npm run isolation && npm run check:metadata && npm run check:colors && npm run check:brand-tokens && npm run check:resolve && npm run snapshot:prompts"
+    "check:ternaries": "node scripts/check-brand-ternaries.mjs",
+    "check:tenancy": "node scripts/check-tenancy.mjs",
+    "gate": "npm run typecheck && npm run test && npm run safety && npm run isolation && npm run check:metadata && npm run check:colors && npm run check:brand-tokens && npm run check:ternaries && npm run check:tenancy && npm run check:resolve && npm run snapshot:prompts"
   },
   "dependencies": {
     "@react-pdf/renderer": "^4.0.0",

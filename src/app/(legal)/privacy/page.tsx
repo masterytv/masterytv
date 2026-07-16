@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { brandPageMetadata } from "@/lib/platform/brand-metadata";
 import { getBrandFromRequest } from "@/lib/platform/brand.server";
+import { byBrand } from "@/lib/platform/brand";
 import { LEGAL_CONTACT } from "@/lib/platform/legal";
 import MasteryPrivacy from "../_content/MasteryPrivacy";
 import RelattiPrivacy from "../_content/RelattiPrivacy";
@@ -28,5 +29,8 @@ export async function generateMetadata({
 
 export default async function PrivacyPage({ searchParams }: PageProps) {
   const brand = await getBrandFromRequest((await searchParams).brand);
-  return brand.id === "relatti" ? <RelattiPrivacy /> : <MasteryPrivacy />;
+  // byBrand, not a ternary: serving another brand's PRIVACY POLICY silently is
+  // the worst version of the fallback bug — a new brand must fail the build
+  // here until its own legal text exists.
+  return byBrand({ relatti: <RelattiPrivacy />, masterytv: <MasteryPrivacy /> }, brand.id);
 }

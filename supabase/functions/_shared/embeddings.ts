@@ -103,7 +103,8 @@ export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
 export async function searchMemoryFacts(
   userId: string,
   queryEmbedding: number[],
-  topK = 10
+  topK = 10,
+  program?: string,
 ): Promise<
   {
     id: string;
@@ -123,6 +124,9 @@ export async function searchMemoryFacts(
     match_user_id: userId,
     match_count: topK,
     match_threshold: 0.3, // Minimum similarity (1 - cosine_distance)
+    // PC2.2: scope semantic recall to the vertical. Omitted/null = unfiltered
+    // (the pre-scoping behavior, kept for any caller without program context).
+    match_program: program ?? null,
   });
 
   if (error) {

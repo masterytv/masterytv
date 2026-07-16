@@ -1,7 +1,7 @@
 "use client";
 
 import { useUser } from "@/hooks/useUser";
-import { useBrand } from "@/hooks/useBrand";
+import { useBrand, resolveBrandClient } from "@/hooks/useBrand";
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -125,11 +125,15 @@ function SettingsContent() {
   const fetchCoachProfile = useCallback(async () => {
     if (!user) return;
     const supabase = createClient();
+    // PC2.2: the panel shows THIS brand's coach profile. resolveBrandClient
+    // inside the callback, not useBrand — the hook's first render returns the
+    // default brand and a stale capture would query the wrong program.
     const { data } = await supabase
       .from("coach_profiles")
       .select("*")
       .eq("user_id", user.id)
-      .single();
+      .eq("program", resolveBrandClient().programSlug)
+      .maybeSingle();
     if (data) {
       setCoachProfile(data as CoachProfile);
       // Restore flagged dimensions from framework_affinity JSONB
@@ -777,7 +781,8 @@ function SettingsContent() {
                                   flagged_dimensions: newFlags,
                                 },
                               })
-                              .eq("user_id", user!.id);
+                              .eq("user_id", user!.id)
+                              .eq("program", resolveBrandClient().programSlug); // PC2.2
                           }}
                           title={isFlagged ? "Flagged for recalibration" : "Flag if this doesn't feel right"}
                         >
@@ -832,7 +837,8 @@ function SettingsContent() {
                                   flagged_dimensions: newFlags,
                                 },
                               })
-                              .eq("user_id", user!.id);
+                              .eq("user_id", user!.id)
+                              .eq("program", resolveBrandClient().programSlug); // PC2.2
                           }}
                           title={isFlagged ? "Flagged for recalibration" : "Flag if this doesn't feel right"}
                         >

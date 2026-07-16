@@ -104,11 +104,14 @@ async function assessArcAndGenerateReview(
         .select("name, timezone, created_at")
         .eq("id", userId)
         .single(),
+      // The arc strategist is executive machinery (challenges/commitments) —
+      // it reads the GENERAL profile explicitly (PC2.2).
       supabase
         .from("coach_profiles")
         .select("trust_level, framework_affinity")
         .eq("user_id", userId)
-        .single(),
+        .eq("program", "general")
+        .maybeSingle(),
       supabase
         .from("coaching_challenges")
         .select("title, framework, framework_phase, status, created_at")

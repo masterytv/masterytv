@@ -56,6 +56,12 @@ jobs:
       - name: Brand-token coverage (each brand overrides the full identity set)
         run: npm run check:brand-tokens
 
+      - name: Brand-ternary gate (TENANCY_AUDIT T3 — no behavior ternaries on brand/program ids)
+        run: npm run check:ternaries
+
+      - name: Tenancy gate (TENANCY_AUDIT T0 — every table categorized; user_id alone is not brand isolation)
+        run: npm run check:tenancy
+
       - name: Program-resolution precedence (PC4.4 — spine outranks the client hint)
         run: npm run check:resolve
 

@@ -18,6 +18,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createSupabaseClient } from "../_shared/supabase.ts";
 import { logError } from "../_shared/errors.ts";
+import { brandForProgram } from "../_shared/brands.ts";
 import {
   getReceivedEmail,
   sendEmail,
@@ -175,8 +176,9 @@ Deno.serve(async (req: Request) => {
     // Brand follows the conversation's resolved program (channel-router 2.5) —
     // a Relatti conversation replies as Relatti, from mail.relatti.com.
     // reply-to stays coach@mail.masterytv.com: the only inbound domain.
-    const brand = result.program === "relationship" ? "relatti" as const : "masterytv" as const;
-    const brandName = brand === "relatti" ? "Relatti" : "Mastery Coach";
+    const edgeBrand = brandForProgram(result.program);
+    const brand = edgeBrand.id;
+    const brandName = edgeBrand.coachName;
     const subject = email.subject?.startsWith("Re:")
       ? email.subject
       : `Re: ${email.subject || brandName}`;

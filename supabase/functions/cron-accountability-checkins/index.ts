@@ -21,6 +21,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createSupabaseClient } from "../_shared/supabase.ts";
 import { callClaude, calculateCost } from "../_shared/anthropic.ts";
 import { checkNaggingState } from "../_shared/nagging.ts";
+import { EDGE_BRANDS, brandForProgram } from "../_shared/brands.ts";
 
 const FUNCTION_NAME = "cron-accountability-checkins";
 
@@ -186,7 +187,7 @@ Deno.serve(async (req: Request) => {
         // Reuse the SOURCE conversation so the check-in (and any email reply)
         // lands in the thread the commitment came from.
         const conversationId = source.conversationId ?? crypto.randomUUID();
-        const origin = source.brand === "relatti" ? "https://relatti.com" : "https://masterytv.com";
+        const origin = EDGE_BRANDS[source.brand ?? "masterytv"].origin;
         const { error: insertError } = await supabase
           .from("scheduled_messages")
           .insert({
@@ -315,7 +316,7 @@ async function resolveCommitmentSource(
     }
 
     if (typeof stampedProgram === "string" && stampedProgram) {
-      result.brand = stampedProgram.toLowerCase() === "relationship" ? "relatti" : "masterytv";
+      result.brand = brandForProgram(stampedProgram).id;
       return result;
     }
 

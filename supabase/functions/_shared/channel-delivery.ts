@@ -13,6 +13,7 @@
  */
 
 import { createSupabaseClient } from "./supabase.ts";
+import { EDGE_BRANDS, type BrandId } from "./brands.ts";
 import { sendEmail, buildCoachingEmailHtml, buildThreadHeaders } from "./resend.ts";
 import { sendMessage as sendTelegramMessage, formatCoachResponseForTelegram } from "./telegram.ts";
 
@@ -20,7 +21,7 @@ type Channel = "email" | "telegram" | "web";
 
 export interface ProactiveDeliveryOptions {
   /** Vertical the message belongs to — picks the email chrome + from-domain. */
-  brand?: "relatti" | "masterytv";
+  brand?: BrandId;
   /** Deep link to the source conversation, rendered as a CTA in the email. */
   conversationUrl?: string;
 }
@@ -186,10 +187,9 @@ async function deliverViaEmail(
     html,
     headers,
     brand,
-    // Inbound email processing only exists on mail.masterytv.com today, so
-    // Relatti-branded sends route replies there to keep "just reply" true.
-    // Drop this once coach@mail.relatti.com has an inbound webhook.
-    replyTo: brand === "relatti" ? "Relatti Coach <coach@mail.masterytv.com>" : undefined,
+    // Reply-to override lives in the registry (see EDGE_BRANDS.replyToOverride
+    // — inbound email only exists on mail.masterytv.com today).
+    replyTo: brand ? EDGE_BRANDS[brand].replyToOverride : undefined,
   });
 
   return {

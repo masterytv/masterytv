@@ -8,7 +8,7 @@
  * Pure + edge-safe (no next/headers). Source of truth will later be
  * program.config.modules in the DB; for now it's this code map.
  */
-import { type BrandId, BRANDS } from "./brand";
+import { type BrandId, type ProgramId, BRANDS } from "./brand";
 
 export type ModuleId =
   // Core — every vertical has these
@@ -30,8 +30,13 @@ export type ModuleId =
 
 const CORE: ModuleId[] = ["assessment", "coach", "report", "settings"];
 
-/** Enabled modules per program slug. Unknown program falls back to general. */
-export const PROGRAM_MODULES: Record<string, ModuleId[]> = {
+/**
+ * Enabled modules per program. Record<ProgramId,…> on purpose (T2): adding a
+ * program to the ProgramId union makes this a COMPILE ERROR until the new
+ * vertical's module set is declared — no more silent fallback to general
+ * (which once shipped MasteryTV's modules on relatti.com).
+ */
+export const PROGRAM_MODULES: Record<ProgramId, ModuleId[]> = {
   general: [
     ...CORE,
     "compatibility",
@@ -78,8 +83,8 @@ export function moduleForPath(pathname: string): ModuleId | null {
   return null;
 }
 
-export function modulesForProgram(programSlug: string): Set<ModuleId> {
-  return new Set(PROGRAM_MODULES[programSlug] ?? PROGRAM_MODULES.general);
+export function modulesForProgram(programSlug: ProgramId): Set<ModuleId> {
+  return new Set(PROGRAM_MODULES[programSlug]);
 }
 
 export function modulesForBrand(brandId: BrandId): Set<ModuleId> {

@@ -68,7 +68,7 @@ function renderMarkdown(text: string): string {
 // (Was hardcoded "M", which showed on the Relatti relationship coach too.)
 function CoachAvatar() {
   const brand = useBrand();
-  const initial = brand.id === "relatti" ? "R" : "M";
+  const initial = brand.name.charAt(0); // derived from the registry — new brands covered for free
   return <div className="chat-avatar chat-avatar-coach">{initial}</div>;
 }
 

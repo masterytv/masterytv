@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useUser } from "@/hooks/useUser";
+import { BRANDS } from "@/lib/platform/brand";
 import { Loader2, Shield, ShieldOff, ShieldCheck } from "lucide-react";
 
 interface AdminUser {
@@ -142,7 +143,12 @@ export default function UsersPage() {
                     <th
                       key={h}
                       onClick={() =>
-                        setBrandSort(s => s === "none" ? "relatti" : s === "relatti" ? "masterytv" : "none")
+                        // Cycle none → each registry brand → none (derived, so a
+                        // new brand joins the sort rotation automatically).
+                        setBrandSort(s => {
+                          const order = ["none", ...Object.keys(BRANDS)] as (typeof s)[];
+                          return order[(order.indexOf(s) + 1) % order.length];
+                        })
                       }
                       title="Click to sort by brand"
                       style={{ textAlign: "left", padding: "0.75rem 1rem", color: "var(--text-hint)", fontWeight: 600, fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.04em", cursor: "pointer", userSelect: "none" }}

@@ -10,6 +10,7 @@
  * Resolved from a brand's program slug in /assess; see brand.ts (programSlug).
  */
 
+import type { ProgramId } from "@/lib/platform/brand";
 import type { InstrumentDef } from "./core";
 import { CORE_INSTRUMENTS, IPIP50, ECR_R_SHORT } from "./core";
 import { CSI4 } from "./addons";
@@ -44,7 +45,17 @@ export const CORE_BATTERY: BatteryConfig = {
   relationshipMode: false,
 };
 
+/**
+ * Battery per program. Record<ProgramId,…> on purpose (TENANCY_AUDIT T2): a
+ * new vertical fails the typecheck here until its battery is declared, instead
+ * of silently administering the 66-item Core battery.
+ */
+const BATTERIES: Record<ProgramId, BatteryConfig> = {
+  general: CORE_BATTERY,
+  relationship: RELATIONSHIP_BATTERY,
+};
+
 /** Resolve the battery for a program slug (brand.programSlug). */
-export function getBattery(programSlug: string): BatteryConfig {
-  return programSlug === "relationship" ? RELATIONSHIP_BATTERY : CORE_BATTERY;
+export function getBattery(programSlug: ProgramId): BatteryConfig {
+  return BATTERIES[programSlug];
 }

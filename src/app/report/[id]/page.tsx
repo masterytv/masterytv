@@ -181,8 +181,13 @@ export default async function ReportPage({ params, searchParams }: PageProps) {
     // Relationship profiles get a real Relatti partner-invite (not the Decoded
     // share-to-unlock gate). The owner needs their stable broadcast invite link
     // for the modal's copy-link path; the email path is brand-aware server-side.
+    // Both the brand AND the report must be relationship-program: the invite the
+    // modal shares is stamped with a program, and its inviter_report_id must be
+    // a report of that same program (PC2.1h invariant 3) — a general report
+    // opened on relatti.com must not mint a relationship invite pointing at it.
     const brand = await getBrand();
-    const isRelationship = brand.programSlug === 'relationship';
+    const isRelationship =
+      brand.programSlug === 'relationship' && ownReport.program === 'relationship';
 
     // The viewer's consented dyad. S5 renders only a signpost, so strip to the
     // pointer before handing it to ReportViewer — that's a client component, and
@@ -196,6 +201,7 @@ export default async function ReportPage({ params, searchParams }: PageProps) {
             user,
             originFromHeaders(await headers()),
             ownReport.id,
+            ownReport.program,
           ),
           getDyadNeedToHear(user.id),
         ])

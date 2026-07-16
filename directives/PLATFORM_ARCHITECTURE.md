@@ -49,9 +49,9 @@ Everything that "varies per vertical" is exactly one of these five orthogonal la
 | Layer | Question it answers | Lives in | Stage-1 (Relatti) value |
 |:--|:--|:--|:--|
 | **1. Workspace** (tenant) | *Who owns it?* | `workspace` table | `masterytv` (one). White-label = one workspace per coach (Stage 3). |
-| **2. Program** (vertical) | *What product is it?* | `program` table + `program.config` | `relationship`. |
-| **3. Surface** | *What's the main logged-in screen?* | Surface registry (code) keyed by program | `relationship_dyad` surface (partner panel + Blueprint + chat). |
-| **4. Modules** | *What can it do?* | `program.config.modules` (flags) → module registry (code) | coach + assessment + dyad + compatibility + partner-invite; **commitments/progress/letters OFF**. |
+| **2. Program** (vertical) | *What product is it?* | **Typed code registries** — `ProgramId` union + `Record<ProgramId,…>` maps (packs, batteries, modules; TENANCY_AUDIT T1/T2 2026-07-16). `program.config` (jsonb) exists but is **not read** — it becomes load-bearing only when the spine is authoritative (there is no `general` program row today); reserved for white-label. | `relationship`. |
+| **3. Surface** | *What's the main logged-in screen?* | `byBrand()` selection at `DashboardLayoutClient` (exhaustive per brand — a new brand is a compile error). The standalone surface *registry* (and `Brand.surfaceId`, removed 2026-07-16 T5 — it had zero consumers) gets built when a third genuinely novel surface exists, not before. | Relatti dashboard (partner panel + Blueprint + chat) vs coach-chat shell. |
+| **4. Modules** | *What can it do?* | `Record<ProgramId, ModuleId[]>` module registry (code) + `ROUTE_MODULES` middleware guard. (`program.config.modules` is the future DB home — see layer 2 note.) | coach + assessment + dyad + compatibility + partner-invite; **commitments/progress/letters OFF**. |
 | **5. Theme** | *What does it look like?* | `program`/brand theme tokens + domain map | Relatti brand tokens, `relatti.com`. |
 
 **A vertical = (workspace, program, surface, module-set, theme, domain[s]).** Defining a new product (`mentalathletes.com`) means: reuse the workspace, add a `program` row, pick/register a surface, toggle modules, set a theme, point a domain. Mostly config; new code only when it needs a genuinely novel module or surface.
@@ -84,7 +84,7 @@ A domain is just an input. `src/middleware.ts` (already on every request) gains 
 // pseudocode — proposal, not applied
 export async function middleware(req: NextRequest) {
   const host = req.headers.get("host") ?? "";        // relatti.com, careercoach.com, staging.…
-  const brand = resolveBrand(host);                   // { workspaceSlug, programSlug, themeId, surfaceId }
+  const brand = resolveBrand(host);                   // { workspaceSlug, programSlug, themeId, domains }
   const res = await updateSession(req);               // existing Supabase auth refresh
   res.headers.set("x-brand", brand.id);               // hand brand to layouts/server components
   return res;

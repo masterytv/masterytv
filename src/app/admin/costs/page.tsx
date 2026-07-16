@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { BRANDS, brandForProgram } from "@/lib/platform/brand";
 
 interface DayRow {
   day: string;
@@ -75,13 +76,17 @@ export default async function CostDashboardPage() {
   // stamp (pre-2026-07-14, or system jobs with no conversation context) are
   // "unattributed" — deliberately not guessed, so the brand columns stay honest
   // and still sum to the platform total.
-  const brandTotals = { relatti: 0, masterytv: 0, unattributed: 0 };
+  // Buckets derived from the registry so a new brand's spend is COUNTED from
+  // day one (a literal-keyed object would silently NaN it); the chips below
+  // still enumerate known brands explicitly.
+  const brandTotals: Record<string, number> = { unattributed: 0 };
+  for (const id of Object.keys(BRANDS)) brandTotals[id] = 0;
   rawDaily.forEach(r => {
     const program = r.metadata?.program ?? null;
-    const bucket = !program ? "unattributed" : program === "relationship" ? "relatti" : "masterytv";
+    const bucket = !program ? "unattributed" : brandForProgram(program).id;
     brandTotals[bucket] += Number(r.cost_usd);
   });
-  const brandTotal30d = brandTotals.relatti + brandTotals.masterytv + brandTotals.unattributed;
+  const brandTotal30d = Object.values(brandTotals).reduce((a, b) => a + b, 0);
 
   // Group by day from cost_tracking directly
   const costByDay: Record<string, number> = {};
