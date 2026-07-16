@@ -4,6 +4,7 @@ import { redirect, notFound } from 'next/navigation';
 import ReportViewer from './ReportViewer';
 import { getBrand } from '@/lib/platform/brand.server';
 import { getOrCreateBroadcastInviteUrl } from '@/lib/relatti/broadcast-invite';
+import { getPartnerNeedToHear } from '@/lib/relatti/partner-need-to-hear';
 import { originFromHeaders } from '@/lib/platform/origin';
 import { headers } from 'next/headers';
 import type { Metadata } from 'next';
@@ -185,20 +186,29 @@ export default async function ReportPage({ params, searchParams }: PageProps) {
     // for the modal's copy-link path; the email path is brand-aware server-side.
     const brand = await getBrand();
     const isRelationship = brand.programSlug === 'relationship';
-    const inviteUrl = isRelationship
-      ? await getOrCreateBroadcastInviteUrl(
-          supabase,
-          user,
-          originFromHeaders(await headers()),
-          ownReport.id,
-        )
-      : undefined;
+
+    // S5's reciprocal "What [partner] Needs to Hear" block. Consent-gated inside
+    // the helper (share_with_human = 'full') and null until the partner has
+    // finished their own profile — S5 then keeps its "invite them" empty state.
+    // Independent of the invite URL, so resolve both together.
+    const [inviteUrl, partnerNeedToHear] = isRelationship
+      ? await Promise.all([
+          getOrCreateBroadcastInviteUrl(
+            supabase,
+            user,
+            originFromHeaders(await headers()),
+            ownReport.id,
+          ),
+          getPartnerNeedToHear(user.id),
+        ])
+      : [undefined, null];
 
     return (
       <ReportViewer
         report={ownReport}
         scores={scores ?? []}
         inviteUrl={inviteUrl}
+        partnerNeedToHear={partnerNeedToHear}
       />
     );
   }
