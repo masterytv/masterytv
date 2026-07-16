@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { brandPageMetadata } from "@/lib/platform/brand-metadata";
 import { getBrandFromRequest } from "@/lib/platform/brand.server";
+import { byBrand } from "@/lib/platform/brand";
 import { LEGAL_CONTACT } from "@/lib/platform/legal";
 import MasteryDisclaimer from "../_content/MasteryDisclaimer";
 import RelattiDisclaimer from "../_content/RelattiDisclaimer";
@@ -26,5 +27,5 @@ export async function generateMetadata({
 
 export default async function DisclaimerPage({ searchParams }: PageProps) {
   const brand = await getBrandFromRequest((await searchParams).brand);
-  return brand.id === "relatti" ? <RelattiDisclaimer /> : <MasteryDisclaimer />;
+  return byBrand({ relatti: <RelattiDisclaimer />, masterytv: <MasteryDisclaimer /> }, brand.id);
 }

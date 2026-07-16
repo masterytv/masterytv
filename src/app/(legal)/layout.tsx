@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Fingerprint } from "lucide-react";
 import { RelattiMark } from "@/components/relatti/RelattiMark";
 import { getBrand } from "@/lib/platform/brand.server";
+import { byBrand } from "@/lib/platform/brand";
 import { LEGAL_CONTACT } from "@/lib/platform/legal";
 
 /**
@@ -45,14 +46,18 @@ export default async function LegalLayout({
                 "color-mix(in oklch, var(--color-primary) 12%, transparent)",
             }}
           >
-            {brand.id === "relatti" ? (
-              <RelattiMark className="h-4 w-4" />
-            ) : (
-              <Fingerprint
-                className="h-4 w-4"
-                style={{ color: "var(--color-primary)" }}
-                strokeWidth={1.75}
-              />
+            {byBrand(
+              {
+                relatti: <RelattiMark className="h-4 w-4" />,
+                masterytv: (
+                  <Fingerprint
+                    className="h-4 w-4"
+                    style={{ color: "var(--color-primary)" }}
+                    strokeWidth={1.75}
+                  />
+                ),
+              },
+              brand.id,
             )}
           </span>
           <span className="text-xl font-semibold tracking-tight text-text-primary">

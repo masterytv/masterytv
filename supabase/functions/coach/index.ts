@@ -676,12 +676,14 @@ Deno.serve(async (req: Request) => {
             total_ms: totalMs,
           };
 
-          // Fetch current coach profile for the debug summary
+          // Fetch current coach profile for the debug summary (PC2.2: the one
+          // this vertical's coach actually used)
           const { data: currentProfile } = await supabase
             .from("coach_profiles")
             .select("directness, framing, warmth, autonomy, pacing, evidence_style, accountability, challenge_level, trust_level, confidence, source")
             .eq("user_id", streamUserId)
-            .single();
+            .eq("program", programScope(program))
+            .maybeSingle();
 
           const debugSummary: DebugSummary = {
             prompt_trace: debugTrace,

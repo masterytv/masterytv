@@ -33,19 +33,23 @@ export async function POST(request: Request) {
 
     const dimensions = VOICE_TO_COACH_DIMENSIONS[voiceId as CoachVoiceId];
 
-    // Upsert coach_profiles with the new voice dimensions
+    // Upsert coach_profiles with the new voice dimensions.
+    // PC2.2: voices are a general-only module (modules.ts coach_voices), so
+    // this writes the GENERAL profile; if another vertical ever enables
+    // voices, resolve the program from the request instead.
     const { error } = await supabase
       .from('coach_profiles')
       .upsert(
         {
           user_id: user.id,
+          program: 'general',
           ...dimensions,
           voice_id: voiceId,
           source: 'voice_override',
           confidence: 1.0, // User explicitly chose this
           updated_at: new Date().toISOString(),
         },
-        { onConflict: 'user_id' }
+        { onConflict: 'user_id,program' }
       );
 
     if (error) {

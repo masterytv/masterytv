@@ -49,6 +49,7 @@ Deno.serve(async (req: Request) => {
       .from("memory_facts")
       .select("category, subject, content")
       .eq("user_id", userId)
+      .eq("program", "general") // PC2.2: the letter is an executive-onboarding artifact
       .eq("is_confirmed", true)
       .order("importance", { ascending: false })
       .limit(20);

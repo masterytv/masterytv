@@ -131,8 +131,11 @@ export async function assemblePrompt(
   ] = await Promise.all([
     // User profile
     supabase.from("users").select("*").eq("id", userId).single(),
-    // Coach profile (communication dimensions)
-    supabase.from("coach_profiles").select("*").eq("user_id", userId).single(),
+    // Coach profile (communication dimensions) — PER PROGRAM (PC2.2): the
+    // relationship coach must not inherit the executive coach's learned dials.
+    // maybeSingle: a user new to THIS vertical has no profile yet (defaults apply).
+    supabase.from("coach_profiles").select("*")
+      .eq("user_id", userId).eq("program", programScope(program)).maybeSingle(),
     // Active challenges with frameworks
     supabase
       .from("coaching_challenges")
@@ -149,6 +152,7 @@ export async function assemblePrompt(
       .from("memory_facts")
       .select("category, subject, content, importance")
       .eq("user_id", userId)
+      .eq("program", programScope(program)) // PC2.2: memory never crosses verticals
       .order("importance", { ascending: false })
       .limit(10),
     // Coaching agenda (latest)
@@ -221,7 +225,7 @@ export async function assemblePrompt(
     console.log(`[prompt-assembler] Generating embedding for query: "${userMessage.slice(0, 60)}..."`);
     const queryEmbedding = await generateEmbedding(userMessage);
     console.log(`[prompt-assembler] Embedding generated (${queryEmbedding.length} dims), searching facts for user ${userId}...`);
-    semanticResults = await searchMemoryFacts(userId, queryEmbedding, 8);
+    semanticResults = await searchMemoryFacts(userId, queryEmbedding, 8, programScope(program));
     console.log(`[prompt-assembler] Semantic search returned ${semanticResults.length} results`);
     semanticFacts = semanticResults.map((r) => ({
       category: r.category,

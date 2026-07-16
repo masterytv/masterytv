@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { brandPageMetadata } from "@/lib/platform/brand-metadata";
 import { getBrandFromRequest } from "@/lib/platform/brand.server";
+import { byBrand } from "@/lib/platform/brand";
 import { LEGAL_CONTACT } from "@/lib/platform/legal";
 import MasteryTerms from "../_content/MasteryTerms";
 import RelattiTerms from "../_content/RelattiTerms";
@@ -27,5 +28,5 @@ export async function generateMetadata({
 
 export default async function TermsPage({ searchParams }: PageProps) {
   const brand = await getBrandFromRequest((await searchParams).brand);
-  return brand.id === "relatti" ? <RelattiTerms /> : <MasteryTerms />;
+  return byBrand({ relatti: <RelattiTerms />, masterytv: <MasteryTerms /> }, brand.id);
 }

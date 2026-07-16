@@ -17,6 +17,7 @@
  */
 
 import { createSupabaseClient } from "./supabase.ts";
+import { programScope } from "./packs/index.ts";
 import type { ProfileSignals, ProfileUpdateResult } from "./debug-types.ts";
 
 // Minimum messages before we start updating the profile
@@ -40,7 +41,10 @@ const DELTA = {
 export async function updateCoachProfile(
   userId: string,
   signals: ProfileSignals,
-  messageCount: number
+  messageCount: number,
+  // PC2.2: the dials adapt PER VERTICAL — signals from a relationship
+  // conversation must never move the executive coach's profile.
+  program: string | null = null
 ): Promise<ProfileUpdateResult> {
   // Gate: don't update until we have enough data to be meaningful
   if (messageCount < MIN_MESSAGES_FOR_UPDATE) {
@@ -76,11 +80,12 @@ export async function updateCoachProfile(
 
   const supabase = createSupabaseClient();
 
-  // Load current profile
+  // Load current profile for THIS vertical
   const { data: profile, error: loadError } = await supabase
     .from("coach_profiles")
     .select("*")
     .eq("user_id", userId)
+    .eq("program", programScope(program))
     .single();
 
   if (loadError || !profile) {
@@ -200,7 +205,8 @@ export async function updateCoachProfile(
   const { error: updateError } = await supabase
     .from("coach_profiles")
     .update(updates)
-    .eq("user_id", userId);
+    .eq("user_id", userId)
+    .eq("program", programScope(program));
 
   if (updateError) {
     console.error("[profile-updater] Failed to update profile:", updateError.message);
@@ -218,6 +224,7 @@ export async function updateCoachProfile(
   try {
     const snapshot: Record<string, unknown> = {
       user_id: userId,
+      program: programScope(program), // PC2.2: the evolution chart is per-vertical
       message_count: messageCount,
       directness: deltas.directness?.after ?? profile.directness,
       framing: deltas.framing?.after ?? profile.framing,

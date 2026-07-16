@@ -5,11 +5,12 @@ import type { Metadata } from "next";
 import { brandPageMetadata } from "@/lib/platform/brand-metadata";
 import LoginPanel from "./LoginPanel";
 import { getBrand } from "@/lib/platform/brand.server";
+import { byBrand } from "@/lib/platform/brand";
 
 export async function generateMetadata(): Promise<Metadata> {
   const brand = await getBrand();
   return brandPageMetadata(brand.id, {
-    title: brand.id === "relatti" ? "Sign in — Relatti" : "Sign in — Mastery Coach",
+    title: byBrand({ relatti: "Sign in — Relatti", masterytv: "Sign in — Mastery Coach" }, brand.id),
     noindex: true,
   });
 }

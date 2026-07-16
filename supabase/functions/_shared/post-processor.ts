@@ -12,7 +12,7 @@ import { generateEmbeddings, logEmbeddingCost } from "./embeddings.ts";
 import { logError } from "./errors.ts";
 import { updateCoachProfile } from "./profile-updater.ts";
 import type { ProfileSignals } from "./debug-types.ts";
-import { resolvePack } from "./packs/index.ts";
+import { resolvePack, programScope } from "./packs/index.ts";
 import type { PackExtraction } from "./packs/types.ts";
 
 // ─── FRAMEWORK ASSIGNMENT ──────────────────────────────────────────────
@@ -360,6 +360,7 @@ export async function postProcess(
           importance: f.importance,
           source_message_id: coachMessageId,
           is_confirmed: false,
+          program: programScope(program), // PC2.2: a fact belongs to the vertical it was learned in
           embedding: factEmbeddings[i]
             ? JSON.stringify(factEmbeddings[i])
             : null,
@@ -529,7 +530,8 @@ export async function postProcess(
         .from("coach_profiles")
         .select("trust_level, framework_affinity")
         .eq("user_id", userId)
-        .single();
+        .eq("program", programScope(program)) // PC2.2
+        .maybeSingle();
 
       const trustLevel = coachProfile?.trust_level ?? 1;
 
@@ -659,7 +661,8 @@ export async function postProcess(
         const profileResult = await updateCoachProfile(
           userId,
           extracted.profile_signals as ProfileSignals,
-          msgCount ?? 0
+          msgCount ?? 0,
+          program
         );
 
         if (profileResult.applied) {

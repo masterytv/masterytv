@@ -21,6 +21,7 @@ import {
   storeOutboundMessage,
 } from "../_shared/channel-delivery.ts";
 import { checkNaggingState, recordStrike } from "../_shared/nagging.ts";
+import { isBrandId } from "../_shared/brands.ts";
 import { logError } from "../_shared/errors.ts";
 
 const FUNCTION_NAME = "cron-process-scheduled";
@@ -107,7 +108,7 @@ Deno.serve(async (req: Request) => {
 
         // ── 5. Deliver ──
         const conversationId = (msg.context?.conversation_id as string) || crypto.randomUUID();
-        const brand = msg.context?.brand === "relatti" ? "relatti" as const : "masterytv" as const;
+        const brand = isBrandId(msg.context?.brand) ? msg.context.brand : "masterytv";
         const conversationUrl = (msg.context?.conversation_url as string | null) ?? undefined;
         const result = await deliverProactiveMessage(
           supabase,

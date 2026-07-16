@@ -11,6 +11,7 @@
  */
 
 import { useUser } from "@/hooks/useUser";
+import { resolveBrandClient } from "@/hooks/useBrand";
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Loader2, Pencil, Save, Mail, RotateCcw } from "lucide-react";
@@ -189,6 +190,7 @@ export default function CoachingLetterPage() {
         .from("memory_facts")
         .select("id, category, subject, content, is_confirmed")
         .eq("user_id", user.id)
+        .eq("program", resolveBrandClient().programSlug) // PC2.2 (module is masterytv-only → general)
         .eq("is_confirmed", true)
         .order("category"),
     ]);

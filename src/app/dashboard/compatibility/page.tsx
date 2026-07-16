@@ -5,13 +5,14 @@ import { brandPageMetadata } from "@/lib/platform/brand-metadata";
 import { claimPendingInvites } from "@/lib/decoded/claim-invites";
 import { ensureCoupleFullSharing } from "@/lib/relatti/auto-full-sharing";
 import { getBrand } from "@/lib/platform/brand.server";
+import { byBrand } from "@/lib/platform/brand";
 import CompatibilityHub from "./CompatibilityHub";
 import CompatibilityHubDecoded from "./CompatibilityHubDecoded";
 
 export async function generateMetadata(): Promise<Metadata> {
   const brand = await getBrand();
   return brandPageMetadata(brand.id, {
-    title: brand.id === "relatti" ? "Your Connection — Relatti" : "Compatibility — Mastery",
+    title: byBrand({ relatti: "Your Connection — Relatti", masterytv: "Compatibility — Mastery" }, brand.id),
     description: "See your compatibility, invite your partner, and explore your relationship dynamics.",
     noindex: true,
   });

@@ -4,13 +4,14 @@ import type { Metadata } from "next";
 import { brandPageMetadata } from "@/lib/platform/brand-metadata";
 import AssessmentEngine from "@/app/decoded/assess/AssessmentEngine";
 import { getBrand } from "@/lib/platform/brand.server";
+import { byBrand } from "@/lib/platform/brand";
 import { getBattery } from "@/lib/decoded/instruments/batteries";
 import { claimPendingInvites, isUserInvitee } from "@/lib/decoded/claim-invites";
 
 export async function generateMetadata(): Promise<Metadata> {
   const brand = await getBrand();
   return brandPageMetadata(brand.id, {
-    title: brand.id === "relatti" ? "Your Assessment — Relatti" : "Decoded — Assessment",
+    title: byBrand({ relatti: "Your Assessment — Relatti", masterytv: "Decoded — Assessment" }, brand.id),
     description:
       brand.id === "relatti"
         ? "Complete your Relatti relationship assessment."

@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Loader2, ArrowRight, Eye, EyeOff, User, Mail, Check, Fingerprint } from "lucide-react";
 import { RelattiMark } from "@/components/relatti/RelattiMark";
 import { FloatingThemeToggle } from "@/components/floating-theme-toggle";
-import type { BrandId } from "@/lib/platform/brand";
+import { byBrand, type BrandId } from "@/lib/platform/brand";
 import { LEGAL_VERSION } from "@/lib/platform/legal";
 
 /**
@@ -231,10 +231,12 @@ export default function LoginPanel({
             className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl"
             style={{ background: "color-mix(in oklch, var(--color-primary) 12%, transparent)" }}
           >
-            {brandId === "relatti" ? (
-              <RelattiMark className="h-6 w-6" />
-            ) : (
-              <Fingerprint className="h-6 w-6" style={{ color: "var(--color-primary)" }} strokeWidth={1.5} />
+            {byBrand(
+              {
+                relatti: <RelattiMark className="h-6 w-6" />,
+                masterytv: <Fingerprint className="h-6 w-6" style={{ color: "var(--color-primary)" }} strokeWidth={1.5} />,
+              },
+              brandId,
             )}
           </span>
           <h1 className="font-display text-2xl font-bold tracking-tight text-text-primary">{brandName}</h1>

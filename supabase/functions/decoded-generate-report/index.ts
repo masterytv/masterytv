@@ -1052,6 +1052,16 @@ async function runCoachHandoff(
 ): Promise<void> {
   console.log(`[coach-handoff] Starting for user=${userId}, assessment=${assessmentId}`);
 
+  // PC2.2: the profile this handoff seeds belongs to the assessment's program —
+  // a Relatti battery must seed the RELATIONSHIP coach profile, not overwrite
+  // the executive one.
+  const { data: assessmentRow } = await supabase
+    .from("assessments")
+    .select("program")
+    .eq("id", assessmentId)
+    .maybeSingle();
+  const program = assessmentRow?.program ?? "general";
+
   // ── 1. Extract strengths/edges from S1 section (if generated) ──
   const s1 = sections["S1"] as { content_markdown?: string } | undefined;
   let topStrengths: string[] = [];
@@ -1119,7 +1129,7 @@ async function runCoachHandoff(
   }
 
   // ── 8. Seed coach_profiles with assessment-derived communication prefs + voice ──
-  await seedCoachProfile(supabase, userId, bigFiveSummary, attachmentStyle, scoreRows, voiceId);
+  await seedCoachProfile(supabase, userId, bigFiveSummary, attachmentStyle, scoreRows, voiceId, program);
 
   // ── 9. Mark onboarding as complete — Decoded IS the onboarding ──
   const { error: onboardingError } = await supabase
@@ -1155,6 +1165,7 @@ async function seedCoachProfile(
   attachmentStyle: string | null,
   scoreRows: ScoreRow[],
   voiceId: VoiceId,
+  program: string,
 ): Promise<void> {
   if (!bigFive) return;
 
@@ -1206,15 +1217,17 @@ async function seedCoachProfile(
   // Framing: High neuroticism → opportunity framing to counterbalance worry
   const framing = mapPercentileToDimension(bigFive.neuroticism ?? 50);
 
-  // Check for existing profile to preserve research data
+  // Check for existing profile FOR THIS PROGRAM to preserve research data
   const { data: existing } = await supabase
     .from("coach_profiles")
     .select("id, source, trust_level, framework_affinity")
     .eq("user_id", userId)
+    .eq("program", program)
     .maybeSingle();
 
   const profileData = {
     user_id: userId,
+    program, // PC2.2: one coach profile per (user, program)
     directness,
     framing,
     warmth,
@@ -1237,7 +1250,8 @@ async function seedCoachProfile(
     const { error } = await supabase
       .from("coach_profiles")
       .update(profileData)
-      .eq("user_id", userId);
+      .eq("user_id", userId)
+      .eq("program", program);
 
     if (error) {
       console.error("[coach-handoff] Failed to update coach profile:", error.message);

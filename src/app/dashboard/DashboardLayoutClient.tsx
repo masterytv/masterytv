@@ -9,6 +9,7 @@ import ShareModal from "@/components/decoded/ShareModal";
 import PartnerInviteModal from "@/components/relatti/PartnerInviteModal";
 import { FeedbackWidget } from "@/components/relatti/FeedbackWidget";
 import { useBrand, resolveBrandClient } from "@/hooks/useBrand";
+import { byBrand } from "@/lib/platform/brand";
 
 /**
  * Unified dashboard chrome — wraps all post-auth pages
@@ -125,20 +126,27 @@ export default function DashboardLayoutClient({
 
       {/* Invite/Share modal — triggered from the sidebar Share button. Relatti
           gets the partner-invite (the Decoded viral share is off-brand there);
-          MasteryTV keeps the Decoded archetype share. */}
-      {brand.id === "relatti" ? (
-        <PartnerInviteModal
-          isOpen={showShareModal}
-          onClose={() => setShowShareModal(false)}
-          inviteUrl={broadcastInviteUrl || `${typeof window !== 'undefined' ? window.location.origin : 'https://relatti.com'}/assess`}
-        />
-      ) : (
-        <ShareModal
-          isOpen={showShareModal}
-          onClose={() => setShowShareModal(false)}
-          onUnlock={() => setShowShareModal(false)}
-          shareUrl={broadcastInviteUrl || `${typeof window !== 'undefined' ? window.location.origin : 'https://masterytv.com'}/decoded`}
-        />
+          MasteryTV keeps the Decoded archetype share. byBrand so a new brand
+          must declare its share surface instead of inheriting Decoded's. */}
+      {byBrand(
+        {
+          relatti: (
+            <PartnerInviteModal
+              isOpen={showShareModal}
+              onClose={() => setShowShareModal(false)}
+              inviteUrl={broadcastInviteUrl || `${typeof window !== 'undefined' ? window.location.origin : 'https://relatti.com'}/assess`}
+            />
+          ),
+          masterytv: (
+            <ShareModal
+              isOpen={showShareModal}
+              onClose={() => setShowShareModal(false)}
+              onUnlock={() => setShowShareModal(false)}
+              shareUrl={broadcastInviteUrl || `${typeof window !== 'undefined' ? window.location.origin : 'https://masterytv.com'}/decoded`}
+            />
+          ),
+        },
+        brand.id,
       )}
     </div>
   );

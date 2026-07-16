@@ -18,13 +18,34 @@
 
 export type BrandId = "masterytv" | "relatti";
 
+/**
+ * The program (vertical) axis, typed like BrandId (TENANCY_AUDIT.md T1).
+ *
+ * Why a union and not a bare string: brand-keyed code is exhaustive
+ * Record<BrandId,…> and fails LOUDLY when a brand is added; program-keyed code
+ * was ternaries and failed SILENTLY (career would have gotten the executive
+ * coach, the Core battery, and MasteryTV's modules with zero compiler errors).
+ * A new vertical arrives through the PROGRAM door — adding its slug here turns
+ * every program-keyed Record in the codebase into a compile error until it's
+ * handled.
+ *
+ * ⚠️ LOCKSTEP TWIN: supabase/functions/_shared/packs/index.ts declares the same
+ * union (edge functions can't import from src/). Add new programs in BOTH.
+ */
+export type ProgramId = "general" | "relationship";
+
+/** Type guard for a known program slug (raw DB strings, client hints). */
+export function isProgramId(x?: string | null): x is ProgramId {
+  return x === "general" || x === "relationship";
+}
+
 export interface Brand {
   id: BrandId;
   name: string;
   /** Tenant (workspace.slug). One workspace today; white-label adds rows later. */
   workspaceSlug: string;
   /** Vertical (program.slug) this brand's funnel + coach use. */
-  programSlug: string;
+  programSlug: ProgramId;
   /** data-theme value applied at the root (PA3 theming). */
   themeId: string;
   /** Primary logged-in surface this brand registers (PB2 surface registry). */
@@ -74,6 +95,16 @@ export function brandForProgram(programSlug?: string | null): Brand {
 /** Type guard for a known brand id (used for ?brand= override + cookie). */
 export function isBrandId(x?: string | null): x is BrandId {
   return !!x && x in BRANDS;
+}
+
+/**
+ * Exhaustive per-brand value selection (TENANCY_AUDIT.md T2/T3). Use this
+ * instead of `brand.id === "relatti" ? a : b` — the ternary silently hands a
+ * NEW brand the else-branch (Mastery copy, Decoded components, the wrong legal
+ * text); the Record parameter makes the same omission a compile error.
+ */
+export function byBrand<T>(map: Record<BrandId, T>, id: BrandId): T {
+  return map[id];
 }
 
 /**

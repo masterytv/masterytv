@@ -397,11 +397,15 @@ async function getDebugTrace(supabase: SupabaseClient, messageId: string) {
 
 
 async function getCoachProfile(supabase: SupabaseClient, userId: string) {
-  // Fetch current profile
+  // Fetch current profile. PC2.2: a user can hold one profile PER PROGRAM —
+  // show the most recently updated one (a per-program admin view is future
+  // work; .single() would throw the moment a second row exists).
   const { data: profile, error: profileError } = await supabase
     .from("coach_profiles")
     .select("*")
     .eq("user_id", userId)
+    .order("updated_at", { ascending: false })
+    .limit(1)
     .single();
 
   if (profileError) throw profileError;

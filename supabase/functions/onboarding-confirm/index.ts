@@ -114,6 +114,7 @@ Deno.serve(async (req: Request) => {
       content: f.content,
       importance: f.importance,
       is_confirmed: true,
+      program: "general", // PC2.2: this onboarding is the executive intake
       embedding: embeddings[i] ? JSON.stringify(embeddings[i]) : null,
     }));
 
@@ -163,11 +164,12 @@ Deno.serve(async (req: Request) => {
         .from("coach_profiles")
         .upsert({
           user_id: userId,
+          program: "general", // PC2.2: executive onboarding seeds the general profile
           promotion_focus: focus.promotion,
           prevention_focus: focus.prevention,
           source: "self_reported",
           updated_at: new Date().toISOString(),
-        }, { onConflict: "user_id" });
+        }, { onConflict: "user_id,program" });
     }
 
     // Update onboarding state

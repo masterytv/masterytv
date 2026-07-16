@@ -29,6 +29,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { CoachVoiceId } from "@/lib/coach/voice-config";
 import { getActiveDyad, type DashboardDyad } from "@/lib/relatti/dashboard-dyad";
 import { resolveBrandClient } from "@/hooks/useBrand";
+import { byBrand } from "@/lib/platform/brand";
 import { useBrandModules } from "@/hooks/useBrandModules";
 import { Heart, Waves } from "lucide-react";
 
@@ -177,7 +178,10 @@ function ChatPageInner() {
 
       // Build a natural opening message from the deep link context. Brand-aware:
       // Relatti users read a "relationship profile," not a "Decoded report."
-      const profileLabel = resolveBrandClient().id === "relatti" ? "relationship profile" : "report";
+      const profileLabel = byBrand(
+        { relatti: "relationship profile", masterytv: "report" },
+        resolveBrandClient().id,
+      );
       const openingMessage = topic
         ? `I was just reading my ${profileLabel} — the ${section} section about ${topic}. Can we dig into this?`
         : `I was just reading my ${profileLabel} — the ${section} section. I'd love to explore this with you.`;
@@ -360,6 +364,7 @@ function ChatPageInner() {
       .from("coach_profiles")
       .select("voice_id")
       .eq("user_id", user.id)
+      .eq("program", resolveBrandClient().programSlug) // PC2.2
       .maybeSingle()
       .then(({ data }) => {
         if (data?.voice_id) {
