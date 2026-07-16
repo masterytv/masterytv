@@ -4,6 +4,27 @@
 > **Parent:** [ASSESSMENT_PROGRAM_SCOPING.md](ASSESSMENT_PROGRAM_SCOPING.md) §6.1 (a–g shipped 2026-07-16, `e4210eb`).
 > **Written:** 2026-07-16, founder: *"Design the invite for Relatti."*
 > **Reprioritised while writing this:** I previously called PC2.1h's live risk "low — Tom has 0 invites." **That was wrong.** He has a broadcast invite carrying his *general* report, and the flow he's about to run corrupts it. See §2.
+> **Then RIGHT-SIZED (same day, after the founder asked whether to patch or fix the architecture):** the correction above over-swung. **Build §6.1+§6.2 only — the ~30-minute guard. Skip §6.4's read sites.** See §0.
+
+---
+
+## 0. Scope: build the guard, not the design
+
+Two corrections in one day, so here's the calibrated version:
+
+**The bug is real but its blast radius is one person.** It only misfires for a **dual-brand user**, and that set is `{tom@masterytv.com}`. The three stalled beta testers are single-brand relationship users — **entirely unaffected**. The actual consequence is: *Tom's own Decoded broadcast link — never claimed by anyone — silently starts pointing at a Relatti invite.* If nobody holds that URL, it's a non-event.
+
+**So build the 20% that is load-bearing:**
+
+| Build now (~30 min) | Skip for now |
+|---|---|
+| **§6.1** the `program` column | **§6.4** the seven read sites — all `{tom}`-only today |
+| **§6.2** the unique constraint → `(inviter_id, recipient_email, program)` + `getOrCreateBroadcastInviteUrl` takes `program` | |
+| **§6.3** the backfill (needed by §6.2) | |
+
+That stops the corruption before Tom takes the Relatti battery, and it's the foundation §6.4 sits on later. The read sites can land when a second dual-brand cohort exists — i.e. **with the career vertical**, alongside T1–T2 ([TENANCY_AUDIT.md](TENANCY_AUDIT.md) §0).
+
+**Why not the whole design now:** the bottleneck is signup→assessment ~3/5 and **assessment→partner-invite 0/3**. Every hour here is an hour not spent on brand 1's dyad ask. §6.4 is correctness for a cohort that doesn't exist yet.
 
 ---
 

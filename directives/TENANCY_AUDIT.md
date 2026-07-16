@@ -2,8 +2,38 @@
 
 > **Status:** 🔴 FINDINGS — no code written. Written 2026-07-16, founder: *"I wonder if these issues are architectural… What will happen when we create a new brand? Will we be here again?"*
 > **Verdict: yes, you'd be here again — and the reason is one sentence long (§3).**
+> **Recommendation: DEFER T1–T7. Not because they're wrong — because they fix a different class than the one biting you, and they don't get more expensive by waiting. See §0.**
 
 ---
+
+## 0. ⛔ Read this before acting on §4 — the correction
+
+**T1–T2 would not have prevented a single bug that actually bit this project.** They are a *different class*, and the first draft of this doc blurred them:
+
+| | The class that has bitten you **three times** | The class T1–T2 fixes |
+|---|---|---|
+| **What** | conversations (2026-07-15), assessments + reports (2026-07-16), invites (open) | career gets the executive persona / Core battery / MasteryTV email |
+| **Cause** | **missing tenancy columns + unscoped reads** on *existing* brands | **ternaries defaulting an unknown program to the incumbent** |
+| **Who it hurts** | dual-brand users **today** | **brand 3, on the day it ships** |
+| **Fixed by** | a column + `.eq("program", …)` on every read — §4 **T7**, plus a *tenancy gate* that doesn't exist yet (§4.1) | T1–T2 |
+
+So "do the architecture first" **does not stop you finding the next unscoped table.** T1–T2 buys insurance for a vertical that doesn't exist yet.
+
+**Why defer:**
+1. **It doesn't get more expensive.** The seams are concentrated and the ternary count grows slowly. T1+T2 is ~a day today and ~a day in three months.
+2. **It's insurance on a vertical gated by something else.** Career is Stage 2, gated on beta CSI-delta proof that doesn't exist. If the beta fails, this work is never needed.
+3. **The bottleneck is elsewhere.** signup→assessment ~3/5; **assessment→partner-invite 0/3**. Brand 1's dyad ask is unsolved.
+
+**The one exception worth taking early: T3** (`check-brand-ternaries`, ~2h). It stops the count *growing* — the author of this audit added a ternary the same day (§5). Everything else waits.
+
+**Trigger to revisit:** when career is actually scheduled — do T1+T2 *before* the first career line of code, not after.
+
+### 0.1 The gap this audit originally missed
+
+Nothing in T1–T7 systematically prevents the class that keeps biting. What would:
+
+- **A tenancy gate** — the twin of `check:colors`, which already proves the pattern works. Assert that (a) every user-data table carries `program` or is on an explicit reviewed allowlist, and (b) no `.from("<tenant table>")` read filters by `user_id` alone. That's the mechanism that turns "the founder notices" into "CI notices". **It does not exist, and it's the highest-leverage item in this document.** Call it **T0**.
+- **T7 / PC2.2** — finish the columns that are still missing (`memory_facts`, `coach_profiles`).
 
 ## 1. The answer
 
@@ -75,7 +105,11 @@ Everything above follows. The team already knows how to do this right — `Recor
 
 ## 4. What to do (proposed — needs founder approval)
 
+> ⛔ **Read §0 first.** Recommendation is to **defer T1–T7** (T3 optionally early) and add **T0**, which this list originally missed. The table below is the menu, not the plan.
+
 Ordered by leverage. **This is not a rewrite.** The seams are concentrated because the team kept them concentrated.
+
+| **T0** 🔑 | **A tenancy gate** (the twin of `check:colors`): every user-data table carries `program` or is on a reviewed allowlist; no read of a tenant table filters by `user_id` alone. | **The only item that stops the class that has actually bitten you 3×.** Turns "the founder notices" into "CI notices". Missing from the original list. |
 
 | # | Change | Effect |
 |---|---|---|
