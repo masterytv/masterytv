@@ -6,6 +6,7 @@ import { brandPageMetadata } from '@/lib/platform/brand-metadata';
 import CompatibilityReportViewer from './CompatibilityReportViewer';
 import GenerateReport from './GenerateReport';
 import { getBrand } from '@/lib/platform/brand.server';
+import { getDyadNeedToHear } from '@/lib/relatti/partner-need-to-hear';
 
 export async function generateMetadata(): Promise<Metadata> {
   const brand = await getBrand();
@@ -119,9 +120,18 @@ export default async function CompatibilityReportPage({ params }: PageProps) {
     }
   }
 
+  // "What each of you needs to hear" — the dyad pair. This report is the right
+  // home for it: it exists only once BOTH partners have finished (founder,
+  // 2026-07-16), so unlike the solo profile it can never be an empty promise.
+  // Computed in CODE, not by the model: two independent LLM renders of the same
+  // pair would contradict each other (the dyad-interpretive rule). Consent-gated
+  // at share_with_human='full' inside the helper.
+  const needToHear = await getDyadNeedToHear(user.id, { inviteId });
+
   return (
     <CompatibilityReportViewer
       report={report}
+      needToHear={needToHear}
       inviterName={inviterName}
       recipientName={recipientName}
       shareWithHuman={invite.share_with_human || 'none'}

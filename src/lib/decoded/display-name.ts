@@ -1,4 +1,12 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { SupabaseClient } from "@supabase/supabase-js";
+
+/**
+ * A service-role client. Typed permissively on purpose: the call sites build
+ * clients with different generic parameters, and a bare `SupabaseClient`
+ * resolves to a stricter shape than any of them produce.
+ */
+export type AdminClient = SupabaseClient<any, any, any, any, any>;
 
 /**
  * The one place that answers "what do we call this user?".
@@ -16,7 +24,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
  * Returns null (never a placeholder) so each caller picks its own fallback.
  */
 export async function getDisplayName(
-  admin: SupabaseClient,
+  admin: AdminClient,
   userId: string
 ): Promise<string | null> {
   const { data } = await admin
@@ -25,6 +33,6 @@ export async function getDisplayName(
     .eq("id", userId)
     .maybeSingle();
 
-  const name = data?.name;
+  const name = (data as { name?: unknown } | null)?.name;
   return typeof name === "string" && name.trim() ? name.trim() : null;
 }

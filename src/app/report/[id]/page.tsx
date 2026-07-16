@@ -4,7 +4,7 @@ import { redirect, notFound } from 'next/navigation';
 import ReportViewer from './ReportViewer';
 import { getBrand } from '@/lib/platform/brand.server';
 import { getOrCreateBroadcastInviteUrl } from '@/lib/relatti/broadcast-invite';
-import { getPartnerNeedToHear } from '@/lib/relatti/partner-need-to-hear';
+import { getDyadNeedToHear, toDyadPointer } from '@/lib/relatti/partner-need-to-hear';
 import { getDisplayName } from '@/lib/decoded/display-name';
 import { originFromHeaders } from '@/lib/platform/origin';
 import { headers } from 'next/headers';
@@ -184,11 +184,12 @@ export default async function ReportPage({ params, searchParams }: PageProps) {
     const brand = await getBrand();
     const isRelationship = brand.programSlug === 'relationship';
 
-    // S5's reciprocal "What [partner] Needs to Hear" block. Consent-gated inside
-    // the helper (share_with_human = 'full') and null until the partner has
-    // finished their own profile — S5 then keeps its "invite them" empty state.
-    // Independent of the invite URL, so resolve both together.
-    const [inviteUrl, partnerNeedToHear] = isRelationship
+    // The viewer's consented dyad. S5 renders only a signpost, so strip to the
+    // pointer before handing it to ReportViewer — that's a client component, and
+    // the full object would serialize BOTH partners' phrases into the payload of
+    // a page that renders neither. Independent of the invite URL, so resolve
+    // both together.
+    const [inviteUrl, dyad] = isRelationship
       ? await Promise.all([
           getOrCreateBroadcastInviteUrl(
             supabase,
@@ -196,9 +197,10 @@ export default async function ReportPage({ params, searchParams }: PageProps) {
             originFromHeaders(await headers()),
             ownReport.id,
           ),
-          getPartnerNeedToHear(user.id),
+          getDyadNeedToHear(user.id),
         ])
       : [undefined, null];
+    const partnerNeedToHear = toDyadPointer(dyad);
 
     return (
       <ReportViewer

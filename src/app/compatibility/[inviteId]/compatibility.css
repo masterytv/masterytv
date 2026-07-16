@@ -802,3 +802,69 @@
   }
 }
 
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * "What each of you needs to hear" — the dyad pair, side by side.
+ * Two columns on desktop so the contrast between what each partner needs is
+ * visible at a glance (that contrast IS the insight); stacks on mobile.
+ * Semantic tokens only — brand-agnostic, light + dark safe.
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+.needs-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.875rem;
+  margin-top: 0.875rem;
+}
+
+@media (max-width: 640px) {
+  .needs-pair {
+    grid-template-columns: 1fr;
+  }
+}
+
+.needs-pair__col {
+  padding: 1rem 1.125rem;
+  border-radius: 0.875rem;
+  background: var(--color-surface-100);
+}
+
+.needs-pair__label {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-primary);
+  margin-bottom: 0.75rem;
+}
+
+.needs-pair__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.needs-pair__item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1875rem;
+}
+
+.needs-pair__phrase {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--text-heading);
+}
+
+.needs-pair__why {
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: var(--text-label);
+}

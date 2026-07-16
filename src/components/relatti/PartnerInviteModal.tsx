@@ -32,7 +32,10 @@ interface PartnerInviteModalProps {
 
 const PAYOFFS: { icon: typeof Heart; text: string }[] = [
   { icon: MessageCircle, text: "Your coach understands you both — no taking sides, no re-explaining." },
-  { icon: Heart, text: "You unlock “what your partner needs to hear” — in their own words." },
+  // NEVER imply these phrases are the partner's own words or anything they told
+  // us — they're inferred from their assessment results, and this is the exact
+  // surface where we ask someone to trust us with their partner. (Founder, 2026-07-16.)
+  { icon: Heart, text: "You unlock “what your partner needs to hear” — based on their relationship style." },
   { icon: Users, text: "You see your shared blueprint: where you fit, where you'll rub, what to try." },
 ];
 

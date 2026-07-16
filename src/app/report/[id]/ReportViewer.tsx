@@ -9,6 +9,7 @@
  */
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Lock, ArrowRight, ArrowUpRight, Loader2, Printer, MessageSquare, Share2, User, Heart, RotateCcw } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
@@ -30,7 +31,7 @@ import ShareModal from '@/components/decoded/ShareModal';
 import PartnerInviteModal from '@/components/relatti/PartnerInviteModal';
 import ArchetypeCard from './ArchetypeCard';
 import { attachmentDisplay } from '@/lib/decoded/report/attachment-style';
-import type { PartnerNeedToHear } from '@/lib/relatti/partner-need-to-hear';
+import type { DyadPointer } from '@/lib/relatti/partner-need-to-hear';
 import {
   RELATIONSHIP_RENDER_ORDER,
   RELATIONSHIP_SECTION_META,
@@ -89,10 +90,11 @@ interface ReportViewerProps {
    */
   inviteUrl?: string;
   /**
-   * Relationship profiles only: the partner's own need-to-hear phrases, already
-   * consent-gated server-side. Undefined on Decoded reports and shared views.
+   * Relationship profiles only: the viewer's consented dyad, used by S5's pointer
+   * to route to the compatibility report (or the invite ask). Undefined on
+   * Decoded reports and shared views.
    */
-  partnerNeedToHear?: PartnerNeedToHear | null;
+  partnerNeedToHear?: DyadPointer | null;
 }
 
 // Relationship-report content (order, titles, normalize copy) lives in
@@ -144,11 +146,66 @@ interface V2SectionContentProps {
   /** Relationship report — enables relationship-only blocks (e.g. normalize). */
   isRelationship: boolean;
   /**
-   * The partner's own need-to-hear phrases, resolved server-side under consent.
-   * Null until the partner has consented AND finished their profile — S5 then
-   * keeps its honest "invite them" empty state.
+   * The viewer's consented dyad, resolved server-side. S5 uses only the pointer
+   * fields (partnerReady / partnerName / inviteId) — the phrases themselves
+   * render in the compatibility report, not here.
    */
-  partnerNeedToHear?: PartnerNeedToHear | null;
+  partnerNeedToHear?: DyadPointer | null;
+}
+
+/**
+ * The pointer that replaced the old "What Your Partner Needs to Hear" section.
+ *
+ * That block was a section-shaped promise the product couldn't keep: it renders
+ * in the SOLO profile, but the phrases only exist once the partner has finished
+ * too, so anyone un-partnered got a permanent empty state. The pair now lives in
+ * the compatibility report — the surface that by definition exists only after
+ * both have completed (founder, 2026-07-16). This is the one-line signpost:
+ * routes to the pair when it's ready, to the ask when it isn't.
+ */
+function PartnerPhrasesPointer({ dyad }: { dyad?: DyadPointer | null }) {
+  const ready = Boolean(dyad?.partnerReady && dyad?.inviteId);
+  const name = dyad?.partnerName;
+
+  return (
+    <div
+      style={{
+        marginTop: '1.75rem',
+        padding: '1rem 1.125rem',
+        borderRadius: 'var(--radius-md)',
+        background: 'color-mix(in oklch, var(--color-primary) 5%, transparent)',
+        border: '1px solid color-mix(in oklch, var(--color-primary) 12%, transparent)',
+      }}
+    >
+      <h4
+        className="v2-need-to-hear__title"
+        style={{ marginBottom: '0.375rem' }}
+      >
+        <Heart size={16} />
+        {ready && name ? `What ${name} needs to hear` : 'What your partner needs to hear'}
+      </h4>
+      <p style={{ fontSize: '0.875rem', lineHeight: 1.7, color: 'var(--text-body)', margin: 0 }}>
+        {ready
+          ? 'Based on their relationship style — the words most likely to land. It’s in your Connection report, alongside yours.'
+          : 'Once your partner completes their own profile, your Connection report will show the words most likely to land for them — next to yours.'}
+      </p>
+      <Link
+        href={ready ? `/compatibility/${dyad!.inviteId}` : '/dashboard/compatibility'}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '0.25rem',
+          marginTop: '0.75rem',
+          fontSize: '0.8125rem',
+          fontWeight: 600,
+          color: 'var(--color-primary)',
+        }}
+      >
+        {ready ? 'Open your Connection report' : 'Invite your partner'}
+        <ArrowUpRight size={14} />
+      </Link>
+    </div>
+  );
 }
 
 /**
@@ -325,23 +382,14 @@ function V2SectionContent({
             title="What You Need to Hear"
             subtitle="The words that help you feel secure and loved — share these with your partner."
           />
-          {/* The reciprocal — what to say to THEM. Their OWN S5 phrases, resolved
-              server-side under consent (getPartnerNeedToHear); until they've
-              consented and finished, an honest empty state (§5.4). */}
-          <NeedToHearComponent
-            phrases={partnerNeedToHear?.phrases ?? []}
-            title={
-              partnerNeedToHear?.partnerName
-                ? `What ${partnerNeedToHear.partnerName} Needs to Hear`
-                : 'What Your Partner Needs to Hear'
-            }
-            subtitle={
-              partnerNeedToHear
-                ? `In their own words, from their profile — so you know exactly what to say.`
-                : 'The words that help your partner feel secure — so you know exactly what to say.'
-            }
-            emptyMessage="We’ll fill this in once your partner takes their own relationship profile. Then you’ll see exactly what helps them feel safe and loved. Invite them from your dashboard to unlock this together."
-          />
+          {/* The reciprocal half lives in the COMPATIBILITY report, which only
+              exists once both partners have finished (founder, 2026-07-16) — a
+              section here would be a permanently empty promise for anyone whose
+              partner hasn't joined. This is a one-line pointer instead: it routes
+              to the pair when it's ready, and to the invite ask when it isn't. */}
+          {isRelationship && (
+            <PartnerPhrasesPointer dyad={partnerNeedToHear} />
+          )}
 
           {/* Normalize + influence — "the challenges you may face & what helps".
               Relationship-only, templated per style (from the Relatti-scoped
