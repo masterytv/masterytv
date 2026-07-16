@@ -22,7 +22,7 @@ import { generateEmbedding, logEmbeddingCost } from "../_shared/embeddings.ts";
 import { handleSearchFacts } from "../_shared/search-facts.ts";
 import { handleLookupAssessment } from "../_shared/lookup-assessment.ts";
 import { handleLookupRelationship } from "../_shared/lookup-relationship.ts";
-import { resolvePack } from "../_shared/packs/index.ts";
+import { resolvePack, programScope } from "../_shared/packs/index.ts";
 import { resolveProgram } from "../_shared/resolve-program.ts";
 import {
   resolveConversation,
@@ -548,7 +548,11 @@ Deno.serve(async (req: Request) => {
                   });
                 }
               } else if (pendingToolUse.name === "lookup_assessment") {
-                const result = await handleLookupAssessment(streamUserId, toolInput);
+                const result = await handleLookupAssessment(
+                  streamUserId,
+                  toolInput,
+                  programScope(program),
+                );
                 toolResult = JSON.stringify(result);
                 if (debugMode) {
                   toolCallsDebug.push({

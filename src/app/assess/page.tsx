@@ -56,23 +56,40 @@ export default async function AssessPage({
   // already linked.
   const invitee = await isUserInvitee(supabase, user.id, user.email).catch(() => false);
 
-  // Check for IN-PROGRESS assessment first — user may be resuming
+  // Every assessment read below is scoped to the ACTIVE BRAND'S PROGRAM — a user
+  // holds at most one assessment per program, not one overall. Resolved here (it
+  // used to sit further down, next to getBattery) because the resume + redirect
+  // checks are meaningless without it. (PC2.1c — ASSESSMENT_PROGRAM_SCOPING.md.)
+  const brand = await getBrand();
+  const program = brand.programSlug;
+
+  // Check for IN-PROGRESS assessment first — user may be resuming.
+  // Program-scoped: without it, a Relatti user with an abandoned MasteryTV
+  // assessment resumes the WRONG BATTERY — existingAssessmentId points at the
+  // general assessment while `battery` below is the relationship set, so answers
+  // land against a mismatched instrument list.
   const { data: existingAssessment } = await supabase
     .from("assessments")
     .select("id, current_instrument, current_item_index, current_layer")
     .eq("user_id", user.id)
+    .eq("program", program)
     .is("completed_at", null)
     .order("created_at", { ascending: false })
     .limit(1)
     .single();
 
   // Check for COMPLETED assessment
-  // Skip redirect if retaking OR if there's an in-progress assessment to resume
+  // Skip redirect if retaking OR if there's an in-progress assessment to resume.
+  // Program-scoped: this check had no program filter, so ANY completed
+  // assessment bounced the user to /dashboard. That is why tom@masterytv.com
+  // could never take the Relatti assessment despite relatti.com serving the
+  // right battery — he was redirected before ever reaching it.
   if (!isRetake && !existingAssessment) {
     const { data: completedAssessment } = await supabase
       .from("assessments")
       .select("id, completed_at")
       .eq("user_id", user.id)
+      .eq("program", program)
       .not("completed_at", "is", null)
       .neq("current_layer", "superseded")
       .order("completed_at", { ascending: false })
@@ -100,10 +117,10 @@ export default async function AssessPage({
 
   // Program-aware battery: Relatti (relationship) gets the short relationship
   // set; MasteryTV (general) the full Core + adaptive add-ons. Resolved from the
-  // active brand's program (by host in prod, ?brand= override on staging).
-  const brand = await getBrand();
+  // active brand's program (by host in prod, ?brand= override on staging) —
+  // `program` is resolved above, where the scoped reads need it.
   const { instruments, enableAddons, estimatedMinutes, relationshipMode } =
-    getBattery(brand.programSlug);
+    getBattery(program);
 
   return (
     <AssessmentEngine
@@ -113,6 +130,7 @@ export default async function AssessPage({
       resumeInstrument={existingAssessment?.current_instrument ?? null}
       resumeItemIndex={existingAssessment?.current_item_index ?? 0}
       battery={instruments}
+      program={program}
       enableAddons={enableAddons}
       estimatedMinutes={estimatedMinutes}
       relationshipMode={relationshipMode}

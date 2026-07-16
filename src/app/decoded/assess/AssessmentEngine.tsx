@@ -25,6 +25,14 @@ interface Props {
   resumeItemIndex: number;
   /** The instruments to administer (program-aware; see batteries.ts). */
   battery: InstrumentDef[];
+  /**
+   * The program this assessment belongs to ('general' | 'relationship'), from
+   * the resolved brand. Stamped on the row and — critically — the scope of the
+   * supersede on completion: a retake supersedes only WITHIN its program, while
+   * a first assessment in a NEW program supersedes nothing.
+   * See directives/ASSESSMENT_PROGRAM_SCOPING.md (PC2.1).
+   */
+  program: string;
   /** Whether the adaptive add-on phase runs after the core battery. */
   enableAddons: boolean;
   /** Completion estimate for the welcome screen (e.g. "8–12"). */
@@ -79,6 +87,7 @@ export default function AssessmentEngine({
   resumeInstrument,
   resumeItemIndex,
   battery,
+  program,
   enableAddons,
   estimatedMinutes,
   relationshipMode,
@@ -222,6 +231,7 @@ export default function AssessmentEngine({
       .from("assessments")
       .insert({
         user_id: userId,
+        program,
         current_layer: "core",
         current_instrument: battery[0].id,
         current_item_index: 0,
@@ -395,11 +405,22 @@ export default function AssessmentEngine({
     setScoring(true);
 
     try {
-      // Supersede all older completed assessments for this user
+      // Supersede older completed assessments for this user — WITHIN THIS
+      // PROGRAM ONLY.
+      //
+      // The .eq("program") is load-bearing, not tidiness. Without it this
+      // superseded EVERY completed assessment the user had, across all
+      // programs: a dual-brand user finishing their first Relatti assessment
+      // silently destroyed their MasteryTV profile — the one the executive
+      // coach reads — and nothing errored. It also encodes the whole
+      // retake-vs-new-program rule in one filter: a retake supersedes its
+      // predecessors, a first assessment in a new program supersedes nothing.
+      // (PC2.1b — directives/ASSESSMENT_PROGRAM_SCOPING.md §5.3.)
       await supabase
         .from("assessments")
         .update({ current_layer: "superseded" })
         .eq("user_id", userId)
+        .eq("program", program)
         .not("completed_at", "is", null)
         .neq("id", assessmentId);
 

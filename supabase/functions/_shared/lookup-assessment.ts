@@ -48,15 +48,24 @@ export const LOOKUP_ASSESSMENT_TOOL: AnthropicTool = {
 
 export async function handleLookupAssessment(
   userId: string,
-  input: { category: string; instrument_id?: string; section_key?: string }
+  input: { category: string; instrument_id?: string; section_key?: string },
+  program: string
 ): Promise<{ data: unknown; found: boolean }> {
   const supabase = createSupabaseClient();
 
-  // Find the latest completed assessment
+  // Find the latest completed assessment IN THIS PROGRAM (PC2.1e).
+  //
+  // Unscoped, this took the user's newest assessment across all brands. This
+  // tool is executive-only (the relationship pack omits it deliberately), so
+  // the failure runs that way: once a dual-brand user takes the short Relatti
+  // battery it becomes their newest, and the EXECUTIVE coach would answer
+  // "what are my career interests?" from a 3-instrument relationship
+  // assessment that has no career data at all.
   const { data: assessment } = await supabase
     .from("assessments")
     .select("id")
     .eq("user_id", userId)
+    .eq("program", program)
     .not("completed_at", "is", null)
     .order("completed_at", { ascending: false })
     .limit(1)

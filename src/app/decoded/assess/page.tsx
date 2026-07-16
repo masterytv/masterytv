@@ -28,11 +28,18 @@ export default async function AssessPage() {
     redirect("/decoded");
   }
 
+  // Every assessment read below is scoped to the ACTIVE BRAND'S PROGRAM — a user
+  // holds at most one assessment per program, not one overall.
+  // (PC2.1c — directives/ASSESSMENT_PROGRAM_SCOPING.md.)
+  const brand = await getBrand();
+  const program = brand.programSlug;
+
   // 1. Check for COMPLETED assessment first (exclude superseded retakes)
   const { data: completedAssessment } = await supabase
     .from("assessments")
     .select("id, completed_at")
     .eq("user_id", user.id)
+    .eq("program", program)
     .not("completed_at", "is", null)
     .neq("current_layer", "superseded")
     .order("completed_at", { ascending: false })
@@ -54,11 +61,13 @@ export default async function AssessPage() {
     );
   }
 
-  // 2. Check for IN-PROGRESS assessment
+  // 2. Check for IN-PROGRESS assessment (program-scoped: resuming another
+  //    program's abandoned assessment would administer the wrong battery)
   const { data: existingAssessment } = await supabase
     .from("assessments")
     .select("id, current_instrument, current_item_index, current_layer")
     .eq("user_id", user.id)
+    .eq("program", program)
     .is("completed_at", null)
     .order("created_at", { ascending: false })
     .limit(1)
@@ -79,9 +88,9 @@ export default async function AssessPage() {
   }
 
   // 3. Render engine (either resuming or fresh) with the program-aware battery
-  const brand = await getBrand();
+  //    (`program` resolved above, where the scoped reads need it)
   const { instruments, enableAddons, estimatedMinutes, relationshipMode } =
-    getBattery(brand.programSlug);
+    getBattery(program);
 
   // Invitees skip the "invite someone" screen (they're the invited partner).
   const invitee = await isUserInvitee(supabase, user.id, user.email).catch(() => false);
@@ -94,6 +103,7 @@ export default async function AssessPage() {
       resumeInstrument={existingAssessment?.current_instrument ?? null}
       resumeItemIndex={existingAssessment?.current_item_index ?? 0}
       battery={instruments}
+      program={program}
       enableAddons={enableAddons}
       estimatedMinutes={estimatedMinutes}
       relationshipMode={relationshipMode}

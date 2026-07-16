@@ -39,6 +39,25 @@ export async function syncMyReportToSpine(
   if (!admin) return;
 
   try {
+    // The spine this stamps (participant.report_id, decoded_invites.*_report_id)
+    // is RELATIONSHIP-only, but the writes below are filtered by user_id alone —
+    // they'd happily brand a Relatti dyad with a MasteryTV report id. Callers
+    // are supposed to be brand-gated, and PC2.1d scoped the reportId they pass;
+    // this verifies it rather than trusting it, because the blast radius is the
+    // dyad coach and the compatibility report reading the wrong person's world.
+    // (PC2.1g — directives/ASSESSMENT_PROGRAM_SCOPING.md.)
+    const { data: report } = await admin
+      .from("assessment_reports")
+      .select("program")
+      .eq("id", reportId)
+      .maybeSingle();
+    if (report?.program !== "relationship") {
+      console.warn(
+        `[sync-my-report] refusing to stamp a '${report?.program ?? "missing"}' report onto the dyad spine`,
+      );
+      return;
+    }
+
     await Promise.all([
       // My participant rows across every engagement I'm in.
       admin.from("participant").update({ report_id: reportId })

@@ -167,11 +167,15 @@ Added 2026-06-24. Both are platform-wide (every vertical benefits) and pair natu
 
 | Story | Done |
 |:--|:--|
-| **PC2.1** Add `program_id` to `assessments`/`assessment_reports` (+ scores); reads scoped by program; backfill existing rows to the general program. 🔒 | A domain only sees its own intake/profile. 🧪 |
+| **PC2.1** Add `program` to `assessments`; reads scoped by program; backfill from the administered instruments. 🔒 **⭐ FULL SPEC: [ASSESSMENT_PROGRAM_SCOPING.md](ASSESSMENT_PROGRAM_SCOPING.md)** (2026-07-16, awaiting approval) | A domain only sees its own intake/profile. 🧪 |
 | **PC2.2** Scope long-term `memory_facts` + `coach_profiles` by program in the prompt-assembler (extends PA5). 🔒 | Coach memory doesn't cross domains. 🧪 |
 | **PC2.3** Per-domain intake routing: each program runs its own questionnaire (config-driven). | New domain → its own intake, no reuse. |
 
-> ⚠️ Touches the live coach + assessment data; needs careful backfill (existing rows → general program) so MasteryTV is unaffected.
+> ⚠️ Touches the live coach + assessment data; needs careful backfill so MasteryTV is unaffected.
+>
+> 🔴 **ESCALATED 2026-07-16 — PC2.1 is not just "isolation", it's DATA DESTRUCTION, and it blocks the career vertical.** Founder asked why `tom@masterytv.com` has no Relatti assessment. Answer: he *can't get one*. `/assess:72` bounces any user with a completed assessment in **any** program to `/dashboard` — and if he forced past it, `AssessmentEngine.tsx:399` supersedes **every** completed assessment across **all** programs, silently destroying his MasteryTV profile (the executive coach reads it). Stage 2 (career) *is* a second assessment on a second domain, so it is **dead on arrival** until this ships. Only Tom is dual-brand today, which is the sole reason the beta hasn't hit it.
+>
+> ⛔ **Two corrections to this epic as written above:** (1) "backfill existing rows to the **general** program" is **WRONG** — it would mislabel tester1/tester2 + the 3 beta testers, who have real *relationship* assessments, and break the live dyad. Backfill from the **administered instruments** instead (career present → general, else relationship), which reproduces today's rendering exactly. (2) `assessment_reports`/`scores` do **not** need the column — they key off `assessment_id`, so it cascades by join. Full reasoning, a triage of all 37 read sites, and the verification plan: **[ASSESSMENT_PROGRAM_SCOPING.md](ASSESSMENT_PROGRAM_SCOPING.md)**.
 
 #### PC3 — Executive coach stance parity ("the coach coaches, it doesn't lecture")  🟥  *(added 2026-07-13)*
 *Goal: bring the validated Relatti understand-first stance to the executive/Decoded coach. Trigger: founder test 2026-07-13 — one message ("I'm hesitating on beta outreach") got a 5-bold-headers / 6-questions framework dump, and the post-processor birthed an OSKAR-assigned challenge from that single exchange. Root cause (per [COACH_ARCHITECTURE_AUDIT.md](COACH_ARCHITECTURE_AUDIT.md)): the good coaching craft was built as a relationship-only exception; the general coach still runs the full executive machine (framework curriculum + intervention menu + 1024 tokens on gpt-4o-mini — the model the Relatti lab already rejected for templated replies) with zero per-turn discipline. Principle: one-question-at-a-time is not relationship coaching, it's coaching — verticals differ in WHAT the coach knows and how fast it moves to action, not in conversational shape. This is pre-work for the audit's Coach Pack Phase 1: the Relatti prompt stack stays byte-identical.*

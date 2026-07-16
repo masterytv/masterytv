@@ -10,7 +10,7 @@ import { syncMyReportToSpine } from "@/lib/relatti/sync-my-report";
 import { getTodaysRitual } from "@/lib/relatti/ritual";
 import { resolveBetaAccess } from "@/lib/relatti/beta-survey";
 import { getBrand } from "@/lib/platform/brand.server";
-import { isBrandId } from "@/lib/platform/brand";
+import { isBrandId, BRANDS } from "@/lib/platform/brand";
 import { originFromHeaders } from "@/lib/platform/origin";
 import DashboardHome from "./DashboardHome";
 import RelattiDashboard from "./RelattiDashboard";
@@ -49,6 +49,15 @@ export default async function DashboardPage({
     redirect("/decoded");
   }
 
+  // Resolved ONCE, here, because everything below depends on it: which surface
+  // renders, AND which program's assessment/report this dashboard is about.
+  // ?brand= override (preview on any host) wins on the first request; otherwise
+  // cookie/host via getBrand(). Hoisted from further down in PC2.1d — the
+  // assessment reads sit above where this used to live, and picking a report
+  // without knowing the brand is what put MasteryTV report ids on Relatti dyads.
+  const params = await searchParams;
+  const brandId = isBrandId(params.brand) ? params.brand : (await getBrand()).id;
+
   // Invite/share links must use the domain the user is actually on (relatti.com
   // for a Relatti user), NOT the static NEXT_PUBLIC_APP_URL (= masterytv.com).
   const appUrl = originFromHeaders(await headers());
@@ -80,11 +89,20 @@ export default async function DashboardPage({
     }
   }
 
+  // The dashboard shows THIS BRAND'S assessment, not "the user's latest across
+  // brands". Before PC2.1 a dual-brand user's most recently completed program
+  // won both dashboards — and `reportId` below (derived from this row) is what
+  // syncMyReportToSpine stamps onto the dyad, so an unscoped pick here would put
+  // a MasteryTV report id on a Relatti dyad.
+  // (PC2.1d — directives/ASSESSMENT_PROGRAM_SCOPING.md.)
+  const program = BRANDS[brandId].programSlug;
+
   // Check for COMPLETED assessment (exclude superseded retakes)
   const { data: completedAssessment } = await supabase
     .from("assessments")
     .select("id, completed_at")
     .eq("user_id", user.id)
+    .eq("program", program)
     .not("completed_at", "is", null)
     .neq("current_layer", "superseded")
     .order("completed_at", { ascending: false })
@@ -96,6 +114,7 @@ export default async function DashboardPage({
     .from("assessments")
     .select("id, current_instrument, current_item_index")
     .eq("user_id", user.id)
+    .eq("program", program)
     .is("completed_at", null)
     .order("created_at", { ascending: false })
     .limit(1)
@@ -185,11 +204,8 @@ export default async function DashboardPage({
     user.email?.split("@")[0] ||
     "there";
 
-  // PB2: pick the surface by active brand. ?brand= override (preview on any
-  // host) wins on the first request; otherwise cookie/host via getBrand().
-  const params = await searchParams;
-  const brandId = isBrandId(params.brand) ? params.brand : (await getBrand()).id;
-
+  // PB2: pick the surface by active brand (`brandId` resolved at the top —
+  // the program-scoped assessment reads above need it).
   if (brandId === "relatti") {
     // Keep the dyad spine current so each partner's status is visible to the
     // other (the recipient_report_id backfill gap), then resolve all of the

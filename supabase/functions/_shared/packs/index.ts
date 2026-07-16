@@ -23,3 +23,23 @@ export function resolvePack(program: string | null | undefined): CoachPack {
     ? relationshipPack
     : executivePack;
 }
+
+/**
+ * The same mapping as resolvePack, but yielding the `assessments.program` /
+ * `assessment_reports.program` VALUE to filter on (PC2.1e).
+ *
+ * Why this exists: `program` is nullable everywhere upstream (PC4.4 resolves
+ * junk and no-signal to null rather than guessing), but the DB column is NOT
+ * NULL and defaults to 'general'. A raw `.eq("program", program)` with a null
+ * therefore filters `program IS NULL` and matches NOTHING — the coach would
+ * silently lose the user's assessment instead of falling back to executive.
+ *
+ * Keeping it beside resolvePack is deliberate: this file is THE one place the
+ * program string is interpreted, and these two must never disagree — the pack
+ * the coach speaks with and the data it reads have to describe the same world.
+ */
+export function programScope(program: string | null | undefined): string {
+  return (program ?? "").toLowerCase() === "relationship"
+    ? "relationship"
+    : "general";
+}
