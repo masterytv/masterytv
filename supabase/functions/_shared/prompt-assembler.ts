@@ -189,7 +189,7 @@ export async function assemblePrompt(
     latestAssessmentId
       ? supabase
           .from("assessment_reports")
-          .select("archetype_base, archetype_sublabel, archetype_tagline, generated_at")
+          .select("archetype_base, archetype_sublabel, archetype_tagline, generated_at, sections")
           .eq("assessment_id", latestAssessmentId)
           .maybeSingle()
       : Promise.resolve({ data: null, error: null }),
@@ -216,6 +216,7 @@ export async function assemblePrompt(
     archetype_sublabel: string | null;
     archetype_tagline: string | null;
     generated_at: string | null;
+    sections: Record<string, unknown> | null;
   } | null;
 
   // Semantic memory retrieval — embed user message and search for relevant facts
@@ -316,8 +317,12 @@ export async function assemblePrompt(
       const { buildAssessmentProfile } = await import("./decoded/assessment-profile.ts");
       const assessmentProfile = buildAssessmentProfile(decodedScores, decodedReport);
       if (coachShareLevel === "full") {
-        const { buildDecodedProfileLayer } = await import("./decoded/prompt-layer.ts");
+        const { buildDecodedProfileLayer, buildReportVocabularyBlock } = await import("./decoded/prompt-layer.ts");
         decodedLayer = buildDecodedProfileLayer(assessmentProfile);
+        // The report's own names for strengths/edges/patterns — the coach and
+        // the report page must speak the same language (founder, 2026-07-16).
+        const vocabulary = buildReportVocabularyBlock(decodedReport.sections);
+        if (vocabulary) decodedLayer = `${decodedLayer}\n\n${vocabulary}`;
       } else {
         // 'type_compatibility' — the user limited coaching to archetype + style.
         const arch = assessmentProfile.archetype;
