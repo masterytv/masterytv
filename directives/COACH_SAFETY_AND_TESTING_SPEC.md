@@ -30,7 +30,7 @@ Runs before the coach, short-circuits to a canned resource reply. **Reserved for
 **Tier 2 — Post-response async safety sweep (NEW). The coverage + audit layer.**
 A new `_shared/safety-sweep.ts`, invoked from `coach/index.ts` via `EdgeRuntime.waitUntil` right after the response streams (independent of `postProcess` so neither can kill the other). It:
 1. Loads the **last N turns (default 6)** of the conversation (it already has `conversationId` — today passed to `postProcess` as unused `_conversationId`).
-2. Sends them + the coach's reply to a fast classifier (gpt-4o-mini, or Claude Haiku) with a structured rubric → returns `{ risk: none|self_harm|abuse|acute_distress, severity, subject_scope: self|partner|third_party, confidence, coach_handled: bool, rationale }`.
+2. Sends them + the coach's reply to a fast classifier (gpt-4o-mini, or Claude Haiku) with a structured rubric → returns `{ risk: none|self_harm|harm_to_others|abuse|acute_distress, severity, subject_scope: self|partner|third_party, confidence, coach_handled: bool, rationale }`. (`harm_to_others` = the user's own genuine intent/threat to harm another person — the mirror of `abuse`; venting like "I want to kill my husband, he's an asshole" must classify `none`.)
 3. On risk ≥ threshold, **logs a `crisis_flag`** (dedup — see A.5) and, at high severity, **escalates** (A.6).
 4. Because it sees the coach's reply, it also records whether the coach **surfaced resources** (a QA signal — did our own coach do its job?).
 
@@ -43,6 +43,7 @@ A new `_shared/safety-sweep.ts`, invoked from `coach/index.ts` via `EdgeRuntime.
 | Explicit abuse / fear for safety (first-person) | **Tier 1 hard-stop** (DV response) + flag | Same |
 | **Third-person** ("my husband is suicidal") | **Coach handles** (Layer 11 already does this well) + **Tier 2 flag** | A canned "here's 988 for *you*" is wrong/jarring; the coach gave the right response (988 for him + DV for her + safety check). Log + escalate async. |
 | **Indirect ideation** ("what's the point") | Coach checks in (Layer 11) + **Tier 2 flag** if confirmed | Nuanced; the coach's gentle check-in is better UX than a hard-stop |
+| **Harm-to-others** ("I want to kill my husband") | Coach handles; **Tier 2** flags `harm_to_others` **only on genuine intent** (plan/means/credible threat) — hyperbolic venting → `none`, no hard-stop | A keyword can't separate hyperbole from intent; only conversational context can. False-firing on venting is its own harm |
 | Acute grief / distress beyond coaching | Coach seeds professional support + **Tier 2 flag** (low sev, no escalation) | Already in the relationship guardrails |
 
 Net: **deterministic protection where a wrong answer is unacceptable; the (safety-instructed) coach where it's better at it; guaranteed logging everywhere.**

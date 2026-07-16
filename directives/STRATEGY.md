@@ -118,6 +118,9 @@ The repo predates this detour. Treat the existing docs as follows (each supersed
 - `ARCHITECTURE.md` — **engine/tech-stack sections only**; its product framing is superseded
 
 **⛔ Superseded / ON HOLD (pre-detour B2C direction — NOT the current plan; paused, not deleted):**
-- `SPRINT.md`, `PRD.md`, `DISCOVERY.md`, `MARKETING.md`
-- `DECODED_PRD.md`, `DECODED_FEATURES.md`, `DECODED_INDEX.md`, `DECODED_NARRATIVE_VOICES_*`
-- `COMPETITIVE_ANALYSIS_DP_REPORT.md`
+Moved to **`directives/archive/`** on 2026-06-29 to keep the working set lean (see `archive/README.md`):
+- `archive/SPRINT.md`, `archive/PRD.md`, `archive/DISCOVERY.md`, `archive/MARKETING.md`
+- `archive/DECODED_PRD.md`, `archive/DECODED_FEATURES.md`, `archive/DECODED_INDEX.md`, `archive/DECODED_NARRATIVE_VOICES_*`
+- `archive/COMPETITIVE_ANALYSIS_DP_REPORT.md`
+
+> **New-session entry point:** [`ORIENT.md`](ORIENT.md) is the single-file briefing + router. Read it first; it points here for strategy depth.
