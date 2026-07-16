@@ -46,10 +46,14 @@ export async function generateReport(assessmentId: string): Promise<GenerateRepo
     return { success: true, reportId: existing.id };
   }
 
-  // Verify the assessment belongs to this user and is completed
+  // Verify the assessment belongs to this user and is completed.
+  // `program` comes along because the report inherits it — this is the ONLY
+  // place reports are created, so it's the single writer of the denormalized
+  // assessment_reports.program (PC2.1a part 2). Never take program from the
+  // caller or the brand here: the assessment is the source of truth.
   const { data: assessment, error: assessmentError } = await supabase
     .from('assessments')
-    .select('id, user_id, completed_at')
+    .select('id, user_id, completed_at, program')
     .eq('id', assessmentId)
     .eq('user_id', user.id)
     .single();
@@ -68,6 +72,7 @@ export async function generateReport(assessmentId: string): Promise<GenerateRepo
     .insert({
       assessment_id: assessmentId,
       user_id: user.id,
+      program: assessment.program,
       sections: {},
       generation_model: 'gpt-4o',
       report_version: 2,

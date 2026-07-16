@@ -67,6 +67,12 @@ interface SectionData {
 interface ReportData {
   id: string;
   assessment_id: string;
+  /**
+   * 'general' (MasteryTV/Decoded) | 'relationship' (Relatti). Stamped at
+   * creation from the parent assessment; the source of truth for how this
+   * report renders. See directives/ASSESSMENT_PROGRAM_SCOPING.md.
+   */
+  program?: string;
   sections: Record<string, SectionData> | null;
   archetype_base?: string;
   archetype_sublabel?: string;
@@ -658,14 +664,21 @@ export default function ReportViewer({ report: initialReport, scores, sharedOwne
 
   const sections = displaySections;
 
-  // Relationship report (Relatti's short battery): detected from the scored
-  // instruments (no career measures) — stable across generation. Such reports
-  // render only the sections that were generated (no empty Career/Wellbeing/
-  // Emotions), and everything is unlocked (the relationship section is the core
-  // value, and there's no paywall for the relationship product yet).
+  // Relationship report (Relatti's short battery): read from the report's OWN
+  // program column — the source of truth, stamped at creation from its parent
+  // assessment (PC2.1f).
+  //
+  // This used to sniff the scored instruments for career measures. That was a
+  // heuristic standing in for the column that didn't exist yet: accurate only
+  // because the relationship battery happens to omit riasec/weims, and silently
+  // wrong the day a battery changes. The column can't drift — it has one writer
+  // (generate.ts) and is NOT NULL.
+  //
+  // Such reports render only the sections that were generated (no empty Career/
+  // Wellbeing/Emotions), and everything is unlocked (the relationship section is
+  // the core value, and there's no paywall for the relationship product yet).
   const isRelationshipReport =
-    reportVersion === 2 &&
-    !scores.some((s) => s.instrument_id === 'riasec' || s.instrument_id === 'weims');
+    reportVersion === 2 && report.program === 'relationship';
   // Relationship reports show only the relationship-relevant sections that were
   // generated. The explicit allow-list (not just "what's in sections") also
   // trims older Relatti reports that were generated before the generator skip,

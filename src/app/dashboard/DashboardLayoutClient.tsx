@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import ShareModal from "@/components/decoded/ShareModal";
 import PartnerInviteModal from "@/components/relatti/PartnerInviteModal";
 import { FeedbackWidget } from "@/components/relatti/FeedbackWidget";
-import { useBrand } from "@/hooks/useBrand";
+import { useBrand, resolveBrandClient } from "@/hooks/useBrand";
 
 /**
  * Unified dashboard chrome — wraps all post-auth pages
@@ -40,12 +40,27 @@ export default function DashboardLayoutClient({
       const { data: { user: authUser } } = await supabase.auth.getUser();
       if (!authUser) return;
 
+      // Program-scoped: the sidebar must link to THIS brand's profile, not
+      // whichever program the user happened to finish last.
+      //
+      // resolveBrandClient(), NOT the `brand` from useBrand(): useBrand starts
+      // at the DEFAULT brand and only re-resolves in its own mount effect, but
+      // this effect has [] deps and runs once — it would capture 'general' on
+      // relatti.com and query the wrong program. resolveBrandClient reads the
+      // host synchronously, so it's right on the first pass.
+      //
+      // The .order() is new and load-bearing: this was .limit(1).single() with
+      // no ordering at all, which is non-deterministic the moment a user has
+      // two live assessments — Postgres may return either row.
+      // (PC2.1d — directives/ASSESSMENT_PROGRAM_SCOPING.md.)
       const { data } = await supabase
         .from("assessments")
         .select("id")
         .eq("user_id", authUser.id)
+        .eq("program", resolveBrandClient().programSlug)
         .not("completed_at", "is", null)
         .neq("current_layer", "superseded")
+        .order("completed_at", { ascending: false })
         .limit(1)
         .single();
 

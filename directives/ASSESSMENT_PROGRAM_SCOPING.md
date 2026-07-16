@@ -1,6 +1,7 @@
 # PC2.1 — Program-scoping the assessment spine
 
-> **Status:** 🔴 SPEC — awaiting founder approval. No code written.
+> **Status:** 🟢 **a–g BUILT + verified 2026-07-16** (founder approved: "proceed… don't backfill the assessment for tom on Relatti, but give that account the ability to take the new assessment"). **PC2.1h (invite surfaces) DEFERRED — see §6.**
+> **Acceptance PASSED:** `tom@masterytv.com` on relatti.com `/assess` → **HTTP 200, 3-instrument relationship battery ("8–12" min)**; on masterytv.com → still 307 → /dashboard (he has a general one). His 5 Decoded assessments untouched. Gate green (274 tests), executive prompt byte-identical.
 > **Epic:** [PLATFORM_SPRINT.md](PLATFORM_SPRINT.md) → Track P → **PC2.1** (specced 2026-06-24, never built).
 > **Implements:** ADR-P02 (per-domain data isolation). The *conversation* half shipped 2026-07-15 (`conversations.program`, migration `20260715120000`). This is the assessment half.
 > **Written:** 2026-07-16, after the founder asked "shouldn't tom@masterytv.com have two assessments and two reports?"
@@ -100,8 +101,16 @@ One filter (`.eq("program", program)`) expresses both. No new flag needed.
 | **PC2.1d** Scope "the user's report": `dashboard/page.tsx:84,95`, `DashboardLayoutClient.tsx:43` (**also add the missing `.order()`** — it's `.limit(1).single()` with no ordering, non-deterministic the moment two exist). | Each domain's dashboard shows its own report. 🧪 |
 | **PC2.1e** Coach: `prompt-assembler.ts:85` gains `.eq("program", program)` (already in scope); `lookup-assessment.ts:57` needs `program` plumbed through the tool dispatcher; `:386` partner-report-by-user_id scoped. | Relationship coach never cites the executive profile. 🧪 goldens |
 | **PC2.1f** Retire the heuristic: `ReportViewer.tsx:666` + `decoded-generate-report:827` read the column instead of sniffing instruments. Kills the "Decoded Report" header + Career section on relatti.com. | One source of truth for program. 🧪 |
-| **PC2.1g** The dyad spine. `sync-my-report.ts:44-50` blanket-writes `participant.report_id` + both `decoded_invites` pointers filtered only by `user_id` → a MasteryTV report id lands on a Relatti dyad. Scope the source read by program AND the writes (participant has no `program` — filter via engagement `kind='relationship_dyad'`). | The dyad never points at a general-program report. 🧪 |
-| **PC2.1h** Invite surfaces (`invite/route.ts:48,91`, `invite-consent:171`, `invite-notify:71`, `invite/[code]:96`, `claim-invites.ts:60,131`): all take latest-report-by-user_id. | A Relatti invite carries the Relatti report. 🧪 |
+| **PC2.1g** ✅ The dyad spine. Two layers: PC2.1d's scoping means the `reportId` handed to `syncMyReportToSpine` is already this brand's, AND the function now **verifies** the report's program is `relationship` before stamping, rather than trusting the caller (the call is brand-gated, but `brandId` and `program` resolve via slightly different routes — the blast radius is the dyad coach reading the wrong person's world). | The dyad never points at a general-program report. ✅ |
+| **PC2.1h** 🔨 **DEFERRED (2026-07-16).** Invite surfaces (`invite/route.ts:48,93`, `invite-consent:173`, `invite-notify:73`, `invite/[code]:98`, `claim-invites.ts:62,133`) still take latest-report-by-user_id. | A Relatti invite carries the Relatti report. |
+
+### 6.1 Why PC2.1h is deferred (read before picking it up)
+
+It is **not** a one-line repeat of the others. Those four files have **no brand context at all** (two have only `originFromHeaders`), so scoping them means plumbing `program` through the invite/claim call chain — which is the load-bearing dyad path and the exact funnel behind the 0/3 metric. Shipping that half-verified is worse than leaving it.
+
+There's also a design question the others didn't have: **`decoded_invites` has no program column either**, and it spans BOTH brands (Decoded has its own compatibility-sharing hub, `CompatibilityHubDecoded`). So "scope the invite's report by program" first needs an answer to *which* program an invite belongs to — probably a `decoded_invites.program` stamped at creation from the resolved brand, mirroring what PC2.1a did for assessments.
+
+**Live risk today: low and bounded.** It only misfires for a **dual-brand user who also uses invites**. Today that set is `{tom@masterytv.com}`, who has **0 invites**. And the reads take the *latest* report, so right after he takes the Relatti battery his newest report IS the relationship one — it would pick correctly by luck. The bug appears if he later retakes the general battery, or when the career vertical adds a second dual-brand cohort. **Do this before Stage 2 ships, not before the beta.**
 
 **Open decisions (C-class — founder or explicit call):**
 - `admin/beta/funnel.ts:130` — should the cockpit split per brand, or stay cross-brand?

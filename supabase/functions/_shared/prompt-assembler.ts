@@ -43,7 +43,7 @@ import {
   type UserProfile,
   buildDeliveryStyle,
 } from "./prompt-layers.ts";
-import { resolvePack } from "./packs/index.ts";
+import { resolvePack, programScope } from "./packs/index.ts";
 
 // Re-export for consumers that need the trace type
 export type { PromptDebugTrace };
@@ -82,10 +82,17 @@ export async function assemblePrompt(
   const pack = resolvePack(program);
 
   // ── Resolve latest assessment ID first (needed for score query) ──
+  // PROGRAM-SCOPED (PC2.1e). This took the latest completed assessment across
+  // ALL programs while `program` sat in scope two lines up: a dual-brand user
+  // chatting on relatti.com whose MasteryTV assessment was newer got their
+  // executive Big Five + archetype injected into the relationship prompt. Same
+  // class as the conversation bleed that 20260715120000 fixed — the pack was
+  // right, the data underneath it wasn't.
   const latestAssessmentResult = await supabase
     .from("assessments")
     .select("id")
     .eq("user_id", userId)
+    .eq("program", programScope(program))
     .not("completed_at", "is", null)
     .order("completed_at", { ascending: false })
     .limit(1)
@@ -382,10 +389,15 @@ export async function assemblePrompt(
           if (pu?.name) partnerName = pu.name;
         }
         if (partnerId && (shareLevel === "type_compatibility" || shareLevel === "full")) {
+          // The partner's RELATIONSHIP report, not whichever they finished last
+          // — a dual-brand partner would otherwise hand the dyad coach their
+          // executive profile. This branch only runs for a relationship dyad,
+          // so the program is that of the coach reading it. (PC2.1e.)
           const { data: partnerReport } = await supabase
             .from("assessment_reports")
             .select("archetype_base, archetype_sublabel, sections")
             .eq("user_id", partnerId)
+            .eq("program", programScope(program))
             .order("created_at", { ascending: false })
             .limit(1)
             .maybeSingle();
