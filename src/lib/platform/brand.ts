@@ -48,8 +48,9 @@ export interface Brand {
   programSlug: ProgramId;
   /** data-theme value applied at the root (PA3 theming). */
   themeId: string;
-  /** Primary logged-in surface this brand registers (PB2 surface registry). */
-  surfaceId: string;
+  // surfaceId REMOVED (TENANCY_AUDIT T5, 2026-07-16): it had zero consumers —
+  // surface selection is byBrand() at DashboardLayoutClient, which is already
+  // exhaustive per brand. Reintroduce only WITH the registry it promises.
   /** Hosts (no port) that resolve to this brand. */
   domains: string[];
 }
@@ -61,7 +62,6 @@ export const BRANDS: Record<BrandId, Brand> = {
     workspaceSlug: "masterytv",
     programSlug: "general",
     themeId: "masterytv",
-    surfaceId: "coach_chat",
     domains: ["masterytv.com", "www.masterytv.com", "staging.masterytv.com", "localhost"],
   },
   relatti: {
@@ -70,7 +70,6 @@ export const BRANDS: Record<BrandId, Brand> = {
     workspaceSlug: "masterytv",
     programSlug: "relationship",
     themeId: "relatti",
-    surfaceId: "relationship_dyad",
     domains: ["relatti.com", "www.relatti.com", "staging.relatti.com"],
   },
 };

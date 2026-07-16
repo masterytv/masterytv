@@ -642,11 +642,14 @@ function OnboardingContent() {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user || cancelled) { setDecodedChecked(true); return; }
 
-        // Check if user has a completed Decoded assessment report
+        // Check if user has a completed Decoded assessment report. Onboarding
+        // is the EXECUTIVE intake — a relationship report must not satisfy it
+        // (PC2.2: user_id alone is not brand isolation).
         const { data: report } = await supabase
           .from('assessment_reports')
           .select('archetype_base, archetype_sublabel, archetype_tagline, generated_at')
           .eq('user_id', user.id)
+          .eq('program', 'general')
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();

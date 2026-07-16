@@ -1106,6 +1106,12 @@ async function runCoachHandoff(
   );
 
   // ── 7. Store assessment profile ──
+  // onConflict must be assessment_id: it's the table's only unique index
+  // (idx_profiles_assessment). The previous onConflict "user_id" had NO
+  // backing unique index, so this upsert 42P10-errored on EVERY report ever
+  // generated (swallowed below — the table had 0 rows when found 2026-07-16,
+  // the assessment_responses bug class). One profile per assessment is also
+  // the correct tenancy shape: per-program assessments each keep their own.
   const { error: profileError } = await supabase
     .from("assessment_profiles")
     .upsert({
@@ -1120,7 +1126,7 @@ async function runCoachHandoff(
       key_insights: keyInsights,
       coach_opener: coachOpener,
       updated_at: new Date().toISOString(),
-    }, { onConflict: "user_id" });
+    }, { onConflict: "assessment_id" });
 
   if (profileError) {
     console.error("[coach-handoff] Failed to store assessment profile:", profileError.message);

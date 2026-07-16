@@ -1,8 +1,8 @@
 # Is this actually multi-tenant? — the brand-3 audit
 
-> **Status:** 🔴 FINDINGS — no code written. Written 2026-07-16, founder: *"I wonder if these issues are architectural… What will happen when we create a new brand? Will we be here again?"*
+> **Status:** ✅ BUILT 2026-07-16 (same day) — the founder overrode §0's defer recommendation: *"we need to fix everything before we continue any more testing or users."* Shipped: **T0** (`check:tenancy` — every table categorized, unscoped user_id reads of program-scoped tables fail CI), **T1** (`ProgramId` union, twin in `_shared/packs/index.ts`), **T2** (packs/modules/batteries → exhaustive Records; `normalizeProgram` throws on an unregistered program), **T3** (`check:ternaries`, ban-set derived from the unions; 16-ternary sweep via new `byBrand()`; sole allowlist entry = layout.tsx's inline script), **T4** (`_shared/brands.ts` EDGE_BRANDS + `brandForProgram`), **T5** (`surfaceId` KILLED — zero consumers; byBrand at DashboardLayoutClient is the exhaustive selection), **T6** (claim corrected in PLATFORM_ARCHITECTURE — `program.config` is future white-label config, NOT load-bearing; typed registries are), **T7/PC2.2** (program on memory_facts / coach_profiles / coach_profile_history + scoped reads + per-program match_memory_facts). Bonus find: `assessment_profiles` upsert had NO backing unique index — it had 42P10-errored on every report ever generated (0 rows); now onConflict assessment_id.
+> Original verdict + evidence below, kept for the why.
 > **Verdict: yes, you'd be here again — and the reason is one sentence long (§3).**
-> **Recommendation: DEFER T1–T7. Not because they're wrong — because they fix a different class than the one biting you, and they don't get more expensive by waiting. See §0.**
 
 ---
 
