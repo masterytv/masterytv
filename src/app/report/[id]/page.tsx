@@ -4,7 +4,8 @@ import { redirect, notFound } from 'next/navigation';
 import ReportViewer from './ReportViewer';
 import { getBrand } from '@/lib/platform/brand.server';
 import { getOrCreateBroadcastInviteUrl } from '@/lib/relatti/broadcast-invite';
-import { getPartnerNeedToHear } from '@/lib/relatti/partner-need-to-hear';
+import { getDyadNeedToHear, toDyadPointer } from '@/lib/relatti/partner-need-to-hear';
+import { getDisplayName } from '@/lib/decoded/display-name';
 import { originFromHeaders } from '@/lib/platform/origin';
 import { headers } from 'next/headers';
 import type { Metadata } from 'next';
@@ -52,14 +53,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         };
   }
 
-  // Get display name for the OG card
-  let displayName = '';
-  const { data: profile } = await admin
-    .from('decoded_profiles')
-    .select('display_name')
-    .eq('user_id', report.user_id)
-    .single();
-  if (profile?.display_name) displayName = profile.display_name;
+  // Get display name for the OG card. Reads users.name — the previous
+  // decoded_profiles lookup hit a table that doesn't exist, so every share card
+  // ever generated went out nameless.
+  const displayName = (await getDisplayName(admin, report.user_id)) ?? '';
 
   const slug = report.archetype_base.toLowerCase().replace(/^the\s+/, '');
   const ogParams = new URLSearchParams({
@@ -187,11 +184,12 @@ export default async function ReportPage({ params, searchParams }: PageProps) {
     const brand = await getBrand();
     const isRelationship = brand.programSlug === 'relationship';
 
-    // S5's reciprocal "What [partner] Needs to Hear" block. Consent-gated inside
-    // the helper (share_with_human = 'full') and null until the partner has
-    // finished their own profile — S5 then keeps its "invite them" empty state.
-    // Independent of the invite URL, so resolve both together.
-    const [inviteUrl, partnerNeedToHear] = isRelationship
+    // The viewer's consented dyad. S5 renders only a signpost, so strip to the
+    // pointer before handing it to ReportViewer — that's a client component, and
+    // the full object would serialize BOTH partners' phrases into the payload of
+    // a page that renders neither. Independent of the invite URL, so resolve
+    // both together.
+    const [inviteUrl, dyad] = isRelationship
       ? await Promise.all([
           getOrCreateBroadcastInviteUrl(
             supabase,
@@ -199,9 +197,10 @@ export default async function ReportPage({ params, searchParams }: PageProps) {
             originFromHeaders(await headers()),
             ownReport.id,
           ),
-          getPartnerNeedToHear(user.id),
+          getDyadNeedToHear(user.id),
         ])
       : [undefined, null];
+    const partnerNeedToHear = toDyadPointer(dyad);
 
     return (
       <ReportViewer
@@ -223,21 +222,14 @@ export default async function ReportPage({ params, searchParams }: PageProps) {
         process.env.SUPABASE_SERVICE_ROLE_KEY!,
       );
       const ownerId = result.report.user_id;
-      let ownerName = 'Someone';
 
-      // Try decoded_profiles first (has display name)
-      const { data: profile } = await admin
-        .from('decoded_profiles')
-        .select('display_name')
-        .eq('user_id', ownerId)
-        .single();
-
-      if (profile?.display_name) {
-        ownerName = profile.display_name;
-      } else {
-        // Fall back to auth user email
+      // users.name, then the email's local part — never the full address. The
+      // old decoded_profiles lookup always missed (no such table), so this
+      // banner had been showing the owner's raw email to their partner.
+      let ownerName = await getDisplayName(admin, ownerId);
+      if (!ownerName) {
         const { data: { user: ownerUser } } = await admin.auth.admin.getUserById(ownerId);
-        ownerName = ownerUser?.email ?? 'Someone';
+        ownerName = ownerUser?.email?.split('@')[0] || 'Someone';
       }
 
       return (

@@ -20,6 +20,7 @@ import {
   MessageSquare, ArrowUpRight, FileText, RefreshCw,
 } from 'lucide-react';
 import { useBrand, resolveBrandClient } from '@/hooks/useBrand';
+import type { DyadNeedToHear } from '@/lib/relatti/partner-need-to-hear';
 import { createClient } from '@/lib/supabase/client';
 import './compatibility.css';
 
@@ -102,6 +103,12 @@ interface Props {
   viewerRetook?: boolean;
   /** The other partner is the one who retook. */
   partnerRetook?: boolean;
+  /**
+   * "What each of you needs to hear" — both partners' phrases, resolved and
+   * consent-gated server-side. Null when there's no consented dyad or either
+   * partner's profile lacks them; the block then simply doesn't render.
+   */
+  needToHear?: DyadNeedToHear | null;
 }
 
 type TabId = 'intimate' | 'family_friendship' | 'work';
@@ -141,6 +148,7 @@ export default function CompatibilityReportViewer({
   shareWithHuman, isInviter, inviteId, otherPersonName,
   upgradeRequestedLevel, upgradeRequestedBy, userId,
   otherReportId, isStale, viewerRetook, partnerRetook,
+  needToHear,
 }: Props) {
   const brand = useBrand();
   const isRelatti = brand.id === 'relatti';
@@ -567,7 +575,12 @@ export default function CompatibilityReportViewer({
 
       {/* ═══ Couples Report — the long-form, science-grounded analysis ═══ */}
       {report.couples_report && (
-        <CouplesReport data={report.couples_report} otherName={otherPersonName} inviteId={inviteId} />
+        <CouplesReport
+          data={report.couples_report}
+          otherName={otherPersonName}
+          inviteId={inviteId}
+          needToHear={needToHear}
+        />
       )}
 
       {/* ═══ Coach Deep Link CTA ═══ */}
@@ -646,14 +659,64 @@ function CouplesSection({
   );
 }
 
+/**
+ * "What each of you needs to hear" — the pair, side by side.
+ *
+ * WHAT THESE ARE: phrases the model inferred from each person's assessment
+ * results — NOT anything either partner wrote or told us. Copy must never imply
+ * otherwise: we promise a partner's private coaching is never shared, and
+ * wording that hints we're relaying their words undermines that promise even
+ * though the data is harmless. Name the source as their relationship style.
+ * (Founder correction, 2026-07-16.)
+ *
+ * Seeing both lists together IS the insight — most couples need opposite things.
+ */
+function NeedToHearPair({ dyad, otherName }: { dyad: DyadNeedToHear; otherName: string }) {
+  const partnerLabel = dyad.partnerName || otherName;
+  const columns: Array<{ heading: string; phrases: DyadNeedToHear['mine'] }> = [
+    { heading: 'What you need to hear', phrases: dyad.mine },
+    { heading: `What ${partnerLabel} needs to hear`, phrases: dyad.theirs },
+  ];
+
+  return (
+    <div className="couples-report__section">
+      <h3 className="couples-report__heading">What each of you needs to hear</h3>
+      <p className="couples-report__body">
+        Based on your relationship styles — the words most likely to land. You
+        probably need different things, and that&apos;s the point.
+      </p>
+      <div className="needs-pair">
+        {columns.map((col) => (
+          <div key={col.heading} className="needs-pair__col">
+            <div className="needs-pair__label">
+              <Heart size={14} />
+              {col.heading}
+            </div>
+            <ul className="needs-pair__list">
+              {col.phrases.map((p, i) => (
+                <li key={i} className="needs-pair__item">
+                  <span className="needs-pair__phrase">&ldquo;{p.phrase}&rdquo;</span>
+                  {p.why && <span className="needs-pair__why">{p.why}</span>}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function CouplesReport({
   data,
   otherName,
   inviteId,
+  needToHear,
 }: {
   data: CouplesReportData;
   otherName: string;
   inviteId: string;
+  needToHear?: DyadNeedToHear | null;
 }) {
   const coachHref = buildCoachDeepLink(otherName, inviteId);
   return (
@@ -672,6 +735,11 @@ function CouplesReport({
       <CouplesSection heading="What you build together" text={data.strengths} />
       <CouplesSection heading="Where it gets hard" text={data.challenges} example={data.challenges_example} coachHref={coachHref} />
       <CouplesSection heading="How to love each other well" text={data.loving_well} example={data.loving_well_example} coachHref={coachHref} />
+      {/* The concrete companion to "how to love each other well": the actual
+          words. Only renders when BOTH partners' phrases resolved. */}
+      {needToHear && needToHear.mine.length > 0 && needToHear.theirs.length > 0 && (
+        <NeedToHearPair dyad={needToHear} otherName={otherName} />
+      )}
       <CouplesSection heading="Finding your way back" text={data.repair} example={data.repair_example} coachHref={coachHref} />
 
       {data.closing && (
