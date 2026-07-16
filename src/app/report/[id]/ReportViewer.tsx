@@ -30,6 +30,7 @@ import ShareModal from '@/components/decoded/ShareModal';
 import PartnerInviteModal from '@/components/relatti/PartnerInviteModal';
 import ArchetypeCard from './ArchetypeCard';
 import { attachmentDisplay } from '@/lib/decoded/report/attachment-style';
+import type { PartnerNeedToHear } from '@/lib/relatti/partner-need-to-hear';
 import {
   RELATIONSHIP_RENDER_ORDER,
   RELATIONSHIP_SECTION_META,
@@ -87,6 +88,11 @@ interface ReportViewerProps {
    * shared views — those keep the Decoded share flow.
    */
   inviteUrl?: string;
+  /**
+   * Relationship profiles only: the partner's own need-to-hear phrases, already
+   * consent-gated server-side. Undefined on Decoded reports and shared views.
+   */
+  partnerNeedToHear?: PartnerNeedToHear | null;
 }
 
 // Relationship-report content (order, titles, normalize copy) lives in
@@ -137,6 +143,12 @@ interface V2SectionContentProps {
   attachmentStyle: string;
   /** Relationship report — enables relationship-only blocks (e.g. normalize). */
   isRelationship: boolean;
+  /**
+   * The partner's own need-to-hear phrases, resolved server-side under consent.
+   * Null until the partner has consented AND finished their profile — S5 then
+   * keeps its honest "invite them" empty state.
+   */
+  partnerNeedToHear?: PartnerNeedToHear | null;
 }
 
 /**
@@ -147,7 +159,7 @@ interface V2SectionContentProps {
 function V2SectionContent({
   sectionId, data, scores,
   bigFivePercentiles, attachmentAnxiety, attachmentAvoidance, attachmentStyle,
-  isRelationship,
+  isRelationship, partnerNeedToHear,
 }: V2SectionContentProps) {
   // Parse structured content from v2 sections
   // v2 stores JSON in content_markdown instead of raw markdown
@@ -313,12 +325,21 @@ function V2SectionContent({
             title="What You Need to Hear"
             subtitle="The words that help you feel secure and loved — share these with your partner."
           />
-          {/* The reciprocal — what to say to THEM. Fills in once the partner has a
-              profile; until then, an honest empty state (RELATTI_EXPERIENCE.md §5.4). */}
+          {/* The reciprocal — what to say to THEM. Their OWN S5 phrases, resolved
+              server-side under consent (getPartnerNeedToHear); until they've
+              consented and finished, an honest empty state (§5.4). */}
           <NeedToHearComponent
-            phrases={[]}
-            title="What Your Partner Needs to Hear"
-            subtitle="The words that help your partner feel secure — so you know exactly what to say."
+            phrases={partnerNeedToHear?.phrases ?? []}
+            title={
+              partnerNeedToHear?.partnerName
+                ? `What ${partnerNeedToHear.partnerName} Needs to Hear`
+                : 'What Your Partner Needs to Hear'
+            }
+            subtitle={
+              partnerNeedToHear
+                ? `In their own words, from their profile — so you know exactly what to say.`
+                : 'The words that help your partner feel secure — so you know exactly what to say.'
+            }
             emptyMessage="We’ll fill this in once your partner takes their own relationship profile. Then you’ll see exactly what helps them feel safe and loved. Invite them from your dashboard to unlock this together."
           />
 
@@ -520,7 +541,7 @@ function RetakeAssessmentCTA({ isRelationship }: { isRelationship: boolean }) {
   );
 }
 
-export default function ReportViewer({ report: initialReport, scores, sharedOwnerName, inviteUrl }: ReportViewerProps) {
+export default function ReportViewer({ report: initialReport, scores, sharedOwnerName, inviteUrl, partnerNeedToHear }: ReportViewerProps) {
   const [report, setReport] = useState<ReportData>(initialReport);
   const [readingProgress, setReadingProgress] = useState(0);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -993,6 +1014,7 @@ export default function ReportViewer({ report: initialReport, scores, sharedOwne
                             attachmentAvoidance={attachmentAvoidance}
                             attachmentStyle={attachmentStyle}
                             isRelationship={isRelationshipReport}
+                            partnerNeedToHear={partnerNeedToHear}
                           />
                         ) : (
                           /* ═══ V1 MARKDOWN RENDERING (backward compat) ═══ */
