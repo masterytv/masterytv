@@ -77,7 +77,7 @@ function happyPath() {
       recipient_report_id: PARTNER_REPORT,
     },
     assessment_reports: { sections: s5(PHRASES), user_id: PARTNER },
-    decoded_profiles: { display_name: "Priya" },
+    users: { name: "Priya" },
   };
 }
 
@@ -152,7 +152,7 @@ describe("getPartnerNeedToHear — resolution", () => {
         recipient_report_id: "report-viewer",
       },
       assessment_reports: { sections: s5(PHRASES), user_id: PARTNER },
-      decoded_profiles: { display_name: "Priya" },
+      users: { name: "Priya" },
     };
 
     await getPartnerNeedToHear(VIEWER);
@@ -166,7 +166,7 @@ describe("getPartnerNeedToHear — resolution", () => {
 
   it("still resolves when the partner has no display name", async () => {
     happyPath();
-    tableData.decoded_profiles = null;
+    tableData.users = null;
 
     const result = await getPartnerNeedToHear(VIEWER);
     expect(result).toEqual({ partnerName: null, phrases: PHRASES });

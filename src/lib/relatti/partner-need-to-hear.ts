@@ -1,4 +1,5 @@
 import { createClient as createServiceClient } from "@supabase/supabase-js";
+import { getDisplayName } from "@/lib/decoded/display-name";
 
 /**
  * Resolve the reciprocal half of the profile's need-to-hear pair: the phrases
@@ -90,13 +91,7 @@ export async function getPartnerNeedToHear(
     const phrases = extractNeedToHear(partnerReport.sections);
     if (phrases.length === 0) return null;
 
-    let partnerName: string | null = null;
-    const { data: profile } = await admin
-      .from("decoded_profiles")
-      .select("display_name")
-      .eq("user_id", partnerId)
-      .maybeSingle();
-    if (profile?.display_name) partnerName = profile.display_name;
+    const partnerName = await getDisplayName(admin, partnerId);
 
     return { partnerName, phrases };
   } catch (err) {
