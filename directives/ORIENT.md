@@ -2,7 +2,7 @@
 
 > **Purpose:** the *one* file a new session reads to get oriented. Stable map, not a changelog.
 > For volatile "what changed this week" state, see the **`relatti-open-state`** auto-memory (the rolling log).
-> Last reviewed: 2026-07-09.
+> Last reviewed: 2026-07-16.
 
 ---
 
@@ -41,7 +41,9 @@ One data spine serves all three future products. Five concepts (full detail in [
 
 Plus **`entry_segment`** — maps a marketing slug (`/married`, `/laidoff`) → program + framing + content (funnels are data, not hardcoded pages).
 
-> **Rule for every new table:** include `workspace_id`, and attach to an `engagement` rather than directly to a `user` where relevant.
+> **Rule for every new table:** include `workspace_id`, attach to an `engagement` rather than directly to a `user` where relevant — and **categorize it in `scripts/check-tenancy.mjs`** (CI fails until you do).
+>
+> **The program axis is TYPED (tenancy T0–T7, 2026-07-16).** `ProgramId` is a union in `src/lib/platform/brand.ts` with a lockstep twin in `supabase/functions/_shared/packs/index.ts`; packs/modules/batteries are exhaustive `Record<ProgramId,…>` maps and `normalizeProgram` THROWS on an unregistered program. **New brand = add the slug to BOTH unions + the BRANDS/EDGE_BRANDS registries, then follow the compile errors** ([VERTICAL_PLAYBOOK.md](VERTICAL_PLAYBOOK.md) §5.0). Never write a brand/program ternary (`check:ternaries` blocks it — use `byBrand()` / `brandForProgram()`), and never read a program-scoped table by `user_id` alone (`check:tenancy` blocks it). Full story: [TENANCY_AUDIT.md](TENANCY_AUDIT.md).
 
 ## 5. Where to read next — the router
 
