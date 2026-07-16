@@ -278,6 +278,59 @@ const SOLO_TABLES: Record<string, TableFixture> = {
           archetype_sublabel: "The Devoted Heart",
           archetype_tagline: "Loves deeply, needs the bond to feel safe.",
           generated_at: "2026-06-28T12:00:00Z",
+          // Report vocabulary source — content_markdown is a JSON string,
+          // exactly as decoded-generate-report stores it.
+          sections: {
+            S1: {
+              title: "You at a Glance",
+              min_tier: "free",
+              content_markdown: JSON.stringify({
+                tldr: "You love with your whole chest, and you're learning to keep some of it for yourself.",
+                top_strengths: [
+                  { label: "Loyal Anchor", description: "You stay when it matters, and people build on that." },
+                  { label: "Emotional Radar", description: "You read a room's undercurrent before anyone names it." },
+                  { label: "Generous Heart", description: "You give first and ask questions later." },
+                ],
+                growth_edges: [
+                  { label: "The Overgiving Loop" },
+                  { label: "Silent Scorekeeping" },
+                  { label: "Fear of the Ask" },
+                ],
+              }),
+            },
+            S2: {
+              title: "Your Personality",
+              min_tier: "free",
+              content_markdown: JSON.stringify({
+                trait_cards: [
+                  { trait_name: "Agreeableness", label: "The Peacemaker" },
+                  { trait_name: "Neuroticism", label: "The Deep Feeler" },
+                ],
+                signature_pattern: {
+                  name: "The Harmony Reflex",
+                  description: "High agreeableness plus deep feeling means conflict registers as danger before it registers as information.",
+                },
+              }),
+            },
+            S8: {
+              title: "Your Growth Map",
+              min_tier: "mastery",
+              content_markdown: JSON.stringify({
+                growth_edges: [
+                  { priority: 1, title: "Ask Before You Ache" },
+                  { priority: 2, title: "Let Them Hold Some Weight" },
+                ],
+                thirty_day_challenge: "Once a day, name one need out loud before doing a favor.",
+              }),
+            },
+            // An errored section must be skipped, never leak into the prompt.
+            S5: {
+              title: "Your Relationships",
+              min_tier: "insight",
+              error: "OpenAI API error (429): quota",
+              content_markdown: "_This section could not be generated. Please try again._",
+            },
+          },
         },
       ];
     }

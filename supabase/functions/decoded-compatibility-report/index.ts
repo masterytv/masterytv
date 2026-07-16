@@ -3,7 +3,7 @@
  *
  * Generates per-user compatibility reports written in each person's narrative voice.
  * Follows the same architecture as decoded-generate-report:
- *   auth → data load → OpenAI → save.
+ *   auth → data load → OpenAI (Claude Sonnet fallback) → save.
  *
  * Request body:
  *   { invite_id: string, force_regenerate?: boolean }
@@ -25,9 +25,29 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createSupabaseClient, createSupabaseClientWithAuth } from "../_shared/supabase.ts";
 import { handleCors, getCorsHeaders } from "../_shared/cors.ts";
 import { errorResponse, jsonResponse, logError, withRetry, isRetryableError } from "../_shared/errors.ts";
+import { callClaudeJson } from "../_shared/anthropic.ts";
 
 const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
 const MODEL = "gpt-4o";
+// The couples report is long-form (several thousand tokens); the Claude
+// fallback needs an explicit output budget (OpenAI defaults to the model max).
+const CLAUDE_MAX_TOKENS = 8192;
+
+/**
+ * Cost per call, following the shared calculateCost(usage, isFallback)
+ * convention (isFallback=true = Claude Sonnet rates). Local because the
+ * shared helper prices the coach's gpt-4o-mini primary; reports run gpt-4o.
+ * gpt-4o: $2.50/$10 per MTok. Claude Sonnet: $3/$15 per MTok.
+ */
+function calculateReportCost(
+  usage: { input_tokens: number; output_tokens: number },
+  isFallback: boolean,
+): number {
+  if (isFallback) {
+    return (usage.input_tokens / 1_000_000) * 3 + (usage.output_tokens / 1_000_000) * 15;
+  }
+  return (usage.input_tokens / 1_000_000) * 2.5 + (usage.output_tokens / 1_000_000) * 10;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Voice Configuration (mirrors decoded-generate-report/index.ts)
@@ -468,15 +488,23 @@ The couples_report is the centerpiece. Make it genuinely compelling to read, par
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// OpenAI Helper (raw fetch with retry — same pattern as decoded-generate-report)
+// LLM Helpers (OpenAI primary with retry, Claude Sonnet fallback — same
+// resilience pattern as decoded-generate-report)
 // ─────────────────────────────────────────────────────────────────────────────
+
+interface LlmJsonResult {
+  json: Record<string, unknown>;
+  usage: { input_tokens: number; output_tokens: number };
+  model: string;
+  isFallback: boolean;
+}
 
 async function callOpenAI(
   systemPrompt: string,
   userPrompt: string,
   apiKey: string,
   temperature = 0.7,
-): Promise<Record<string, unknown>> {
+): Promise<LlmJsonResult> {
   if (!apiKey) throw new Error("OpenAI API key not configured in Supabase secrets");
 
   const response = await withRetry(
@@ -517,7 +545,51 @@ async function callOpenAI(
   const content = data.choices?.[0]?.message?.content;
   if (!content) throw new Error("Empty response from OpenAI");
 
-  return JSON.parse(content);
+  return {
+    json: JSON.parse(content),
+    usage: {
+      input_tokens: data.usage?.prompt_tokens ?? 0,
+      output_tokens: data.usage?.completion_tokens ?? 0,
+    },
+    model: data.model ?? MODEL,
+    isFallback: false,
+  };
+}
+
+/**
+ * OpenAI-primary, Claude-fallback. A billing lapse or OpenAI outage falls
+ * through to Claude Sonnet instead of failing the report (the coach path has
+ * had this since _shared/anthropic.ts; the 2026-07-16 429 took reports down).
+ */
+async function generateJson(
+  systemPrompt: string,
+  userPrompt: string,
+  apiKey: string,
+  temperature: number,
+): Promise<LlmJsonResult> {
+  try {
+    return await callOpenAI(systemPrompt, userPrompt, apiKey, temperature);
+  } catch (err) {
+    console.warn(
+      `[decoded-compatibility-report] OpenAI failed, falling back to Claude: ${(err as Error).message}`,
+    );
+  }
+
+  const claude = await withRetry(
+    () => callClaudeJson({
+      system: systemPrompt,
+      user: userPrompt,
+      maxTokens: CLAUDE_MAX_TOKENS,
+      temperature,
+    }),
+    {
+      maxRetries: 1,
+      baseDelay: 2000,
+      functionName: "decoded-compatibility-report-claude",
+      shouldRetry: isRetryableError,
+    },
+  );
+  return { ...claude, isFallback: true };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -769,21 +841,49 @@ ${personBlock(inviterName, inviterArchetype, inviterFacts, inviterS1, inviterSec
     const recipientVoiceBlock = isRelationship ? RELATTI_COUPLES_VOICE : VOICE_PROMPT_BLOCKS[recipientVoiceId];
     const voiceLine = isRelationship ? "in the Relatti couples voice" : "written in your assigned voice";
 
-    // ── Generate both reports in parallel ──
-    const [inviterCompatReport, recipientCompatReport] = await Promise.all([
-      callOpenAI(
+    // ── Generate both reports in parallel (OpenAI primary, Claude fallback) ──
+    const [inviterCall, recipientCall] = await Promise.all([
+      generateJson(
         promptFor(inviterName, recipientName, inviterVoiceBlock),
         `Generate a ${taskWord} for ${inviterName}, ${voiceLine}.\n\n${inviterDataPayload}`,
         apiKey,
         isRelationship ? 0.4 : 0.7,
       ),
-      callOpenAI(
+      generateJson(
         promptFor(recipientName, inviterName, recipientVoiceBlock),
         `Generate a ${taskWord} for ${recipientName}, ${voiceLine}.\n\n${recipientDataPayload}`,
         apiKey,
         isRelationship ? 0.4 : 0.7,
       ),
     ]);
+    const inviterCompatReport = inviterCall.json;
+    const recipientCompatReport = recipientCall.json;
+
+    // Record spend per model — a run that fell back mid-way spans two models,
+    // and Claude fallback tokens bill at Claude rates.
+    const usageByModel = new Map<string, { input: number; output: number; isFallback: boolean }>();
+    for (const call of [inviterCall, recipientCall]) {
+      const entry = usageByModel.get(call.model) ?? { input: 0, output: 0, isFallback: call.isFallback };
+      entry.input += call.usage.input_tokens;
+      entry.output += call.usage.output_tokens;
+      usageByModel.set(call.model, entry);
+    }
+    const { error: costError } = await admin.from("cost_tracking").insert(
+      [...usageByModel.entries()].map(([model, u]) => ({
+        user_id: user.id,
+        purpose: "decoded-compatibility-report",
+        model,
+        tokens_in: u.input,
+        tokens_out: u.output,
+        cost_usd: calculateReportCost({ input_tokens: u.input, output_tokens: u.output }, u.isFallback),
+        // PC5.5 brand attribution: stamp the request's program ("general" =
+        // the MasteryTV column, same convention as the coach/cron writers).
+        metadata: { invite_id, program: program ?? "general" },
+      })),
+    );
+    if (costError) {
+      console.error("[decoded-compatibility-report] cost_tracking insert failed:", costError.message);
+    }
 
     // ── Save both per-user reports and update status ──
     const { error: updateError } = await admin

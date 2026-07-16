@@ -148,6 +148,97 @@ export function buildDecodedProfileLayer(profile: AssessmentProfile): string {
   return parts.join('\n');
 }
 
+/**
+ * REPORT VOCABULARY — the report's own names for the user's strengths,
+ * growth edges, and patterns.
+ *
+ * Why: the report page and the coach are two voices over the same scores.
+ * Without this block the coach paraphrases ("warmth and cooperation") what
+ * the report named ("Empathetic Connector"), and users can't tell the coach
+ * has read their results at all. Extracted in CODE from the stored section
+ * JSON — never re-inferred by the model (two renders would contradict).
+ *
+ * Sections store content_markdown as a JSON string (see decoded-generate-report);
+ * errored or unparseable sections are skipped silently — this block degrades
+ * to '' rather than breaking the coach.
+ */
+export function buildReportVocabularyBlock(
+  sections: Record<string, unknown> | null | undefined,
+): string {
+  if (!sections) return '';
+
+  const parse = (sectionId: string): Record<string, unknown> | null => {
+    const section = sections[sectionId] as Record<string, unknown> | undefined;
+    if (!section || section.error || typeof section.content_markdown !== 'string') return null;
+    try {
+      const parsed = JSON.parse(section.content_markdown);
+      return parsed && typeof parsed === 'object' ? parsed as Record<string, unknown> : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const str = (v: unknown): string => (typeof v === 'string' ? v.trim() : '');
+  const parts: string[] = [];
+
+  // S1 — tldr, named strengths, named growth edges
+  const s1 = parse('S1');
+  if (s1) {
+    const tldr = str(s1.tldr);
+    if (tldr) parts.push(`  In one line, the report says: "${tldr}"`);
+    const strengths = Array.isArray(s1.top_strengths) ? s1.top_strengths : [];
+    const strengthLines = strengths
+      .map((s) => ({ label: str((s as Record<string, unknown>)?.label), description: str((s as Record<string, unknown>)?.description) }))
+      .filter((s) => s.label);
+    if (strengthLines.length > 0) {
+      parts.push(`  Top strengths, as the report names them:`);
+      for (const s of strengthLines) parts.push(`    - "${s.label}"${s.description ? ` — ${s.description}` : ''}`);
+    }
+    const edges = Array.isArray(s1.growth_edges) ? s1.growth_edges : [];
+    const edgeLabels = edges.map((e) => str((e as Record<string, unknown>)?.label)).filter(Boolean);
+    if (edgeLabels.length > 0) {
+      parts.push(`  Growth edges, as the report names them: ${edgeLabels.map((l) => `"${l}"`).join(', ')}`);
+    }
+  }
+
+  // S2 — per-trait labels + signature pattern name
+  const s2 = parse('S2');
+  if (s2) {
+    const cards = Array.isArray(s2.trait_cards) ? s2.trait_cards : [];
+    const traitLines = cards
+      .map((c) => ({ trait: str((c as Record<string, unknown>)?.trait_name), label: str((c as Record<string, unknown>)?.label) }))
+      .filter((c) => c.trait && c.label);
+    if (traitLines.length > 0) {
+      parts.push(`  Trait names the report uses: ${traitLines.map((c) => `${c.trait} = "${c.label}"`).join(', ')}`);
+    }
+    const pattern = s2.signature_pattern as Record<string, unknown> | undefined;
+    const patternName = str(pattern?.name);
+    if (patternName) {
+      parts.push(`  Signature pattern: "${patternName}"${str(pattern?.description) ? ` — ${str(pattern?.description)}` : ''}`);
+    }
+  }
+
+  // S8 — growth map titles (priority order) + the 30-day challenge
+  const s8 = parse('S8');
+  if (s8) {
+    const edges = Array.isArray(s8.growth_edges) ? s8.growth_edges : [];
+    const titles = edges.map((e) => str((e as Record<string, unknown>)?.title)).filter(Boolean);
+    if (titles.length > 0) {
+      parts.push(`  Growth map (report's priority order): ${titles.map((t) => `"${t}"`).join(' → ')}`);
+    }
+    const challenge = str(s8.thirty_day_challenge);
+    if (challenge) parts.push(`  Their 30-day challenge from the report: ${challenge}`);
+  }
+
+  if (parts.length === 0) return '';
+
+  return [
+    `REPORT VOCABULARY (the exact names their written report uses):`,
+    ...parts,
+    `  When you discuss their strengths, growth areas, or patterns from the assessment, use these exact names — the user has read them in their report, and a different phrasing for the same trait reads as a different product. Weave them in naturally, e.g. "your report calls this your ‹name from the list above› side"; never invent names that aren't listed, and never recite the list.`,
+  ].join('\n');
+}
+
 // ─── Coaching Notes per Dimension ─────────────────────────
 
 function openessCoachNote(pct: number): string {

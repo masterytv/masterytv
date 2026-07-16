@@ -488,6 +488,83 @@ async function callClaudeStreamingDirectly(opts: {
   return response; // Already Anthropic SSE format — pass through directly
 }
 
+// ─── JSON MODE (report generation fallback) ──────────────────────────────
+//
+// The Decoded/Relatti report generators call OpenAI with
+// response_format: json_object. Anthropic has no JSON mode, so this helper
+// gets the same guarantee via forced tool use: a single permissive
+// `emit_json` tool with tool_choice pinned to it, so the reply is always a
+// parseable JSON object (the tool input). NOTE: the older "{" assistant
+// prefill trick is NOT an option — claude-sonnet-4-6 rejects prefill with a
+// 400. Used as the fallback when the OpenAI account is down or out of quota
+// (2026-07-16: a 429 billing lapse stored placeholder text in every section
+// of a live user report).
+
+export async function callClaudeJson(opts: {
+  system: string;
+  user: string;
+  maxTokens?: number;
+  temperature?: number;
+  timeoutMs?: number;
+}): Promise<{
+  json: Record<string, unknown>;
+  usage: { input_tokens: number; output_tokens: number };
+  model: string;
+}> {
+  const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
+  if (!apiKey) throw new Error("ANTHROPIC_API_KEY not set — Claude JSON fallback unavailable");
+
+  const response = await fetch(ANTHROPIC_API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model: CLAUDE_MODEL,
+      max_tokens: opts.maxTokens ?? 4096,
+      temperature: opts.temperature ?? 0.7,
+      system: opts.system,
+      messages: [{ role: "user", content: opts.user }],
+      tools: [{
+        name: "emit_json",
+        description:
+          "Emit the JSON object exactly as specified by the structure in the instructions. The input to this tool IS the final answer.",
+        input_schema: { type: "object", additionalProperties: true },
+      }],
+      tool_choice: { type: "tool", name: "emit_json" },
+    }),
+    // Report sections run longer than coach turns (the couples report is
+    // several thousand tokens), so this gets its own generous timeout.
+    signal: AbortSignal.timeout(opts.timeoutMs ?? 90_000),
+  });
+
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`Claude JSON call failed (${response.status}): ${err.slice(0, 200)}`);
+  }
+
+  const data = await response.json() as AnthropicResponse;
+  if (data.stop_reason === "max_tokens") {
+    throw new Error("Claude JSON response truncated at max_tokens");
+  }
+
+  const toolUse = data.content.find((b) => b.type === "tool_use");
+  if (!toolUse?.input || typeof toolUse.input !== "object") {
+    throw new Error("Claude returned no emit_json tool call");
+  }
+
+  return {
+    json: toolUse.input as Record<string, unknown>,
+    usage: {
+      input_tokens: data.usage?.input_tokens ?? 0,
+      output_tokens: data.usage?.output_tokens ?? 0,
+    },
+    model: data.model ?? CLAUDE_MODEL,
+  };
+}
+
 // ─── UTILITIES ────────────────────────────────────────────────────────────
 
 /** Extracts concatenated text from an AnthropicResponse (handles multi-block). */

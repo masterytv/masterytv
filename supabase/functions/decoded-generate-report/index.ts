@@ -12,7 +12,7 @@
  *   2. Load scores from assessment_scores
  *   3. Classify voice from archetype_base → voiceId (map lookup)
  *   4. Evaluate tone modifiers from clinical instrument scores
- *   5. Generate 8 v2 sections sequentially with GPT-4o
+ *   5. Generate v2 sections sequentially with GPT-4o (Claude Sonnet fallback)
  *   6. Progressive save after each section
  *   7. Update report with voice_profile and final sections
  *
@@ -24,10 +24,27 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createSupabaseClient, createSupabaseClientWithAuth } from "../_shared/supabase.ts";
 import { handleCors, getCorsHeaders } from "../_shared/cors.ts";
 import { errorResponse, jsonResponse, logError, withRetry, isRetryableError } from "../_shared/errors.ts";
+import { callClaudeJson } from "../_shared/anthropic.ts";
 
 const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
 const MODEL = "gpt-4o";
 const MAX_TOKENS_PER_SECTION = 3000;
+
+/**
+ * Cost per call, following the shared calculateCost(usage, isFallback)
+ * convention (isFallback=true = Claude Sonnet rates). Local because the
+ * shared helper prices the coach's gpt-4o-mini primary; reports run gpt-4o.
+ * gpt-4o: $2.50/$10 per MTok. Claude Sonnet: $3/$15 per MTok.
+ */
+function calculateReportCost(
+  usage: { input_tokens: number; output_tokens: number },
+  isFallback: boolean,
+): number {
+  if (isFallback) {
+    return (usage.input_tokens / 1_000_000) * 3 + (usage.output_tokens / 1_000_000) * 15;
+  }
+  return (usage.input_tokens / 1_000_000) * 2.5 + (usage.output_tokens / 1_000_000) * 10;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Voice Types & Configuration (inlined — Edge Functions can't import from src/)
@@ -676,6 +693,38 @@ RULES:
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Program-aware section trim
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Skip sections whose instruments weren't administered, so a short battery
+// (e.g. Relatti: Big Five + attachment + satisfaction) doesn't produce empty
+// Career / Wellbeing / Emotions sections. Sections with no entry here
+// (S1 glance, S8 growth) always generate from whatever data is present.
+const REQUIRED_INSTRUMENTS: Record<string, string[]> = {
+  S2: ["ipip50"],
+  S3: ["ipip50"],
+  S4: ["ders16", "ders18", "scs_sf"],
+  S5: ["ecr_r_short"],
+  S6: ["riasec", "weims"],
+  S7: ["wellness_check", "swls", "flourishing"],
+};
+
+/**
+ * The section IDs this assessment's battery should produce. Shared by the
+ * already_complete guard and the generation loop so they can never disagree:
+ * a COMPLETE relationship report has 5 sections (S1,S2,S3,S5,S8), not 8.
+ */
+function expectedSectionIds(scoreRows: ScoreRow[]): string[] {
+  const present = new Set(scoreRows.map((s) => s.instrument_id));
+  return V2_SECTION_TEMPLATES
+    .filter((t) => {
+      const required = REQUIRED_INSTRUMENTS[t.sectionId];
+      return !required || required.some((id) => present.has(id));
+    })
+    .map((t) => t.sectionId);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Main Handler
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -726,13 +775,8 @@ Deno.serve(async (req: Request) => {
       return errorResponse("FORBIDDEN", "Not your report", 403, headers);
     }
 
-    // If sections already populated (8 sections = complete), return early
-    const existingSections = report.sections as Record<string, unknown> | null;
-    if (existingSections && Object.keys(existingSections).length >= 8) {
-      return jsonResponse({ status: "already_complete", report_id }, 200, headers);
-    }
-
-    // Load scores
+    // Load scores (needed by the already_complete guard too — the expected
+    // section set depends on which instruments this battery administered)
     const { data: scoreRows, error: scoresError } = await serviceClient
       .from("assessment_scores")
       .select("instrument_id, total_score, subscale_scores, percentile_scores, interpretation")
@@ -740,6 +784,20 @@ Deno.serve(async (req: Request) => {
 
     if (scoresError || !scoreRows || scoreRows.length === 0) {
       return errorResponse("NOT_FOUND", "Assessment scores not found", 404, headers);
+    }
+
+    // Already complete? Program-aware: a relationship report is complete at
+    // 5 sections (S1,S2,S3,S5,S8), not 8 — the old `>= 8` check never fired
+    // for Relatti, so every re-POST regenerated at full LLM cost. Sections
+    // carrying an `error` key don't count: an errored report may regenerate.
+    const existingSections = report.sections as Record<string, Record<string, unknown>> | null;
+    const expectedIds = expectedSectionIds(scoreRows as ScoreRow[]);
+    const isComplete = existingSections !== null && expectedIds.every((id) => {
+      const section = existingSections[id];
+      return section && !("error" in section);
+    });
+    if (isComplete) {
+      return jsonResponse({ status: "already_complete", report_id }, 200, headers);
     }
 
     // Classify archetype if not already set on the report
@@ -829,11 +887,31 @@ async function generateReport(
   );
   const openaiKey =
     (isRelationshipReport && Deno.env.get("OPENAI_API_KEY_RELATTI")) ||
-    Deno.env.get("OPENAI_API_KEY");
-  if (!openaiKey) {
-    console.error("[decoded-generate-report] No OpenAI API key set");
+    Deno.env.get("OPENAI_API_KEY") ||
+    undefined;
+  if (!openaiKey && !Deno.env.get("ANTHROPIC_API_KEY")) {
+    console.error("[decoded-generate-report] No OpenAI or Anthropic API key set");
     return;
   }
+
+  // The assessment's program drives cost attribution (PC5.5) and the coach
+  // handoff's profile scoping (PC2.2) — fetch once, share both uses.
+  const { data: assessmentRow } = await supabase
+    .from("assessments")
+    .select("program")
+    .eq("id", assessmentId)
+    .maybeSingle();
+  const program = assessmentRow?.program ?? "general";
+
+  // Per-model usage for generation_model stamping + cost_tracking. A run that
+  // falls back mid-way legitimately spans two models.
+  const usageByModel = new Map<string, { input: number; output: number; isFallback: boolean }>();
+  const recordUsage = (r: LlmJsonResult) => {
+    const entry = usageByModel.get(r.model) ?? { input: 0, output: 0, isFallback: r.isFallback };
+    entry.input += r.usage.input_tokens;
+    entry.output += r.usage.output_tokens;
+    usageByModel.set(r.model, entry);
+  };
 
   // 1. Classify voice from archetype
   const voiceId: VoiceId = ARCHETYPE_VOICE_MAP[archetypeName] ?? FALLBACK_VOICE;
@@ -850,10 +928,13 @@ async function generateReport(
   // 4. Generate sublabel if not already set
   if (!archetypeSublabel) {
     try {
-      const sublabelResult = await callOpenAI(openaiKey, 
+      const sublabelCall = await generateJson(openaiKey,
         `You are a personality coach. Generate a creative, personal sublabel for someone classified as "The ${archetypeName}" archetype. Return JSON: { "sublabel": "The [Creative 2-3 word descriptor]", "tagline": "One short sentence about their essence" }`,
-        `Archetype: ${archetypeName}\nBig Five z-scores: ${JSON.stringify(classifiedZScores)}\n\nCreate a unique, memorable sublabel that captures what makes THIS variant of the ${archetypeName} special.`
+        `Archetype: ${archetypeName}\nBig Five z-scores: ${JSON.stringify(classifiedZScores)}\n\nCreate a unique, memorable sublabel that captures what makes THIS variant of the ${archetypeName} special.`,
+        "sublabel",
       );
+      recordUsage(sublabelCall);
+      const sublabelResult = sublabelCall.json;
       archetypeSublabel = (sublabelResult.sublabel as string) ?? null;
       archetypeTagline = (sublabelResult.tagline as string) ?? null;
 
@@ -903,24 +984,13 @@ async function generateReport(
   const sections: Record<string, unknown> = {};
   let completedCount = 0;
 
-  // Program-aware trim: skip sections whose instruments weren't administered, so
-  // a short battery (e.g. Relatti: Big Five + attachment + satisfaction) doesn't
-  // produce empty Career / Wellbeing / Emotions sections. Sections with no entry
-  // here (S1 glance, S8 growth) always generate from whatever data is present.
-  const present = new Set(scoreRows.map((s) => s.instrument_id));
-  const REQUIRED_INSTRUMENTS: Record<string, string[]> = {
-    S2: ["ipip50"],
-    S3: ["ipip50"],
-    S4: ["ders16", "ders18", "scs_sf"],
-    S5: ["ecr_r_short"],
-    S6: ["riasec", "weims"],
-    S7: ["wellness_check", "swls", "flourishing"],
-  };
+  // Program-aware trim: only generate the sections this battery supports
+  // (same helper the already_complete guard uses).
+  const expectedIds = new Set(expectedSectionIds(scoreRows));
 
   for (const template of V2_SECTION_TEMPLATES) {
-    const required = REQUIRED_INSTRUMENTS[template.sectionId];
-    if (required && !required.some((id) => present.has(id))) {
-      console.log(`[decoded-generate-report] skip ${template.sectionId} — no instruments (${required.join("/")})`);
+    if (!expectedIds.has(template.sectionId)) {
+      console.log(`[decoded-generate-report] skip ${template.sectionId} — no instruments (${(REQUIRED_INSTRUMENTS[template.sectionId] ?? []).join("/")})`);
       continue;
     }
     try {
@@ -941,15 +1011,9 @@ ALL SCORES: ${allScoresJson}
 
 Write the ${template.sectionId} "${template.title}" section.`;
 
-      const sectionContent = await withRetry(
-        () => callOpenAI(openaiKey, systemPrompt, userPrompt),
-        {
-          maxRetries: 2,
-          baseDelay: 2000,
-          functionName: `decoded-generate-report/${template.sectionId}`,
-          shouldRetry: isRetryableError,
-        },
-      );
+      const sectionCall = await generateJson(openaiKey, systemPrompt, userPrompt, template.sectionId);
+      recordUsage(sectionCall);
+      const sectionContent = sectionCall.json;
 
       sections[template.sectionId] = {
         title: template.title,
@@ -957,6 +1021,7 @@ Write the ${template.sectionId} "${template.title}" section.`;
         coach_question: sectionContent.coach_question ?? null,
         min_tier: template.minTier,
         generated_at: new Date().toISOString(),
+        model: sectionCall.model,
       };
 
       completedCount++;
@@ -991,17 +1056,39 @@ Write the ${template.sectionId} "${template.title}" section.`;
     }
   }
 
-  // Final save
+  // Final save — generation_model records what actually generated this report
+  // ("gpt-4o", "claude-sonnet-4-6", or both joined when a run fell back mid-way).
+  const modelsUsed = [...usageByModel.keys()].join("+") || MODEL;
   await supabase
     .from("assessment_reports")
     .update({
       sections,
       report_version: 2,
+      generation_model: modelsUsed,
     })
     .eq("id", reportId);
 
+  // Record spend per model — Claude fallback tokens bill at Claude rates.
+  const costRows = [...usageByModel.entries()].map(([model, u]) => ({
+    user_id: userId,
+    purpose: "decoded-generate-report",
+    model,
+    tokens_in: u.input,
+    tokens_out: u.output,
+    cost_usd: calculateReportCost({ input_tokens: u.input, output_tokens: u.output }, u.isFallback),
+    // PC5.5 brand attribution: "general" = the MasteryTV column, same
+    // convention as the coach/cron writers.
+    metadata: { report_id: reportId, program },
+  }));
+  if (costRows.length > 0) {
+    const { error: costError } = await supabase.from("cost_tracking").insert(costRows);
+    if (costError) {
+      console.error("[decoded-generate-report] cost_tracking insert failed:", costError.message);
+    }
+  }
+
   console.log(
-    `[decoded-generate-report] Complete: ${completedCount}/${V2_SECTION_TEMPLATES.length} sections for report=${reportId}, voice=${voiceId}`,
+    `[decoded-generate-report] Complete: ${completedCount}/${V2_SECTION_TEMPLATES.length} sections for report=${reportId}, voice=${voiceId}, model=${modelsUsed}`,
   );
 
   // ── SPRINT 0.4: Coach Handoff Pipeline ──────────────────────────────────
@@ -1012,6 +1099,7 @@ Write the ${template.sectionId} "${template.title}" section.`;
     await runCoachHandoff(
       supabase, userId, assessmentId, scoreRows,
       archetypeName, archetypeSublabel, archetypeTagline, sections, voiceId,
+      program,
     );
   } catch (err) {
     // Coach handoff failure is non-fatal — the report is already generated.
@@ -1049,18 +1137,12 @@ async function runCoachHandoff(
   archetypeTagline: string | null,
   sections: Record<string, unknown>,
   voiceId: VoiceId,
-): Promise<void> {
-  console.log(`[coach-handoff] Starting for user=${userId}, assessment=${assessmentId}`);
-
   // PC2.2: the profile this handoff seeds belongs to the assessment's program —
   // a Relatti battery must seed the RELATIONSHIP coach profile, not overwrite
-  // the executive one.
-  const { data: assessmentRow } = await supabase
-    .from("assessments")
-    .select("program")
-    .eq("id", assessmentId)
-    .maybeSingle();
-  const program = assessmentRow?.program ?? "general";
+  // the executive one. Fetched once by generateReport.
+  program: string,
+): Promise<void> {
+  console.log(`[coach-handoff] Starting for user=${userId}, assessment=${assessmentId}`);
 
   // ── 1. Extract strengths/edges from S1 section (if generated) ──
   const s1 = sections["S1"] as { content_markdown?: string } | undefined;
@@ -1480,6 +1562,13 @@ function buildFullVoiceBlock(
   return parts.join("\n\n");
 }
 
+interface LlmJsonResult {
+  json: Record<string, unknown>;
+  usage: { input_tokens: number; output_tokens: number };
+  model: string;
+  isFallback: boolean;
+}
+
 /**
  * Call OpenAI GPT-4o with JSON response format.
  */
@@ -1487,7 +1576,7 @@ async function callOpenAI(
   apiKey: string,
   systemPrompt: string,
   userPrompt: string,
-): Promise<Record<string, unknown>> {
+): Promise<LlmJsonResult> {
   const response = await fetch(OPENAI_API_URL, {
     method: "POST",
     headers: {
@@ -1519,5 +1608,62 @@ async function callOpenAI(
     throw new Error("Empty response from OpenAI");
   }
 
-  return JSON.parse(content);
+  return {
+    json: JSON.parse(content),
+    usage: {
+      input_tokens: data.usage?.prompt_tokens ?? 0,
+      output_tokens: data.usage?.completion_tokens ?? 0,
+    },
+    model: data.model ?? MODEL,
+    isFallback: false,
+  };
+}
+
+/**
+ * OpenAI-primary, Claude-fallback JSON generation — the same resilience the
+ * coach path has had in _shared/anthropic.ts. When OpenAI fails after retries
+ * (429 quota lapse, outage), the section generates on Claude Sonnet instead
+ * of storing a "_could not be generated_" placeholder.
+ */
+async function generateJson(
+  openaiKey: string | undefined,
+  systemPrompt: string,
+  userPrompt: string,
+  label: string,
+): Promise<LlmJsonResult> {
+  if (openaiKey) {
+    try {
+      return await withRetry(
+        () => callOpenAI(openaiKey, systemPrompt, userPrompt),
+        {
+          maxRetries: 2,
+          baseDelay: 2000,
+          functionName: `decoded-generate-report/${label}`,
+          shouldRetry: isRetryableError,
+        },
+      );
+    } catch (err) {
+      console.warn(
+        `[decoded-generate-report] OpenAI failed for ${label}, falling back to Claude: ${(err as Error).message}`,
+      );
+    }
+  } else {
+    console.warn(`[decoded-generate-report] No OpenAI key — generating ${label} on Claude`);
+  }
+
+  const claude = await withRetry(
+    () => callClaudeJson({
+      system: systemPrompt,
+      user: userPrompt,
+      maxTokens: MAX_TOKENS_PER_SECTION,
+      temperature: 0.7,
+    }),
+    {
+      maxRetries: 1,
+      baseDelay: 2000,
+      functionName: `decoded-generate-report/${label}-claude`,
+      shouldRetry: isRetryableError,
+    },
+  );
+  return { ...claude, isFallback: true };
 }
