@@ -62,11 +62,16 @@ export async function syncMyReportToSpine(
       // My participant rows across every engagement I'm in.
       admin.from("participant").update({ report_id: reportId })
         .eq("user_id", userId).or(`report_id.is.null,report_id.neq.${reportId}`),
-      // Invites where I'm the inviter or the recipient.
+      // Invites where I'm the inviter or the recipient — RELATIONSHIP invites
+      // only (PC2.1h invariant 3): the report is verified relationship above,
+      // and stamping it onto a user's general/Decoded invite would repoint that
+      // link's identity (the §2 overwrite, via a second door).
       admin.from("decoded_invites").update({ inviter_report_id: reportId })
-        .eq("inviter_id", userId).or(`inviter_report_id.is.null,inviter_report_id.neq.${reportId}`),
+        .eq("inviter_id", userId).eq("program", "relationship")
+        .or(`inviter_report_id.is.null,inviter_report_id.neq.${reportId}`),
       admin.from("decoded_invites").update({ recipient_report_id: reportId })
-        .eq("recipient_id", userId).or(`recipient_report_id.is.null,recipient_report_id.neq.${reportId}`),
+        .eq("recipient_id", userId).eq("program", "relationship")
+        .or(`recipient_report_id.is.null,recipient_report_id.neq.${reportId}`),
     ]);
 
     // Un-stick the invitee. The claim (claimPendingInvites) only advances an
@@ -83,6 +88,7 @@ export async function syncMyReportToSpine(
       .update({ status: "completed", completed_at: new Date().toISOString() })
       .eq("recipient_id", userId)
       .eq("status", "pending")
+      .eq("program", "relationship") // this report only completes THIS program's invites
       .neq("recipient_email", "broadcast")
       .select("id");
 

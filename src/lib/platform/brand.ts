@@ -56,6 +56,21 @@ export const BRANDS: Record<BrandId, Brand> = {
 
 export const DEFAULT_BRAND_ID: BrandId = "masterytv";
 
+/**
+ * Program -> brand, derived from the registry (never a ternary — a new brand's
+ * programSlug is covered automatically, per TENANCY_AUDIT.md). Use this when a
+ * stored `program` value (an invite, a conversation) must select branding.
+ * Unknown / legacy program values fall back to the default brand.
+ */
+export function brandForProgram(programSlug?: string | null): Brand {
+  if (programSlug) {
+    for (const brand of Object.values(BRANDS)) {
+      if (brand.programSlug === programSlug) return brand;
+    }
+  }
+  return BRANDS[DEFAULT_BRAND_ID];
+}
+
 /** Type guard for a known brand id (used for ?brand= override + cookie). */
 export function isBrandId(x?: string | null): x is BrandId {
   return !!x && x in BRANDS;

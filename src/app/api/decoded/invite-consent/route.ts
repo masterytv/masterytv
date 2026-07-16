@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
     // Verify this invite belongs to the current user (as either party)
     const { data: invite } = await supabase
       .from('decoded_invites')
-      .select('id, inviter_id, recipient_id, status, recipient_report_id, upgrade_requested_level, upgrade_requested_by')
+      .select('id, inviter_id, recipient_id, status, recipient_report_id, upgrade_requested_level, upgrade_requested_by, program')
       .eq('id', inviteId)
       .single();
 
@@ -165,12 +165,15 @@ export async function POST(req: NextRequest) {
       section_unlocked: 'S5',
     });
 
-    // Set recipient_report_id if needed
+    // Set recipient_report_id if needed — scoped to the INVITE's program (not
+    // the request's brand: consent may be actioned from anywhere, and a report
+    // of another program must never land on this invite — PC2.1h invariant 3).
     if (!invite.recipient_report_id && isRecipient) {
       const { data: recipientReport } = await supabase
         .from('assessment_reports')
         .select('id')
         .eq('user_id', user.id)
+        .eq('program', invite.program)
         .order('created_at', { ascending: false })
         .limit(1)
         .single();

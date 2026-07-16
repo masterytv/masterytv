@@ -179,7 +179,7 @@ export default async function DashboardPage({
 
   // Stable "broadcast" invite for copy-link sharing (persistent /invite/[id]
   // URL that works for clipboard copies where a recipient isn't known upfront).
-  const inviteUrl = await getOrCreateBroadcastInviteUrl(supabase, user, appUrl, reportId);
+  const inviteUrl = await getOrCreateBroadcastInviteUrl(supabase, user, appUrl, reportId, program);
 
   // Load invites sent TO this user that need consent (for consent banner)
   const { data: receivedInvites } = await supabase

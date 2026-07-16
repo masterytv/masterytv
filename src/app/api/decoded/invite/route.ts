@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { syncEngagementForInvite } from '@/lib/decoded/sync-engagement';
 import { normalizeInviteEmail, isValidInviteEmail, buildClaimPatch } from '@/lib/decoded/invite-claim';
-import { resolveBrand, isBrandId, type BrandId } from '@/lib/platform/brand';
+import { BRANDS, resolveBrand, isBrandId, type BrandId } from '@/lib/platform/brand';
 import { originFromHeaders } from '@/lib/platform/origin';
 import { sendBrandInviteEmail, type InviteEmailVariant } from '@/lib/decoded/invite-email';
 
@@ -43,11 +43,20 @@ export async function POST(req: NextRequest) {
       : resolveBrand(req.headers.get('host')).id;
     const appUrl = originFromHeaders(req.headers);
 
-    // Step 1: the inviter's latest report (for the landing OG card / spine).
+    // PC2.1h: an invite belongs to the program of the brand it was created on
+    // (INVITE_PROGRAM_DESIGN.md §5) — the only invite operation that reads the
+    // request's brand. Everything acting on an EXISTING invite reads the
+    // program off the invite row.
+    const program = BRANDS[brandId].programSlug;
+
+    // Step 1: the inviter's latest report OF THIS PROGRAM (for the landing OG
+    // card / spine) — a dual-brand user's other-program report must never ride
+    // on this invite (invariant 3).
     const { data: reportData } = await supabase
       .from('assessment_reports')
       .select('id')
       .eq('user_id', user.id)
+      .eq('program', program)
       .order('created_at', { ascending: false })
       .limit(1)
       .single();
@@ -60,7 +69,8 @@ export async function POST(req: NextRequest) {
       inviter_name: senderName,
       inviter_email: user.email ?? '',
       status: 'pending',
-    }, { onConflict: 'inviter_id,recipient_email' })
+      program,
+    }, { onConflict: 'inviter_id,recipient_email,program' })
       .select('id')
       .single();
 
@@ -87,10 +97,14 @@ export async function POST(req: NextRequest) {
         .maybeSingle();
 
       if (existing) {
+        // Their report of THIS invite's program — a recipient with only an
+        // other-program report is treated as "no report yet" (they still need
+        // to take this program's battery).
         const { data: theirReport } = await admin
           .from('assessment_reports')
           .select('id')
           .eq('user_id', existing.id)
+          .eq('program', program)
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
