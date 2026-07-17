@@ -67,7 +67,7 @@ Scale: **1 = Strongly disagree · 6 = Strongly agree.** Presented as **clickable
 
 ## 4. The archetypes (dominant × secondary of the 4 core Maps → 12 named types)
 
-Each carries **one edge and one leak** (never flattery-only — the anti-cringe rule; `MONEY_VIRAL_GTM.md` §5). Names/copy are v1 — refine in the copy pass, but the derivation (dominant→secondary) is fixed.
+Each carries **one edge and one leak** (never flattery-only — the anti-cringe rule; `MONEY_VIRAL_GTM.md` §5). **Naming principle (locked 2026-07-17): the archetype name is a badge the person wears with pride or intrigue — the honesty lives in the LEAK line, never smuggled into the name.** (That's why "Conflicted," "Half-Lit," "Chaser," and a doubled "Reluctant" were cut.) Derivation (dominant→secondary) is fixed; names are v1.
 
 | Dominant → Secondary | Archetype | Edge | Leak |
 |:--|:--|:--|:--|
@@ -75,14 +75,14 @@ Each carries **one edge and one leak** (never flattery-only — the anti-cringe 
 | GUARD→MIRROR | **The Quiet Titan** | composed, credible, controlled | guards so hard the win never feels like enough to enjoy |
 | GUARD→SHADOW | **The Vault** | disciplined, immune to greed | sits on opportunity; undercharges to stay safe |
 | DRIVE→GUARD | **The Relentless Builder** | high-output founder, ambition with brakes | the moving goalpost; can't enjoy the climb |
-| DRIVE→MIRROR | **The Empire Chaser** | enormous motivation, plays big | worth rides on the scoreboard; never arrives |
+| DRIVE→MIRROR | **The Mogul** | enormous motivation, plays big | worth rides on the scoreboard; never arrives |
 | DRIVE→SHADOW | **The Reluctant Rainmaker** | ambitious *with* a conscience | self-sabotages at the threshold; undercharges what they're best at |
-| MIRROR→DRIVE | **The Frontman** | magnetic, sells the dream, raises the room | builds for the image; can feel hollow at the top |
+| MIRROR→DRIVE | **The Headliner** | magnetic, sells the dream, raises the room | builds for the image; can feel hollow at the top |
 | MIRROR→GUARD | **The Curator** | tasteful, protects the brand, credible | spends to signal; comparison quietly eats them |
-| MIRROR→SHADOW | **The Half-Lit Mirror** | high standards, wants to matter | the gap between the image projected and the worth felt |
+| MIRROR→SHADOW | **The Aspirant** | high standards, reaching to matter | the gap between the image projected and the worth felt |
 | SHADOW→GUARD | **The Monk** | grounded, principled, low-needs | "I'm fine with less" as a cage; leaves money *and* impact on the table |
-| SHADOW→DRIVE | **The Conflicted Creator** | mission-first, builds things that matter | won't charge what it's worth; guilt throttles the ambition |
-| SHADOW→MIRROR | **The Reluctant Performer** | values-driven, understated | torn between "I don't care about money" and "I want to be respected" |
+| SHADOW→DRIVE | **The Heart-First Creator** | mission-first, builds things that matter | won't charge what it's worth; guilt throttles the ambition |
+| SHADOW→MIRROR | **The Understated** | values-driven, quietly wants to matter | torn between "I don't care about money" and "I want to be respected" |
 
 > *(Tom's own KMSI-R profile — low status, mild avoidance, high vigilance/focus — would land near **The Monk** or **The Vault**, with a **High, success-tilted LEAP.** That's the exact reveal his transcript produced by hand.)*
 
