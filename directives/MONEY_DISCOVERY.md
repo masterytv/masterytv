@@ -5,6 +5,7 @@
 > **Status:** 🟡 **DRAFT — awaiting founder Gate 0 decision.** This doc answers: *should the next vertical be a Money Coach instead of the roadmap's Career Coach?* Choosing money would amend `STRATEGY.md` §1 (Stage 2) — that is a founder decision, not something this doc enacts.
 > **Method:** deep-research workflow (5 search streams → 24 sources → 119 extracted claims → adversarial verification). ⚠️ The verification stage was cut short by a session usage limit: **3 claims formally verified (✓), 0 refuted; the rest are single-pass extractions with quotes on file (•)**. Confidence labels are used throughout. A follow-up verification pass can be run on request.
 > **Per the playbook:** this is the `{VERTICAL}_DISCOVERY.md` artifact from `VERTICAL_PLAYBOOK.md` §2. If approved, the next step is **Phase 0.5 — `MONEY_EXPERIENCE.md`** (mandatory before any surface is built).
+> **⭐ PART II ADDED (same day):** the founder refined the hypothesis from "money coach" to **Money-PSYCHOLOGY coach** (no budgeting, no bank data — the work is on what's *underneath*). Part II (§11–§16) researches that segment specifically and **sharpens the verdict in its favor**. Read Part I for the category evidence, Part II for the actual product positioning.
 
 ---
 
@@ -152,6 +153,74 @@ The perimeter is well-mapped and buildable — but it must be engineered in from
 4. Then the §5 Launch Checklist + §5.10 sweep as standard.
 
 **Do not start** `CAREER_EXPERIENCE.md` (PV1.3) until this gate resolves — it's the same research slot.
+
+---
+
+---
+
+# PART II — Founder refinement: the Money-**Psychology** Coach (added 2026-07-17, second research pass)
+
+> **Founder's correction:** the Part I comps (Cleo, Albert, Fruitful) are AI *budgeting/banking* apps — bank-linked analysis for people who want to manage money better. The actual idea is a **Money Psychology coach**: no budgeting, no bank access, no financial planning. It uncovers and works on what's *underneath* — fear of financial failure, fear of success, self-worth and "what would people think," the blockages between a person and the lifestyle they want — plus the **performance-edge** register (the Wendy Rhoades archetype: the psychological edge when dealing with money). Target: entrepreneurs, top performers, people with a job who want to know what's holding them back from their dream. Budgeting could be added later if it works.
+> **Method note:** lighter pass by design (founder's instruction) — targeted searches, single-source claims, no adversarial verification stage. Confidence: directionally solid, individual figures unverified.
+
+## 11. The question: is there a market for *that*?
+
+**Yes — and the refinement fixes the two biggest weaknesses of the Part I framing.** It exits Cleo/Albert's axis entirely (no bank data, different job-to-be-done), and it moves the product to where the existing engine is strongest (psychometrics → psychology report → memory-based coaching — plus the executive coach we already run, which is 80% of the "edge" register). The honest cost: a narrower, harder-to-name audience that must be acquired through symptom language, not category search.
+
+## 12. Demand evidence for money-psychology specifically
+
+- **The mainstream appetite is proven at book scale:** *The Psychology of Money* has sold **10M+ copies** (Housel's books ~12M total) — the best-selling finance book of its generation is explicitly "money is psychology, not spreadsheets." *Secrets of the Millionaire Mind*, *Think and Grow Rich*, *You Are a Badass at Making Money* are perennial sellers on the same shelf.
+- **The science-first version has mass short-form reach:** Dr. Brad Klontz — financial psychologist, Creighton professor, creator of the Money Scripts framework (our candidate KMSI-R instrument) — runs **~800K TikTok followers / ~1.4M cross-platform / 150M+ video views**, and his *Start Thinking Rich* (2024) is a national bestseller. "What's your money script?" is literally a Morningstar headline. **The assessment itself is proven viral content in this niche** — which is our funnel's native shape (quiz → report → coach).
+- **The woo version is even bigger:** #moneymindset carries **~1.3M TikTok posts**; the manifestation-money trend is large enough that mainstream outlets run debunk pieces. This is simultaneously demand evidence *and* the brand-risk map: the register that dominates the niche is the one we must visibly not be.
+- **The pain is documented in the target segment (directional):** undercharging/underpricing driven by self-worth and imposter dynamics is a named, recurring theme in entrepreneur communities (especially women-entrepreneur networks); academic literature on entrepreneurial fear of failure is substantial. Hard prevalence stats for "money blocks" per se are thin — expect to *create* the category language, not ride existing search volume.
+- Part I's foundation still applies underneath: money stress is chronic for 63–82% of adults, and the CFPB's federal survey found **psychological/behavioral factors matter more than financial knowledge** — the founder's core claim, in government data.
+
+## 13. What this buyer pays today (the price umbrella)
+
+| Current alternative | Price | Note |
+|:--|:--|:--|
+| Money-mindset flagship course (Denise Duffield-Thomas *Money Bootcamp*) | **$2,497** one-time (or 6×$479) | Running 10+ years — durable WTP for money-psychology transformation among entrepreneurs |
+| Trading/performance psychology (Denise Shull / ReThink Group — the real-world Rhoades analog) | Workshops **$2,850** (sold out); 1:1 undisclosed (hedge-fund clientele) | The "edge" register exists as a premium human practice |
+| Founder/exec/mindset coaching | **$500–5,000/mo** retainers; $200–600/hr; premium programs $10k–60k | The performance buyer's current option |
+| Financial therapy (human) | Therapist-adjacent hourly rates; **~440 FTA members nationwide**, tiny CFT-I supply | A credentialed profession with microscopic supply |
+| Indie AI in this lane (Sophia, mymoneycoach.ai) | **$19.99/mo** (250 msgs/mo cap) | See §14 |
+
+An always-on AI money-psychology coach at **$29–79/mo consumer (edge tier $99–149/mo)** sits 10–30× under the human floor while pricing 1.5–4× above the indie-AI entrant — consistent with a science-first premium posture.
+
+## 14. Competition on THIS axis (favorable, honestly stated)
+
+- **The scaled AI money products aren't in this market.** Cleo/Albert/Fruitful/Origin personalize from *linked transactions* toward *management*. The founder's differentiation line — "psychology, not your bank account" — is literally the axis split the Part I data showed.
+- **The lane has indie entrants, no owner.** Closest found: **"Sophia" (mymoneycoach.ai)** — $19.99/mo, trauma/nervous-system framing ("your body holds the fear hostage"), founder is an EFT/hypnotherapy/NLP practitioner, a 2-minute quiz (not a psychometric), message-capped, Product-Hunt-scale, no visible funding. Also: MoneyCoach GPT, Jenner AI (money-mindset meditations), assorted GPT wrappers. **Nobody has: a validated instrument battery → typed psychology report → long-term memory → proactive outreach → dyad option — and nobody credible owns the science-first register.**
+- **Positioning triangle:** the manifestation creators own "woo," the indie AIs own "somatic/EFT," the budgeting apps own "bank-linked." The open corner is **evidence-based money psychology** — Klontz's register, which has the largest *respectable* audience and no product attached beyond books/courses.
+
+## 15. The two sub-segments (same engine, different entry doors)
+
+1. **UNBLOCK ("heal what's underneath")** — fear of failure/success, self-worth, undercharging, feast-famine cycles, "what happens if I succeed." Buyer: entrepreneurs, creators, self-employed, career climbers. Register: warm, depth-first — the therapy-*adjacent* line must be explicit (coaching, not therapy; honesty script; crisis kernel — money-shame correlates with crisis states).
+2. **EDGE ("the psychological edge with money")** — the Rhoades register: decision quality under risk, pressure, negotiation, pricing power. Buyer: founders, traders, execs, top performers. **This is nearly "the existing MasteryTV executive coach × money domain"** — the engine's oldest muscle.
+
+Both run on one Coach Pack with entry-segment framing (`/unblock`, `/edge` — funnels are data). The dyad option (couples money-psychology) remains live as door #3 and stays unique to us.
+
+**Founder's candidate positioning lines, assessed:**
+- *"Works with what's under the budgeting, earning, and spending that's keeping you stuck"* — **strongest**: names the category contrast and the felt pain, FTC-clean.
+- *"Focuses on your psychology, not your bank account"* — **the differentiator line**; use it everywhere trust is being established (also signals the privacy posture: no bank linking).
+- *"Knows your psychology and helps you develop breakthroughs in lifestyle and happiness"* — fine, softer; "breakthroughs" is coach-speak but FTC-safe (happiness/lifestyle ≠ earnings).
+- *"Weaponizes your psychology to help you achieve the lifestyle you want"* — punchy for `/edge`, but "achieve the lifestyle you want" edges toward outcome-promising; keep it segment-internal and pair with process framing. Never pair "weaponize" with wealth outcomes in the same breath.
+
+## 16. What the refinement changes in the verdict
+
+| Dimension | vs Part I framing |
+|:--|:--|
+| Competition | **Better** — exits the Cleo/Albert axis entirely; whitespace is the science corner of a proven-demand niche |
+| Engine fit | **Better** — KMSI-R/psychometrics move from "battery" to *the product core*; executive-coach craft reuses for `/edge`; report = "your money psychology, decoded" |
+| Regulatory | **Better** — no numbers, no budgeting, no bank data → even further from the SEC securities line, zero GLBA surface. FTC copy rule unchanged (no wealth promises). **New line to hold: never label the product "financial therapy"** (credentialed field; we are coaching) |
+| ARPU ceiling | **Better** — premium psychology positioning supports $29–149/mo vs mass-budget $15–40/mo |
+| Progress mechanic | **Solved without bank data** — administer the CFPB Financial Well-Being Scale (public domain, 10 items) at intervals: a federal, numeric "is this working" score that rises as coaching lands. The engine's goal/commitment tracking covers the rest |
+| Audience findability | **Worse (the honest cost)** — nobody searches "money psychology coach." Acquisition must ride symptom language (undercharging, money fights, launch paralysis, lifestyle ceiling), quiz-first content (the proven Klontz/money-script shape), and the Relatti cross-sell. This is also where the PC7 chat-first funnel would pay most |
+| TAM breadth | **Narrower now, wider later** — premium wedge first; the Part I mass-market (and budgeting features) remain an expansion option if the wedge works, exactly as the founder framed it |
+
+**Updated recommendation:** unchanged in direction, stronger in conviction — **Money, entered through the psychology wedge.** The refinement resolves Part I's biggest risk (Cleo drift) by not being in Cleo's market at all, and aims the product where the platform's differentiators are unique rather than merely better. Gate 0 question is unchanged; if approved, `MONEY_EXPERIENCE.md` (Phase 0.5) should be scoped to the psychology-coach framing with `/unblock` + `/edge` + couples as the candidate entry doors.
+
+**Part II sources (single-pass, unverified):** denisedt.com (Money Bootcamp pricing); financialtherapyassociation.org + Time + SmartAsset (FTA ~440 members, CFT-I); therethinkgroup.net + Wikipedia (Shull/ReThink, $2,850 workshop, Billions suit dismissed 2021); TikTok #moneymindset (~1.3M posts) + GOBankingRates/Nasdaq debunk coverage; Klontz TikTok/LinkedIn + Morningstar + startthinkingrich.com; authorinsider.nextbigideaclub.com + morganhousel.com (7M→10M+ copies); mymoneycoach.ai (Sophia product/pricing page); luisazhou.com + leadersadapt.com (coaching cost guides); womensentrepreneurnetwork.org + NCBI fear-of-failure literature (directional).
 
 ---
 
