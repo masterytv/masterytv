@@ -1,7 +1,7 @@
 # **Money Maps™ — The Instrument (v1)**
 
 > **Author:** Claude Code (Orchestrator), commissioned by Thomas Wood · **Date:** July 17, 2026
-> **Status:** 🟡 DRAFT v1 — the implementation spec for the assessment. Take it yourself first (the KMSI-R dry-run pattern); refine wording; then it becomes the code (scored in the Decoded engine).
+> **Status:** 🟢 **v1 FOUNDER-APPROVED for beta (2026-07-17)** — ship as-is, tune from real users (§8). Scoring locked + self-checked (`scripts/money-maps-scoring.mjs`, 7 boundary tests green). Becomes code in the Decoded engine (`program=money`).
 > **Parents:** [MONEY_EXPERIENCE.md](MONEY_EXPERIENCE.md) §4 (the design decision) · [MONEY_DISCOVERY.md](MONEY_DISCOVERY.md) (why money-psychology) · this doc = the item bank + scoring + archetypes.
 > **IP position:** every item below is **our own wording**; the construct *names* (GUARD/DRIVE/MIRROR/SHADOW/LEAP) are ours; the *archetypes* are ours; "Money Maps™" is our mark. We never use "Money Scripts®" (Klontz's trademark) or KMSI-R items. We stand on the *science of money beliefs* (a body of ideas, not copyrightable), retuned for entrepreneurs. **Item text is canonical once shipped** — changing it invalidates stored responses (`DECODED_SCORING.md` rule).
 
@@ -137,9 +137,16 @@ Re-administer quarterly; show the **overclock dials coming down** and the **LEAP
 
 ---
 
-## 8. Build notes / open refinements
-- **Take-it-yourself pass first** (Tom): answer all 16, check the archetype + LEAP read feels *true* — the reveal landing is the whole product. Tune wording where a read misses.
-- **Reliability option:** if 3 items/Map feels thin in testing, go to 4/Map (20 items) — still inside a defensible friction budget for a high-intent founder audience.
-- **Copy pass:** archetype names + edge/leak lines + card copy are v1; sharpen for shareability (16Personalities-quality naming is the bar).
-- **Light hygiene, not academic validation** (`MONEY_EXPERIENCE.md` §3): after the first cohort, check internal consistency per Map and that the archetypes distribute (no dead types); fix items that don't hang together. Skip the journal; keep the floor.
-- **Then → code:** items + scoring into the Decoded engine under program `money`; archetypes into the card renderer; the reveal into the money Coach Pack's first-message builder.
+## 8. Ship v1, tune from beta (founder decision, 2026-07-17)
+
+**Decision: ship this instrument as-is for the beta and learn where it lands from real users** — the upfront take-it-yourself tuning gate is skipped in favor of live data (n=many > n=1). Scoring is locked and self-checked (`scripts/money-maps-scoring.mjs`). To make "see where it lands" produce real signal, **instrument the beta from user #1:**
+
+- ⭐ **The signal that matters most — "did this land?"** One tap after the reveal: *"Did that feel true?"* ✓ / ✗ (+ optional line). It is at once the instrument's validity check, the reveal-quality metric, and the activation metric. Everything else is secondary to this.
+- **Archetype distribution** — flag dead types (nobody lands there) or a swallower (one type >~25%); either points at an item or a cutpoint to adjust.
+- **Item discrimination** — per-item response spread + item→Map correlation; an item everyone answers the same way, or that doesn't move with its Map, gets rewritten.
+- **LEAP band spread + tilt frequency** — confirm the bands split the population usefully and that success-tilt shows up as the rarer read we claim.
+- **Quarterly re-score deltas** — the retention + testimonial engine, and the real test that the instrument is sensitive to change.
+
+**Hold for post-beta (not pre-):** 3→4 items/Map if a Map reads thin; a few reverse-keyed items for acquiescence bias; archetype-name/copy sharpening. Change item text only deliberately — it invalidates stored responses (`DECODED_SCORING.md`).
+
+**Build path:** items + scoring → the Decoded engine under `program=money` (**reproduce the 7 boundary tests in `scripts/money-maps-scoring.mjs`** as the TS unit tests); archetypes → the card renderer; the reveal → the money Coach Pack's first-message builder.
