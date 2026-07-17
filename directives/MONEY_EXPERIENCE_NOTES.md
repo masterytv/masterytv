@@ -48,6 +48,12 @@ The founder's proposed intake — Money Map + Money Story + Goals/Dreams + Value
 
 Each rung is a valid stopping point that has already delivered value — which is exactly what makes the next rung feel like an invitation instead of a wall.
 
+> **✅ ENTRY DECISION — LOCKED (founder, 2026-07-17):** **quiz first → results delivered in chat → the coach's questions come with pre-written, clickable answer chips.** Rationale (from the friction analysis): open-ended chat *feels* lighter but is actually higher-friction — it makes a busy skeptic generate material cold and reads as therapy. A fast, sharp quiz is bounded, gamified, and hands the coach a *lens* on message one (the reveal in the transcript was only possible because the score already existed). "Chat-first, then recommend the quiz" is the weakest path — it stacks two efforts and delays both the lens and the shareable card.
+>
+> **The clickable-chip mechanic is the same friction principle applied one level deeper.** After the reveal, the coach's follow-up questions each surface **2–4 tappable suggested answers + an always-present free-text box.** Chips reduce the effort of *generating* a reply to a tap, kill blank-page paralysis, and keep momentum — while each chip is itself a mini-diagnostic (the option they pick is data). The free-text escape hatch is mandatory so it never feels like a boxed-in decision tree. Design rule: **chips to move fast, free-text to go deep — the user chooses the depth every turn.** This threads through every rung of the ladder, not just the first.
+>
+> **Design target restated:** minimize *time-to-first-reveal*, not number-of-steps. A 3-minute quiz that ends in a scary-accurate reveal is lower friction than 3 minutes of open chat that hasn't paid off yet. Keep a chat-first door as a *secondary* ramp for the quiz-averse (coach steers to the Map fast: "90 seconds and I'll have a real read on you"). A/B-test once live; metric = time-to-first-reveal × completion.
+
 ---
 
 ## 4. Things not on the founder's list (his item 4)
@@ -93,7 +99,7 @@ The **Fable 5 response** in the founder's dry-run is the quality bar for the coa
 1. **The hero reframe** (playbook §3): candidate is *"your relationship with money, decoded — turned into your edge."* Confirm register: /edge (founder performance) leads; /unblock second.
 2. **Instrument decision** (§5): license KMSI-R, build Money Maps™, or hybrid — and the Klontz-partnership question.
 3. **Decision Room vs. daily loop** — which is the V1 spine? (Leaning Decision Room for the /edge segment.)
-4. **How much story before value** — lock the Rung-0→1 reveal as the activation metric; keep Rungs 2–4 progressive.
+4. ~~**How much story before value**~~ — ✅ **DECIDED 2026-07-17:** quiz first → results in chat → clickable answer chips + free-text (see §3 decision block). Activation metric = time-to-first-reveal. Rungs 2–4 stay progressive.
 5. **The Money OS artifact** — what's in v1, and is it the shareable/exportable object.
 6. **Coach voice calibration** — does the user pick a register (challenge vs. wise-friend) at intake, à la ChatGPT's "coaching style calibration"?
 7. **Boundary lines** — the coaching-not-therapy / not-financial-advice framing, given the coach will opine on venture readiness (crisis kernel + referral path + the §6 disclaimers).
