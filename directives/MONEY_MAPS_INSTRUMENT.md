@@ -55,13 +55,16 @@ Scale: **1 = Strongly disagree · 6 = Strongly agree.** Presented as **clickable
 
 ---
 
-## 3. Scoring
+## 3. Scoring (precise algorithm — reference implementation verified)
 
-1. **Dimension score** = mean of that Map's items, on the 1–6 scale (GUARD/DRIVE/MIRROR/SHADOW = 3 items each; LEAP = mean of L1–L4).
-2. **Dominant / secondary Map** = the top two of the **four core Maps** (LEAP excluded — it's a state, not an identity). Tie-break order when means are equal: **DRIVE > GUARD > SHADOW > MIRROR** (bias toward the more action-shaping Map; arbitrary but fixed for determinism).
-3. **Overclock flag:** any core Map with mean **> 4.0** is "running hot" — the coach leads with its governor, not its edge.
-4. **THE LEAP band:** Low ≤ 2.5 · Moderate 2.6–3.9 · High ≥ 4.0. Plus a **tilt**: mean(L1,L3) vs mean(L2,L4) → *fear-of-failure-tilted* vs *fear-of-success-tilted* (the rarer, higher-value read).
-5. Deterministic, scored in code (reuse the Decoded scoring-engine pattern). Nothing here needs an LLM — the reveal narration does (§6), the scoring doesn't.
+All 16 items are **positively keyed** to their Map (agree = more of the construct) — so scoring is plain means, no reverse-coding. (Adding a few reverse-keyed items to catch acquiescence bias is a v2 hygiene refinement, §8.)
+
+1. **Dimension score** = mean of that Map's items, 1–6 (GUARD/DRIVE/MIRROR/SHADOW = 3 items; LEAP = mean of L1–L4). **Rank on the raw (unrounded) means; round only for display** — so near-ties don't collapse spuriously.
+2. **Dominant / secondary Map** = the top two of the **four core Maps** (LEAP excluded — it's a state, not an identity). **Exact ties** (rare, since means are near-continuous) resolve by a **fixed priority order — DRIVE > GUARD > SHADOW > MIRROR** — purely so identical answers always yield an identical result. The order is a determinism convention, not a claim one Map "beats" another; it's tunable.
+3. **Overclock flag:** any core Map with mean **≥ 4.0** is "running hot" — the coach leads with its governor (the leak), not its edge.
+4. **THE LEAP band** (clean cutpoints, no gaps): **Low < 2.75 · Moderate 2.75–3.99 · High ≥ 4.0.** Plus a **tilt** from the two facets — failure = mean(L1, L3), success = mean(L2, L4): if they differ by **≥ 0.5** the higher one wins (*fear-of-failure* vs *fear-of-success* — the rarer, higher-value read); otherwise *balanced*. Tilt is decision-relevant mainly when the band is Moderate/High.
+5. **Output bundle** (feeds the card + the reveal): `{ dims{5}, dominant, secondary, archetype, overclocked[], leap{score, band, tilt, failFacet, succFacet} }`.
+6. Fully **deterministic**, scored in code (reuse the Decoded scoring-engine pattern). Nothing here needs an LLM — only the reveal *narration* (§6) does; the scoring never does. Reference implementation (Node, runnable) lives with this spec; drops into the Decoded engine as typed TS under `program=money`.
 
 ---
 
