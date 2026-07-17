@@ -2,6 +2,7 @@
 
 > **Author:** Claude Code (Orchestrator), commissioned by Thomas Wood
 > **Date:** July 17, 2026 · **Status:** 🟡 SEED — thinking captured *before* crafting the experience; feeds the eventual `MONEY_EXPERIENCE.md` (Phase 0.5, per `VERTICAL_PLAYBOOK.md`). Companion to [MONEY_DISCOVERY.md](MONEY_DISCOVERY.md) + [MONEY_VIRAL_GTM.md](MONEY_VIRAL_GTM.md).
+> **⭐ PROMOTED:** the formal Phase 0.5 spec is now [MONEY_EXPERIENCE.md](MONEY_EXPERIENCE.md) — the authoritative build artifact. This notes doc is retained as the *reasoning* behind it.
 > **Trigger:** the founder ran a live UX dry-run — took the KMSI-R, fed the scores to ChatGPT / Gemini / Fable 5, then added his story and asked for advice. That transcript is the richest product research we have, because it *demonstrates* the experience instead of describing it. This doc extracts what it proves.
 
 ---
