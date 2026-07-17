@@ -6,6 +6,7 @@
 > **Method:** deep-research workflow (5 search streams → 24 sources → 119 extracted claims → adversarial verification). ⚠️ The verification stage was cut short by a session usage limit: **3 claims formally verified (✓), 0 refuted; the rest are single-pass extractions with quotes on file (•)**. Confidence labels are used throughout. A follow-up verification pass can be run on request.
 > **Per the playbook:** this is the `{VERTICAL}_DISCOVERY.md` artifact from `VERTICAL_PLAYBOOK.md` §2. If approved, the next step is **Phase 0.5 — `MONEY_EXPERIENCE.md`** (mandatory before any surface is built).
 > **⭐ PART II ADDED (same day):** the founder refined the hypothesis from "money coach" to **Money-PSYCHOLOGY coach** (no budgeting, no bank data — the work is on what's *underneath*). Part II (§11–§16) researches that segment specifically and **sharpens the verdict in its favor**. Read Part I for the category evidence, Part II for the actual product positioning.
+> **⭐ COMPANION DOC (same day):** [MONEY_VIRAL_GTM.md](MONEY_VIRAL_GTM.md) — product architecture (the Edge Ladder), the six viral loops, referral economics, pricing options, and the 90-day audience-first GTM. Together these two docs are the **Gate 0 decision package**.
 
 ---
 
