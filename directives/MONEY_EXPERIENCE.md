@@ -59,7 +59,9 @@ The classic four patterns were validated on the *general population* and framed 
 | **SHADOW** | avoidance | values-grounded, immune to greed | undercharging, avoiding the numbers, "I'm fine with less" as a hidden cage |
 
 ### 4.3 The signature dimension (our "viable difference")
-- **THE LEAP** — how you relate to *downside* **and** to *your own success.* Fear of failure and fear of success are distinct forces and both cap founders; the classic four scripts barely touch them. This is the dimension behind the transcript's killer reveal ("afraid of becoming the version of yourself success required"). **This is Money Maps' signature — the thing a generic money-beliefs test can't tell you.** (A sixth dimension, **THE ANCHOR** = does self-worth ride on the outcome, may fold into MIRROR+LEAP to keep the quiz short rather than stand alone.)
+- **THE LEAP** — how you relate to *downside* **and** to *your own success.* Fear of failure and fear of success are distinct forces and both cap founders; the classic four scripts barely touch them. This is the dimension behind the transcript's killer reveal ("afraid of becoming the version of yourself success required"). **This is Money Maps' signature — the thing a generic money-beliefs test can't tell you.**
+
+> **✅ DIMENSIONS LOCKED (founder, 2026-07-17): 5 dimensions = the 4 core Maps + THE LEAP. No 6th (ANCHOR/identity-fusion folds into MIRROR + LEAP).** Full instrument (items, scoring, archetypes, card copy) is now built in ⭐ **[MONEY_MAPS_INSTRUMENT.md](MONEY_MAPS_INSTRUMENT.md)** — the implementation spec.
 
 ### 4.4 Output: the typology (the shareable engine)
 Dominant Map × secondary Map → a **named archetype** with a card ("The Relentless Builder" = DRIVE-GUARD; "The Reluctant Rainmaker" = SHADOW-DRIVE; etc.). ~12–20 named types — enough to feel personal, few enough to build card art for. The card carries **one edge and one leak** (never flattery-only; accurate discomfort is what makes it shareable and credible — see `MONEY_VIRAL_GTM.md` §5). Archetype naming is a §11 copy deliverable; the derivation logic (dominant×secondary) is fixed here.
@@ -179,7 +181,7 @@ Retention proof = the **quarterly Money Maps re-score delta** (overclocks coming
 
 1. **V1 spine:** Decision Room (my recommendation, §8) vs. daily-loop lead — confirm.
 2. **Brand/domain:** grab Momatti.com now vs. subdomain-only vs. decide later (§12) — recommendation is grab-now-build-on-subdomain.
-3. **Money Maps dimensions:** 4 core + THE LEAP (my recommendation), or add THE ANCHOR as a 6th — affects quiz length.
+3. ~~**Money Maps dimensions**~~ — ✅ **DECIDED 2026-07-17: 4 core Maps + THE LEAP (5 total).** Instrument built in [MONEY_MAPS_INSTRUMENT.md](MONEY_MAPS_INSTRUMENT.md).
 4. **Gate 0 formalization:** money is now clearly the active vertical; still owed is the `STRATEGY.md` roadmap amendment — does career **defer to Stage 3**, run **parallel later**, or retire? (A sequencing call only you can make; I've left STRATEGY.md untouched pending it.)
 5. **Audience specifics** (size/channels) — sizes the founding cohort + the manual-MVP recruit.
 
