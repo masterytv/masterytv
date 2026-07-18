@@ -16,7 +16,7 @@
 
 import { normalizeProgram, type ProgramId } from "./packs/index.ts";
 
-export type BrandId = "masterytv" | "relatti";
+export type BrandId = "masterytv" | "relatti" | "money";
 
 export interface EdgeBrand {
   id: BrandId;
@@ -49,10 +49,21 @@ export const EDGE_BRANDS: Record<BrandId, EdgeBrand> = {
     coachName: "Relatti",
     replyToOverride: "Relatti Coach <coach@mail.masterytv.com>",
   },
+  // Money vertical. Origin is the founder-pinned moneymaps.masterytv.com. No
+  // inbound inbox on the money domain yet → route replies to the one inbox that
+  // ingests (mail.masterytv.com), same as Relatti. Prod-config TODO (§5.9):
+  // money Resend from-domain + inbound webhook before T4 wires any proactive send.
+  money: {
+    id: "money",
+    programSlug: "money",
+    origin: "https://moneymaps.masterytv.com",
+    coachName: "Money Maps",
+    replyToOverride: "Money Maps Coach <coach@mail.masterytv.com>",
+  },
 };
 
 export function isBrandId(x: unknown): x is BrandId {
-  return x === "masterytv" || x === "relatti";
+  return x === "masterytv" || x === "relatti" || x === "money";
 }
 
 /**

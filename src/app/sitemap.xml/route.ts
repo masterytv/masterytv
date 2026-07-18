@@ -34,6 +34,10 @@ const PUBLIC_PATHS: Record<BrandId, { path: string; priority: number }[]> = {
     { path: "/terms", priority: 0.3 },
     { path: "/disclaimer", priority: 0.3 },
   ],
+  // Money is DARK (pre-launch): the domain isn't pointed and it's noindex (not in
+  // robots isProductionHost). Nothing public to advertise yet — add the landing +
+  // legal paths here when the money surfaces + domain go live (launch task).
+  money: [],
 };
 
 export async function GET(request: Request) {

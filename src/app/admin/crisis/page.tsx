@@ -20,11 +20,11 @@ interface CrisisFlag {
 }
 
 type FilterTab = "all" | "unresolved" | "resolved";
-type BrandTab = "all" | "relatti" | "masterytv" | "unattributed";
+type BrandTab = "all" | "relatti" | "masterytv" | "money" | "unattributed";
 
 // program → brand via the registry (brandForProgram); unstamped flags are
 // deliberately "unattributed", never guessed.
-function brandOfFlag(f: CrisisFlag): "relatti" | "masterytv" | "unattributed" {
+function brandOfFlag(f: CrisisFlag): "relatti" | "masterytv" | "money" | "unattributed" {
   if (!f.program) return "unattributed";
   return brandForProgram(f.program).id;
 }
@@ -33,6 +33,7 @@ const BRAND_TAB_LABELS: Record<BrandTab, string> = {
   all: "All brands",
   relatti: "Relatti",
   masterytv: "MasteryTV",
+  money: "Money Maps",
   unattributed: "Unattributed",
 };
 
@@ -192,7 +193,7 @@ export default function AdminCrisisPage() {
 
         {/* PC5.4 — brand filter. One unified safety list, narrowed not split. */}
         <div className="ad-filters">
-          {(["all", "relatti", "masterytv", "unattributed"] as BrandTab[]).map(tab => (
+          {(["all", "relatti", "masterytv", "money", "unattributed"] as BrandTab[]).map(tab => (
             <button
               key={tab}
               onClick={() => setBrandTab(tab)}

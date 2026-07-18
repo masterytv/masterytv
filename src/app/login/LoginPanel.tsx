@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { useState } from "react";
-import { Loader2, ArrowRight, Eye, EyeOff, User, Mail, Check, Fingerprint } from "lucide-react";
+import { Loader2, ArrowRight, Eye, EyeOff, User, Mail, Check, Fingerprint, Compass } from "lucide-react";
 import { RelattiMark } from "@/components/relatti/RelattiMark";
 import { FloatingThemeToggle } from "@/components/floating-theme-toggle";
 import { byBrand, type BrandId } from "@/lib/platform/brand";
@@ -27,6 +27,10 @@ const COPY: Record<BrandId, { tagline: string; signinSubtitle: string }> = {
   relatti: {
     tagline: "Understand each other better — starting with you.",
     signinSubtitle: "Sign in to your relationship coach.",
+  },
+  money: {
+    tagline: "The psychology under your money decisions.",
+    signinSubtitle: "Sign in to your money coach.",
   },
 };
 
@@ -235,6 +239,7 @@ export default function LoginPanel({
               {
                 relatti: <RelattiMark className="h-6 w-6" />,
                 masterytv: <Fingerprint className="h-6 w-6" style={{ color: "var(--color-primary)" }} strokeWidth={1.5} />,
+                money: <Compass className="h-6 w-6" style={{ color: "var(--color-primary)" }} strokeWidth={1.5} />,
               },
               brandId,
             )}

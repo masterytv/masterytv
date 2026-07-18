@@ -20,11 +20,12 @@
 import type { CoachPack, PackPromptContext } from "./types.ts";
 import { executivePack } from "./executive-pack.ts";
 import { relationshipPack } from "./relationship-pack.ts";
+import { moneyPack } from "./money-pack.ts";
 
 export type { CoachPack, PackPromptContext };
-export { executivePack, relationshipPack };
+export { executivePack, relationshipPack, moneyPack };
 
-export type ProgramId = "general" | "relationship";
+export type ProgramId = "general" | "relationship" | "money";
 
 /**
  * Adding a program to the union makes this Record a COMPILE ERROR until the
@@ -35,6 +36,7 @@ export type ProgramId = "general" | "relationship";
 const PACKS: Record<ProgramId, CoachPack> = {
   general: executivePack,
   relationship: relationshipPack,
+  money: moneyPack,
 };
 
 /**

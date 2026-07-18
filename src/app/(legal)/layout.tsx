@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Fingerprint } from "lucide-react";
+import { Fingerprint, Compass } from "lucide-react";
 import { RelattiMark } from "@/components/relatti/RelattiMark";
 import { getBrand } from "@/lib/platform/brand.server";
 import { byBrand } from "@/lib/platform/brand";
@@ -51,6 +51,13 @@ export default async function LegalLayout({
                 relatti: <RelattiMark className="h-4 w-4" />,
                 masterytv: (
                   <Fingerprint
+                    className="h-4 w-4"
+                    style={{ color: "var(--color-primary)" }}
+                    strokeWidth={1.75}
+                  />
+                ),
+                money: (
+                  <Compass
                     className="h-4 w-4"
                     style={{ color: "var(--color-primary)" }}
                     strokeWidth={1.75}

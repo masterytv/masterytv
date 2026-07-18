@@ -140,6 +140,55 @@ export const INVITE_BRANDS: Record<BrandId, InviteBrand> = {
       timeNote: "Nothing is shared until you accept their request after finishing.",
     },
   },
+  // Money vertical (the "cofounder edge comparison" invite — MONEY_EXPERIENCE §11;
+  // the dyad/compare feature itself is a later leaf, this is its branded email).
+  // INTERIM (§5.9 prod-config): money Resend from-domain not verified yet → send
+  // from the verified masterytv mail domain via the shared key fallback. Colors
+  // are money-palette hex; email HTML is an allowlisted exception to check:colors.
+  // FTC: psychology + comparison framing only, never a wealth-outcome promise.
+  money: {
+    keyEnv: "RESEND_API_KEY_MONEY",
+    from: "Money Maps <donotreply@mail.masterytv.com>",
+    fallbackFrom: "Money Maps <donotreply@mail.masterytv.com>",
+    badge: "M",
+    color: "#047857",
+    soft: "#ECFDF5",
+    subject: (s) => `${s} wants to compare Money Maps with you`,
+    intro: (s) => `${s} took <strong>Money Maps</strong> — a 3-minute read on the psychology under your money decisions — and wants to compare with you.`,
+    bullets: [
+      "Your Money Map — the archetype behind how you handle money",
+      "Your edge, and the overclock that quietly costs you",
+      "Where fear is gating you — the fear of failing vs. the fear of succeeding",
+      "How your map and theirs line up",
+    ],
+    cta: "Take Money Maps",
+    timeNote: "It takes about 3 minutes. Your results are private — you decide what to share.",
+    footer: "Money Maps · The psychology under your money decisions",
+    notify: {
+      subject: (r) => `${r} just took their Money Maps`,
+      heading: () => `You're both mapped`,
+      intro: (r, inviter) =>
+        `Good news, ${inviter}. ${r} just finished their Money Map — now you can compare how you each handle money.`,
+      whatsNext: [
+        "See where your money psychology lines up, and where it clashes",
+        "Compare edges, overclocks, and where each of you plays small",
+        "Talk it through with a coach who knows both maps",
+      ],
+      cta: "See the comparison",
+    },
+    connectRequest: {
+      subject: (s) => `${s} wants to compare Money Maps with you`,
+      intro: (s) => `${s} wants to connect on <strong>Money Maps</strong> and compare how you each handle money. You already have your map, so it's your call.`,
+      cta: "Review their request",
+      timeNote: "Nothing is shared until you accept. Review or decline the request on your dashboard.",
+    },
+    connectNoReport: {
+      subject: (s) => `${s} wants to compare Money Maps with you`,
+      intro: (s) => `${s} wants to connect on <strong>Money Maps</strong>. You've already joined — finish your Money Map, then accept their request to compare.`,
+      cta: "Finish your Money Map",
+      timeNote: "Nothing is shared until you accept their request after finishing.",
+    },
+  },
 };
 
 function variantCopy(brand: InviteBrand, variant: InviteEmailVariant): VariantCopy {

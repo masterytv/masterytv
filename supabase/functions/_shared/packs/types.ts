@@ -121,7 +121,7 @@ export interface PackBriefing {
 }
 
 export interface CoachPack {
-  key: "executive" | "relationship";
+  key: "executive" | "relationship" | "money";
 
   /** PC4.3 — post-processing extraction schema + memory taxonomy. */
   extraction: PackExtraction;

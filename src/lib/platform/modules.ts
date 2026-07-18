@@ -26,7 +26,13 @@ export type ModuleId =
   | "partner_invite"
   | "dyad"
   | "blueprint"
-  | "beta_program";
+  | "beta_program"
+  // Money (Money Maps) — bespoke primary surfaces (ADR-P03). The routes + nav +
+  // ROUTE_MODULES guards for these are the surface leaves (Decision Room / Money
+  // OS); the module IDs are reserved here so money's declared capability set is
+  // honest and the leaves add the page, not re-touch this union.
+  | "decision_room"
+  | "money_os";
 
 const CORE: ModuleId[] = ["assessment", "coach", "report", "settings"];
 
@@ -56,6 +62,17 @@ export const PROGRAM_MODULES: Record<ProgramId, ModuleId[]> = {
     // commitments / progress / coaching_letters intentionally OFF (PRD §6 / founder).
     // coach_voices OFF: the six voices are executive coach personas; Relatti has
     // one deliberate counselling stance (RELATTI_EXPERIENCE §5.6.1).
+  ],
+  money: [
+    ...CORE,
+    // The bespoke money surfaces (MONEY_EXPERIENCE §8/§9). Enabled here; their
+    // routes + sidebar nav + ROUTE_MODULES guards land with the surface leaves.
+    "decision_room",
+    "money_os",
+    // Executive extras (commitments/progress/coaching_letters/coach_voices) and
+    // the relationship dyad set intentionally OFF: money's retention spine is the
+    // Money OS + decision log, not the executive GROW modules. The "cofounder
+    // edge comparison" (dyad reused) is a later vertical feature, not V1 core.
   ],
 };
 

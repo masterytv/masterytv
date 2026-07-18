@@ -179,7 +179,7 @@ function ChatPageInner() {
       // Build a natural opening message from the deep link context. Brand-aware:
       // Relatti users read a "relationship profile," not a "Decoded report."
       const profileLabel = byBrand(
-        { relatti: "relationship profile", masterytv: "report" },
+        { relatti: "relationship profile", masterytv: "report", money: "Money Map" },
         resolveBrandClient().id,
       );
       const openingMessage = topic

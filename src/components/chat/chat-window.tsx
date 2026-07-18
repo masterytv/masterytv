@@ -15,7 +15,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { UserStar, Heart, Clock } from "lucide-react";
+import { UserStar, Heart, Clock, Compass } from "lucide-react";
 import { useBrand } from "@/hooks/useBrand";
 import type { ChatMessage } from "@/lib/chat";
 
@@ -220,6 +220,17 @@ const EMPTY_STATE = {
       "My partner and I keep having the same argument",
       "Help me understand our dynamic",
       "There's something I've been afraid to bring up",
+    ],
+  },
+  money: {
+    icon: Compass,
+    heading: "Your money coach",
+    intro:
+      "I work on what's underneath your money decisions — the patterns, fears, and beliefs that move before you do. Bring me a real decision you're weighing, or tell me what keeps repeating with money.",
+    starters: [
+      "I keep undercharging and I'm not sure why",
+      "Help me think through a big money decision",
+      "The goalposts keep moving no matter how much I make",
     ],
   },
 } as const;

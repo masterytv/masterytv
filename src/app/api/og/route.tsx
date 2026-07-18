@@ -55,6 +55,17 @@ const OG_BRANDS: Record<BrandId, OgPalette> = {
     domain: "relatti.com",
     markBadge: "#fdf2f4",
   },
+  // Money palette v0 (emerald family) — flagged for the design/palette leaf to
+  // finalize and to align with globals.css money tokens. OG hex is an allowlisted
+  // exception to check:colors (edge ImageResponse, no CSS vars). The white
+  // compass mark shows on the dark gradient, so no markBadge.
+  money: {
+    name: "Money Maps",
+    gradientFrom: "#04231c",
+    gradientTo: "#047857",
+    accent: "#6ee7b7",
+    domain: "moneymaps.masterytv.com",
+  },
 };
 
 // Brand marks, loaded once per isolate. PNGs go to satori as ArrayBuffers;
@@ -64,6 +75,9 @@ const MARKS: Record<BrandId, Promise<string | ArrayBuffer>> = {
     r.arrayBuffer(),
   ),
   relatti: fetch(new URL("./assets/relatti-mark.svg", import.meta.url))
+    .then((r) => r.text())
+    .then((svg) => `data:image/svg+xml;base64,${btoa(svg)}`),
+  money: fetch(new URL("./assets/money-mark.svg", import.meta.url))
     .then((r) => r.text())
     .then((svg) => `data:image/svg+xml;base64,${btoa(svg)}`),
 };

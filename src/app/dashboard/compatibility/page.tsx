@@ -12,7 +12,7 @@ import CompatibilityHubDecoded from "./CompatibilityHubDecoded";
 export async function generateMetadata(): Promise<Metadata> {
   const brand = await getBrand();
   return brandPageMetadata(brand.id, {
-    title: byBrand({ relatti: "Your Connection — Relatti", masterytv: "Compatibility — Mastery" }, brand.id),
+    title: byBrand({ relatti: "Your Connection — Relatti", masterytv: "Compatibility — Mastery", money: "Comparison — Money Maps" }, brand.id),
     description: "See your compatibility, invite your partner, and explore your relationship dynamics.",
     noindex: true,
   });

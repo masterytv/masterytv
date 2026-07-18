@@ -13,6 +13,10 @@ const ALLOWED_ORIGINS = [
   "https://relatti.com",
   "https://www.relatti.com",
   "https://staging.relatti.com",
+  // Money vertical (moneymaps.masterytv.com). Inert until the money edge
+  // functions are deployed; takes effect on the next edge deploy (§5.9 gotcha:
+  // "edge CORS per new origin"). Added now so it isn't forgotten at launch.
+  "https://moneymaps.masterytv.com",
   "http://localhost:3000",
   "http://localhost:3001",
 ];
