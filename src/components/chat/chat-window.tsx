@@ -18,6 +18,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { UserStar, Heart, Clock, Compass } from "lucide-react";
 import { useBrand } from "@/hooks/useBrand";
 import type { ChatMessage } from "@/lib/chat";
+import { parseChips, stripStreamingChips } from "@/lib/chat-chips";
 
 // ─── MARKDOWN RENDERER ─────────────────────────────────────────────────
 // Lightweight markdown → HTML for coach messages (bold, italic, bullets, emoji)
@@ -185,7 +186,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
         ) : (
           <div
             className="chat-markdown"
-            dangerouslySetInnerHTML={{ __html: `<p>${renderMarkdown(message.content)}</p>` }}
+            dangerouslySetInnerHTML={{ __html: `<p>${renderMarkdown(parseChips(message.content).text)}</p>` }}
           />
         )}
         <span className="chat-time">{time}</span>
@@ -386,6 +387,16 @@ export default function ChatWindow({
   const atLimit = Boolean(limitInfo) || remainingToday === 0;
   const resetHours = limitInfo?.resetHours ?? hoursUntilReset();
 
+  // Answer chips for the coach's CURRENT question — only when the last turn is a
+  // completed coach message and the user can actually reply (not mid-stream, not
+  // at the free-tier wall). Once the user taps or types, the last message flips
+  // to theirs and the chips clear themselves.
+  const lastMessage = messages[messages.length - 1];
+  const activeChips =
+    !isLoading && !atLimit && lastMessage?.role === "coach"
+      ? parseChips(lastMessage.content).chips
+      : [];
+
   return (
     <div className="chat-window" onClick={handleStarterClick}>
       {/* Messages area */}
@@ -410,7 +421,7 @@ export default function ChatWindow({
                     <div
                       className="chat-markdown"
                       dangerouslySetInnerHTML={{
-                        __html: `<p>${renderMarkdown(streamingContent)}</p>`,
+                        __html: `<p>${renderMarkdown(stripStreamingChips(streamingContent))}</p>`,
                       }}
                     />
                     <span className="chat-streaming-cursor" />
@@ -433,6 +444,23 @@ export default function ChatWindow({
         {atLimit && <LimitNotice resetHours={resetHours} />}
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Answer chips — quick replies for the coach's current question. Free-text
+          below stays the primary input; these are only ever a shortcut. */}
+      {activeChips.length > 0 && (
+        <div className="chat-chips" role="group" aria-label="Quick replies">
+          {activeChips.map((chip) => (
+            <button
+              key={chip}
+              type="button"
+              className="chat-chip"
+              onClick={() => onSendMessage(chip)}
+            >
+              {chip}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Input area */}
       <form className="chat-input-area" onSubmit={handleSubmit}>

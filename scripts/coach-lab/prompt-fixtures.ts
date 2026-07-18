@@ -746,6 +746,8 @@ export const SCENARIOS: Scenario[] = [
       "THE LEAP: High", // LEAP band rendering
       "THE REVEAL", // the reveal first-message builder
       "Does 'enough' have an actual number", // the DRIVE type-selected question
+      "ANSWER CHIPS", // the clickable-chip contract (T5)
+      "[[CHIPS:", // the exact machine-readable marker the money chat UI parses
       "WHAT YOU CAN AND CAN'T DO", // money guardrails
       "SAFETY RULES:", // shared crisis kernel
     ],
