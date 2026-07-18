@@ -2,6 +2,8 @@ import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { redirect, notFound } from 'next/navigation';
 import ReportViewer from './ReportViewer';
+import MoneyReport from './MoneyReport';
+import type { StoredMoneyMap } from '@/lib/decoded/scoring/money-maps';
 import { getBrand } from '@/lib/platform/brand.server';
 import { getOrCreateBroadcastInviteUrl } from '@/lib/relatti/broadcast-invite';
 import { getDyadNeedToHear, toDyadPointer } from '@/lib/relatti/partner-need-to-hear';
@@ -29,6 +31,27 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // future vertical.
   const brand = await getBrand();
   const isRelationship = brand.programSlug === 'relationship';
+
+  // Money reports get money-branded metadata (never the "Decoded" fallback).
+  // Bare object to match this route's other branches (allowlisted from the
+  // metadata helper because it builds a custom archetype-card OG); a money OG is
+  // set explicitly so the report doesn't inherit the root layout's MasteryTV card
+  // (the §15 inherited-OG leak). Money hosts are noindex at the robots layer.
+  if (brand.programSlug === 'money') {
+    const title = 'Your Money Maps Report';
+    const description = 'Your Money Map — the psychology under how you earn, spend, and price.';
+    const ogImage = `/api/og?brand=money&title=${encodeURIComponent(title)}`;
+    return {
+      title,
+      description,
+      openGraph: {
+        title,
+        description,
+        images: [{ url: ogImage, width: 1200, height: 630, alt: 'Money Maps' }],
+      },
+      twitter: { card: 'summary_large_image', title, description, images: [ogImage] },
+    };
+  }
 
   // Try to load the report for metadata (using admin to bypass RLS)
   const admin = createServiceClient(
@@ -172,6 +195,22 @@ export default async function ReportPage({ params, searchParams }: PageProps) {
     .single();
 
   if (ownReport) {
+    // Money reports render the Money Maps report (MONEY_EXPERIENCE.md §109: the
+    // card + the one move, vertical-first), NOT the Decoded Big-Five ReportViewer
+    // — a money report carries only sections.money_map (no LLM sections), so the
+    // viewer would sit on "generating" forever and show "Mastery Coach". Data-
+    // driven: only a money report row carries sections.money_map (no brand ternary).
+    const moneyMap = (ownReport.sections as { money_map?: StoredMoneyMap } | null)
+      ?.money_map;
+    if (moneyMap) {
+      const dateLabel = new Date(ownReport.created_at).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+      return <MoneyReport map={moneyMap} dateLabel={dateLabel} />;
+    }
+
     // User owns this report — standard rendering
     const { data: scores } = await supabase
       .from('assessment_scores')
