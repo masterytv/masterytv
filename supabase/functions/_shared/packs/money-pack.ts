@@ -13,11 +13,15 @@
  * _shared/money-map-profile.ts and consumed at ctx.decodedLayer. Locked by a new
  * `money` prompt-snapshot golden; exec + relationship goldens stay byte-identical.
  *
- * What it deliberately leaves for later phases (each named):
- *   - T3: the money memory taxonomy (money-belief / overclock / money-story /
- *         decision / trigger / guardrail) — MUST land inside the live
- *         memory_facts_category_check (extend by migration; query pg_constraint
- *         first). Until then extraction uses a constraint-safe generic subset.
+ * ✅ T3 DONE (2026-07-18): the money memory taxonomy (money_belief / overclock /
+ * money_story / decision / trigger / guardrail) is now emitted by `extraction`
+ * below and admitted by the live memory_facts_category_check via the STAGED
+ * migration 20260718120000_money_memory_taxonomy.sql. ⚠️ That migration MUST be
+ * applied before this pack deploys — post-processor.ts batch-inserts facts and one
+ * un-admitted category fails the whole batch; both apply + deploy are founder-gated.
+ * (resolve-program money wiring — the other half of T3 — is in resolve-program.ts.)
+ *
+ * What it deliberately leaves for later phases:
  *   - T4: the proactive briefing (enabled:false here — money sends nothing at 8am yet).
  *
  * HARD INVARIANT (PC4.1): adding this pack is ADDITIVE — it must not move the
@@ -112,18 +116,21 @@ HOW YOU OFFER ANYTHING:
 export const moneyPack: CoachPack = {
   key: "money",
 
-  // PC4.3 — T1 uses a CONSTRAINT-SAFE generic taxonomy (these categories are
-  // shared with the other packs and already inside the live
-  // memory_facts_category_check). The money-shaped taxonomy (money_belief,
-  // overclock, money_story, decision, trigger, guardrail) is T3 — and adding it
-  // REQUIRES extending memory_facts_category_check by migration (query
-  // pg_constraint first; the committed baseline lacks the live CHECK). Extraction
-  // does not run at gate time (no money scenario, no money coach invocation), so
-  // this is belt-and-suspenders until T3 lands.
+  // PC4.3 / T3 — the money-shaped taxonomy. The six money categories (money_belief,
+  // overclock, money_story, decision, trigger, guardrail) are admitted by the live
+  // memory_facts_category_check ONLY via 20260718120000_money_memory_taxonomy.sql,
+  // which MUST be applied before this pack deploys: post-processor.ts clamps to this
+  // set and BATCH-inserts, so one un-admitted category fails the whole batch. The
+  // shared generics (personal/preference/goal/challenge/win/pattern) stay so the
+  // coach still captures ordinary context. Extraction is NOT in the prompt-snapshot
+  // surface (buildLayers doesn't render it) — editing this moves no golden.
   extraction: {
-    factCategories: "personal|preference|goal|challenge|win|pattern",
+    factCategories:
+      "money_belief|overclock|money_story|decision|trigger|guardrail|personal|preference|goal|challenge|win|pattern",
     factsRule: `- Only extract facts the USER stated about themselves, their money psychology, or their situation.
-- Capture the money-psychology TEXTURE: recurring patterns around earning, spending, pricing, and money decisions (category "pattern" — e.g. undercharging, the moving goalpost, avoiding the numbers), what they're working toward (category "goal"), what they keep bumping into (category "challenge"), and wins worth remembering (category "win"). Personal context and stated preferences as "personal"/"preference". Do NOT extract or infer financial account data, balances, or holdings — this coach never touches the bank account.`,
+- Use the money-shaped categories where they fit: a stated BELIEF about money ("money_belief" — e.g. "there's never enough", "wanting more is greedy"); a trait working as an edge-with-a-governor ("overclock" — e.g. caution overclocked into chronic undercharging, drive with a moving goalpost); a formative money memory or origin story ("money_story" — e.g. "we were broke growing up", "I watched my dad lose everything"); a specific money decision they're weighing or made ("decision"); what fires a money pattern ("trigger" — e.g. "I spend when I'm anxious", "I avoid the numbers when I'm overwhelmed"); and a rule or boundary they set for themselves ("guardrail" — e.g. "I sleep on any big purchase for a day before buying").
+- Use the generic categories for everything else: what they're working toward ("goal"), what they keep bumping into ("challenge"), a win worth remembering ("win"), a recurring behavior not better typed above ("pattern"), and personal context or stated preferences ("personal"/"preference").
+- Do NOT extract or infer financial account data, balances, or holdings — this coach never touches the bank account.`,
     aiToolsRule:
       "- ai_tools_mentioned: always return an empty array for this coach.",
     extractAiTools: false,
