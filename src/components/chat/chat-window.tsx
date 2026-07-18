@@ -275,6 +275,12 @@ interface ChatWindowProps {
   limitInfo?: { resetHours: number } | null;
   /** Messages left today (free tier); null = unlimited/unknown → no heads-up. */
   remainingToday?: number | null;
+  /**
+   * Optional artifact pinned at the top of the message scroll (above the first
+   * turn). Money uses it for the Rung-0 Money Map card; other verticals pass
+   * nothing, so this is a zero-DOM no-op for them.
+   */
+  topCard?: React.ReactNode;
 }
 
 export default function ChatWindow({
@@ -285,6 +291,7 @@ export default function ChatWindow({
   userId,
   limitInfo = null,
   remainingToday = null,
+  topCard = null,
 }: ChatWindowProps) {
   const [input, setInput] = useState("");
   const [draftRestored, setDraftRestored] = useState(false);
@@ -401,6 +408,8 @@ export default function ChatWindow({
     <div className="chat-window" onClick={handleStarterClick}>
       {/* Messages area */}
       <div className="chat-messages">
+        {/* Pinned artifact (money's Rung-0 Money Map card); null for other verticals. */}
+        {topCard}
         {messages.length === 0 && !isLoading ? (
           <EmptyState />
         ) : (

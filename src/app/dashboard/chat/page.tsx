@@ -32,6 +32,9 @@ import { resolveBrandClient } from "@/hooks/useBrand";
 import { byBrand } from "@/lib/platform/brand";
 import { useBrandModules } from "@/hooks/useBrandModules";
 import { Heart, Waves } from "lucide-react";
+import MoneyMapCard from "@/components/money/MoneyMapCard";
+import { loadMyMoneyMap } from "@/lib/decoded/load-my-money-map";
+import type { StoredMoneyMap } from "@/lib/decoded/scoring/money-maps";
 
 // Lazy-load debug panel — only shipped to admin users who activate debug mode
 const DebugPanel = dynamic(() => import("@/components/debug/debug-panel"), {
@@ -93,6 +96,28 @@ function ChatPageInner() {
       const isRelatti = resolveBrandClient().id === "relatti";
       setEngagementId(isRelatti && d ? d.engagementId : null);
     })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
+  // ── Rung-0 Money Map card (MONEY_MAPS_INSTRUMENT.md §5) ──
+  // Data-driven, NOT brand-gated: load the current program's stored bundle and
+  // let the DATA decide. Only a report carrying sections.money_map (money's)
+  // yields a card — general/relationship reports carry LLM sections, so they get
+  // null and no card, with no `program === "money"` guard. loadMyMoneyMap is
+  // program-scoped, so a money user's card can never surface on another vertical.
+  const [moneyMap, setMoneyMap] = useState<StoredMoneyMap | null>(null);
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    loadMyMoneyMap(user.id, resolveBrandClient().programSlug)
+      .then((m) => {
+        if (!cancelled) setMoneyMap(m);
+      })
+      .catch(() => {
+        /* non-fatal — the card just doesn't render */
+      });
     return () => {
       cancelled = true;
     };
@@ -397,6 +422,7 @@ function ChatPageInner() {
 
 
   const showDebugPanel = isAdmin && debugMode;
+  const moneyCard = moneyMap ? <MoneyMapCard map={moneyMap} /> : null;
 
   return (
     <div style={{ position: "relative", height: "100%" }}>
@@ -448,6 +474,7 @@ function ChatPageInner() {
               userId={user?.id}
               limitInfo={limitInfo}
               remainingToday={remainingToday}
+              topCard={moneyCard}
             />
           </div>
           <DebugPanel debugData={debugData} traceHistory={traceHistory} />
@@ -462,6 +489,7 @@ function ChatPageInner() {
           userId={user?.id}
           limitInfo={limitInfo}
           remainingToday={remainingToday}
+          topCard={moneyCard}
         />
       )}
     </div>
