@@ -276,7 +276,14 @@ export default async function DashboardPage({
   // A-2 wrong-surface leak — a plain `if (brandId === "relatti")` above silently
   // sent every non-relatti brand, money included, to the executive home).
   if (brandId === "money") {
-    return <MoneyDashboard userName={userName} hasAssessment={state === "completed"} />;
+    return (
+      <MoneyDashboard
+        userName={userName}
+        hasAssessment={state === "completed"}
+        userId={user.id}
+        programSlug={program}
+      />
+    );
   }
 
   return (

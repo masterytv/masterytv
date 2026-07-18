@@ -268,6 +268,23 @@ function ChatPageInner() {
         setTimeout(() => handleSendMessage("I just finished Money Maps. What do you see?"), 300);
       }
       router.replace('/dashboard/chat', { scroll: false });
+    } else if (contextType === 'money_decision' && topic) {
+      // Money Decision Room (MONEY_EXPERIENCE.md §8, the money V1 spine). The user
+      // named a live decision in the Decision Room and we deep-linked into its
+      // thread (the conversation id was pre-generated there and stored on the
+      // money_decisions row, so it rides through ?c= — the coach creates the
+      // conversation under that id and the log links straight back). Seed the
+      // opening turn carrying the decision title as context so the coach applies
+      // the whole Money Map profile to THIS decision (the coach fn injects the
+      // Decision Room instruction off context.topic). Fresh-thread only, so
+      // re-opening the thread later (Continue → ?c=, no context) never re-seeds.
+      deepLinkProcessed.current = true;
+      deepLinkContext.current = { type: contextType, topic };
+      if (messages.length === 0) {
+        setTimeout(() => handleSendMessage(`I want to think through a decision: ${topic}`), 300);
+      }
+      // Strip the context/topic params but KEEP the thread addressable on refresh.
+      router.replace(`/dashboard/chat${conversationId ? `?c=${conversationId}` : ''}`, { scroll: false });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isInitialLoad, searchParams]);

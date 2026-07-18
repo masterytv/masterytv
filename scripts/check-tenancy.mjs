@@ -45,6 +45,7 @@ const PROGRAM_SCOPED = [
   "memory_facts",         // 2026-07-16 PC2.2
   "coach_profiles",       // 2026-07-16 PC2.2
   "coach_profile_history",// 2026-07-16 PC2.2
+  "money_decisions",      // 2026-07-18 Decision Room (money §8) — decision log
 ];
 
 // Tenancy flows through a parent FK (assessment_id / conversation_id /
