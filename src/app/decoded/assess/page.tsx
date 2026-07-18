@@ -57,6 +57,7 @@ export default async function AssessPage() {
       <CompletedAssessment
         assessmentId={completedAssessment.id}
         scores={scores ?? []}
+        program={program}
       />
     );
   }

@@ -230,6 +230,19 @@ function ChatPageInner() {
 
       setTimeout(() => handleSendMessage(openingMessage), 300);
       router.replace('/dashboard/chat', { scroll: false });
+    } else if (contextType === 'money_reveal') {
+      // Money post-completion (completion-destination.ts). The coach's FIRST
+      // message is the REVEAL off the Money Map — Layer 4.5 is already loaded in
+      // the coach's context server-side, so a plain first user turn triggers it
+      // (MONEY_MAPS_INSTRUMENT.md §6). The seed reads as the user asking for the
+      // read — the "one tap" of Rung 0 → Rung 1. Only fire on a FRESH thread so a
+      // returning user is never re-revealed (the persona also self-guards on
+      // "conversation just beginning").
+      deepLinkProcessed.current = true;
+      if (messages.length === 0) {
+        setTimeout(() => handleSendMessage("I just finished Money Maps. What do you see?"), 300);
+      }
+      router.replace('/dashboard/chat', { scroll: false });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isInitialLoad, searchParams]);

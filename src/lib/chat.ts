@@ -5,6 +5,7 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { resolveBrandClient } from "@/hooks/useBrand";
+import { byBrand } from "@/lib/platform/brand";
 
 // Debug trace types — manually synced from supabase/functions/_shared/debug-types.ts
 // We re-define the top-level type here to avoid importing Deno-specific modules
@@ -203,14 +204,25 @@ export interface ConversationSummary {
  * Brand isolation: the PostgREST `or` filter matching conversations that
  * belong to the CURRENT brand's vertical. Relatti = program 'relationship';
  * MasteryTV = 'general' plus NULL (rows predating the program stamp are all
- * executive — the backfill set them 'general', NULL is belt-and-braces).
- * A user with accounts on both brands must never see the other vertical's
- * conversations (founder invariant, 2026-07-15).
+ * executive — the backfill set them 'general', NULL is belt-and-braces);
+ * Money = 'money'. A user with accounts on more than one brand must never see
+ * another vertical's conversations (founder invariant, 2026-07-15).
+ *
+ * byBrand is exhaustive over BrandId, so a new vertical compile-fails here
+ * instead of silently inheriting the executive filter. That silent inheritance
+ * is exactly what the old `=== "relatti" ? … : …` ternary did to money: money
+ * conversations (program='money') fell into the `general,is.null` bucket and
+ * vanished from money's own thread list.
  */
 function brandProgramFilter(): string {
-  return resolveBrandClient().id === "relatti"
-    ? "program.eq.relationship"
-    : "program.eq.general,program.is.null";
+  return byBrand(
+    {
+      relatti: "program.eq.relationship",
+      masterytv: "program.eq.general,program.is.null",
+      money: "program.eq.money",
+    },
+    resolveBrandClient().id,
+  );
 }
 
 /**
@@ -280,9 +292,17 @@ export async function loadConversationHistory(
       .eq("id", conversationId)
       .maybeSingle();
     if (conv) {
-      const isRelatti = resolveBrandClient().id === "relatti";
-      const convIsRelationship = conv.program === "relationship";
-      if (convIsRelationship !== isRelatti) {
+      // The conversation belongs to THIS brand iff its program matches the
+      // brand's program — masterytv also owns the pre-stamp NULL rows (legacy
+      // executive). The old binary isRelatti/isRelationship test let money load
+      // an EXECUTIVE conversation (program='general') via ?c= (general !==
+      // relatti was false on money, so it read as "owned"); program-matching
+      // closes that, and is exhaustive-safe for future verticals.
+      const brand = resolveBrandClient();
+      const ownsConv =
+        conv.program === brand.programSlug ||
+        (brand.programSlug === "general" && !conv.program);
+      if (!ownsConv) {
         return { messages: [], conversationId: null, wrongBrand: true };
       }
     }
