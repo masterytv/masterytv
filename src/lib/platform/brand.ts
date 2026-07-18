@@ -53,6 +53,15 @@ export interface Brand {
   // exhaustive per brand. Reintroduce only WITH the registry it promises.
   /** Hosts (no port) that resolve to this brand. */
   domains: string[];
+  /**
+   * Parent-family name shown for TRANSPARENCY on a distinct sub-brand (login +
+   * account-collision), so a shared platform login never reads as a scam ("this
+   * other site somehow knows my password"). undefined for the family-ROOT brand
+   * (MasteryTV) — it IS the family. Every brand shares ONE account (one Supabase
+   * auth + one workspace); this names that honestly instead of hiding it.
+   * Founder decision 2026-07-18: shared identity across verticals, surfaced openly.
+   */
+  familyName?: string;
 }
 
 export const BRANDS: Record<BrandId, Brand> = {
@@ -71,6 +80,7 @@ export const BRANDS: Record<BrandId, Brand> = {
     programSlug: "relationship",
     themeId: "relatti",
     domains: ["relatti.com", "www.relatti.com", "staging.relatti.com"],
+    familyName: "MasteryTV",
   },
   // Money vertical (Money Maps™). FOUNDER-PINNED 2026-07-17: build on
   // moneymaps.masterytv.com for now; public brand name + domain still TBD
@@ -86,6 +96,7 @@ export const BRANDS: Record<BrandId, Brand> = {
     programSlug: "money",
     themeId: "money",
     domains: ["moneymaps.masterytv.com"],
+    familyName: "MasteryTV",
   },
 };
 
