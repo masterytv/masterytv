@@ -69,10 +69,17 @@ export const PROGRAM_MODULES: Record<ProgramId, ModuleId[]> = {
     // routes + sidebar nav + ROUTE_MODULES guards land with the surface leaves.
     "decision_room",
     "money_os",
-    // Executive extras (commitments/progress/coaching_letters/coach_voices) and
-    // the relationship dyad set intentionally OFF: money's retention spine is the
-    // Money OS + decision log, not the executive GROW modules. The "cofounder
-    // edge comparison" (dyad reused) is a later vertical feature, not V1 core.
+    // GROW surfaces the money coach earns: it captures commitments on every turn
+    // (shared post-processor) and memory (T3 taxonomy), so Commitments + Progress
+    // apply (founder request 2026-07-18). Both pages + their metadata layouts are
+    // already brand-aware + token-based, so enabling the modules is all it takes —
+    // the sidebar nav (module-gated) and the middleware ROUTE_MODULES guards
+    // (which already list these prefixes) light up for money automatically.
+    "commitments",
+    "progress",
+    // coaching_letters + coach_voices stay OFF (executive-specific personas); the
+    // relationship dyad set stays OFF (money is solo). "cofounder edge comparison"
+    // (dyad reused) is a later vertical feature, not V1 core.
   ],
 };
 
