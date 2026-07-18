@@ -8,11 +8,118 @@
 
 ## 0. The pasteable kickoff prompt
 
-> Build the **money vertical** on the multi-brand coaching platform. Phases 0–0.5 are complete and founder-approved; specs are written. Build it **by the playbook and the gates** — this platform has hard-won discipline for turning silent cross-brand bugs into loud failures; do not work around it.
->
-> **Read first, only what the task needs:** (1) `directives/ORIENT.md` — platform + the typed program axis; (2) `directives/VERTICAL_PLAYBOOK.md` — **MANDATORY**: §5.0 step-zero, the §5 launch checklist, the §5.10 verification sweep (every 🔥 = a real Relatti bug); (3) this file `directives/MONEY_BUILD_HANDOFF.md`; (4) the money specs — `MONEY_EXPERIENCE.md`, `MONEY_MAPS_INSTRUMENT.md`, `MONEY_VIRAL_GTM.md`, `MONEY_DISCOVERY.md`; (5) `directives/BRAND.md` before any UI; (6) the `relatti-open-state` memory for rolling state + scars.
->
-> **First, pin the 3 founder decisions in §4 below. Then do §5.0 step-zero (the `money` slug into both ProgramId unions) and follow the compile errors.** Work on `staging`; keep `npm run gate` green; commit but **ask before any push or edge deploy**. Follow the sequence in §3.
+Copy everything between the fences verbatim into a fresh build session. (Hardened by a 4-agent review pass, 2026-07-17 — grounded in the actual gate chain, the 7 scoring tests, and §5.10.)
+
+```
+You are building the MONEY vertical on the MasteryTV multi-vertical platform. This
+runs against a LIVE production engine already serving Relatti (relationship) and
+executive-coach users. A silent cross-brand error ships the wrong vertical's coach,
+skin, or briefing to real users. Your job is to build money WITHOUT moving any
+existing vertical by a single byte.
+
+━━━ READ FIRST (in this order, only what your current phase needs) ━━━
+1. directives/ORIENT.md            — project briefing, stack, the DB spine
+2. directives/VERTICAL_PLAYBOOK.md — §5 launch checklist + §5.10 verification sweep
+3. directives/MONEY_BUILD_HANDOFF.md — the build brief (§3 sequence, §4 founder
+   decisions, §5 hard stops, §7 mode + the per-phase loop)
+4. The money specs: MONEY_EXPERIENCE.md, MONEY_MAPS_INSTRUMENT.md, MONEY_DISCOVERY.md
+5. directives/BRAND.md — READ FULLY before ANY .tsx/.jsx/.css. Type-scale tokens
+   only, no hardcoded hex, Lucide icons only, metadata via brand-metadata.ts.
+
+━━━ STEP ZERO — do this ALONE, first, before any other work ━━━
+Add the "money" slug to BOTH ProgramId unions:
+  • src/lib/platform/brand.ts
+  • supabase/functions/_shared/packs/index.ts
+Also register it in BRANDS / EDGE_BRANDS. Then FOLLOW THE COMPILE ERRORS through
+every Record<ProgramId,…> map (Coach-Pack registry, PROGRAM_MODULES, BATTERIES) and
+every byBrand() call. Resolve the cascade as ONE connected type graph — the compiler
+hands you the next edit. normalizeProgram THROWS at runtime on an unregistered
+program, so an unwired path is a loud error, not the executive coach in disguise.
+Do NOT let a parallel agent touch this cascade — semantic collisions here compile
+clean and behave wrong.
+
+━━━ WORKFLOW — a DIAMOND, not a fan ━━━
+Governing test for every unit: "Does it touch a shared type surface, the shared coach
+kernel, or the live DB schema?" YES → keep it on THIS single coherent agent,
+sequentially. NO → safe to parallelize AFTER the trunk compiles green.
+
+TRUNK (sequential, one agent, in order — never parallelize):
+  T1. Step-zero typed-axis cascade (above).
+  T2. Money Coach Pack (money-pack.ts) + the reveal first-message builder + the
+      shared-kernel boundary. HARD INVARIANT: exec + relationship prompt goldens stay
+      BYTE-IDENTICAL; only a new `money` golden may be added. If either incumbent
+      golden moves, you touched a shared surface — revert, re-scope to money-pack.ts.
+  T3. resolve-program + new money cases in check:resolve + memory-extraction taxonomy
+      (must land inside the live memory_facts_category_check).
+  T4. Proactive sender program→brand wiring (shared code, known wrong-brand-at-8am scar).
+  T5. The clickable-chip CONTRACT (chip shapes + coach output) — spec here; UI is a leaf.
+
+LEAVES (parallelize freely after the trunk is green; each merges through the gate):
+  scoring engine + the 7 boundary tests · 16-item bank + 12 archetype copy · card art +
+  OG (money palette) · chip UI build (against T5) · Decision Room surface (bespoke) ·
+  Money OS UI (bespoke) · briefing/cron content + referral ladder · waitlist landing.
+
+LIVE-DB MIGRATIONS (strictly sequential, ONE hand, HARD STOP): Money OS table,
+  memory_facts category extension, any SECURITY DEFINER RPC (needs REVOKE … FROM
+  PUBLIC, anon), program seed, pre-existing-row backfills. Never two agents on the pen.
+
+FINAL PHASE — adversarial silent-error sweep (the BEST fan-out, read-only): run
+  §5.10 in order, one agent per seam hunting a cross-brand leak (dual-brand isolation,
+  crawler/OG, proactive gate, consent, coach context, webhook probes).
+
+━━━ FOR EACH PHASE: plan → RED-TEAM YOUR OWN PLAN → execute → self-verify ━━━
+BEFORE code: write the plan, then run bmad-adversarial-review on YOUR OWN plan —
+attack it: Which Record<ProgramId,…> / byBrand() am I leaving defaulted to another
+vertical? Could any edit move the exec/relationship coach one byte? Am I about to
+self-decide a §4 founder call? Which still-silent seam does this touch? Am I re-skinning
+a default surface where the spec calls for bespoke? Revise, THEN build.
+
+AFTER code, run ALL FIVE before you commit:
+  1. `npm run gate` GREEN (tsc · vitest · safety · isolation · check:metadata ·
+     check:colors · check:brand-tokens · check:ternaries · check:tenancy ·
+     check:resolve · snapshot:prompts). Red gate = STOP.
+  2. `node scripts/money-maps-scoring.mjs` prints `All 7 passed.` (TS scorer's vitest
+     reproduces the same 7 cases).
+  3. `npm run snapshot:prompts` → exec + relationship goldens BYTE-IDENTICAL, only a new
+     `money` golden added.
+  4. Preview-verify the surface (curl|grep og: on shareable pages). NEVER `npm run build`
+     while `next dev` runs — use tsc --noEmit.
+  5. Self-audit the still-silent seams this phase touched (below).
+Then REPORT the phase result (what shipped, gate output, the `All 7 passed.` line,
+byte-identical confirmation) before starting the next phase.
+
+━━━ HARD STOPS — halt and report; NEVER proceed on your own authority ━━━
+  • Any §4 founder decision still unpinned (V1 spine, brand/domain, roadmap call) —
+    founder-only; do NOT pick a default.
+  • `git push` · any edge-function deploy · any prod DB migration (apply_migration /
+    Supabase CLI writes straight to the LIVE engine DB — stage the file, query live
+    pg_constraint first, apply ONLY on a founder "go", commit same step, run security
+    advisors after).
+Commit freely on `staging`. Push, deploy, and migrate ONLY on an explicit founder go.
+
+━━━ HIGHEST-RISK HAND-CHECK SEAMS — a green gate does NOT prove these safe ━━━
+  1. src/app/layout.tsx inline <head> script — TEMPLATE LITERAL, allowlisted from
+     check:ternaries. Add money's data-brand/theme/favicon BY HAND; regexes need \\/;
+     don't remove Next-managed <head> nodes.
+  2. Email HTML (invite-email.ts) + OG palette (api/og/route.tsx) — allowlisted from
+     check:colors. Set the money palette by hand; proactive defaults to masterytv chrome
+     when no brand is passed.
+  3. Marketing / legal / answer-engine copy (/science, /why-ai, (legal), /privacy, tier
+     labels, tab+OG titles) — no gate reads prose; must be money-voiced.
+  4. DB backfills for pre-existing rows — check:tenancy proves the column exists, never
+     that historical rows carry the right program value. Backfill explicitly.
+  5. Prod-only config not in git — Resend from-domain + inbound, Vercel env, supabase
+     secrets, pg_cron Vault auth, DNS→Vercel, edge CORS per new origin, the live
+     memory_facts_category_check (query pg_constraint — baseline lacks it).
+  6. Webhook-shaped fns deploy --no-verify-jwt; redeploy every fn whose _shared imports
+     changed; probe after (POST-no-auth returns the fn's OWN error, not gateway JSON).
+  Also (partially gated): proactive zero-role='user' gate; briefings never reference
+  session content; names from users.name never invited_email; consent needs explicit
+  Accept + honored revocation; cross-brand reads keyed by engagement_id / conversation_id
+  / ?c= / inviter_id are MANUAL review (check:tenancy only keys on user_id).
+
+Start now with STEP ZERO.
+```
 
 ---
 
@@ -34,7 +141,7 @@
 - **Coach:** a new `_shared/packs/money-pack.ts` **over the shared kernel** — never fork safety/crisis (PC4.5). Editing the money pack must **not** change the executive or relationship coaches — prove it with **byte-identical prompt-snapshot goldens**. Add money to `resolve-program` + new cases in `check:resolve`. The first message IS the reveal off the Money Map (`MONEY_MAPS_INSTRUMENT.md` §6), not "Hi, I'm your coach."
 - **Reveal + funnel:** entry = quiz-first → results-in-chat → **clickable answer chips + free-text** (`MONEY_EXPERIENCE.md` §6). Primary surface = the **Decision Room** (§8) + the **Money OS** living doc (§9), bespoke (ADR-P03), not a re-themed default.
 - **Copy / legal:** FTC line — promise **process and felt change** (clarity, control, pricing power, "end the never-enough"), **NEVER wealth outcomes** (`MONEY_DISCOVERY.md` §6.2). **Coaching, not therapy; not financial/investment advice** — coach the psychology of a decision, refer out for finance; crisis kernel on; **anti-sycophancy is a spec'd behavior** (the coach must push back). **No bank linking in V1.**
-- **Migrations:** MCP `apply_migration` **AND commit the file**; query live `pg_constraint` **before** touching any status/category vocabulary (the 44-vs-7 history gap — live CHECK constraints are absent from the committed baseline); new SECURITY DEFINER RPCs need `REVOKE … FROM PUBLIC, anon` in the same migration; run the security advisors after DDL.
+- **Migrations — HARD STOP (§5), not a routine step:** `apply_migration`/CLI writes straight to the **live engine DB**. Stage + commit the file; query live `pg_constraint` **before** touching any status/category vocabulary (the 44-vs-7 history gap — live CHECK constraints are absent from the committed baseline); new SECURITY DEFINER RPCs need `REVOKE … FROM PUBLIC, anon` in the same migration; run the security advisors after DDL. **Apply only on an explicit founder go.**
 - **Edge deploys:** webhook-shaped fns deploy `--no-verify-jwt`; **redeploy every fn whose `_shared` imports changed** (deno-info sweep) and probe after (POST-no-auth returns the fn's own error, not gateway JSON). Crons: Vault-based auth, brand-aware pack-authored content.
 - **Proactive:** zero `role='user'` messages ⇒ **nothing proactive** (assessment-only signups get NOTHING at 8am); per-user program→brand resolution on every sender; `metadata.program` stamped on messages AND `cost_tracking` by every writer. Briefings LOW-DISCLOSURE (never reference session content; subject = greeting only).
 - **Local dev:** never `npm run build` while `next dev` runs (corrupts shared `.next`) — use `tsc --noEmit`. Verify like a crawler, not a browser (`curl … | grep og:`).
@@ -63,12 +170,18 @@ Cheap validation in parallel (beats more building): a **waitlist landing** to th
 
 ## 5. Flow & guardrails
 
-- Work on **`staging`**; `npm run gate` green + preview-verify **before** commit.
-- **Ask before pushing** (`git push`) and **before any edge deploy** (Supabase CLI — it's the live engine; founder go required).
-- Run the **§5.10 verification sweep** (dual-brand pass · crawler pass · proactive pass · consent pass · coach-context pass · webhook probes · founder walkthrough) **before any public link**.
+- Work on **`staging`**; `npm run gate` green + preview-verify **before** commit. **Commit freely on staging.**
+- **HARD STOPS — halt and report, never self-authorize** (each is irreversible or ships to live users): (1) any **unpinned §4 founder decision** — don't pick a default; (2) **`git push`**; (3) **any edge-function deploy** (Supabase CLI — the live coach engine); (4) **any prod DB migration** — 🔥 *the one gap the harden pass caught: `apply_migration` writes to the live engine DB and is NOT a routine step.* Stage the file, query live `pg_constraint` first, apply ONLY on a founder go, run the security advisors after.
+- Run the **§5.10 verification sweep** (dual-brand · crawler · proactive · consent · coach-context · webhook probes · founder walkthrough) **before any public link**.
 - **Self-anneal:** every cross-vertical bug that ships adds its prevention to `VERTICAL_PLAYBOOK.md` §5 **in the same session as the fix**.
 
 ---
 
 ## 6. Where the specs live
 `MONEY_DISCOVERY.md` (viability + regulatory) · `MONEY_VIRAL_GTM.md` (funnel/pricing/virality) · `MONEY_EXPERIENCE.md` (⭐ the experience spec) · `MONEY_MAPS_INSTRUMENT.md` (⭐ the assessment + scoring) · `MONEY_EXPERIENCE_NOTES.md` (design rationale) · `scripts/money-maps-scoring.mjs` (the scoring reference + 7 tests) · this file (the build brief).
+
+## 7. Build mode + the per-phase loop (harden pass, 2026-07-17)
+
+**Mode = a diamond, not a fan.** Governing test for every unit of work: *does it touch a shared type surface, the shared coach kernel, or the live DB schema?* **Yes → one coherent agent (Opus 4.8 Max), sequentially** — the typed-axis cascade, the Coach Pack + kernel boundary (incumbent goldens byte-identical), all live-DB migrations. **No → fan out (Ultracode)** — but only *after the trunk compiles green*, with every branch reconverging on `npm run gate`: the scoring engine/tests, item + archetype copy, card/OG, chip UI, the Decision Room + Money OS surfaces, content/config, and above all the **final adversarial §5.10 sweep** (one agent per seam = the best fan-out). Default if you want a single mode: **Opus-Max** — the live-engine + shared-types risk profile favors coherence over parallelism. Hybrid (Opus-Max trunk → Ultracode leaves + final sweep) is better.
+
+**Per phase: plan → red-team your own plan → execute → self-verify** (the loop baked into §0's prompt). The red-team checks the *thinking* (`bmad-adversarial-review` on your own plan); the five-step verify checks the *work* (gate · the 7 scoring tests · byte-identical goldens · preview · seam self-audit); the §5 stops keep the human in the loop wherever a mistake is irreversible.
