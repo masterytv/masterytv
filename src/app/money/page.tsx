@@ -16,10 +16,10 @@ import MoneyLanding from "./MoneyLanding";
  * the sitemap + robots isProductionHost) at go-public.
  */
 export const metadata: Metadata = brandPageMetadata("money", {
-  title: "Money Maps — The psychology under your money decisions",
+  title: "Money Maps — You don't have a money problem. You have a pattern.",
   description:
-    "A coach for what's underneath your earning, spending, and pricing — the beliefs, fears, and patterns that decide what you do with money before you know you've decided. Psychology, not your bank account.",
-  ogTitle: "Money Maps — your bank account is a symptom, not the problem",
+    "Sixteen questions name the pattern under how you earn, price, and risk — then a coach works on the cause, not the symptoms. Psychology, not your bank account. No budgets, no bank linking, ever.",
+  ogTitle: "You don't have a money problem. You have a money pattern.",
   noindex: true,
 });
 

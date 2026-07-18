@@ -33,11 +33,13 @@ const BRAND_ICONS: Record<BrandId, Metadata["icons"]> = {
     apple: "/relatti/apple-touch-icon.png",
   },
   // Money-specific paths (NOT masterytv's — reusing those would leak the wrong
-  // favicon onto money link previews). ASSET TODO (§5.1): generate the money
-  // favicon set under /public/money/. Money has no live public surface yet, so
-  // a not-yet-present icon is inert until the brand assets + surfaces leaf lands.
+  // favicon onto money link previews). Assets under /public/money/ (emerald
+  // compass tile, generated from icon.svg); mirrors the Relatti icon shape.
   money: {
-    icon: "/money/favicon.png",
+    icon: [
+      { url: "/money/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/money/favicon-16.png", sizes: "16x16", type: "image/png" },
+    ],
     apple: "/money/apple-touch-icon.png",
   },
 };

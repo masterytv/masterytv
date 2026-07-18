@@ -90,8 +90,7 @@ export default async function AssessPage() {
 
   // 3. Render engine (either resuming or fresh) with the program-aware battery
   //    (`program` resolved above, where the scoped reads need it)
-  const { instruments, enableAddons, estimatedMinutes, relationshipMode } =
-    getBattery(program);
+  const { instruments, enableAddons, estimatedMinutes } = getBattery(program);
 
   // Invitees skip the "invite someone" screen (they're the invited partner).
   const invitee = await isUserInvitee(supabase, user.id, user.email).catch(() => false);
@@ -107,7 +106,6 @@ export default async function AssessPage() {
       program={program}
       enableAddons={enableAddons}
       estimatedMinutes={estimatedMinutes}
-      relationshipMode={relationshipMode}
       isInvitee={invitee}
     />
   );

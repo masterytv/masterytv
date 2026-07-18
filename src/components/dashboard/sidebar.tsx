@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment } from "react";
+import { Fragment, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import CoachConversations from "@/components/dashboard/CoachConversations";
@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { useUser } from "@/hooks/useUser";
 import { useBrandModules } from "@/hooks/useBrandModules";
 import { useBrand } from "@/hooks/useBrand";
+import { byBrand } from "@/lib/platform/brand";
 import type { ModuleId } from "@/lib/platform/modules";
 import { RelattiMark } from "@/components/relatti/RelattiMark";
 import {
@@ -22,6 +23,7 @@ import {
   Share2,
   X,
   Fingerprint,
+  Compass,
   Lock,
   ShieldCheck,
   BookOpen,
@@ -75,7 +77,28 @@ export function Sidebar({ open, onClose, assessmentCompleted = false, reportId =
   const enabledModules = useBrandModules();
   const brand = useBrand();
   const isRelatti = brand.id === "relatti";
-  const brandLabel = isRelatti ? "Relatti" : "Mastery";
+
+  // Brand lockup (mark + name) — exhaustive per BrandId so a new vertical must
+  // declare its own, instead of a binary handing money the MasteryTV fingerprint
+  // + "Mastery". Money = the Compass mark (BRAND §14's endorsed abstract pick,
+  // matching the landing + card + OG), tinted via --color-primary (emerald).
+  const lockup = byBrand<{ label: string; mark: ReactNode }>(
+    {
+      masterytv: {
+        label: "Mastery",
+        mark: <Fingerprint className="h-4 w-4" style={{ color: "var(--color-primary)" }} />,
+      },
+      relatti: {
+        label: "Relatti",
+        mark: <RelattiMark className="h-4 w-4" />,
+      },
+      money: {
+        label: "Money Maps",
+        mark: <Compass className="h-4 w-4" style={{ color: "var(--color-primary)" }} />,
+      },
+    },
+    brand.id,
+  );
 
   // Map decoded_tier to display label. Tier names are MasteryTV product names —
   // on Relatti they'd read as another brand's plan (brand-isolation invariant),
@@ -119,14 +142,10 @@ export function Sidebar({ open, onClose, assessmentCompleted = false, reportId =
               className="flex h-8 w-8 items-center justify-center rounded-lg"
               style={{ background: "color-mix(in oklch, var(--color-primary-container) 14%, transparent)" }}
             >
-              {isRelatti ? (
-                <RelattiMark className="h-4 w-4" />
-              ) : (
-                <Fingerprint className="h-4 w-4" style={{ color: "var(--color-primary)" }} />
-              )}
+              {lockup.mark}
             </div>
             <span className="text-lg font-semibold tracking-tight text-text-primary">
-              {brandLabel}
+              {lockup.label}
             </span>
           </Link>
           <button
