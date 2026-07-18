@@ -18,6 +18,7 @@
 import { describe, it, expect } from "vitest";
 import {
   scoreMoneyMaps,
+  toStoredMoneyMap,
   archetypeForMaps,
   getMoneyArchetype,
   MONEY_ARCHETYPES,
@@ -97,6 +98,47 @@ describe("the 7 spec-lock boundary cases (money-maps-scoring.mjs)", () => {
     expect(r.archetype).toBe("The Relentless Builder");
     expect(r.dominant).toBe("DRIVE");
     expect(r.secondary).toBe("GUARD");
+  });
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+// toStoredMoneyMap — the persisted bundle (WRITE-PATH contract, T2)
+//
+// toStoredMoneyMap() produces the exact object generateReport writes to
+// assessment_reports.sections.money_map, and the money coach reveals off. The
+// expected literal below is a verbatim copy of MONEY_MAP_BUNDLE in
+// scripts/coach-lab/prompt-fixtures.ts — the fixture the `money` prompt golden
+// renders Layer 4.5 from. Binding them here means the write path and the read
+// golden can't silently drift: boundary case 1's responses must score to the
+// exact bundle the golden already locks. (Two trees, one shape, hand-lockstep —
+// this test is the Next-side net, snapshot:prompts is the edge-side net.)
+// ═════════════════════════════════════════════════════════════════════════════
+describe("toStoredMoneyMap — persisted bundle (write-path ↔ money golden)", () => {
+  // Boundary case 1's response vector (verbatim from the block above).
+  const CASE_1 = [5, 4, 4, 6, 5, 4, 2, 3, 2, 3, 4, 3, 3, 5, 3, 5];
+
+  it("boundary case 1 scores to the exact MONEY_MAP_BUNDLE the golden reads", () => {
+    const stored = toStoredMoneyMap(scoreMoneyMaps(answers(CASE_1)));
+    expect(stored).toEqual({
+      archetype: "The Relentless Builder",
+      dominant: "DRIVE",
+      secondary: "GUARD",
+      edge: "high-output founder, ambition with brakes",
+      leak: "the moving goalpost; can't enjoy the climb",
+      dims: { GUARD: 4.33, DRIVE: 5, MIRROR: 2.33, SHADOW: 3.33, LEAP: 4 },
+      overclocked: ["GUARD", "DRIVE"],
+      leap: { score: 4, band: "High", tilt: "fear-of-success", failFacet: 3, succFacet: 5 },
+    });
+  });
+
+  it("attaches edge + leak straight from the canonical archetype table, scorer output untouched", () => {
+    const score = scoreMoneyMaps(answers(CASE_1));
+    const arch = getMoneyArchetype(score.archetype);
+    const stored = toStoredMoneyMap(score);
+    expect(stored.edge).toBe(arch.edge);
+    expect(stored.leak).toBe(arch.leak);
+    // Every scorer field passes through unchanged; only edge/leak are added.
+    expect(stored).toMatchObject(score);
   });
 });
 

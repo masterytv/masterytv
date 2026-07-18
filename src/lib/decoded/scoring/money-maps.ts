@@ -113,6 +113,25 @@ export interface MoneyMapsScore {
   leap: MoneyLeapResult;
 }
 
+/**
+ * The PERSISTED Money Maps™ bundle: the scorer output PLUS the archetype's
+ * edge/leak copy. This is exactly what the money WRITE path stores at
+ * `assessment_reports.sections.money_map` (T2 read contract) and what the money
+ * coach reads back to open its reveal.
+ *
+ * EDGE TWIN — supabase/functions/_shared/money-map-profile.ts `StoredMoneyMap`
+ * mirrors this shape with looser (string) types, because the Deno edge runtime
+ * can't import this module. Keep the two in lockstep: `npm run snapshot:prompts`
+ * (which serializes this to JSON and renders Layer 4.5 off it) is the only gate
+ * that proves they still agree.
+ */
+export interface StoredMoneyMap extends MoneyMapsScore {
+  /** The strength dialed right (from MONEY_ARCHETYPES via getMoneyArchetype). */
+  edge: string;
+  /** The governor's cost dialed too high (from MONEY_ARCHETYPES via getMoneyArchetype). */
+  leak: string;
+}
+
 // ---------------------------------------------------------------------------
 // Scoring constants (spec-locked — do not tune without updating the tests)
 // ---------------------------------------------------------------------------
@@ -261,4 +280,17 @@ export function scoreMoneyMaps(responses: Record<string, number>): MoneyMapsScor
       succFacet: r2(succFacet),
     },
   };
+}
+
+/**
+ * Assemble the PERSISTED bundle from a scored result: attach the archetype's
+ * edge/leak (single source of truth: MONEY_ARCHETYPES, via getMoneyArchetype).
+ * This is the exact object the money WRITE path stores at
+ * `assessment_reports.sections.money_map`; the money golden fixture
+ * (scripts/coach-lab/prompt-fixtures.ts `MONEY_MAP_BUNDLE`) is a frozen copy of
+ * one such bundle — keep them in lockstep.
+ */
+export function toStoredMoneyMap(score: MoneyMapsScore): StoredMoneyMap {
+  const { edge, leak } = getMoneyArchetype(score.archetype);
+  return { ...score, edge, leak };
 }
