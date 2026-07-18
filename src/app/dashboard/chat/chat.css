@@ -45,6 +45,19 @@
   --chat-accent-glow: rgba(190, 18, 60, 0.18);
 }
 
+/* Money — emerald in both themes. Deep enough that white bubble text clears WCAG
+   AA (the money primary is a lighter on-dark emerald, too pale to sit white on). */
+[data-brand="money"] .chat-window {
+  --chat-accent-from: #059669;
+  --chat-accent-to: #047857;
+  --chat-accent-glow: rgba(5, 150, 105, 0.30);
+}
+[data-brand="money"][data-theme="light"] .chat-window {
+  --chat-accent-from: #065f46;
+  --chat-accent-to: #047857;
+  --chat-accent-glow: rgba(4, 120, 87, 0.18);
+}
+
 .chat-messages {
   flex: 1;
   overflow-y: auto;

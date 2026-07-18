@@ -85,15 +85,20 @@ function ChatPageInner() {
     let cancelled = false;
     (async () => {
       const supabase = createClient();
+      // The dyad (couples) concept is relationship-only — money and executive are
+      // solo. Gating the load to Relatti keeps the "Couples coach · with …" badge
+      // off the money/executive chat header (and skips a wasted query).
+      const isRelatti = resolveBrandClient().id === "relatti";
       let d: DashboardDyad | null = null;
-      try {
-        d = await getActiveDyad(supabase, user.id);
-      } catch {
-        /* non-fatal */
+      if (isRelatti) {
+        try {
+          d = await getActiveDyad(supabase, user.id);
+        } catch {
+          /* non-fatal */
+        }
       }
       if (cancelled) return;
       setDyad(d);
-      const isRelatti = resolveBrandClient().id === "relatti";
       setEngagementId(isRelatti && d ? d.engagementId : null);
     })();
     return () => {
