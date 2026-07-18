@@ -179,6 +179,23 @@ const CASES: Case[] = [
     expect: { ok: true, program: "relationship" },
   },
   {
+    // The dual-brand FIX (money launch): the SAME spine-known dyad member, but
+    // now genuinely assessed in money (a real assessment_reports row, program
+    // 'money') — the un-forgeable proof the forgery case above lacks. Their
+    // 'money' hint from moneymaps.masterytv.com is now honored, so money turns
+    // are coached by moneyPack and land in the money thread list. Identical
+    // member + hint to the case above; the ONLY difference is the real report,
+    // which is exactly what separates a legitimate dual-brand user from a forger.
+    name: "dual-brand dyad member + 'money' hint + a real money report → money",
+    clientProgram: "money",
+    engagementId: null,
+    tables: {
+      participant: [DYAD_MEMBERSHIP],
+      assessment_reports: [{ user_id: USER, program: "money" }],
+    },
+    expect: { ok: true, program: "money" },
+  },
+  {
     name: "masterytv signup_brand outranks a stale invite row → executive",
     clientProgram: null,
     engagementId: null,

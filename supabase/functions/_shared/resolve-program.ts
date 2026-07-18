@@ -30,6 +30,30 @@ type SupabaseClient = ReturnType<typeof createSupabaseClient>;
 // silently select the executive persona for a spine-known Relatti user.
 export const KNOWN_PROGRAM_HINTS = new Set(["relationship", "general", "money"]);
 
+/**
+ * True when the user holds a completed report in `program` — an un-forgeable
+ * signal that they genuinely assessed in that vertical (assessment_reports
+ * carries the program stamp, written only by the report generator). Head/count
+ * only, scoped to the caller's OWN id + the hinted program, so a forger cannot
+ * borrow another user's report and the count can never cross verticals.
+ *
+ * Used solely to gate the dual-brand cross-program-hint branch in resolveProgram
+ * step 2 — behind that condition, so it never fires on the normal single-vertical
+ * path (or the hint-less email/Telegram path).
+ */
+async function hasReportInProgram(
+  supabase: SupabaseClient,
+  userId: string,
+  program: string,
+): Promise<boolean> {
+  const { count } = await supabase
+    .from("assessment_reports")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("program", program);
+  return (count ?? 0) > 0;
+}
+
 export async function resolveProgram(
   supabase: SupabaseClient,
   userId: string,
@@ -73,7 +97,26 @@ export async function resolveProgram(
   if (memberEngagement) {
     // Every engagement today is a relationship dyad; default that way if the
     // nested join comes back thin.
-    return { ok: true, program: memberEngagement.program?.slug ?? "relationship" };
+    const memberProgram = memberEngagement.program?.slug ?? "relationship";
+    // Dual-brand exception (money launch). A spine-known member (e.g. a Relatti
+    // dyad member) can ALSO legitimately live in another vertical: on
+    // moneymaps.masterytv.com the client sends program:'money'. Honor a
+    // recognized cross-program hint ONLY when the user holds a completed report
+    // in it — proof they genuinely assessed there, which a request body cannot
+    // forge. This keeps the PC4.4/T3 anti-forgery property intact: a forger with
+    // no such report still can't flip a spine-known member off their pack (the
+    // gate fails and we fall through to memberProgram). The gate sits behind the
+    // cross-program-hint condition, so the extra count query never fires for a
+    // normal same-vertical member or a hint-less (email/Telegram) call.
+    const hint = (clientProgram ?? "").toLowerCase();
+    if (
+      hint !== memberProgram &&
+      KNOWN_PROGRAM_HINTS.has(hint) &&
+      (await hasReportInProgram(supabase, userId, hint))
+    ) {
+      return { ok: true, program: hint };
+    }
+    return { ok: true, program: memberProgram };
   }
 
   // 3. A recognized client hint is honored when the spine is silent.
