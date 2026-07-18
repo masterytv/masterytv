@@ -96,7 +96,7 @@ export default function RootLayout({
                   // whole script 06-22→07-02. Money favicon swap is skipped (money
                   // favicon assets are a TODO); only data-brand is set, which is
                   // all the emerald palette needs.
-                  var moneyHost = (host === 'moneymaps.masterytv.com');
+                  var moneyHost = (host === 'moneymaps.masterytv.com' || host === 'staging.moneymaps.masterytv.com');
                   var moneyPath = (path === '/money' || path.indexOf('/money/') === 0);
                   var hostBrand = (relattiHost || relattiPath) ? 'relatti' : 'masterytv';
                   var brand = (urlBrand === 'relatti' || urlBrand === 'masterytv' || urlBrand === 'money') ? urlBrand

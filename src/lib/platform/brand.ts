@@ -88,14 +88,16 @@ export const BRANDS: Record<BrandId, Brand> = {
   // not "Momatti". themeId "money" registered here; its [data-brand="money"]
   // globals.css palette is a later leaf (no money surface renders yet, so the
   // brand-tokens gate — which only checks brands WITH a block — stays green).
-  // Staging subdomain = infra TODO (§5.9); dev access via ?brand=money on localhost.
+  // Staging host staging.moneymaps.masterytv.com registered 2026-07-18 (mirrors
+  // relatti's staging.relatti.com); DNS→Vercel + the Vercel domain assignment
+  // remain infra steps (§5.9). Dev access via ?brand=money on localhost.
   money: {
     id: "money",
     name: "Money Maps",
     workspaceSlug: "masterytv",
     programSlug: "money",
     themeId: "money",
-    domains: ["moneymaps.masterytv.com"],
+    domains: ["moneymaps.masterytv.com", "staging.moneymaps.masterytv.com"],
     familyName: "MasteryTV",
   },
 };
