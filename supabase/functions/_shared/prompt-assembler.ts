@@ -310,7 +310,20 @@ export async function assemblePrompt(
 
   // ── Build Decoded profile layer (Layer 4.5 — S0.4), gated by the coach axis ──
   let decodedLayer = "";
-  if (coachShareLevel !== "none" && decodedScores.length > 0 && decodedReport) {
+  if (coachShareLevel !== "none" && decodedReport?.sections?.["money_map"]) {
+    // A money assessment's report carries a Money Map bundle under
+    // sections.money_map — render THAT profile (Layer 4.5), not the Big-Five
+    // one. DATA-DRIVEN, not a `program` check: the assembler stays vertical-
+    // blind (see the header note), and a money report can never fall through to
+    // the Big-Five renderer even if it also carries score rows. Renders "" until
+    // the money write path stores a bundle, so there's no wrong-vertical bleed. (T2)
+    try {
+      const { buildMoneyMapProfileLayer } = await import("./money-map-profile.ts");
+      decodedLayer = buildMoneyMapProfileLayer(decodedReport);
+    } catch (e) {
+      console.error("[prompt-assembler] Money Map profile build failed:", (e as Error).message);
+    }
+  } else if (coachShareLevel !== "none" && decodedScores.length > 0 && decodedReport) {
     try {
       // Dynamic import to avoid loading Decoded code when not needed
       // These modules live in _shared/decoded/ alongside the prompt assembler

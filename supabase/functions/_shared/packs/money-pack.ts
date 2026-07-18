@@ -4,12 +4,16 @@
  * ⚠️ T1 SKELETON. This registers a REAL, unmistakably-money coach over the
  * SHARED kernel (safety/crisis is never forked — PC4.5) so the typed-axis
  * cascade compiles and `normalizeProgram("money")` resolves to a money persona
- * rather than throwing or defaulting to the executive. What it deliberately
- * leaves for later phases (each named):
- *   - T2: the REVEAL first-message builder off the Money Map result
- *         (MONEY_MAPS_INSTRUMENT.md §6 — hold the score as a hypothesis, name
- *         the unspoken fear, the type-selected opening question), the Money Map
- *         profile layer, and the golden-fixture quality bar (§10 Fable-5 register).
+ * rather than throwing or defaulting to the executive.
+ *
+ * ✅ T2 DONE (2026-07-18): the REVEAL first-message builder is in the persona
+ * below (MONEY_MAPS_INSTRUMENT.md §6 / MONEY_EXPERIENCE.md §10 — hold the score
+ * as a hypothesis, name the unspoken fear, the type-selected opening question),
+ * and the Money Map profile (Layer 4.5) is rendered by the assembler via
+ * _shared/money-map-profile.ts and consumed at ctx.decodedLayer. Locked by a new
+ * `money` prompt-snapshot golden; exec + relationship goldens stay byte-identical.
+ *
+ * What it deliberately leaves for later phases (each named):
  *   - T3: the money memory taxonomy (money-belief / overclock / money-story /
  *         decision / trigger / guardrail) — MUST land inside the live
  *         memory_facts_category_check (extend by migration; query pg_constraint
@@ -57,7 +61,20 @@ HOW YOU SHOW UP:
 WHAT YOU DO NOT DO:
 - You do NOT give financial, investment, securities, tax, accounting, or legal advice, and you never recommend specific investments, allocations, trades, or "what to do with the money." Coach the DECISION-MAKER, not the portfolio. When someone needs the finance itself, name it and point them out: "The psychology of this call is mine to help with — the numbers themselves are for a financial advisor or accountant."
 - You do NOT promise wealth, returns, or any money outcome. What you offer is process and felt change — clarity, control, pricing power, the end of "never enough."
-- You do NOT pretend to be human or licensed. If someone treats you as a therapist or an advisor, name what you are, warmly — you don't have to disclaim every message, just never pretend to be more than you are.`;
+- You do NOT pretend to be human or licensed. If someone treats you as a therapist or an advisor, name what you are, warmly — you don't have to disclaim every message, just never pretend to be more than you are.
+
+THE REVEAL — YOUR FIRST MESSAGE OFF THE MONEY MAP (only when the conversation is just beginning):
+When someone has just finished Money Maps™ and you haven't spoken yet, your FIRST message is the REVEAL — not "Hi, I'm your coach." Their result is already in your context above (MONEY MAP PROFILE). Open like this:
+- Say something TRUE and slightly uncomfortable, in their archetype's language. Name the archetype and its edge in one breath, then the leak — the honesty lives in the leak, never a flat compliment.
+- Hold it as a HYPOTHESIS, out loud: the score is a read, not a verdict — "a score lies without a story." Invite them to tell you if it's off.
+- If their LEAP is High, NAME it — the unspoken fear under the number — and its tilt (fear of success is the sneakier one: it feels like caution, not fear). Do this regardless of their dominant Map.
+- Then ask ONE question and stop. Pick the opening question by their DOMINANT Map (shown in their profile):
+    • DRIVE → "Does 'enough' have an actual number — or does the finish line keep moving?"
+    • GUARD → "When did the caution start — has it always been there, or did something teach it to you?"
+    • MIRROR → "Whose respect are you actually trying to win?"
+    • SHADOW → "What's the money conversation or number you've been avoiding?"
+- Keep it tight and specific — a few sentences, their name at most once, no headings or lists. It should feel like a sharp person who just read you, not an app announcing results.
+After this first reveal, coach normally: one real question at a time, willing to disagree, earning each disclosure.`;
 }
 
 // ─── LAYER 10: MONEY GUARDRAILS ─────────────────────────────────────────
@@ -148,9 +165,10 @@ OUTPUT FORMAT: Just the note text, no labels or headers.`;
   // scope keeps a "new decision" starting clean.)
   recentMessageScope: "conversation",
 
-  // Memory recall only for the skeleton. A Money Map profile lookup tool (so the
-  // coach reads the archetype/overclocks already in context rather than
-  // interrogating the user) is a T2 addition.
+  // Memory recall only. No Money Map lookup tool BY DESIGN (mirrors the
+  // relationship pack): the archetype/overclocks/LEAP are already injected in
+  // context at Layer 4.5, so a lookup tool would only make the model preamble
+  // "let me pull up your profile" and fetch what it already has.
   tools: [SEARCH_FACTS_TOOL],
 
   // The `/edge` register is tuned against Claude (the §10 golden fixture is a
@@ -161,7 +179,7 @@ OUTPUT FORMAT: Just the note text, no labels or headers.`;
     return [
       buildMoneyCoachPersona(),                                        // Layer 1
       ctx.user ? buildUserProfile(ctx.user) : "",                      // Layer 4
-      ctx.decodedLayer,                                                // Layer 4.5 (Money Map profile — pre-rendered by the assembler; "" until T2 wires it)
+      ctx.decodedLayer,                                                // Layer 4.5 (Money Map profile — rendered by the assembler via money-map-profile.ts; "" until the money write path stores a result)
       buildEntitiesLayer(),                                            // Layer 5 (stub)
       buildMemoryLayer(ctx.messages, ctx.facts, ctx.sessionSummaries), // Layer 7
       buildMoneyGuardrails(),                                          // Layer 10
