@@ -117,7 +117,7 @@ Each rung is a valid stopping point that already delivered value, so the next ru
 
 ## 8. The Decision Room (the hero use case — recommended V1 spine)
 
-> ⚠️ **Founder confirm:** I'm speccing the **Decision Room** as the V1 spine over a daily-question habit loop, per the recommendation in the notes. Overwrite if you want the daily loop to lead.
+> ✅ **CONFIRMED (founder, 2026-07-17): the Decision Room IS the V1 spine.** The daily/proactive layer is the supporting rhythm, not the headline.
 
 Everyone builds these products around a morning-question loop. But what hooked the founder was a **real decision** ("build again or get a job?"). Entrepreneurs face money-psychology decisions constantly — raise or bootstrap, take the deal, drop the price, hire or wait, quit. The Decision Room is a "think this through with me" mode where the user brings a live decision and the coach applies their whole Money Map profile to it. It is **higher-value, more defensible, more viral** ("I make my big calls with this thing"), and the truest expression of the edge. The daily/proactive layer still exists — but as the *supporting* rhythm, not the headline.
 
@@ -154,7 +154,7 @@ Retention proof = the **quarterly Money Maps re-score delta** (overclocks coming
 ## 12. Brand, domain, copy register
 
 - **Product/mechanic name:** **Money Maps™** (the assessment + the archetypes). Trademark it; never market under "Money Scripts®."
-- **Brand/domain (founder options, 2026-07-17):** **Momatti.com** ("more money," Italian accent, ~$25/yr) — note the **brand-family resonance with Relatti** (the `-atti` sound; a deliberate house style as the platform grows). Zero-cost interim to start building: **`moneymaps.masterytv.com`.** *Recommendation:* grab **Momatti.com** now (cheap, reversible, protects the name) and build on the subdomain until launch; confirm final brand at first public link. Marked as a confirmable founder decision — not blocking.
+- **Brand/domain (founder decision, 2026-07-17):** **build on `moneymaps.masterytv.com` for now.** The consumer brand name + public domain are **still being decided** (Momatti.com is the live candidate — `-atti` resonance with Relatti as a house style). The product/mechanic name **Money Maps™** is locked regardless. Revisit the public brand/domain before the first public link.
 - **Copy register:** confident, specific, a little irreverent, science-first (the antidote to the manifestation feed). FTC line held everywhere: promise *process and felt change* (clarity, control, pricing power, "end the never-enough"), **never wealth outcomes.**
 
 ---
@@ -179,10 +179,10 @@ Retention proof = the **quarterly Money Maps re-score delta** (overclocks coming
 
 ## 15. Open founder questions (before/into build)
 
-1. **V1 spine:** Decision Room (my recommendation, §8) vs. daily-loop lead — confirm.
-2. **Brand/domain:** grab Momatti.com now vs. subdomain-only vs. decide later (§12) — recommendation is grab-now-build-on-subdomain.
+1. ~~**V1 spine**~~ — ✅ **DECIDED 2026-07-17: the Decision Room** (§8).
+2. **Brand/domain:** ✅ **build on `moneymaps.masterytv.com` for now (2026-07-17)**; public brand name + domain still being decided (Momatti candidate). Money Maps™ mechanic name locked.
 3. ~~**Money Maps dimensions**~~ — ✅ **DECIDED 2026-07-17: 4 core Maps + THE LEAP (5 total).** Instrument built in [MONEY_MAPS_INSTRUMENT.md](MONEY_MAPS_INSTRUMENT.md).
-4. **Gate 0 formalization:** money is now clearly the active vertical; still owed is the `STRATEGY.md` roadmap amendment — does career **defer to Stage 3**, run **parallel later**, or retire? (A sequencing call only you can make; I've left STRATEGY.md untouched pending it.)
+4. ~~**Gate 0 formalization**~~ — ✅ **DECIDED 2026-07-17: career DEFERRED; money is Stage 2.** `STRATEGY.md` §1 amended.
 5. **Audience specifics** (size/channels) — sizes the founding cohort + the manual-MVP recruit.
 
 ## 16. Doc map

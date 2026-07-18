@@ -159,12 +159,12 @@ Cheap validation in parallel (beats more building): a **waitlist landing** to th
 
 ---
 
-## 4. Founder decisions to pin BEFORE building (`MONEY_EXPERIENCE.md` §15)
+## 4. Founder decisions — ✅ PINNED 2026-07-17 (`MONEY_EXPERIENCE.md` §15)
 
-1. **V1 spine:** Decision Room (recommended) vs. daily-loop lead.
-2. **Brand/domain:** grab **Momatti.com** now vs. build on `moneymaps.masterytv.com` interim vs. decide later.
-3. **`STRATEGY.md` roadmap:** money is the active vertical — does **career defer to Stage 3, run parallel, or retire?** (Only the founder makes this; `STRATEGY.md` was left untouched pending it.)
-4. (Context) audience size/channels — sizes the founding cohort + the manual-MVP recruit.
+1. **V1 spine:** ✅ **the Decision Room** (daily/proactive layer supports, doesn't lead).
+2. **Brand/domain:** ✅ **build on `moneymaps.masterytv.com` for now**; public brand name + domain still TBD (Momatti candidate). **Money Maps™** mechanic name is locked.
+3. **Roadmap:** ✅ **career DEFERRED; money is Stage 2** — `STRATEGY.md` §1 amended.
+4. *(Still open, non-blocking)* audience size/channels — GTM/founding-cohort sizing only; founder to provide when convenient.
 
 ---
 
