@@ -91,10 +91,18 @@ export default function RootLayout({
                   // emitted regex a SyntaxError that killed this whole script
                   // (brand AND theme resolution) from 2026-06-22 to 2026-07-02.
                   var relattiPath = /^\\/(relatti|couples|engaged|premarital|challenge|samefight)(\\/|$)/.test(path);
+                  // Money uses plain string checks (no regex) — deliberately
+                  // avoiding the "\\/" template-literal footgun that killed this
+                  // whole script 06-22→07-02. Money favicon swap is skipped (money
+                  // favicon assets are a TODO); only data-brand is set, which is
+                  // all the emerald palette needs.
+                  var moneyHost = (host === 'moneymaps.masterytv.com');
+                  var moneyPath = (path === '/money' || path.indexOf('/money/') === 0);
                   var hostBrand = (relattiHost || relattiPath) ? 'relatti' : 'masterytv';
-                  var brand = (urlBrand === 'relatti' || urlBrand === 'masterytv') ? urlBrand
+                  var brand = (urlBrand === 'relatti' || urlBrand === 'masterytv' || urlBrand === 'money') ? urlBrand
                     : (relattiHost || relattiPath) ? 'relatti'
-                    : (cookieBrand === 'relatti' || cookieBrand === 'masterytv') ? cookieBrand
+                    : (moneyHost || moneyPath) ? 'money'
+                    : (cookieBrand === 'relatti' || cookieBrand === 'masterytv' || cookieBrand === 'money') ? cookieBrand
                     : 'masterytv';
                   document.documentElement.setAttribute('data-brand', brand);
                   // Brand-aware favicon/touch icon, same FOUC-free client-side

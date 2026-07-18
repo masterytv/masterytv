@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { resolveBrandId, isBrandId, isPreviewHost } from "@/lib/platform/brand";
+import { resolveBrandId, isBrandId, isPreviewHost, type BrandId } from "@/lib/platform/brand";
 import { modulesForBrand, moduleForPath } from "@/lib/platform/modules";
 
 /**
@@ -115,16 +115,24 @@ export async function updateSession(request: NextRequest) {
     });
   }
 
-  // Root → the Relatti landing whenever the effective brand is Relatti — by
-  // host (relatti.com) in prod, or by ?brand= / cookie preview on localhost +
-  // staging. Uses the same resolved brandId as theming so the landing, surface,
-  // and theme stay consistent. Rewrite (not redirect): the URL stays "/".
-  if (pathname === "/" && brandId === "relatti") {
+  // Root → the brand's landing whenever the effective brand has one (Relatti,
+  // Money) — resolved by host in prod, or by ?brand= / cookie preview on
+  // localhost + staging. Uses the same resolved brandId as theming so the
+  // landing, surface, and theme stay consistent. Rewrite (not redirect): the URL
+  // stays "/". Data-driven (not a per-brand `if`) so a new vertical's root
+  // landing is one map entry, not another silent fall-through to the MasteryTV
+  // root (the plain-`=== "relatti"` trap the money red-team flagged).
+  const ROOT_LANDING: Partial<Record<BrandId, string>> = {
+    relatti: "/relatti",
+    money: "/money",
+  };
+  const landingPath = ROOT_LANDING[brandId];
+  if (pathname === "/" && landingPath) {
     const url = request.nextUrl.clone();
-    url.pathname = "/relatti";
-    // Carry over cookies set on supabaseResponse — returning a bare rewrite
-    // used to DROP the refreshed auth session cookies and the persisted
-    // ?brand= cookie on exactly this (Relatti home) path.
+    url.pathname = landingPath;
+    // Carry over cookies set on supabaseResponse — returning a bare rewrite used
+    // to DROP the refreshed auth session cookies and the persisted ?brand=
+    // cookie on exactly this (brand home) path.
     const rewritten = NextResponse.rewrite(url);
     for (const c of supabaseResponse.cookies.getAll()) rewritten.cookies.set(c);
     rewritten.headers.set("x-brand", brandId);
