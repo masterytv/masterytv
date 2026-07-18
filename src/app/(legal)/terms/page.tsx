@@ -5,6 +5,7 @@ import { byBrand } from "@/lib/platform/brand";
 import { LEGAL_CONTACT } from "@/lib/platform/legal";
 import MasteryTerms from "../_content/MasteryTerms";
 import RelattiTerms from "../_content/RelattiTerms";
+import MoneyTerms from "../_content/MoneyTerms";
 
 interface PageProps {
   searchParams: Promise<{ brand?: string }>;
@@ -28,5 +29,5 @@ export async function generateMetadata({
 
 export default async function TermsPage({ searchParams }: PageProps) {
   const brand = await getBrandFromRequest((await searchParams).brand);
-  return byBrand({ relatti: <RelattiTerms />, masterytv: <MasteryTerms /> }, brand.id);
+  return byBrand({ relatti: <RelattiTerms />, masterytv: <MasteryTerms />, money: <MoneyTerms /> }, brand.id);
 }

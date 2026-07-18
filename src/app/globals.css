@@ -176,6 +176,77 @@
   --cta-to: #be123c;
 }
 
+/* Money (Money Maps) — v0 emerald palette (hue ~162), flagged for a money brand
+   spec in BRAND.md like Relatti's. Expressed entirely in OKLCH ON PURPOSE: the
+   check-colors gate derives its ban-set from #hex / rgb() token VALUES, so OKLCH
+   adds nothing to ban and can't collide with existing success-greens in
+   components. Declares the FULL identity set (brand-tokens gate); the
+   --relatti-mark-* pair is gate-coverage only (money renders a Lucide Compass,
+   not the mark tokens) — emerald so nothing silently falls back to Relatti rose. */
+[data-brand="money"] {
+  --color-brand-50: oklch(0.95 0.03 162);
+  --color-brand-100: oklch(0.90 0.06 162);
+  --color-brand-200: oklch(0.83 0.10 162);
+  --color-brand-300: oklch(0.74 0.13 162);
+  --color-brand-400: oklch(0.66 0.15 162);
+  --color-brand-500: oklch(0.58 0.14 162);
+  --color-brand-600: oklch(0.50 0.12 162);
+  --color-brand-700: oklch(0.42 0.10 162);
+  --color-brand-800: oklch(0.34 0.08 162);
+  --color-brand-900: oklch(0.27 0.06 162);
+  --color-brand-950: oklch(0.19 0.04 162);
+
+  --color-primary: oklch(0.82 0.14 162);
+  --color-primary-container: oklch(0.62 0.14 162);
+  --color-primary-deep: oklch(0.82 0.14 162);
+  --color-primary-darker: oklch(0.50 0.12 162);
+  --color-primary-dim: oklch(0.62 0.14 162);
+
+  --color-info: oklch(0.82 0.14 162);
+  --shadow-glow: 0 0 20px oklch(0.62 0.14 162 / 0.15);
+
+  --primary-glow-ring: oklch(0.62 0.14 162 / 0.12);
+  --primary-tint-10: oklch(0.62 0.14 162 / 0.10);
+  --primary-tint-20: oklch(0.62 0.14 162 / 0.20);
+
+  --accent-primary: oklch(0.82 0.14 162);
+  --accent-primary-bg: oklch(0.62 0.14 162 / 0.10);
+  --accent-primary-bg-hover: oklch(0.62 0.14 162 / 0.15);
+  --accent-primary-ring: oklch(0.62 0.14 162 / 0.12);
+  --cta-from: oklch(0.82 0.14 162);
+  --cta-to: oklch(0.62 0.14 162);
+
+  --relatti-mark-left: oklch(0.82 0.14 162);
+  --relatti-mark-right: oklch(0.62 0.14 162);
+}
+
+/* Light-mode money primaries — darkened emerald for WCAG contrast on light
+   surfaces (same reason as the Relatti light block: the later [data-theme=light]
+   block would otherwise win at equal specificity and paint money indigo). */
+[data-brand="money"][data-theme="light"] {
+  --relatti-mark-left: oklch(0.55 0.13 162);
+  --relatti-mark-right: oklch(0.45 0.11 162);
+
+  --color-primary: oklch(0.52 0.12 162);
+  --color-primary-container: oklch(0.58 0.13 162);
+  --color-primary-deep: oklch(0.45 0.11 162);
+  --color-primary-darker: oklch(0.40 0.10 162);
+  --color-primary-dim: oklch(0.58 0.13 162);
+  --color-info: oklch(0.52 0.12 162);
+
+  --accent-primary: oklch(0.52 0.12 162);
+  --accent-primary-bg: oklch(0.52 0.12 162 / 0.06);
+  --accent-primary-bg-hover: oklch(0.52 0.12 162 / 0.10);
+  --accent-primary-ring: oklch(0.52 0.12 162 / 0.08);
+
+  --primary-glow-ring: oklch(0.52 0.12 162 / 0.08);
+  --primary-tint-10: oklch(0.52 0.12 162 / 0.06);
+  --primary-tint-20: oklch(0.52 0.12 162 / 0.12);
+
+  --cta-from: oklch(0.58 0.13 162);
+  --cta-to: oklch(0.52 0.12 162);
+}
+
 /* ===========================================================
    Semantic CSS Custom Properties (non-@theme)
    Dark mode defaults — "Midnight Executive"
@@ -407,6 +478,27 @@ body {
   --color-success: #059669;
   --color-danger: #dc2626;
   --color-info: #003ec7;
+}
+
+/* Money DARK accent/CTA/tint overrides — these MUST live after the two late
+   :root blocks above (the primary-tint :root ~255 and the accent/CTA :root ~435)
+   that re-declare these identity tokens in indigo. At equal (0,1,0) specificity
+   source order decides, so the [data-brand="money"] block earlier in the file
+   loses these 9 in DARK mode (the emerald landing's CTA rendered indigo until
+   this). The LIGHT values already win via the higher-specificity combined
+   [data-brand="money"][data-theme="light"] selector, so only dark needs this.
+   (Pre-existing cascade quirk — it latently hits Relatti's dark accent/CTA too;
+   a proper fix would move ALL brand blocks below these :root overrides.) */
+[data-brand="money"] {
+  --primary-glow-ring: oklch(0.62 0.14 162 / 0.12);
+  --primary-tint-10: oklch(0.62 0.14 162 / 0.10);
+  --primary-tint-20: oklch(0.62 0.14 162 / 0.20);
+  --accent-primary: oklch(0.82 0.14 162);
+  --accent-primary-bg: oklch(0.62 0.14 162 / 0.10);
+  --accent-primary-bg-hover: oklch(0.62 0.14 162 / 0.15);
+  --accent-primary-ring: oklch(0.62 0.14 162 / 0.12);
+  --cta-from: oklch(0.82 0.14 162);
+  --cta-to: oklch(0.62 0.14 162);
 }
 
 /* ── Light mode: Override hardcoded inline rgba/hex patterns ──

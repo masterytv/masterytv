@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { scoreAssessment, type ScoringResult } from "./actions";
 import { generateReport } from "@/lib/decoded/report/generate";
+import { completionPlan } from "@/lib/decoded/completion-destination";
 import DecodedNav from "../DecodedNav";
 
 interface ScoreRow {
@@ -21,6 +22,9 @@ interface ScoreRow {
 interface Props {
   assessmentId: string;
   scores: ScoreRow[];
+  /** The program this assessment belongs to — decides where results land
+   *  (money → the reveal chat, not the Big-Five report viewer). */
+  program: string;
 }
 
 /**
@@ -28,9 +32,10 @@ interface Props {
  * If scores are missing (assessment completed before scoring was wired up),
  * auto-triggers server-side scoring on mount.
  */
-export default function CompletedAssessment({ assessmentId, scores: initialScores }: Props) {
+export default function CompletedAssessment({ assessmentId, scores: initialScores, program }: Props) {
   const router = useRouter();
   const supabase = createClient();
+  const plan = completionPlan(program);
   const [retaking, setRetaking] = useState(false);
   const [scoring, setScoring] = useState(false);
   const [scoringResult, setScoringResult] = useState<ScoringResult | null>(null);
@@ -60,7 +65,9 @@ export default function CompletedAssessment({ assessmentId, scores: initialScore
     try {
       const result = await generateReport(assessmentId);
       if (result.success && result.reportId) {
-        router.push(`/report/${result.reportId}`);
+        // Program-keyed: money lands in the reveal chat (off the Money Map its
+        // report row just stored), every other vertical in the report viewer.
+        router.push(plan.href(result.reportId));
         return;
       }
     } catch {
@@ -125,7 +132,7 @@ export default function CompletedAssessment({ assessmentId, scores: initialScore
           /* Auto-navigating to report */
           <div className="text-center">
             <Loader2 className="mx-auto mb-4 h-10 w-10 animate-spin text-[var(--color-primary)]" />
-            <h2 className="text-headline-md text-text-primary">Opening your report…</h2>
+            <h2 className="text-headline-md text-text-primary">{plan.opening}</h2>
             <p className="mt-2 text-sm text-text-secondary">
               Your personalized dashboard is ready.
             </p>

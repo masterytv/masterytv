@@ -32,11 +32,22 @@ const BRAND_ICONS: Record<BrandId, Metadata["icons"]> = {
     ],
     apple: "/relatti/apple-touch-icon.png",
   },
+  // Money-specific paths (NOT masterytv's — reusing those would leak the wrong
+  // favicon onto money link previews). ASSET TODO (§5.1): generate the money
+  // favicon set under /public/money/. Money has no live public surface yet, so
+  // a not-yet-present icon is inert until the brand assets + surfaces leaf lands.
+  money: {
+    icon: "/money/favicon.png",
+    apple: "/money/apple-touch-icon.png",
+  },
 };
 
 const SITE_NAME: Record<BrandId, string> = {
   masterytv: "Mastery Coach",
   relatti: "Relatti",
+  // Locked mechanic name (MONEY_EXPERIENCE §12). Public brand name is founder-TBD
+  // (Momatti candidate) — revisit before the first public link.
+  money: "Money Maps",
 };
 
 // Tab-title suffix — shorter than SITE_NAME so titles survive tab truncation
@@ -44,6 +55,7 @@ const SITE_NAME: Record<BrandId, string> = {
 const TITLE_SUFFIX: Record<BrandId, string> = {
   masterytv: "Mastery",
   relatti: "Relatti",
+  money: "Money Maps",
 };
 
 /** "{Page} — {Brand}" tab title, e.g. brandTitle("relatti", "Coach") → "Coach — Relatti". */
@@ -58,6 +70,7 @@ export function brandTitle(brandId: BrandId, page: string): string {
 export const BRAND_ORIGINS: Record<BrandId, string> = {
   masterytv: "https://masterytv.com",
   relatti: "https://relatti.com",
+  money: "https://moneymaps.masterytv.com",
 };
 
 export interface BrandPageMeta {

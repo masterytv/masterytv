@@ -23,11 +23,12 @@ import type { createSupabaseClient } from "./supabase.ts";
 type SupabaseClient = ReturnType<typeof createSupabaseClient>;
 
 // Program hints the client may name directly. 'general' = the executive coach
-// (the MasteryTV brand sends it explicitly, so Decoded users keep their coach).
-// Anything else — including a missing hint — falls through to the spine check,
-// so a stripped/forged body can't silently select the executive persona for a
-// Relatti user.
-export const KNOWN_PROGRAM_HINTS = new Set(["relationship", "general"]);
+// (the MasteryTV brand sends it explicitly, so Decoded users keep their coach);
+// 'money' = the Money Maps coach (the money web client sends program:'money' via
+// resolveBrandClient().programSlug — T3). Anything else — including a missing
+// hint — falls through to the spine check, so a stripped/forged body can't
+// silently select the executive persona for a spine-known Relatti user.
+export const KNOWN_PROGRAM_HINTS = new Set(["relationship", "general", "money"]);
 
 export async function resolveProgram(
   supabase: SupabaseClient,
@@ -84,7 +85,8 @@ export async function resolveProgram(
   // 4. Signup brand (PC5.2, stamped at auth) — the spine signal for solo
   //    users with no engagement yet. Closes the last silent-executive path:
   //    a Relatti signup whose client sends no usable hint still resolves to
-  //    the relationship pack.
+  //    the relationship pack. Money is solo (no dyad) so this + the hint above
+  //    are its only signals — the email/Telegram path with no hint lands here.
   const { data: userRow } = await supabase
     .from("users")
     .select("signup_brand")
@@ -92,6 +94,9 @@ export async function resolveProgram(
     .maybeSingle();
   if (userRow?.signup_brand === "relatti") {
     return { ok: true, program: "relationship" };
+  }
+  if (userRow?.signup_brand === "money") {
+    return { ok: true, program: "money" };
   }
   if (userRow?.signup_brand === "masterytv") {
     return { ok: true, program: null };

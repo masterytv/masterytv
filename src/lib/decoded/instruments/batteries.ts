@@ -14,6 +14,7 @@ import type { ProgramId } from "@/lib/platform/brand";
 import type { InstrumentDef } from "./core";
 import { CORE_INSTRUMENTS, IPIP50, ECR_R_SHORT } from "./core";
 import { CSI4 } from "./addons";
+import { MONEY_MAPS } from "./money-maps";
 
 export interface BatteryConfig {
   /** Instruments administered, in presentation order. */
@@ -46,6 +47,19 @@ export const CORE_BATTERY: BatteryConfig = {
 };
 
 /**
+ * Money — the single Money Maps™ instrument (16 items), no add-on phase. The
+ * whole point is a fast, in-chat-adjacent quiz that reaches the reveal quickly
+ * (MONEY_EXPERIENCE.md §6), not a 30-item wall. Deterministic money scoring
+ * (Map means → archetype → LEAP band) is a separate leaf (scripts/money-maps-scoring.mjs).
+ */
+export const MONEY_MAPS_BATTERY: BatteryConfig = {
+  instruments: [MONEY_MAPS],
+  enableAddons: false,
+  estimatedMinutes: "3–4",
+  relationshipMode: false,
+};
+
+/**
  * Battery per program. Record<ProgramId,…> on purpose (TENANCY_AUDIT T2): a
  * new vertical fails the typecheck here until its battery is declared, instead
  * of silently administering the 66-item Core battery.
@@ -53,6 +67,7 @@ export const CORE_BATTERY: BatteryConfig = {
 const BATTERIES: Record<ProgramId, BatteryConfig> = {
   general: CORE_BATTERY,
   relationship: RELATIONSHIP_BATTERY,
+  money: MONEY_MAPS_BATTERY,
 };
 
 /** Resolve the battery for a program slug (brand.programSlug). */

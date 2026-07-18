@@ -539,6 +539,90 @@ const DYAD_TABLES: Record<string, TableFixture> = {
   decoded_invites: [],
 };
 
+// ─── Money (Money Maps™) solo — post-quiz, the reveal moment ─────────────
+
+const MONEY_USER = "55555555-5555-4555-8555-555555555505";
+const MONEY_ASSESSMENT = "55555555-5555-4555-8555-5555555555a5";
+const MONEY_CONVERSATION = "55555555-5555-4555-8555-5555555555f5";
+
+// The scored bundle the money assessment stores on its report row
+// (assessment_reports.sections.money_map). These exact values are boundary
+// case 1 in money-maps-scoring.mjs / money-maps.test.ts — "The Relentless
+// Builder", High LEAP, success-tilted — so the fixture and the scorer agree.
+const MONEY_MAP_BUNDLE = {
+  archetype: "The Relentless Builder",
+  dominant: "DRIVE",
+  secondary: "GUARD",
+  edge: "high-output founder, ambition with brakes",
+  leak: "the moving goalpost; can't enjoy the climb",
+  dims: { GUARD: 4.33, DRIVE: 5, MIRROR: 2.33, SHADOW: 3.33, LEAP: 4 },
+  overclocked: ["GUARD", "DRIVE"],
+  leap: { score: 4, band: "High", tilt: "fear-of-success", failFacet: 3, succFacet: 5 },
+};
+
+const MONEY_TABLES: Record<string, TableFixture> = {
+  assessments: [{ id: MONEY_ASSESSMENT }],
+  users: [
+    {
+      id: MONEY_USER,
+      name: "Riley",
+      email: "riley@fixture.test",
+      timezone: "America/New_York",
+      preferred_channel: "email",
+      subscription_tier: "premium",
+      ai_tools: [],
+    },
+  ],
+  coach_profiles: [
+    {
+      directness: 5,
+      framing: 5,
+      warmth: 5,
+      autonomy: 5,
+      pacing: 5,
+      evidence_style: 5,
+      accountability: 5,
+      challenge_level: 5,
+      trust_level: 1,
+      framework_affinity: {},
+    },
+  ],
+  coaching_challenges: [],
+  framework_config: [],
+  messages: [
+    { role: "user", content: "ok, finished the quiz. what's the read?", created_at: "2026-07-12T12:00:00Z" },
+  ],
+  memory_facts: [
+    { category: "pattern", subject: "Targets", content: "Raises the revenue target the moment they hit it; it never feels like enough.", importance: 8 },
+    { category: "goal", subject: "The live decision", content: "Weighing whether to raise prices or take a bigger, lower-margin contract.", importance: 7 },
+  ],
+  coaching_agenda: [],
+  conversation_summaries: [],
+  ai_tools: [],
+  // The money branch reads the profile from the REPORT, never from scores —
+  // return [] so the golden can't accidentally depend on money score rows.
+  assessment_scores: [],
+  assessment_reports: (params: URLSearchParams) => {
+    if (params.get("assessment_id") === `eq.${MONEY_ASSESSMENT}`) {
+      return [
+        {
+          archetype_base: "The Relentless Builder",
+          archetype_sublabel: "DRIVE · guarded",
+          archetype_tagline: "Out-works the room and never blows up.",
+          generated_at: "2026-07-12T12:00:00Z",
+          sections: { money_map: MONEY_MAP_BUNDLE },
+        },
+      ];
+    }
+    return [];
+  },
+  // A money solo user has no participant row (money is not a dyad vertical):
+  // the coach-visibility read returns [] → defaults to "full", and dyad
+  // resolution finds nothing.
+  participant: [],
+  decoded_invites: [],
+};
+
 // ─── Scenarios ───────────────────────────────────────────────────────────
 
 export const SCENARIOS: Scenario[] = [
@@ -645,5 +729,40 @@ export const SCENARIOS: Scenario[] = [
       "INTERVENTION SELECTION",
     ],
     tables: SOLO_TABLES,
+  },
+  {
+    name: "money",
+    userId: MONEY_USER,
+    userMessage: "ok, finished the quiz. what's the read?",
+    program: "money",
+    mode: null,
+    engagementId: null,
+    conversationId: MONEY_CONVERSATION,
+    mustInclude: [
+      "money coach", // money persona
+      "MONEY MAP PROFILE", // Layer 4.5 rendered by money-map-profile.ts
+      "The Relentless Builder", // the stored archetype
+      "running hot", // overclock rendering
+      "THE LEAP: High", // LEAP band rendering
+      "THE REVEAL", // the reveal first-message builder
+      "Does 'enough' have an actual number", // the DRIVE type-selected question
+      "ANSWER CHIPS", // the clickable-chip contract (T5)
+      "[[CHIPS:", // the exact machine-readable marker the money chat UI parses
+      "WHAT YOU CAN AND CAN'T DO", // money guardrails
+      "SAFETY RULES:", // shared crisis kernel
+    ],
+    mustExclude: [
+      // No cross-vertical persona bleed…
+      "executive and business coach",
+      "warm relationship coach",
+      "Emotionally Focused Therapy",
+      // …and the gate PROOF: the money branch rendered its own Layer 4.5, NOT
+      // the Big-Five Decoded profile (those headers must be absent).
+      "DECODED PERSONALITY ASSESSMENT",
+      "PERSONALITY PROFILE (Big Five)",
+      "INTERVENTION SELECTION",
+      "RELATIONSHIP DYAD MODE",
+    ],
+    tables: MONEY_TABLES,
   },
 ];

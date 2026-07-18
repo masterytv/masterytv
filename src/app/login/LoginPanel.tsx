@@ -2,10 +2,10 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { useState } from "react";
-import { Loader2, ArrowRight, Eye, EyeOff, User, Mail, Check, Fingerprint } from "lucide-react";
+import { Loader2, ArrowRight, Eye, EyeOff, User, Mail, Check, Fingerprint, Compass } from "lucide-react";
 import { RelattiMark } from "@/components/relatti/RelattiMark";
 import { FloatingThemeToggle } from "@/components/floating-theme-toggle";
-import { byBrand, type BrandId } from "@/lib/platform/brand";
+import { byBrand, BRANDS, type BrandId } from "@/lib/platform/brand";
 import { LEGAL_VERSION } from "@/lib/platform/legal";
 
 /**
@@ -27,6 +27,10 @@ const COPY: Record<BrandId, { tagline: string; signinSubtitle: string }> = {
   relatti: {
     tagline: "Understand each other better — starting with you.",
     signinSubtitle: "Sign in to your relationship coach.",
+  },
+  money: {
+    tagline: "The psychology under your money decisions.",
+    signinSubtitle: "Sign in to your money coach.",
   },
 };
 
@@ -75,6 +79,9 @@ export default function LoginPanel({
     `${origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`;
 
   const copy = COPY[brandId] ?? COPY.masterytv;
+  // Shown on distinct sub-brands only (undefined for the MasteryTV root) so a
+  // shared platform login is honest, not a surprise (founder decision 2026-07-18).
+  const familyName = BRANDS[brandId].familyName;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -235,12 +242,18 @@ export default function LoginPanel({
               {
                 relatti: <RelattiMark className="h-6 w-6" />,
                 masterytv: <Fingerprint className="h-6 w-6" style={{ color: "var(--color-primary)" }} strokeWidth={1.5} />,
+                money: <Compass className="h-6 w-6" style={{ color: "var(--color-primary)" }} strokeWidth={1.5} />,
               },
               brandId,
             )}
           </span>
           <h1 className="font-display text-2xl font-bold tracking-tight text-text-primary">{brandName}</h1>
           <p className="mt-1 text-sm text-text-secondary">{copy.tagline}</p>
+          {familyName && (
+            <p className="mt-1 text-xs text-text-muted">
+              Part of the {familyName} family — one login works across all of them.
+            </p>
+          )}
         </div>
 
         <div className="rounded-2xl bg-surface-50 p-6 sm:p-8">
@@ -265,7 +278,17 @@ export default function LoginPanel({
             <div className="text-center">
               <h2 className="font-display text-lg font-semibold text-text-primary">You already have an account</h2>
               <p className="mt-2 text-sm text-text-secondary">
-                An account with <strong className="text-text-primary">{email}</strong> already exists. Sign in to continue.
+                {familyName ? (
+                  <>
+                    Good news — {brandName} is part of the {familyName} family, so you don&apos;t need a separate
+                    account. You already have one for <strong className="text-text-primary">{email}</strong> — sign in
+                    with your existing password and it works here too.
+                  </>
+                ) : (
+                  <>
+                    An account with <strong className="text-text-primary">{email}</strong> already exists. Sign in to continue.
+                  </>
+                )}
               </p>
               <button
                 onClick={() => { setAccountExists(false); setMode("signin"); setError(null); }}

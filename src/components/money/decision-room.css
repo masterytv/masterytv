@@ -1,0 +1,422 @@
+/**
+ * The Money Decision Room (MoneyDashboard.tsx) — MONEY_EXPERIENCE.md §8.
+ *
+ * BRAND.md-compliant: colors are semantic tokens only (check:colors), so the
+ * whole surface takes money's emerald [data-brand="money"] palette in BOTH themes
+ * with no per-brand rules here. Structure comes from surface shifts + low-opacity
+ * primary-tint strokes (the "No-Line" rule §4.1 / "deep insight" treatment §5),
+ * never opaque 1px dividers. Generous whitespace (§6). Geometry uses rem literals
+ * (only colors are gate-scanned).
+ */
+
+.dr-root {
+  height: 100%;
+  overflow-y: auto;
+  background: var(--color-surface-0);
+}
+
+.dr-container {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 4rem;
+}
+
+/* ── Header + coaching anchor ─────────────────────────────────────────── */
+
+.dr-header {
+  margin-bottom: 2rem;
+}
+
+.dr-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: var(--font-sans, "Inter", system-ui, sans-serif);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+.dr-title {
+  margin: 0.6rem 0 0;
+  font-family: var(--font-display, "Manrope", system-ui, sans-serif);
+  font-size: 2.25rem;
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  color: var(--color-text-primary);
+}
+
+.dr-lede {
+  max-width: 34rem;
+  margin: 0.75rem 0 0;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+}
+
+/* The "who the coach is reasoning from" anchor — links to the coach. */
+.dr-anchor {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-top: 1.15rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 9999px;
+  background: color-mix(in oklch, var(--color-primary) 8%, transparent);
+  font-size: 0.82rem;
+  text-decoration: none;
+  transition: background 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dr-anchor:hover {
+  background: color-mix(in oklch, var(--color-primary) 14%, transparent);
+}
+
+.dr-anchor__label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.dr-anchor__type {
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.dr-anchor__sep {
+  color: var(--color-text-muted);
+}
+
+.dr-anchor__leap {
+  color: var(--color-text-secondary);
+}
+
+/* ── The composer — bring a decision ──────────────────────────────────── */
+
+.dr-composer {
+  padding: 1.5rem;
+  border-radius: 1rem;
+  background: var(--color-surface-50);
+  border: 1px solid color-mix(in oklch, var(--color-primary) 14%, transparent);
+  box-shadow: 0 12px 32px color-mix(in oklch, var(--color-primary) 8%, transparent);
+}
+
+.dr-composer__label {
+  display: block;
+  margin-bottom: 0.6rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.dr-composer__row {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.dr-composer__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0.7rem 0.9rem;
+  border-radius: 0.75rem;
+  background: var(--color-surface-100);
+  border: 1px solid color-mix(in oklch, var(--color-text-muted) 32%, transparent);
+  color: var(--color-text-primary);
+  font-size: 0.95rem;
+  transition: border-color 200ms cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dr-composer__input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.dr-composer__input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-primary) 18%, transparent);
+}
+
+.dr-composer__submit {
+  flex-shrink: 0;
+}
+
+.dr-composer__error {
+  margin: 0.7rem 0 0;
+  font-size: 0.85rem;
+  color: var(--color-danger, var(--color-text-secondary));
+}
+
+/* Example decisions — prefill the composer, kill blank-page paralysis. */
+.dr-examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.dr-example {
+  padding: 0.4rem 0.75rem;
+  border-radius: 9999px;
+  background: var(--color-surface-100);
+  color: var(--color-text-secondary);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 200ms cubic-bezier(0.4, 0, 0.2, 1),
+    color 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dr-example:hover {
+  background: var(--color-surface-200);
+  color: var(--color-text-primary);
+}
+
+/* ── Buttons ──────────────────────────────────────────────────────────── */
+
+.dr-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.6rem 1.1rem;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity 200ms cubic-bezier(0.4, 0, 0.2, 1),
+    background 200ms cubic-bezier(0.4, 0, 0.2, 1),
+    color 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dr-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Primary conversion — the one gradient CTA (BRAND §4.3). */
+.dr-btn--primary {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-container));
+  color: var(--color-text-inverse);
+}
+
+.dr-btn--primary:not(:disabled):hover {
+  opacity: 0.92;
+}
+
+/* Ghost — supporting actions (Continue / Record). */
+.dr-btn--ghost {
+  padding: 0.5rem 0.85rem;
+  background: color-mix(in oklch, var(--color-primary) 8%, transparent);
+  color: var(--color-primary);
+}
+
+.dr-btn--ghost:hover {
+  background: color-mix(in oklch, var(--color-primary) 15%, transparent);
+}
+
+/* Quiet — lowest-emphasis (Cancel / Reopen). */
+.dr-btn--quiet {
+  padding: 0.5rem 0.85rem;
+  background: transparent;
+  color: var(--color-text-muted);
+}
+
+.dr-btn--quiet:hover {
+  color: var(--color-text-secondary);
+}
+
+/* ── Sections + the decision log ──────────────────────────────────────── */
+
+.dr-section {
+  margin-top: 2.5rem;
+}
+
+.dr-section__label {
+  margin: 0 0 0.9rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.dr-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dr-item {
+  padding: 1.15rem 1.25rem;
+  border-radius: 1rem;
+  background: var(--color-surface-50);
+  transition: background 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dr-item:hover {
+  background: var(--color-surface-100);
+}
+
+.dr-item--decided {
+  background: color-mix(in oklch, var(--color-surface-50) 92%, var(--color-primary));
+}
+
+.dr-item__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.dr-item__title {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  font-size: 1.02rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--color-text-primary);
+}
+
+.dr-item__check {
+  align-self: center;
+  flex-shrink: 0;
+  color: var(--color-primary);
+}
+
+.dr-item__meta {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.dr-item__record {
+  margin: 0.7rem 0 0;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: var(--color-text-secondary);
+  white-space: pre-wrap;
+}
+
+.dr-item__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+}
+
+/* Inline decision-record capture. */
+.dr-capture {
+  margin-top: 0.9rem;
+}
+
+.dr-capture__input {
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  border-radius: 0.75rem;
+  background: var(--color-surface-100);
+  border: 1px solid color-mix(in oklch, var(--color-text-muted) 32%, transparent);
+  color: var(--color-text-primary);
+  font-size: 0.92rem;
+  line-height: 1.5;
+  resize: vertical;
+  transition: border-color 200ms cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dr-capture__input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.dr-capture__input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-primary) 18%, transparent);
+}
+
+.dr-capture__actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.7rem;
+}
+
+/* ── States ───────────────────────────────────────────────────────────── */
+
+.dr-loading,
+.dr-empty {
+  margin: 2rem 0 0;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: var(--color-text-muted);
+}
+
+.dr-empty {
+  max-width: 34rem;
+}
+
+/* ── No-assessment gate (Rung 0 door) ─────────────────────────────────── */
+
+.dr-gate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 32rem;
+  margin: 0 auto;
+  padding: 5rem 1.5rem;
+  text-align: center;
+}
+
+.dr-gate__mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  margin-bottom: 1.25rem;
+  border-radius: 1rem;
+  background: color-mix(in oklch, var(--color-primary) 12%, transparent);
+  color: var(--color-primary);
+}
+
+.dr-gate__title {
+  margin: 0;
+  font-family: var(--font-display, "Manrope", system-ui, sans-serif);
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--color-text-primary);
+}
+
+.dr-gate__body {
+  margin: 0.85rem 0 0;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+}
+
+.dr-gate__cta {
+  margin-top: 1.75rem;
+}
+
+/* Respect reduced-motion — kill transitions (BRAND §9). */
+@media (prefers-reduced-motion: reduce) {
+  .dr-anchor,
+  .dr-composer__input,
+  .dr-example,
+  .dr-btn,
+  .dr-item,
+  .dr-capture__input {
+    transition: none;
+  }
+}

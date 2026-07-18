@@ -5,6 +5,7 @@ import { byBrand } from "@/lib/platform/brand";
 import { LEGAL_CONTACT } from "@/lib/platform/legal";
 import MasteryDisclaimer from "../_content/MasteryDisclaimer";
 import RelattiDisclaimer from "../_content/RelattiDisclaimer";
+import MoneyDisclaimer from "../_content/MoneyDisclaimer";
 
 interface PageProps {
   searchParams: Promise<{ brand?: string }>;
@@ -27,5 +28,5 @@ export async function generateMetadata({
 
 export default async function DisclaimerPage({ searchParams }: PageProps) {
   const brand = await getBrandFromRequest((await searchParams).brand);
-  return byBrand({ relatti: <RelattiDisclaimer />, masterytv: <MasteryDisclaimer /> }, brand.id);
+  return byBrand({ relatti: <RelattiDisclaimer />, masterytv: <MasteryDisclaimer />, money: <MoneyDisclaimer /> }, brand.id);
 }

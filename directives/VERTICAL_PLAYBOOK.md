@@ -123,6 +123,7 @@ This extends the BMAD phases in `CLAUDE.md §8` with one **mandatory new phase**
 ### 5.5 Dashboard / surface elements
 - [ ] `PROGRAM_MODULES` set for the new program (which modules exist) **AND `ROUTE_MODULES` guards** — 🔥 nav hiding alone is NOT brand isolation; a dual-brand user carries URLs across domains (07-15). Add both directions: the new vertical's pages guarded off other domains too.
 - [ ] Bespoke primary surface registered (ADR-P03) — the dashboard home the Experience spec calls for, not a re-themed default.
+- [ ] 🔥 The dashboard-home surface switch (`dashboard/page.tsx`) selects with a plain `if (brandId === "relatti")`, **not** `byBrand` — so a NEW brand silently falls through to the EXECUTIVE `DashboardHome` (invisible to `tsc` AND `check:ternaries` — the `?` never appears; caught by red-team on money, 2026-07-18). Add an explicit branch for the new brand (money → `MoneyDashboard` placeholder until its bespoke surface ships). Same trap class as the plain `=== "relatti"` chrome guards in `sidebar.tsx`/`topbar.tsx`/`settings`/`middleware.ts` root rewrite.
 - [ ] **`conversations.program` scoping on every conversation-adjacent read** — 🔥 engagement_id alone is not brand isolation; an executive conversation rendered on relatti.com (07-15). Direct `?c=` loads redirect cross-brand ids.
 - [ ] Vertical-only chat widgets module-gated (🔥 the six executive coach voices rendered on relatti chat — `coach_voices` module, 07-15).
 - [ ] Settings page: per-brand copy branches; briefing-time control only if the vertical has proactive touchpoints.

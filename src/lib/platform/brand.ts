@@ -16,7 +16,7 @@
  * middleware. The server-only getBrand() helper lives in ./brand.server.ts.
  */
 
-export type BrandId = "masterytv" | "relatti";
+export type BrandId = "masterytv" | "relatti" | "money";
 
 /**
  * The program (vertical) axis, typed like BrandId (TENANCY_AUDIT.md T1).
@@ -32,11 +32,11 @@ export type BrandId = "masterytv" | "relatti";
  * ⚠️ LOCKSTEP TWIN: supabase/functions/_shared/packs/index.ts declares the same
  * union (edge functions can't import from src/). Add new programs in BOTH.
  */
-export type ProgramId = "general" | "relationship";
+export type ProgramId = "general" | "relationship" | "money";
 
 /** Type guard for a known program slug (raw DB strings, client hints). */
 export function isProgramId(x?: string | null): x is ProgramId {
-  return x === "general" || x === "relationship";
+  return x === "general" || x === "relationship" || x === "money";
 }
 
 export interface Brand {
@@ -53,6 +53,15 @@ export interface Brand {
   // exhaustive per brand. Reintroduce only WITH the registry it promises.
   /** Hosts (no port) that resolve to this brand. */
   domains: string[];
+  /**
+   * Parent-family name shown for TRANSPARENCY on a distinct sub-brand (login +
+   * account-collision), so a shared platform login never reads as a scam ("this
+   * other site somehow knows my password"). undefined for the family-ROOT brand
+   * (MasteryTV) — it IS the family. Every brand shares ONE account (one Supabase
+   * auth + one workspace); this names that honestly instead of hiding it.
+   * Founder decision 2026-07-18: shared identity across verticals, surfaced openly.
+   */
+  familyName?: string;
 }
 
 export const BRANDS: Record<BrandId, Brand> = {
@@ -71,6 +80,23 @@ export const BRANDS: Record<BrandId, Brand> = {
     programSlug: "relationship",
     themeId: "relatti",
     domains: ["relatti.com", "www.relatti.com", "staging.relatti.com"],
+    familyName: "MasteryTV",
+  },
+  // Money vertical (Money Maps™). FOUNDER-PINNED 2026-07-17: build on
+  // moneymaps.masterytv.com for now; public brand name + domain still TBD
+  // (Momatti candidate) — `name` uses the locked mechanic name "Money Maps",
+  // not "Momatti". themeId "money" registered here; its [data-brand="money"]
+  // globals.css palette is a later leaf (no money surface renders yet, so the
+  // brand-tokens gate — which only checks brands WITH a block — stays green).
+  // Staging subdomain = infra TODO (§5.9); dev access via ?brand=money on localhost.
+  money: {
+    id: "money",
+    name: "Money Maps",
+    workspaceSlug: "masterytv",
+    programSlug: "money",
+    themeId: "money",
+    domains: ["moneymaps.masterytv.com"],
+    familyName: "MasteryTV",
   },
 };
 

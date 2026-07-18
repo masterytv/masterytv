@@ -321,6 +321,20 @@ Deno.serve(async (req: Request) => {
       contextualSystem = system + contextInstruction;
     }
 
+    // Money Decision Room (MONEY_EXPERIENCE.md §8, the money V1 spine): the user
+    // brought a LIVE money decision from the Decision Room. Apply their whole
+    // Money Map profile (already loaded at Layer 4.5) to THIS decision — this is
+    // the /edge product, not another reveal. Money-only by the context type;
+    // never appended for the executive/relationship coaches.
+    if (context?.type === 'money_decision' && context.topic) {
+      const decisionInstruction = `\n\nCONTEXT INSTRUCTION — THE DECISION ROOM: The user brought a real, live money decision to think through with you: "${context.topic}". This is not a fresh Money Maps reveal — they already have their result. Do NOT re-introduce yourself or re-announce their archetype; go straight to helping them think THIS decision through.
+- Apply their WHOLE Money Map profile (Layer 4.5) to this specific decision. Name which Maps and overclocks are actually in play here ("your DRIVE is loud in this one — is this the goalpost moving, or a real opportunity?"), and if THE LEAP is doing the deciding, say so.
+- Pressure-test the decision against what they've told you they value and the guardrails they've set. Be willing to DISAGREE — if this looks fear-driven, ego-driven, or a "just this once" exception to their own rule, name it plainly and with respect. Especially push back on a desperate, all-in bet. Do not cheerlead.
+- Coach the PSYCHOLOGY of the call — the fear, story, or pattern underneath it. You do NOT make the financial decision for them and you never give financial, investment, or tax advice; if they need the numbers pressure-tested, point them to a financial advisor or accountant, warmly, as an "and", not an "instead".
+- One real question at a time, then stop and listen. When they reach a decision, help them put into their own words WHAT they decided and WHY — a couple of honest sentences they can keep as their decision record.`;
+      contextualSystem = contextualSystem + decisionInstruction;
+    }
+
     // Sprint 0.5: Inject compatibility context when user arrives from a compatibility report
     // Loads the invite's compatibility report + the other person's assessment data
     if (context?.type === 'compatibility' && context.inviteId) {

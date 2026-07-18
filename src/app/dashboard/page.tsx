@@ -14,16 +14,24 @@ import { isBrandId, BRANDS, byBrand } from "@/lib/platform/brand";
 import { originFromHeaders } from "@/lib/platform/origin";
 import DashboardHome from "./DashboardHome";
 import RelattiDashboard from "./RelattiDashboard";
+import MoneyDashboard from "./MoneyDashboard";
 import { getOrCreateBroadcastInviteUrl } from "@/lib/relatti/broadcast-invite";
 
 export async function generateMetadata(): Promise<Metadata> {
   const brand = await getBrand();
   return brandPageMetadata(brand.id, {
-    title: byBrand({ relatti: "Dashboard — Relatti", masterytv: "Dashboard — Mastery" }, brand.id),
-    description:
-      brand.id === "relatti"
-        ? "Your relationship dashboard. Assessment, blueprint, and coaching in one place."
-        : "Your personal mastery dashboard. Assessment, report, and coaching in one place.",
+    title: byBrand(
+      { relatti: "Dashboard — Relatti", masterytv: "Dashboard — Mastery", money: "Dashboard — Money Maps" },
+      brand.id,
+    ),
+    description: byBrand(
+      {
+        relatti: "Your relationship dashboard. Assessment, blueprint, and coaching in one place.",
+        masterytv: "Your personal mastery dashboard. Assessment, report, and coaching in one place.",
+        money: "Your money dashboard. Your Money Map, decisions, and coaching in one place.",
+      },
+      brand.id,
+    ),
     noindex: true,
   });
 }
@@ -259,6 +267,21 @@ export default async function DashboardPage({
         betaJustUnlocked={betaState.justUnlocked}
         betaNeedsCheckin={betaState.needsBeforeCheckin}
         betaRedeemError={betaState.redeemError}
+      />
+    );
+  }
+
+  // Money's bespoke surface (Decision Room + Money OS) is a leaf; this placeholder
+  // keeps money's dashboard OFF the executive DashboardHome until it ships (the
+  // A-2 wrong-surface leak — a plain `if (brandId === "relatti")` above silently
+  // sent every non-relatti brand, money included, to the executive home).
+  if (brandId === "money") {
+    return (
+      <MoneyDashboard
+        userName={userName}
+        hasAssessment={state === "completed"}
+        userId={user.id}
+        programSlug={program}
       />
     );
   }

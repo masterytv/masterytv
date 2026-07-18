@@ -13,8 +13,10 @@ import {
   WELLNESS_CHECK_SCALES,
   type InstrumentDef,
 } from "@/lib/decoded/instruments";
+import { useRouter } from "next/navigation";
 import { scoreAssessment, type ScoringResult } from "./actions";
 import { generateReport } from "@/lib/decoded/report/generate";
+import { completionPlan } from "@/lib/decoded/completion-destination";
 import { FloatingThemeToggle } from "@/components/floating-theme-toggle";
 
 interface Props {
@@ -94,6 +96,10 @@ export default function AssessmentEngine({
   isInvitee,
 }: Props) {
   const supabase = createClient();
+  const router = useRouter();
+  // Where a finished assessment lands, by program (money → the reveal chat, not
+  // the Big-Five report viewer it has no sections for). See completion-destination.ts.
+  const plan = completionPlan(program);
 
   // ── State ──
   const [assessmentId, setAssessmentId] = useState<string | null>(existingAssessmentId);
@@ -436,6 +442,13 @@ export default function AssessmentEngine({
         const reportResult = await generateReport(assessmentId);
         if (reportResult.success && reportResult.reportId) {
           setGeneratedReportId(reportResult.reportId);
+          // Money's payoff is the coach's reveal in chat (off the Money Map the
+          // report row just stored at sections.money_map), not the Big-Five
+          // report viewer — go straight there. Report-viewer verticals keep the
+          // click-through (autoNavigate:false).
+          if (plan.autoNavigate) {
+            router.push(plan.href(reportResult.reportId));
+          }
         }
       }
     } catch (err) {
@@ -1107,14 +1120,14 @@ export default function AssessmentEngine({
               <h2 className="text-headline-md text-text-primary">Assessment Complete</h2>
               <p className="mt-3 text-sm text-text-secondary">
                 {generatedReportId
-                  ? 'Your personalized report is ready.'
+                  ? plan.ready
                   : 'Your full personalized report will be available in your dashboard.'}
               </p>
               <a
-                href={generatedReportId ? `/report/${generatedReportId}` : '/dashboard'}
+                href={plan.href(generatedReportId)}
                 className="mt-4 inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-container)] px-6 py-2.5 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
               >
-                {generatedReportId ? 'View Report' : 'Go to Dashboard'}
+                {generatedReportId ? plan.cta : 'Go to Dashboard'}
                 <ArrowRight className="h-4 w-4" />
               </a>
             </>

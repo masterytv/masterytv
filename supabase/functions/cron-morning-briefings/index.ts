@@ -284,6 +284,10 @@ async function resolveBriefingProgram(
     .eq("id", userId)
     .maybeSingle();
   if (u?.signup_brand === "relatti") return "relationship";
+  // T3: honest program for money signups. Sends nothing yet — moneyPack.briefing
+  // .enabled is false, so the caller skips at the `!pack.briefing.enabled` gate
+  // (proactive money delivery is T4).
+  if (u?.signup_brand === "money") return "money";
   if (u?.signup_brand === "masterytv") return null;
 
   const { data: stamped } = await supabase

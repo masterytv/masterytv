@@ -15,9 +15,10 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { UserStar, Heart, Clock } from "lucide-react";
+import { UserStar, Heart, Clock, Compass } from "lucide-react";
 import { useBrand } from "@/hooks/useBrand";
 import type { ChatMessage } from "@/lib/chat";
+import { parseChips, stripStreamingChips } from "@/lib/chat-chips";
 
 // ─── MARKDOWN RENDERER ─────────────────────────────────────────────────
 // Lightweight markdown → HTML for coach messages (bold, italic, bullets, emoji)
@@ -185,7 +186,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
         ) : (
           <div
             className="chat-markdown"
-            dangerouslySetInnerHTML={{ __html: `<p>${renderMarkdown(message.content)}</p>` }}
+            dangerouslySetInnerHTML={{ __html: `<p>${renderMarkdown(parseChips(message.content).text)}</p>` }}
           />
         )}
         <span className="chat-time">{time}</span>
@@ -220,6 +221,17 @@ const EMPTY_STATE = {
       "My partner and I keep having the same argument",
       "Help me understand our dynamic",
       "There's something I've been afraid to bring up",
+    ],
+  },
+  money: {
+    icon: Compass,
+    heading: "Your money coach",
+    intro:
+      "I work on what's underneath your money decisions — the patterns, fears, and beliefs that move before you do. Bring me a real decision you're weighing, or tell me what keeps repeating with money.",
+    starters: [
+      "I keep undercharging and I'm not sure why",
+      "Help me think through a big money decision",
+      "The goalposts keep moving no matter how much I make",
     ],
   },
 } as const;
@@ -263,6 +275,12 @@ interface ChatWindowProps {
   limitInfo?: { resetHours: number } | null;
   /** Messages left today (free tier); null = unlimited/unknown → no heads-up. */
   remainingToday?: number | null;
+  /**
+   * Optional artifact pinned at the top of the message scroll (above the first
+   * turn). Money uses it for the Rung-0 Money Map card; other verticals pass
+   * nothing, so this is a zero-DOM no-op for them.
+   */
+  topCard?: React.ReactNode;
 }
 
 export default function ChatWindow({
@@ -273,6 +291,7 @@ export default function ChatWindow({
   userId,
   limitInfo = null,
   remainingToday = null,
+  topCard = null,
 }: ChatWindowProps) {
   const [input, setInput] = useState("");
   const [draftRestored, setDraftRestored] = useState(false);
@@ -375,10 +394,22 @@ export default function ChatWindow({
   const atLimit = Boolean(limitInfo) || remainingToday === 0;
   const resetHours = limitInfo?.resetHours ?? hoursUntilReset();
 
+  // Answer chips for the coach's CURRENT question — only when the last turn is a
+  // completed coach message and the user can actually reply (not mid-stream, not
+  // at the free-tier wall). Once the user taps or types, the last message flips
+  // to theirs and the chips clear themselves.
+  const lastMessage = messages[messages.length - 1];
+  const activeChips =
+    !isLoading && !atLimit && lastMessage?.role === "coach"
+      ? parseChips(lastMessage.content).chips
+      : [];
+
   return (
     <div className="chat-window" onClick={handleStarterClick}>
       {/* Messages area */}
       <div className="chat-messages">
+        {/* Pinned artifact (money's Rung-0 Money Map card); null for other verticals. */}
+        {topCard}
         {messages.length === 0 && !isLoading ? (
           <EmptyState />
         ) : (
@@ -399,7 +430,7 @@ export default function ChatWindow({
                     <div
                       className="chat-markdown"
                       dangerouslySetInnerHTML={{
-                        __html: `<p>${renderMarkdown(streamingContent)}</p>`,
+                        __html: `<p>${renderMarkdown(stripStreamingChips(streamingContent))}</p>`,
                       }}
                     />
                     <span className="chat-streaming-cursor" />
@@ -422,6 +453,23 @@ export default function ChatWindow({
         {atLimit && <LimitNotice resetHours={resetHours} />}
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Answer chips — quick replies for the coach's current question. Free-text
+          below stays the primary input; these are only ever a shortcut. */}
+      {activeChips.length > 0 && (
+        <div className="chat-chips" role="group" aria-label="Quick replies">
+          {activeChips.map((chip) => (
+            <button
+              key={chip}
+              type="button"
+              className="chat-chip"
+              onClick={() => onSendMessage(chip)}
+            >
+              {chip}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Input area */}
       <form className="chat-input-area" onSubmit={handleSubmit}>

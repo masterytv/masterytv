@@ -8,7 +8,7 @@
 
 ## 1. What this is (30 seconds)
 
-**Relatti** (`relatti.com`) — a **relationship-coaching** product where the hero is *the couple's relationship*, not a personality type. It's **Stage 1** of a 3-stage roadmap (Relationship → Career → White-Label) built on **one reused engine**: the *Decoded* assessment (ECR-R attachment + Big Five + satisfaction) + the *Mastery Coach* (LLM coach with memory, voices, guardrails).
+**Relatti** (`relatti.com`) — a **relationship-coaching** product where the hero is *the couple's relationship*, not a personality type. It's **Stage 1** of the platform roadmap (Relationship → **Money** → Career → White-Label — money became Stage 2 and career was deferred, founder decision 2026-07-17; see [MONEY_DISCOVERY.md](MONEY_DISCOVERY.md) / [MONEY_BUILD_HANDOFF.md](MONEY_BUILD_HANDOFF.md)) built on **one reused engine**: the *Decoded* assessment (ECR-R attachment + Big Five + satisfaction) + the *Mastery Coach* (LLM coach with memory, voices, guardrails).
 
 The retention thesis: coaching products die at the ~3-week cliff because solo self-improvement has no external stake. Each stage attaches the product to a stake the user can't quietly ghost — **Stage 1's stake is the partner.**
 

@@ -1,0 +1,149 @@
+/**
+ * Money Maps™ archetype card (MoneyMapCard.tsx) — MONEY_MAPS_INSTRUMENT.md §5.
+ *
+ * BRAND.md-compliant: colors are semantic tokens only (check:colors) so the card
+ * takes the money emerald palette in both themes with no per-brand rules here;
+ * geometry uses rem literals (only colors are gate-scanned). The 1px primary-tint
+ * stroke is BRAND §5's "deep insight container" treatment; the ambient shadow is
+ * emerald-tinted (never pure black). No motion — the card is a static anchor.
+ */
+
+.mm-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 460px;
+  margin: 0 auto 1.25rem;
+  padding: 1.5rem 1.5rem 1.25rem;
+  background: var(--color-surface-50);
+  border: 1px solid color-mix(in oklch, var(--color-primary) 14%, transparent);
+  border-radius: 1rem;
+  box-shadow: 0 12px 32px color-mix(in oklch, var(--color-primary) 10%, transparent);
+}
+
+/* Eyebrow — the mechanic name + compass mark (all-caps label register). */
+.mm-card__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-sans, "Inter", system-ui, sans-serif);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+.mm-card__eyebrow-mark {
+  flex-shrink: 0;
+  color: var(--color-primary);
+}
+
+/* Archetype name — the badge. Display font, uppercase for the editorial feel. */
+.mm-card__name {
+  margin: 0.35rem 0 0;
+  font-family: var(--font-display, "Manrope", system-ui, sans-serif);
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  color: var(--color-text-primary);
+}
+
+/* Dominant · secondary — "DRIVE · guarded". */
+.mm-card__maps {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  margin: 0;
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+}
+
+.mm-card__map-dominant {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-secondary);
+}
+
+.mm-card__map-sep {
+  color: var(--color-text-muted);
+}
+
+.mm-card__map-secondary {
+  font-style: italic;
+  color: var(--color-text-muted);
+}
+
+/* Edge + leak — the honest pair. */
+.mm-card__lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 0.85rem;
+}
+
+.mm-card__line {
+  display: grid;
+  grid-template-columns: 1.1rem auto 1fr;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.mm-card__line-mark {
+  grid-row: 1;
+  align-self: start;
+  margin-top: 0.15rem;
+  flex-shrink: 0;
+  color: var(--color-primary);
+}
+
+.mm-card__line-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.mm-card__line-text {
+  color: var(--color-text-primary);
+}
+
+/* The Leap — the state / hook. */
+.mm-card__leap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.45rem;
+  margin: 0.95rem 0 0;
+  padding-top: 0.85rem;
+  border-top: 1px solid color-mix(in oklch, var(--color-primary) 12%, transparent);
+  font-size: 0.9rem;
+}
+
+.mm-card__leap-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+.mm-card__leap-value {
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+/* Science-first footer. */
+.mm-card__footer {
+  margin: 0.9rem 0 0;
+  font-size: 0.68rem;
+  letter-spacing: 0.01em;
+  color: var(--color-text-muted);
+}

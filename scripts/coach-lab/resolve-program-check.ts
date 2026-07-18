@@ -145,6 +145,39 @@ const CASES: Case[] = [
     },
     expect: { ok: true, program: "relationship" },
   },
+  // ── T3: money resolution (KNOWN_PROGRAM_HINTS 'money' + signup_brand 'money') ──
+  {
+    name: "solo money signup (signup_brand), no hint → money",
+    clientProgram: null,
+    engagementId: null,
+    tables: {
+      participant: [],
+      users: [{ id: USER, signup_brand: "money" }],
+      decoded_invites: [],
+    },
+    expect: { ok: true, program: "money" },
+  },
+  {
+    name: "money client hint, spine silent → money",
+    clientProgram: "money",
+    engagementId: null,
+    tables: {
+      participant: [],
+      users: [{ id: USER, signup_brand: null }],
+      decoded_invites: [],
+    },
+    expect: { ok: true, program: "money" },
+  },
+  {
+    // The anti-forgery invariant for the new hint: a spine-known dyad member
+    // forging program:'money' still gets the relationship pack — the hint never
+    // outranks membership (mirrors the forged-'general' case above).
+    name: "dyad member + forged 'money' hint → spine outranks the hint",
+    clientProgram: "money",
+    engagementId: null,
+    tables: { participant: [DYAD_MEMBERSHIP] },
+    expect: { ok: true, program: "relationship" },
+  },
   {
     name: "masterytv signup_brand outranks a stale invite row → executive",
     clientProgram: null,

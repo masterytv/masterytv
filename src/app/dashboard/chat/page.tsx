@@ -32,6 +32,9 @@ import { resolveBrandClient } from "@/hooks/useBrand";
 import { byBrand } from "@/lib/platform/brand";
 import { useBrandModules } from "@/hooks/useBrandModules";
 import { Heart, Waves } from "lucide-react";
+import MoneyMapCard from "@/components/money/MoneyMapCard";
+import { loadMyMoneyMap } from "@/lib/decoded/load-my-money-map";
+import type { StoredMoneyMap } from "@/lib/decoded/scoring/money-maps";
 
 // Lazy-load debug panel — only shipped to admin users who activate debug mode
 const DebugPanel = dynamic(() => import("@/components/debug/debug-panel"), {
@@ -93,6 +96,28 @@ function ChatPageInner() {
       const isRelatti = resolveBrandClient().id === "relatti";
       setEngagementId(isRelatti && d ? d.engagementId : null);
     })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
+  // ── Rung-0 Money Map card (MONEY_MAPS_INSTRUMENT.md §5) ──
+  // Data-driven, NOT brand-gated: load the current program's stored bundle and
+  // let the DATA decide. Only a report carrying sections.money_map (money's)
+  // yields a card — general/relationship reports carry LLM sections, so they get
+  // null and no card, with no `program === "money"` guard. loadMyMoneyMap is
+  // program-scoped, so a money user's card can never surface on another vertical.
+  const [moneyMap, setMoneyMap] = useState<StoredMoneyMap | null>(null);
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    loadMyMoneyMap(user.id, resolveBrandClient().programSlug)
+      .then((m) => {
+        if (!cancelled) setMoneyMap(m);
+      })
+      .catch(() => {
+        /* non-fatal — the card just doesn't render */
+      });
     return () => {
       cancelled = true;
     };
@@ -179,7 +204,7 @@ function ChatPageInner() {
       // Build a natural opening message from the deep link context. Brand-aware:
       // Relatti users read a "relationship profile," not a "Decoded report."
       const profileLabel = byBrand(
-        { relatti: "relationship profile", masterytv: "report" },
+        { relatti: "relationship profile", masterytv: "report", money: "Money Map" },
         resolveBrandClient().id,
       );
       const openingMessage = topic
@@ -230,6 +255,36 @@ function ChatPageInner() {
 
       setTimeout(() => handleSendMessage(openingMessage), 300);
       router.replace('/dashboard/chat', { scroll: false });
+    } else if (contextType === 'money_reveal') {
+      // Money post-completion (completion-destination.ts). The coach's FIRST
+      // message is the REVEAL off the Money Map — Layer 4.5 is already loaded in
+      // the coach's context server-side, so a plain first user turn triggers it
+      // (MONEY_MAPS_INSTRUMENT.md §6). The seed reads as the user asking for the
+      // read — the "one tap" of Rung 0 → Rung 1. Only fire on a FRESH thread so a
+      // returning user is never re-revealed (the persona also self-guards on
+      // "conversation just beginning").
+      deepLinkProcessed.current = true;
+      if (messages.length === 0) {
+        setTimeout(() => handleSendMessage("I just finished Money Maps. What do you see?"), 300);
+      }
+      router.replace('/dashboard/chat', { scroll: false });
+    } else if (contextType === 'money_decision' && topic) {
+      // Money Decision Room (MONEY_EXPERIENCE.md §8, the money V1 spine). The user
+      // named a live decision in the Decision Room and we deep-linked into its
+      // thread (the conversation id was pre-generated there and stored on the
+      // money_decisions row, so it rides through ?c= — the coach creates the
+      // conversation under that id and the log links straight back). Seed the
+      // opening turn carrying the decision title as context so the coach applies
+      // the whole Money Map profile to THIS decision (the coach fn injects the
+      // Decision Room instruction off context.topic). Fresh-thread only, so
+      // re-opening the thread later (Continue → ?c=, no context) never re-seeds.
+      deepLinkProcessed.current = true;
+      deepLinkContext.current = { type: contextType, topic };
+      if (messages.length === 0) {
+        setTimeout(() => handleSendMessage(`I want to think through a decision: ${topic}`), 300);
+      }
+      // Strip the context/topic params but KEEP the thread addressable on refresh.
+      router.replace(`/dashboard/chat${conversationId ? `?c=${conversationId}` : ''}`, { scroll: false });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isInitialLoad, searchParams]);
@@ -384,6 +439,7 @@ function ChatPageInner() {
 
 
   const showDebugPanel = isAdmin && debugMode;
+  const moneyCard = moneyMap ? <MoneyMapCard map={moneyMap} /> : null;
 
   return (
     <div style={{ position: "relative", height: "100%" }}>
@@ -435,6 +491,7 @@ function ChatPageInner() {
               userId={user?.id}
               limitInfo={limitInfo}
               remainingToday={remainingToday}
+              topCard={moneyCard}
             />
           </div>
           <DebugPanel debugData={debugData} traceHistory={traceHistory} />
@@ -449,6 +506,7 @@ function ChatPageInner() {
           userId={user?.id}
           limitInfo={limitInfo}
           remainingToday={remainingToday}
+          topCard={moneyCard}
         />
       )}
     </div>
