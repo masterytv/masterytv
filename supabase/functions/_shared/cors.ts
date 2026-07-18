@@ -13,10 +13,13 @@ const ALLOWED_ORIGINS = [
   "https://relatti.com",
   "https://www.relatti.com",
   "https://staging.relatti.com",
-  // Money vertical (moneymaps.masterytv.com). Inert until the money edge
-  // functions are deployed; takes effect on the next edge deploy (§5.9 gotcha:
-  // "edge CORS per new origin"). Added now so it isn't forgotten at launch.
+  // Money vertical: moneymaps.masterytv.com (prod) + staging.moneymaps for the
+  // staging branch — mirrors staging.masterytv.com / staging.relatti.com. Live
+  // since the money edge deploy 2026-07-18 (§5.9 gotcha: "edge CORS per new
+  // origin" — a new brand host needs BOTH brand.ts domains AND this allowlist,
+  // else the browser gets allow-origin=masterytv.com and blocks the coach fetch).
   "https://moneymaps.masterytv.com",
+  "https://staging.moneymaps.masterytv.com",
   "http://localhost:3000",
   "http://localhost:3001",
 ];
