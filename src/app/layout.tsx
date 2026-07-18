@@ -93,9 +93,7 @@ export default function RootLayout({
                   var relattiPath = /^\\/(relatti|couples|engaged|premarital|challenge|samefight)(\\/|$)/.test(path);
                   // Money uses plain string checks (no regex) — deliberately
                   // avoiding the "\\/" template-literal footgun that killed this
-                  // whole script 06-22→07-02. Money favicon swap is skipped (money
-                  // favicon assets are a TODO); only data-brand is set, which is
-                  // all the emerald palette needs.
+                  // whole script 06-22→07-02.
                   var moneyHost = (host === 'moneymaps.masterytv.com' || host === 'staging.moneymaps.masterytv.com');
                   var moneyPath = (path === '/money' || path.indexOf('/money/') === 0);
                   var hostBrand = (relattiHost || relattiPath) ? 'relatti' : 'masterytv';
@@ -107,9 +105,16 @@ export default function RootLayout({
                   document.documentElement.setAttribute('data-brand', brand);
                   // Brand-aware favicon/touch icon, same FOUC-free client-side
                   // mechanism as data-brand (keeps pages static — no Host read).
-                  // Metadata's default icons are removed and Relatti's set added
-                  // once the head is parsed.
-                  if (brand === 'relatti') {
+                  // Metadata's default (MasteryTV) icons are rewritten in place
+                  // and the resolved brand's set appended once the head is parsed.
+                  // Data-driven per brand (relatti + money) — no per-brand ternary;
+                  // masterytv keeps the metadata default (no entry → no swap).
+                  var ICON_SETS = {
+                    relatti: { dir: '/relatti/', fav: '/relatti/favicon-32.png', svg: '/relatti/icon.svg', apple: '/relatti/apple-touch-icon.png', flag: 'data-relatti-icon' },
+                    money: { dir: '/money/', fav: '/money/favicon-32.png', svg: '/money/icon.svg', apple: '/money/apple-touch-icon.png', flag: 'data-money-icon' }
+                  };
+                  var iconSet = ICON_SETS[brand];
+                  if (iconSet) {
                     // STRICTLY NON-DESTRUCTIVE swap. Never remove or move the
                     // metadata-rendered <link> nodes — Next owns them, and
                     // deleting them silently breaks every subsequent soft
@@ -122,20 +127,20 @@ export default function RootLayout({
                       try {
                         document.querySelectorAll('link[rel~="icon"], link[rel="apple-touch-icon"]').forEach(function(l) {
                           var href = l.getAttribute('href') || '';
-                          if (href.indexOf('/relatti/') === 0) return;
+                          if (href.indexOf(iconSet.dir) === 0) return;
                           if (l.getAttribute('rel') === 'apple-touch-icon') {
-                            l.setAttribute('href', '/relatti/apple-touch-icon.png');
+                            l.setAttribute('href', iconSet.apple);
                           } else {
-                            l.setAttribute('href', '/relatti/favicon-32.png');
+                            l.setAttribute('href', iconSet.fav);
                             if (l.getAttribute('type')) l.setAttribute('type', 'image/png');
                           }
                         });
-                        [['icon','/relatti/icon.svg','image/svg+xml'],
-                         ['apple-touch-icon','/relatti/apple-touch-icon.png','']].forEach(function(s) {
-                          if (document.querySelector('link[data-relatti-icon][href="' + s[1] + '"]')) return;
+                        [['icon', iconSet.svg, 'image/svg+xml'],
+                         ['apple-touch-icon', iconSet.apple, '']].forEach(function(s) {
+                          if (document.querySelector('link[' + iconSet.flag + '][href="' + s[1] + '"]')) return;
                           var l = document.createElement('link');
                           l.rel = s[0]; l.href = s[1]; if (s[2]) l.type = s[2];
-                          l.setAttribute('data-relatti-icon', '');
+                          l.setAttribute(iconSet.flag, '');
                           document.head.appendChild(l);
                         });
                       } catch(e) {}
