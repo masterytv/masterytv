@@ -23,8 +23,6 @@ export interface BatteryConfig {
   enableAddons: boolean;
   /** Rough completion estimate shown on the welcome screen (e.g. "8–12"). */
   estimatedMinutes: string;
-  /** Relationship-framed intro copy (dimensions, consent wording). */
-  relationshipMode: boolean;
 }
 
 /**
@@ -35,7 +33,6 @@ export const RELATIONSHIP_BATTERY: BatteryConfig = {
   instruments: [IPIP50, ECR_R_SHORT, CSI4],
   enableAddons: false,
   estimatedMinutes: "8–12",
-  relationshipMode: true,
 };
 
 /** MasteryTV — the full 9-instrument Core battery + adaptive add-ons. */
@@ -43,7 +40,6 @@ export const CORE_BATTERY: BatteryConfig = {
   instruments: CORE_INSTRUMENTS,
   enableAddons: true,
   estimatedMinutes: "25–35",
-  relationshipMode: false,
 };
 
 /**
@@ -56,7 +52,6 @@ export const MONEY_MAPS_BATTERY: BatteryConfig = {
   instruments: [MONEY_MAPS],
   enableAddons: false,
   estimatedMinutes: "3–4",
-  relationshipMode: false,
 };
 
 /**

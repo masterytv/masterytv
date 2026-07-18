@@ -1,7 +1,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, type ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Activity, AlertTriangle, ArrowRight, BookOpen, Briefcase, Check, CheckCircle2,
@@ -13,6 +13,8 @@ import {
   WELLNESS_CHECK_SCALES,
   type InstrumentDef,
 } from "@/lib/decoded/instruments";
+import type { ProgramId } from "@/lib/platform/brand";
+import type { LucideIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { scoreAssessment, type ScoringResult } from "./actions";
 import { generateReport } from "@/lib/decoded/report/generate";
@@ -28,19 +30,18 @@ interface Props {
   /** The instruments to administer (program-aware; see batteries.ts). */
   battery: InstrumentDef[];
   /**
-   * The program this assessment belongs to ('general' | 'relationship'), from
-   * the resolved brand. Stamped on the row and — critically — the scope of the
-   * supersede on completion: a retake supersedes only WITHIN its program, while
-   * a first assessment in a NEW program supersedes nothing.
+   * The program this assessment belongs to ('general' | 'relationship' |
+   * 'money'), from the resolved brand. Stamped on the row and — critically —
+   * the scope of the supersede on completion: a retake supersedes only WITHIN
+   * its program, while a first assessment in a NEW program supersedes nothing.
+   * Also selects the onboarding copy (ASSESS_ONBOARDING).
    * See directives/ASSESSMENT_PROGRAM_SCOPING.md (PC2.1).
    */
-  program: string;
+  program: ProgramId;
   /** Whether the adaptive add-on phase runs after the core battery. */
   enableAddons: boolean;
   /** Completion estimate for the welcome screen (e.g. "8–12"). */
   estimatedMinutes: string;
-  /** Relationship-framed intro copy (dimensions, consent). */
-  relationshipMode: boolean;
   /**
    * True when this user arrived via someone else's invitation (they are the
    * invited partner in a dyad). Invitees skip the "invite someone" screen —
@@ -56,7 +57,49 @@ const GENDER_OPTIONS = ['Male', 'Female', 'Non-binary', 'Other', 'Rather not say
 const RELATIONSHIP_OPTIONS = ['Single', 'In a relationship', 'Married', 'Divorced', 'Widowed', 'Rather not say'];
 const CHILDREN_OPTIONS = ['Yes', 'No', 'Rather not say'];
 
-const EXPLORE_DIMENSIONS = [
+interface ExploreDimension {
+  icon: LucideIcon;
+  label: string;
+  desc: string;
+}
+
+/**
+ * The assessment ONBOARDING surfaces (welcome, invite, primer + consent) are
+ * copy that differs by vertical. Program-keyed config — NOT a `relationshipMode`
+ * boolean or a `program === "money"` ternary (which check:ternaries bans and
+ * which would silently hand every future vertical the executive copy, the exact
+ * bug this whole flow had for money). Record<ProgramId,…> is exhaustive, so a new
+ * vertical must declare its onboarding copy here or the typecheck fails.
+ */
+interface AssessOnboarding {
+  welcome: { icon: LucideIcon; title: string; body: (mins: string) => ReactNode };
+  invite: {
+    title: string;
+    subtitle: ReactNode;
+    /** The "who are you inviting" chips — the general share loop only. */
+    showRecipientChips: boolean;
+    /** Value-prop card under the email input. null → hidden (money is a solo
+        instrument with no comparison/dyad payoff). */
+    valueProp: { title: string; body: ReactNode } | null;
+  };
+  primer: {
+    title: string;
+    /** The "What You'll Explore" grid. null → skip it (money). */
+    dimensions: ExploreDimension[] | null;
+    startLabel: string;
+    consentIntro: string;
+    consentItems: ReactNode[];
+  };
+}
+
+const RECIPIENT_TYPES = [
+  { icon: Heart, label: "Your partner" },
+  { icon: Users, label: "A close friend" },
+  { icon: Briefcase, label: "A colleague" },
+  { icon: Home, label: "A family member" },
+];
+
+const GENERAL_DIMENSIONS: ExploreDimension[] = [
   { icon: Fingerprint, label: "Personality", desc: "How you think and react" },
   { icon: Heart, label: "Relationships", desc: "Your attachment patterns" },
   { icon: Activity, label: "Emotional Wellbeing", desc: "How you regulate and cope" },
@@ -68,19 +111,104 @@ const EXPLORE_DIMENSIONS = [
 ];
 
 // Relatti (relationship program): a focused, relationship-framed set.
-const RELATIONSHIP_DIMENSIONS = [
+const RELATIONSHIP_DIMENSIONS: ExploreDimension[] = [
   { icon: Fingerprint, label: "Your Personality", desc: "How you think and connect" },
   { icon: Heart, label: "Attachment Style", desc: "How you bond and seek closeness" },
   { icon: Activity, label: "Emotional Patterns", desc: "How you handle conflict and stress" },
   { icon: Users, label: "Relationship Fit", desc: "What you need from a partner" },
 ];
 
-const RELATIONSHIP_TYPES = [
-  { icon: Heart, label: "Your partner" },
-  { icon: Users, label: "A close friend" },
-  { icon: Briefcase, label: "A colleague" },
-  { icon: Home, label: "A family member" },
-];
+const ASSESS_ONBOARDING: Record<ProgramId, AssessOnboarding> = {
+  general: {
+    welcome: {
+      icon: Fingerprint,
+      title: "Finally Understand Your Patterns",
+      body: (mins) => (
+        <>In {mins} minutes, you&apos;ll understand why you react the way you do,
+        why some relationships feel harder than others, and what you actually
+        need to feel fulfilled. Save anytime and come back later.</>
+      ),
+    },
+    invite: {
+      title: "Invite someone to take it too",
+      subtitle: <>The assessment is free &mdash; share it with someone you know</>,
+      showRecipientChips: true,
+      valueProp: {
+        title: "Unlock a Comparison Report",
+        body: <>When you both complete the assessment, you can compare your profiles &mdash; see your compatibility, communication styles, and blind spots together.</>,
+      },
+    },
+    primer: {
+      title: "What You'll Explore",
+      dimensions: GENERAL_DIMENSIONS,
+      startLabel: "Start My Profile",
+      consentIntro: "This assessment includes psychological screening tools. Please confirm the following:",
+      consentItems: [
+        <>I confirm I am <strong>18 years or older</strong></>,
+        <>I understand this is a <strong>screening tool, not a clinical diagnosis</strong>. Results suggest areas to explore with qualified professionals.</>,
+        <>I consent to complete <strong>psychological assessments</strong> including personality, mental health screening, and interpersonal patterns.</>,
+      ],
+    },
+  },
+  relationship: {
+    welcome: {
+      icon: Fingerprint,
+      title: "Discover What Kind of Partner You Are",
+      body: (mins) => (
+        <>In about {mins} minutes, you&apos;ll discover your relationship
+        archetype and attachment style &mdash; the first step to being understood
+        by your partner. Save anytime and come back later.</>
+      ),
+    },
+    invite: {
+      title: "Bring your partner in",
+      subtitle: "This works best with the two of you — invite your partner to take their relationship profile too.",
+      showRecipientChips: false,
+      valueProp: {
+        title: "See your relationship Blueprint together",
+        body: "When you both complete your profiles, you’ll see how you fit — your chemistry, your friction, and the small things that bring you closer.",
+      },
+    },
+    primer: {
+      title: "What You'll Explore",
+      dimensions: RELATIONSHIP_DIMENSIONS,
+      startLabel: "Start My Profile",
+      consentIntro: "This assessment includes psychological screening tools. Please confirm the following:",
+      consentItems: [
+        <>I confirm I am <strong>18 years or older</strong></>,
+        <>I understand this is a <strong>screening tool, not a clinical diagnosis</strong>. Results suggest areas to explore with qualified professionals.</>,
+        <>I consent to complete a <strong>psychological assessment</strong> covering personality, attachment, and relationship patterns.</>,
+      ],
+    },
+  },
+  money: {
+    welcome: {
+      icon: Compass,
+      title: "Finally Understand Your Money Patterns",
+      body: (mins) => (
+        <>In about {mins} minutes, the Money Map shows you the beliefs and
+        reflexes that shape how you earn, spend, and price &mdash; before you
+        even decide. Save anytime and come back later.</>
+      ),
+    },
+    invite: {
+      title: "Know someone who should take it too?",
+      subtitle: <>The Money Map is free &mdash; share it with someone you know.</>,
+      showRecipientChips: false,
+      valueProp: null,
+    },
+    primer: {
+      title: "A quick, honest quiz",
+      dimensions: null,
+      startLabel: "Start My Money Map",
+      consentIntro: "A couple of quick confirmations before you start:",
+      consentItems: [
+        <>I confirm I am <strong>18 years or older</strong></>,
+        <>I understand Money Maps is <strong>coaching on the psychology of money</strong> &mdash; not financial, investment, or tax advice.</>,
+      ],
+    },
+  },
+};
 
 export default function AssessmentEngine({
   userId,
@@ -92,7 +220,6 @@ export default function AssessmentEngine({
   program,
   enableAddons,
   estimatedMinutes,
-  relationshipMode,
   isInvitee,
 }: Props) {
   const supabase = createClient();
@@ -100,6 +227,9 @@ export default function AssessmentEngine({
   // Where a finished assessment lands, by program (money → the reveal chat, not
   // the Big-Five report viewer it has no sections for). See completion-destination.ts.
   const plan = completionPlan(program);
+  // Onboarding copy for this vertical (welcome / invite / primer + consent),
+  // keyed by program — no relationshipMode boolean, no `program === …` ternary.
+  const copy = ASSESS_ONBOARDING[program];
 
   // ── State ──
   const [assessmentId, setAssessmentId] = useState<string | null>(existingAssessmentId);
@@ -120,7 +250,9 @@ export default function AssessmentEngine({
 
   // ── Pre-assessment screen state ──
   const [showConsent, setShowConsent] = useState(false);
-  const [consentChecks, setConsentChecks] = useState([false, false, false]);
+  const [consentChecks, setConsentChecks] = useState<boolean[]>(
+    () => copy.primer.consentItems.map(() => false)
+  );
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteCopied, setInviteCopied] = useState(false);
   const [inviteSending, setInviteSending] = useState(false);
@@ -512,6 +644,7 @@ export default function AssessmentEngine({
 
   // ── Welcome Screen — set expectations ──
   if (phase === "welcome") {
+    const WelcomeIcon = copy.welcome.icon;
     return (
       <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
         <FloatingThemeToggle />
@@ -522,22 +655,14 @@ export default function AssessmentEngine({
           className="glass w-full max-w-lg rounded-2xl p-8 text-center"
         >
           <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-[color-mix(in_oklch,var(--color-primary-container)_10%,transparent)] ring-1 ring-[color-mix(in_oklch,var(--color-primary-container)_15%,transparent)]">
-            <Fingerprint className="h-8 w-8 text-[var(--color-primary)]" strokeWidth={1.5} />
+            <WelcomeIcon className="h-8 w-8 text-[var(--color-primary)]" strokeWidth={1.5} />
           </div>
 
           <h1 className="text-headline-lg text-text-primary mb-3">
-            {relationshipMode ? "Discover What Kind of Partner You Are" : "Finally Understand Your Patterns"}
+            {copy.welcome.title}
           </h1>
           <p className="mx-auto max-w-sm text-sm text-text-secondary leading-relaxed">
-            {relationshipMode ? (
-              <>In about {estimatedMinutes} minutes, you&apos;ll discover your relationship
-              archetype and attachment style &mdash; the first step to being understood
-              by your partner. Save anytime and come back later.</>
-            ) : (
-              <>In {estimatedMinutes} minutes, you&apos;ll understand why you react the way you do,
-              why some relationships feel harder than others, and what you actually
-              need to feel fulfilled. Save anytime and come back later.</>
-            )}
+            {copy.welcome.body(estimatedMinutes)}
           </p>
 
           <div className="mx-auto mt-6 flex items-center justify-center gap-2 text-xs text-text-muted">
@@ -568,19 +693,18 @@ export default function AssessmentEngine({
           className="glass w-full max-w-lg rounded-2xl p-8"
         >
           <h2 className="text-headline-md text-text-primary text-center mb-2">
-            {relationshipMode ? "Bring your partner in" : "Invite someone to take it too"}
+            {copy.invite.title}
           </h2>
           <p className="text-sm text-text-secondary text-center mb-6">
-            {relationshipMode
-              ? "This works best with the two of you — invite your partner to take their relationship profile too."
-              : <>The assessment is free &mdash; share it with someone you know</>}
+            {copy.invite.subtitle}
           </p>
 
-          {/* Relationship chips — generic "who are you inviting" picker; omitted in
-              relationship mode where it's always the partner. */}
-          {!relationshipMode && (
+          {/* Recipient chips — the "who are you inviting" picker. Shown only for
+              the general share loop; hidden for relationship (always the partner)
+              and money (a solo instrument, no comparison). */}
+          {copy.invite.showRecipientChips && (
             <div className="flex flex-wrap justify-center gap-2 mb-6">
-              {RELATIONSHIP_TYPES.map((rel) => (
+              {RECIPIENT_TYPES.map((rel) => (
                 <button
                   key={rel.label}
                   onClick={() => setSelectedRelationship(rel.label === selectedRelationship ? null : rel.label)}
@@ -660,23 +784,24 @@ export default function AssessmentEngine({
             <p className="mt-2 text-xs text-red-400">{inviteError}</p>
           )}
 
-          {/* Value prop */}
-          <div
-            className="mt-6 rounded-xl p-4"
-            style={{
-              background: "color-mix(in oklch, var(--color-primary) 5%, transparent)",
-              boxShadow: "inset 0 0 0 1px color-mix(in oklch, var(--color-primary) 12%, transparent)",
-            }}
-          >
-            <p className="text-sm font-medium text-text-primary">
-              {relationshipMode ? "See your relationship Blueprint together" : "Unlock a Comparison Report"}
-            </p>
-            <p className="mt-1 text-xs text-text-secondary">
-              {relationshipMode
-                ? "When you both complete your profiles, you’ll see how you fit — your chemistry, your friction, and the small things that bring you closer."
-                : <>When you both complete the assessment, you can compare your profiles &mdash; see your compatibility, communication styles, and blind spots together.</>}
-            </p>
-          </div>
+          {/* Value prop — the comparison/dyad payoff. Hidden for money (a solo
+              instrument with no comparison report). */}
+          {copy.invite.valueProp && (
+            <div
+              className="mt-6 rounded-xl p-4"
+              style={{
+                background: "color-mix(in oklch, var(--color-primary) 5%, transparent)",
+                boxShadow: "inset 0 0 0 1px color-mix(in oklch, var(--color-primary) 12%, transparent)",
+              }}
+            >
+              <p className="text-sm font-medium text-text-primary">
+                {copy.invite.valueProp.title}
+              </p>
+              <p className="mt-1 text-xs text-text-secondary">
+                {copy.invite.valueProp.body}
+              </p>
+            </div>
+          )}
 
           {/* Privacy note */}
           <div className="mt-4 flex items-start gap-2 text-xs text-text-muted">
@@ -714,28 +839,33 @@ export default function AssessmentEngine({
           className="glass w-full max-w-lg rounded-2xl p-8"
         >
           <h2 className="text-headline-md text-text-primary text-center mb-6">
-            What You&apos;ll Explore
+            {copy.primer.title}
           </h2>
 
-          {/* Dimensions grid */}
-          <div className="grid grid-cols-2 gap-3 mb-6">
-            {(relationshipMode ? RELATIONSHIP_DIMENSIONS : EXPLORE_DIMENSIONS).map((dim) => (
-              <div
-                key={dim.label}
-                className="flex items-start gap-3 rounded-xl bg-surface-100/50 p-3"
-              >
-                <dim.icon className="h-5 w-5 text-[var(--color-primary)] flex-shrink-0 mt-0.5" strokeWidth={1.5} />
-                <div>
-                  <p className="text-sm font-medium text-text-primary">{dim.label}</p>
-                  <p className="text-xs text-text-muted">{dim.desc}</p>
-                </div>
+          {/* Dimensions grid — the "What You'll Explore" preview. Skipped for
+              money (dimensions: null — one focused instrument, not a battery). */}
+          {copy.primer.dimensions && (
+            <>
+              <div className="grid grid-cols-2 gap-3 mb-6">
+                {copy.primer.dimensions.map((dim) => (
+                  <div
+                    key={dim.label}
+                    className="flex items-start gap-3 rounded-xl bg-surface-100/50 p-3"
+                  >
+                    <dim.icon className="h-5 w-5 text-[var(--color-primary)] flex-shrink-0 mt-0.5" strokeWidth={1.5} />
+                    <div>
+                      <p className="text-sm font-medium text-text-primary">{dim.label}</p>
+                      <p className="text-xs text-text-muted">{dim.desc}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
 
-          <p className="text-center text-xs text-[var(--color-primary)] italic mb-6">
-            Plus personalized sections based on your answers
-          </p>
+              <p className="text-center text-xs text-[var(--color-primary)] italic mb-6">
+                Plus personalized sections based on your answers
+              </p>
+            </>
+          )}
 
           {/* Tips */}
           <div className="space-y-3 mb-8">
@@ -758,7 +888,7 @@ export default function AssessmentEngine({
             onClick={() => setShowConsent(true)}
             className="w-full rounded-lg bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-container)] px-6 py-3 text-sm font-medium text-white hover:opacity-90 transition-opacity"
           >
-            Start My Profile
+            {copy.primer.startLabel}
           </button>
 
           <button
@@ -797,17 +927,11 @@ export default function AssessmentEngine({
               </div>
 
               <p className="text-sm text-text-secondary mb-5">
-                This assessment includes psychological screening tools. Please confirm the following:
+                {copy.primer.consentIntro}
               </p>
 
               <div className="space-y-4">
-                {[
-                  <>I confirm I am <strong>18 years or older</strong></>,
-                  <>I understand this is a <strong>screening tool, not a clinical diagnosis</strong>. Results suggest areas to explore with qualified professionals.</>,
-                  relationshipMode
-                    ? <>I consent to complete a <strong>psychological assessment</strong> covering personality, attachment, and relationship patterns.</>
-                    : <>I consent to complete <strong>psychological assessments</strong> including personality, mental health screening, and interpersonal patterns.</>,
-                ].map((label, i) => (
+                {copy.primer.consentItems.map((label, i) => (
                   <label key={i} className="flex items-start gap-3 cursor-pointer group">
                     <input
                       type="checkbox"

@@ -120,8 +120,7 @@ export default async function AssessPage({
   // set; MasteryTV (general) the full Core + adaptive add-ons. Resolved from the
   // active brand's program (by host in prod, ?brand= override on staging) —
   // `program` is resolved above, where the scoped reads need it.
-  const { instruments, enableAddons, estimatedMinutes, relationshipMode } =
-    getBattery(program);
+  const { instruments, enableAddons, estimatedMinutes } = getBattery(program);
 
   return (
     <AssessmentEngine
@@ -134,7 +133,6 @@ export default async function AssessPage({
       program={program}
       enableAddons={enableAddons}
       estimatedMinutes={estimatedMinutes}
-      relationshipMode={relationshipMode}
       isInvitee={invitee}
     />
   );
