@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 type ShareLevel = 'type_compatibility' | 'full';
 const VALID_LEVELS: ShareLevel[] = ['type_compatibility', 'full'];
@@ -58,8 +59,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Store the request — first party to act sets the preference
-    const { error } = await supabase
+    // Store the request — first party to act sets the preference. decoded_invites
+    // is service-role-write-only (consent hardening 2026-07-19); the caller is
+    // verified as a party above.
+    const admin = createAdminClient();
+    const { error } = await admin
       .from('decoded_invites')
       .update({
         upgrade_requested_level: level,
