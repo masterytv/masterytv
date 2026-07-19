@@ -18,6 +18,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createSupabaseClient } from "../_shared/supabase.ts";
 import { logError } from "../_shared/errors.ts";
+import { timingSafeEqual } from "../_shared/timing-safe.ts";
 import { brandForProgram } from "../_shared/brands.ts";
 import {
   getReceivedEmail,
@@ -62,22 +63,29 @@ Deno.serve(async (req: Request) => {
       return new Response("Timestamp too old", { status: 401 });
     }
 
-    // Verify HMAC signature
+    // Verify HMAC signature. FAIL CLOSED: an unset secret must reject every
+    // webhook, never wave it through. email-inbound is deployed --no-verify-jwt
+    // (Resend sends no Authorization header — see webhook-fns-no-verify-jwt), so
+    // this signature check is the ONLY gate; skipping it would let anyone who
+    // learns the URL POST a forged `email.received` and drive the coach as any
+    // user.
     const webhookSecret = Deno.env.get("RESEND_WEBHOOK_SECRET");
-    if (webhookSecret) {
-      const isValid = await verifySvixSignature(
-        rawBody,
-        svixId,
-        svixTimestamp,
-        svixSignature,
-        webhookSecret
+    if (!webhookSecret) {
+      console.error(
+        `[${FUNCTION_NAME}] RESEND_WEBHOOK_SECRET not set — rejecting (fail closed)`
       );
-      if (!isValid) {
-        console.warn(`[${FUNCTION_NAME}] Invalid Svix signature — rejecting`);
-        return new Response("Invalid signature", { status: 401 });
-      }
-    } else {
-      console.warn(`[${FUNCTION_NAME}] RESEND_WEBHOOK_SECRET not set — skipping signature check`);
+      return new Response("Server misconfigured", { status: 500 });
+    }
+    const isValid = await verifySvixSignature(
+      rawBody,
+      svixId,
+      svixTimestamp,
+      svixSignature,
+      webhookSecret
+    );
+    if (!isValid) {
+      console.warn(`[${FUNCTION_NAME}] Invalid Svix signature — rejecting`);
+      return new Response("Invalid signature", { status: 401 });
     }
 
     const body = JSON.parse(rawBody);
@@ -112,7 +120,18 @@ Deno.serve(async (req: Request) => {
     }
 
     // ── 4. Match sender to user ──
-    // Extract email address from "Name <email@domain.com>" format
+    // Extract email address from "Name <email@domain.com>" format.
+    //
+    // Threat note (security-review-2026-07-19): Resend's inbound webhook and
+    // Received Emails API expose no SPF/DKIM/DMARC result, so we can't verify in
+    // code that `email.from` wasn't spoofed. Two things bound the blast radius
+    // regardless: (a) we only match a VERIFIED account email, and (b) the reply
+    // below always goes to `user.email` (the account on file), never the raw
+    // inbound From — so a spoofed sender can never receive another user's coach
+    // output. The residual (a spoofed From injecting a message into that user's
+    // history) is controlled by Resend's inbound SPF/DKIM rejection policy,
+    // which must be confirmed in the Resend dashboard — it is not enforceable
+    // here.
     const senderEmail = extractEmailAddress(email.from);
     if (!senderEmail) {
       console.error(`[${FUNCTION_NAME}] Could not parse sender: ${email.from}`);
@@ -202,6 +221,8 @@ Deno.serve(async (req: Request) => {
     );
 
     await sendEmail({
+      // Deliberately the verified account email, NEVER the inbound From — a
+      // spoofed sender must not be able to receive this reply (see §4 note).
       to: user.email,
       subject,
       html,
@@ -325,7 +346,9 @@ async function verifySvixSignature(
     const signatures = svixSignature.split(" ");
     for (const sig of signatures) {
       const [version, value] = sig.split(",");
-      if (version === "v1" && value === expectedSig) {
+      // Constant-time compare so signature verification can't be timed to
+      // recover the expected HMAC byte-by-byte.
+      if (version === "v1" && value && timingSafeEqual(value, expectedSig)) {
         return true;
       }
     }

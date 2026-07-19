@@ -91,21 +91,39 @@ Deno.serve(async (req: Request) => {
         console.log(`[${FUNCTION_NAME}] Unhandled event type: ${event.type}`);
     }
   } catch (error) {
+    const err = error as Error;
     console.error(
       `[${FUNCTION_NAME}] Error handling ${event.type}:`,
-      (error as Error).message
+      err.message
     );
-    // Still return 200 — Stripe will retry on 5xx, and we don't want that
-    // for application errors. Log + alert instead.
-    await supabase.from("error_log").insert({
-      function_name: FUNCTION_NAME,
-      error_message: `${event.type}: ${(error as Error).message}`,
-      stack_trace: (error as Error).stack,
-      context: { event_id: event.id, event_type: event.type },
-    });
+    // Persist for admin visibility — guarded so a logging failure can't mask
+    // the 5xx we owe Stripe.
+    try {
+      await supabase.from("error_log").insert({
+        function_name: FUNCTION_NAME,
+        error_message: `${event.type}: ${err.message}`,
+        stack_trace: err.stack,
+        context: { event_id: event.id, event_type: event.type },
+      });
+    } catch (logErr) {
+      console.error(
+        `[${FUNCTION_NAME}] error_log insert failed:`,
+        (logErr as Error).message
+      );
+    }
+    // Return 5xx so Stripe REDELIVERS (it retries 5xx with backoff for ~3
+    // days). The signature already verified, so this is OUR processing that
+    // failed — a transient DB / Stripe-API blip must never silently drop a
+    // paid upgrade by 200-ing. Handlers are idempotent (checkout dedupes on
+    // stripe_subscription_id; tier writes are upserts), so reprocessing a
+    // redelivered event is safe.
+    return new Response(
+      JSON.stringify({ error: "handler_failed", event_id: event.id }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
   }
 
-  // Always return 200 so Stripe doesn't retry
+  // Success — 200 acks the event so Stripe stops redelivering it.
   return new Response(JSON.stringify({ received: true }), {
     headers: { "Content-Type": "application/json" },
   });
