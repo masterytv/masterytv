@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { syncEngagementForInvite } from '@/lib/decoded/sync-engagement';
 import { normalizeInviteEmail, isValidInviteEmail, buildClaimPatch } from '@/lib/decoded/invite-claim';
 import { BRANDS, resolveBrand, isBrandId, type BrandId } from '@/lib/platform/brand';
@@ -22,6 +22,11 @@ export async function POST(req: NextRequest) {
       console.error('[invite] Auth failed:', authError?.message);
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
+
+    // decoded_invites is service-role-write-only (consent hardening 2026-07-19).
+    // Every write below sets inviter_id = user.id, so the authenticated caller can
+    // only ever create/refresh their OWN invite row.
+    const admin = createAdminClient();
 
     const body = await req.json();
     const recipientEmail = normalizeInviteEmail(body.email);
@@ -62,7 +67,7 @@ export async function POST(req: NextRequest) {
       .single();
 
     // Step 2: upsert the invite row to get a stable landing-page URL.
-    const { data: inviteRow } = await supabase.from('decoded_invites').upsert({
+    const { data: inviteRow } = await admin.from('decoded_invites').upsert({
       inviter_id: user.id,
       recipient_email: recipientEmail,
       inviter_report_id: reportData?.id ?? null,
@@ -84,12 +89,7 @@ export async function POST(req: NextRequest) {
     let emailVariant: InviteEmailVariant = 'assessment';
     let inviteUrl = inviteRow?.id ? `${appUrl}/invite/${inviteRow.id}` : `${appUrl}/login`;
 
-    const serviceUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (inviteRow?.id && serviceUrl && serviceKey) {
-      const admin = createServiceClient(serviceUrl, serviceKey, {
-        auth: { autoRefreshToken: false, persistSession: false },
-      });
+    if (inviteRow?.id) {
       const { data: existing } = await admin
         .from('users')
         .select('id')
