@@ -1,0 +1,55 @@
+-- Security hardening — close the two-party consent BYPASS on decoded_invites,
+-- and finish the users entitlement-column lock.
+--
+-- ⚠️⚠️ DEPLOY ORDER IS LOAD-BEARING ⚠️⚠️
+-- Apply this migration ONLY AFTER the companion app code is live on prod
+-- (main → Vercel). That code moves every privileged decoded_invites / tier write
+-- to the SERVICE ROLE. If this migration lands first, invite-create, consent,
+-- upgrade, deny, and alpha plan-change all start failing for signed-in users.
+-- The code changes are:
+--   src/lib/supabase/admin.ts                         (new service-role helper)
+--   src/app/api/decoded/invite-consent/route.ts       (4 consent writes → admin)
+--   src/app/api/relatti/partner-sharing/route.ts      (reduceConsent patch → admin)
+--   src/app/api/decoded/compatibility-request/route.ts(upgrade request → admin)
+--   src/app/api/decoded/deny-upgrade/route.ts         (upgrade clear  → admin)
+--   src/app/api/decoded/invite/route.ts               (invite upsert  → admin)
+--   src/lib/relatti/broadcast-invite.ts               (broadcast upsert → admin)
+--   src/app/api/decoded/alpha-upgrade/route.ts        (tier write → admin)
+--
+-- ── decoded_invites: make it SERVICE-ROLE-WRITE-ONLY ────────────────────────
+-- CLASS (same as the users lock): RLS scopes ROWS, not COLUMNS. anon +
+-- authenticated held TABLE-LEVEL INSERT/UPDATE/DELETE, and the per-row UPDATE/
+-- INSERT policies (with_check only re-checks ownership) let a party set ANY
+-- column on their own row. Two confirmed-live bypasses (2026-07-19):
+--   (a) UPDATE: a party sets share_with_human='full', status='consented' on their
+--       own invite → verifySharedAccess (src/app/report/[id]/page.tsx) then serves
+--       the PARTNER's full report + scores via the service role. No mutual consent.
+--   (b) INSERT: a user forges a whole row (inviter_id=self, recipient_id=victim,
+--       share_with_human='full', status='consented'). An ex-partner who already
+--       knows the victim's user + report UUIDs from a prior connection regains
+--       access AFTER consent was revoked.
+-- The upgrade_requested_* columns are equally sensitive: forging
+-- upgrade_requested_by=<partner> drives the invite-consent accept path to grant
+-- 'full' with a single self-click (the two-party check reads that column).
+--
+-- FIX: every legitimate write already runs through server routes that verify the
+-- caller is a party (or sets inviter_id=self); the companion code moves those
+-- writes to the service role. So the client roles need NO write access at all —
+-- revoke INSERT/UPDATE/DELETE and keep only SELECT (the "Inviter/Recipient can
+-- read own" policies still gate reads for the dashboard + compatibility pages).
+REVOKE INSERT, UPDATE, DELETE ON public.decoded_invites FROM anon, authenticated;
+
+-- The per-row write POLICIES ("Inviter can insert", "Recipient can update
+-- consent", "Inviter can update upgrade request", "Recipient can claim by email")
+-- are now VESTIGIAL — unreachable without the underlying grant. Left in place
+-- (harmless) rather than dropped, to keep this migration purely subtractive; a
+-- follow-up may remove them.
+
+-- ── users: finish decoded_tier / subscription_tier ──────────────────────────
+-- Part 1 (20260719000000) converted users to column-level grants and, to keep
+-- /api/decoded/alpha-upgrade working while it still ran as the authenticated
+-- role, TEMPORARILY granted these two. The companion code moves alpha-upgrade to
+-- the service role, so the client grant can now be dropped. (This column-level
+-- REVOKE is effective precisely because Part 1 replaced the table grant with
+-- column grants — a column REVOKE against a table grant is a no-op.)
+REVOKE UPDATE (decoded_tier, subscription_tier) ON public.users FROM authenticated;
