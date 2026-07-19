@@ -15,6 +15,7 @@
  */
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { requireCronSecret } from "../_shared/cron-auth.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { sendEmail } from "../_shared/resend.ts";
 
@@ -42,6 +43,9 @@ Deno.serve(async (req: Request) => {
   if (req.method !== "POST") {
     return new Response("Method not allowed", { status: 405 });
   }
+
+  const denied = requireCronSecret(req);
+  if (denied) return denied;
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
