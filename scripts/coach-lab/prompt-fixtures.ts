@@ -743,7 +743,7 @@ export const SCENARIOS: Scenario[] = [
       "MONEY MAP PROFILE", // Layer 4.5 rendered by money-map-profile.ts
       "The Relentless Builder", // the stored archetype
       "running hot", // overclock rendering
-      "THE LEAP: High", // LEAP band rendering
+      "THE FEAR: High", // Fear band rendering (stored key `leap`; user-facing "the Fear" since 2026-07-20)
       "THE REVEAL", // the reveal first-message builder
       "Does 'enough' have an actual number", // the DRIVE type-selected question
       "ANSWER CHIPS", // the clickable-chip contract (T5)

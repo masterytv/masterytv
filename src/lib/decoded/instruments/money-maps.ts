@@ -5,7 +5,11 @@
  * entrepreneur-situated items on a 1–6 agreement scale, all POSITIVELY keyed to
  * their Map (agree = more of the construct → no reverse-coding). Five dimensions:
  * four core Maps (GUARD/DRIVE/MIRROR/SHADOW) that generate the archetype, plus
- * THE LEAP (a state — how much fear is gating the edge).
+ * the Fear (user-facing name since 2026-07-20; stored/internal key "LEAP" — a
+ * state: how much fear is gating the edge).
+ *
+ * ⚠️ ITEM TEXT LOCKSTEP: supabase/functions/money-generate-report/index.ts
+ * inlines this item bank (edge can't import src/) — a re-field must update both.
  *
  * ⚠️ ITEM TEXT IS CANONICAL ONCE SHIPPED — changing it invalidates stored
  * responses and forces retakes (DECODED_SCORING.md rule). Every string below is

@@ -17,8 +17,9 @@ import { FloatingThemeToggle } from "@/components/floating-theme-toggle";
  * component — the CTA is a plain link into the quiz-first funnel (§6).
  */
 
-// Verbatim edge/leak lines from MONEY_ARCHETYPES (scoring/money-maps.ts) — the
-// landing must preview the real product artifact, not marketing paraphrase.
+// Verbatim edge/challenge lines from MONEY_ARCHETYPES (scoring/money-maps.ts) —
+// the landing must preview the real product artifact, not marketing paraphrase.
+// (`leak` is the stored field name; the user-facing label is "The challenge".)
 const SAMPLE_ARCHETYPES = [
   {
     pair: "SHADOW × DRIVE",
@@ -127,8 +128,8 @@ export default function MoneyLanding() {
           Twelve patterns. One of them is you.
         </h2>
         <p className="mx-auto mt-4 max-w-2xl text-center leading-relaxed text-text-secondary">
-          Your Map comes back as a named archetype with two honest lines: the edge it gives you, and the leak it
-          charges you. Flattery isn&apos;t useful, so you won&apos;t get any.
+          Your Map comes back as a named archetype with two honest lines: the edge it gives you, and the challenge
+          it hands you. Flattery isn&apos;t useful, so you won&apos;t get any.
         </p>
         <div className="mt-10 grid gap-4 sm:grid-cols-3">
           {SAMPLE_ARCHETYPES.map((a) => (
@@ -139,7 +140,7 @@ export default function MoneyLanding() {
               </h3>
               <p className="mt-4 text-[10px] font-semibold uppercase tracking-[0.14em] text-text-muted">The edge</p>
               <p className="mt-1 text-sm leading-relaxed text-text-secondary">{a.edge}</p>
-              <p className="mt-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-text-muted">The leak</p>
+              <p className="mt-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-text-muted">The challenge</p>
               <p className="mt-1 text-sm leading-relaxed text-text-secondary">{a.leak}</p>
             </div>
           ))}
@@ -213,8 +214,8 @@ export default function MoneyLanding() {
             Clarity, control, and the end of &ldquo;never enough.&rdquo;
           </h2>
           <p className="mx-auto mt-4 max-w-xl leading-relaxed text-text-secondary">
-            No get-rich anything. What changes is the part you actually run — the pattern named, the leak watched,
-            cleaner calls, and &ldquo;enough&rdquo; finally getting a number. That&apos;s the edge.
+            No get-rich anything. What changes is the part you actually run — the pattern named, the challenge
+            watched, cleaner calls, and &ldquo;enough&rdquo; finally getting a number. That&apos;s the edge.
           </p>
           <Link
             href="/assess"

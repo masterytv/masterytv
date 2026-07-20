@@ -273,6 +273,18 @@ function ChatPageInner() {
         setTimeout(() => handleSendMessage("I just finished Money Maps. What do you see?"), 300);
       }
       router.replace('/dashboard/chat', { scroll: false });
+    } else if (contextType === 'money_report_question') {
+      // Money report → coach handoff (the report's three first_questions chips).
+      // The user explicitly tapped a question they want to ask, so send it as
+      // their opening turn — even into an existing thread (unlike money_reveal,
+      // which only seeds a fresh one). Params are stripped immediately, so a
+      // refresh never re-sends it.
+      deepLinkProcessed.current = true;
+      const q = searchParams.get('q')?.slice(0, 300);
+      if (q?.trim()) {
+        setTimeout(() => handleSendMessage(q.trim()), 300);
+      }
+      router.replace('/dashboard/chat', { scroll: false });
     } else if (contextType === 'money_decision' && topic) {
       // Money Decision Room (MONEY_EXPERIENCE.md §8, the money V1 spine). The user
       // named a live decision in the Decision Room and we deep-linked into its

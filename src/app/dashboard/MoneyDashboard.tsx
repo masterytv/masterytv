@@ -30,7 +30,7 @@ import Link from "next/link";
 import { Compass, ArrowRight, Check, MessageSquare, PenLine, Undo2 } from "lucide-react";
 import { loadMyMoneyMap } from "@/lib/decoded/load-my-money-map";
 import type { StoredMoneyMap } from "@/lib/decoded/scoring/money-maps";
-import { describeLeap } from "@/components/money/money-map-card-format";
+import { describeFear } from "@/components/money/money-map-card-format";
 import {
   listMyDecisions,
   createDecision,
@@ -188,7 +188,7 @@ export default function MoneyDashboard({
               <span className="dr-anchor__type">{moneyMap.archetype}</span>
               <span className="dr-anchor__sep" aria-hidden="true">·</span>
               <span className="dr-anchor__leap">
-                The Leap: {describeLeap(moneyMap.leap.band, moneyMap.leap.tilt)}
+                The Fear: {describeFear(moneyMap.leap.band, moneyMap.leap.tilt)}
               </span>
             </Link>
           )}

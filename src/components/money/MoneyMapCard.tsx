@@ -7,10 +7,10 @@
  * StoredMoneyMap bundle (the money WRITE path's assessment_reports.sections
  * .money_map) — never re-scores.
  *
- * BRAND.md: one edge + one leak keeps it credible, not flattery-only (§4
- * anti-cringe); the LEAP line is the hook. Lucide marks only (the §5 mockup's
+ * BRAND.md: one edge + one challenge keeps it credible, not flattery-only (§4
+ * anti-cringe); the Fear line is the hook. Lucide marks only (the §5 mockup's
  * ⚡/⚠ are placeholders) — Compass (money's mark, and BRAND's endorsed abstract
- * pick), ArrowUpRight for the edge/leverage, AlertTriangle for the leak/caution.
+ * pick), ArrowUpRight for the edge/leverage, AlertTriangle for the challenge.
  * Deliberately NOT Zap (banned lightning) or Sparkles (banned). Tokens only, so
  * it adapts to the money palette in both themes.
  *
@@ -20,7 +20,7 @@
 
 import { Compass, ArrowUpRight, AlertTriangle } from "lucide-react";
 import type { StoredMoneyMap } from "@/lib/decoded/scoring/money-maps";
-import { secondaryAdjective, describeLeap } from "./money-map-card-format";
+import { secondaryAdjective, describeFear } from "./money-map-card-format";
 import "./money-map-card.css";
 
 export default function MoneyMapCard({ map }: { map: StoredMoneyMap }) {
@@ -46,14 +46,14 @@ export default function MoneyMapCard({ map }: { map: StoredMoneyMap }) {
         </div>
         <div className="mm-card__line">
           <AlertTriangle className="mm-card__line-mark" size={16} strokeWidth={2} aria-hidden="true" />
-          <span className="mm-card__line-label">Leak</span>
+          <span className="mm-card__line-label">Challenge</span>
           <span className="mm-card__line-text">{map.leak}</span>
         </div>
       </div>
 
       <p className="mm-card__leap">
-        <span className="mm-card__leap-label">The Leap</span>
-        <span className="mm-card__leap-value">{describeLeap(map.leap.band, map.leap.tilt)}</span>
+        <span className="mm-card__leap-label">The Fear</span>
+        <span className="mm-card__leap-value">{describeFear(map.leap.band, map.leap.tilt)}</span>
       </p>
 
       <p className="mm-card__footer">built on the science of money beliefs · Money Maps</p>

@@ -2,6 +2,9 @@
 
 > **Author:** Claude Code (Orchestrator), commissioned by Thomas Wood · **Date:** July 17, 2026
 > **Status:** 🟢 **v1 FOUNDER-APPROVED for beta (2026-07-17)** — ship as-is, tune from real users (§8). Scoring locked + self-checked (`scripts/money-maps-scoring.mjs`, 7 boundary tests green). Becomes code in the Decoded engine (`program=money`).
+>
+> ⚠️ **v1.1 TERMINOLOGY RENAME (founder, 2026-07-20) — read before quoting this doc's labels.** Two user-facing terms changed everywhere on the site:
+> **"Leak" → "the Challenge"** (the archetype's overclocked cost) and **"THE LEAP" → "the Fear"** (the fifth dimension). The *constructs, items, scoring, and cutpoints are unchanged* — only the public vocabulary moved. **Storage keys keep the legacy names** (`sections.money_map.leak`, `.leap`, `dims.LEAP` — live rows + deployed edge functions read them; the seam is documented in `src/lib/decoded/scoring/money-maps.ts`). In this doc, LEAK/LEAP below are the internal construct names; every user-visible surface (card, report, landing, coach prompts) must say Challenge / the Fear. The scorer is also no longer the whole report: a long-form LLM narrative now layers on top (see MONEY_EXPERIENCE.md §4 correct-course note).
 > **Parents:** [MONEY_EXPERIENCE.md](MONEY_EXPERIENCE.md) §4 (the design decision) · [MONEY_DISCOVERY.md](MONEY_DISCOVERY.md) (why money-psychology) · this doc = the item bank + scoring + archetypes.
 > **IP position:** every item below is **our own wording**; the construct *names* (GUARD/DRIVE/MIRROR/SHADOW/LEAP) are ours; the *archetypes* are ours; "Money Maps™" is our mark. We never use "Money Scripts®" (Klontz's trademark) or KMSI-R items. We stand on the *science of money beliefs* (a body of ideas, not copyrightable), retuned for entrepreneurs. **Item text is canonical once shipped** — changing it invalidates stored responses (`DECODED_SCORING.md` rule).
 
@@ -101,10 +104,10 @@ Each carries **one edge and one leak** (never flattery-only — the anti-cringe 
   │                              │
   │  ⚡ Edge:  You out-work the   │   ← one edge
   │     room and never blow up.  │
-  │  ⚠ Leak:  The finish line     │   ← one leak
+  │  ⚠ Challenge: The finish line │   ← one challenge (stored key `leak`)
   │     keeps moving.            │
   │                              │
-  │  THE LEAP: High — tilted to  │   ← the state / hook
+  │  THE FEAR: High — leaning to │   ← the state / hook
   │  fear of success.            │
   │                              │
   │  built on the science of     │   ← science-first footer

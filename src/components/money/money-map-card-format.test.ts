@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { secondaryAdjective, describeLeap } from "./money-map-card-format";
+import { secondaryAdjective, describeFear } from "./money-map-card-format";
 
 describe("secondaryAdjective", () => {
   it("renders each core Map as its adjective form (§5 'DRIVE · guarded')", () => {
@@ -10,15 +10,15 @@ describe("secondaryAdjective", () => {
   });
 });
 
-describe("describeLeap", () => {
-  it("surfaces the tilt when the leap is tilted (§5 hook line)", () => {
-    expect(describeLeap("High", "fear-of-success")).toBe("High — tilted to fear of success");
-    expect(describeLeap("Moderate", "fear-of-failure")).toBe("Moderate — tilted to fear of failure");
+describe("describeFear", () => {
+  it("surfaces the tilt when the facets earned one (§5 hook line)", () => {
+    expect(describeFear("High", "fear-of-success")).toBe("High — leaning fear of success");
+    expect(describeFear("Moderate", "fear-of-failure")).toBe("Moderate — leaning fear of failure");
   });
 
-  it("renders the band alone for a balanced leap — never an invented tilt", () => {
-    expect(describeLeap("Low", "balanced")).toBe("Low");
-    expect(describeLeap("Moderate", "balanced")).toBe("Moderate");
-    expect(describeLeap("High", "balanced")).toBe("High");
+  it("renders the band alone for a balanced result — never an invented tilt", () => {
+    expect(describeFear("Low", "balanced")).toBe("Low");
+    expect(describeFear("Moderate", "balanced")).toBe("Moderate");
+    expect(describeFear("High", "balanced")).toBe("High");
   });
 });

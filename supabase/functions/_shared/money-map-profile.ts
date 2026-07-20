@@ -121,7 +121,7 @@ export function buildMoneyMapProfileLayer(
     `ARCHETYPE: "${mm.archetype}" — dominant ${mm.dominant}, second read ${mm.secondary}.`,
   );
   parts.push(`  Edge (dialed right): ${mm.edge}.`);
-  parts.push(`  Leak (overclocked): ${mm.leak}.`);
+  parts.push(`  Challenge (overclocked): ${mm.leak}.`);
   parts.push("");
 
   parts.push(`THE FOUR MAPS (mean 1–6, their strongest first):`);
@@ -133,9 +133,9 @@ export function buildMoneyMapProfileLayer(
   );
   parts.push("");
 
-  parts.push(`THE LEAP: ${mm.leap.band} — ${tiltPhrase(mm.leap.tilt)}.`);
+  parts.push(`THE FEAR: ${mm.leap.band} — ${tiltPhrase(mm.leap.tilt)}.`);
   parts.push(
-    `  THE LEAP is how much fear is gating their edge right now — your coaching entry point, not a trait. A High LEAP is the rarer, sneakier read: it doesn't feel like fear, it feels like caution. If it's High, name it in the reveal regardless of their dominant Map.`,
+    `  THE FEAR is how much fear is gating their edge right now — your coaching entry point, not a trait. (Always call it "the Fear" with the user — never "the Leap", its old name, and never "leak".) A High Fear is the rarer, sneakier read: it doesn't feel like fear, it feels like caution. If it's High, name it in the reveal regardless of their dominant Map.`,
   );
   parts.push("");
 
@@ -153,6 +153,9 @@ export function buildMoneyMapProfileLayer(
   );
   parts.push(
     `- Reframe every Map as an edge with a governor, never a flaw — their overclock is a strength dialed too high.`,
+  );
+  parts.push(
+    `- USER-FACING VOCABULARY: the cost of their overclocked strength is their "challenge" and the fifth measure is "the Fear" — never say "leak" or "the Leap" to the user (internal legacy names).`,
   );
 
   return parts.join("\n");

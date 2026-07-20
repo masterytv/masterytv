@@ -1,6 +1,15 @@
 /**
  * Money Maps™ — the money vertical's deterministic scorer (program=money).
  *
+ * ⚠️ TERMINOLOGY SEAM (founder rename, 2026-07-20): user-facing vocabulary is
+ * "the Challenge" (was "Leak") and "the Fear" (was "The Leap"). The STORED
+ * bundle keys in this file (`leak`, `leap`, `dims.LEAP`) and their types
+ * (LeapBand/LeapTilt/MoneyLeapResult) are the persistence schema — live
+ * assessment_reports rows and the deployed edge functions read them — so they
+ * keep the legacy names. Display formatters (describeFear), UI labels, coach
+ * prompts, and the report narrative all speak the NEW names. Never surface
+ * "leak"/"Leap" to a user.
+ *
  * SPEC: directives/MONEY_MAPS_INSTRUMENT.md §3–§4.
  * SPEC-LOCK: scripts/money-maps-scoring.mjs — this TS scorer reproduces that
  * reference algorithm and its 7 boundary tests exactly (money-maps.test.ts).
@@ -30,10 +39,10 @@ import {
 /** The four core Maps — stable traits that generate the archetype (§1). */
 export type MoneyMap = "GUARD" | "DRIVE" | "MIRROR" | "SHADOW";
 
-/** All five dimensions: the four core Maps + THE LEAP (a state, not an identity). */
+/** All five dimensions: the four core Maps + the Fear (stored key "LEAP" — a state, not an identity). */
 export type MoneyDimension = MoneyMap | "LEAP";
 
-/** THE LEAP band — how much fear is currently gating the edge (§3.4). */
+/** The Fear band — how much fear is currently gating the edge (§3.4). Stored under `leap.band`. */
 export type LeapBand = "Low" | "Moderate" | "High";
 
 /**
@@ -50,7 +59,7 @@ export interface MoneyArchetypeDef {
   name: string;
   /** The strength, dialed right. */
   edge: string;
-  /** The governor's cost, dialed too high — the honesty lives here, never in the name (§4). */
+  /** The CHALLENGE (stored key `leak`): the governor's cost, dialed too high — the honesty lives here, never in the name (§4). */
   leak: string;
 }
 
