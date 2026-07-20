@@ -114,6 +114,16 @@ async function planWeeklySession(
   userId: string,
   sevenDaysAgo: string
 ): Promise<void> {
+  // ── 0. Resolve the user's vertical FIRST — the same spine resolution the
+  // coach itself uses (participant membership → signup_brand → invite → null).
+  // Used BOTH to scope the commitments read below (a weekly session must not
+  // quote another vertical's commitments — commitments are program-scoped as
+  // of 2026-07-20) AND to stamp the scheduled message for branded delivery
+  // (the 2026-07-20 mis-brand incident).
+  const resolved = await resolveProgram(supabase, userId, null, null);
+  const program = (resolved.ok ? resolved.program : null) ?? "general";
+  const brand = brandForProgram(program).id;
+
   // ── 1. REVIEW: Load weekly context ──
   const [user, challenges, commitments, entities, recentMessages, lastAgenda] =
     await Promise.all([
@@ -127,6 +137,7 @@ async function planWeeklySession(
         .from("commitments")
         .select("description, type, status, due_date")
         .eq("user_id", userId)
+        .eq("program", program)
         .eq("status", "active")
         .order("created_at", { ascending: false })
         .limit(10),
@@ -285,16 +296,11 @@ IMPORTANT RULES:
   // Simple timezone offset (good enough for scheduling)
   const scheduledFor = mondayMorning.toISOString();
 
-  // Brand the session for the user's vertical — the same spine resolution the
-  // coach itself uses (participant membership → signup_brand → invite → null).
-  // Stamped into context so cron-process-scheduled delivers with the right
-  // sender + email chrome, and stamps `program` on the outbound message so an
-  // email reply threads into the right Coach Pack. Without this stamp every
-  // weekly session went out as Mastery Coach (2026-07-20 mis-brand incident).
-  const resolved = await resolveProgram(supabase, userId, null, null);
-  const program = (resolved.ok ? resolved.program : null) ?? "general";
-  const brand = brandForProgram(program).id;
-
+  // Brand/program resolved at the top of this function (step 0 — it also
+  // scopes the commitments read). Stamped into context so
+  // cron-process-scheduled delivers with the right sender + email chrome, and
+  // stamps `program` on the outbound message so an email reply threads into
+  // the right Coach Pack (the 2026-07-20 mis-brand incident).
   await supabase.from("scheduled_messages").insert({
     user_id: userId,
     type: "weekly_coaching_session",

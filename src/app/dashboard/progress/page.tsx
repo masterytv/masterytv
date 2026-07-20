@@ -16,6 +16,7 @@
  */
 
 import { useUser } from "@/hooks/useUser";
+import { resolveBrandClient } from "@/hooks/useBrand";
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Loader2, Trophy, CheckCircle2, Repeat, Star, TrendingUp, Lock } from "lucide-react";
@@ -98,6 +99,9 @@ export default function ProgressPage() {
         .from("commitments")
         .select("id, description, completed_at, source_message_id")
         .eq("user_id", user.id)
+        // Program-scoped (2026-07-20): the progress timeline shows only THIS
+        // vertical's completed commitments.
+        .eq("program", resolveBrandClient().programSlug)
         .eq("status", "completed")
         .order("completed_at", { ascending: false }),
 

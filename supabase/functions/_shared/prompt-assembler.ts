@@ -163,13 +163,16 @@ export async function assemblePrompt(
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
-    // Session summaries — medium-term memory (S6.12)
+    // Session summaries — medium-term memory (S6.12). OVER-FETCHED here with
+    // the parent conversation id, then scoped to THIS vertical after the
+    // parallel block (child-scoped tenancy — see the sessionSummaries filter
+    // below; the table has no program column of its own).
     supabase
       .from("conversation_summaries")
-      .select("summary, key_topics, framework_used, message_count, first_message_at, last_message_at")
+      .select("summary, key_topics, framework_used, message_count, first_message_at, last_message_at, conversation_id")
       .eq("user_id", userId)
       .order("last_message_at", { ascending: false })
-      .limit(5),
+      .limit(15),
     // AI tools knowledge base (S6.6 — non-flagged, active tools)
     supabase
       .from("ai_tools")
@@ -201,7 +204,41 @@ export async function assemblePrompt(
   const messages = (messagesResult.data ?? []) as Message[];
   const importantFacts = (factsResult.data ?? []) as MemoryFact[];
   const agenda = agendaResult.data as CoachingAgenda | null;
-  const sessionSummaries = (summariesResult.data ?? []) as ConversationSummary[];
+  // Session summaries are CHILD-SCOPED through their parent conversation (no
+  // program column of its own, and no conversation FK PostgREST could embed) —
+  // resolve each summary's vertical via its parent and keep only THIS
+  // program's. Reading by user_id alone leaked the executive session summary
+  // into the money coach's Layer 7 (2026-07-20: the MoneyTraits coach greeted
+  // a user with the executive session's Relatti recruiting plans). Legacy
+  // parents with a NULL program count as the executive coach's ('general').
+  let sessionSummaries: ConversationSummary[] = [];
+  {
+    const rawSummaries = (summariesResult.data ?? []) as Array<
+      ConversationSummary & { conversation_id?: string | null }
+    >;
+    if (rawSummaries.length > 0) {
+      const parentIds = [
+        ...new Set(rawSummaries.map((s) => s.conversation_id).filter(Boolean)),
+      ] as string[];
+      const { data: parents } = parentIds.length
+        ? await supabase.from("conversations").select("id, program").in("id", parentIds)
+        : { data: [] as Array<{ id: string; program: string | null }> };
+      const parentProgram = new Map(
+        ((parents ?? []) as Array<{ id: string; program: string | null }>).map(
+          (p) => [p.id, p.program],
+        ),
+      );
+      const summaryScope = programScope(program);
+      sessionSummaries = rawSummaries
+        .filter(
+          (s) =>
+            ((s.conversation_id ? parentProgram.get(s.conversation_id) : null) ??
+              "general") === summaryScope,
+        )
+        .slice(0, 5)
+        .map(({ conversation_id: _cid, ...rest }) => rest as ConversationSummary);
+    }
+  }
   const availableAITools = (aiToolsResult.data ?? []) as AIToolRecord[];
   const userTools: UserAITool[] = Array.isArray(user?.ai_tools) ? user.ai_tools as UserAITool[] : [];
   const decodedScores = (decodedScoresResult.data ?? []) as Array<{
