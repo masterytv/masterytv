@@ -1,5 +1,5 @@
 /**
- * Money Coach Pack (Money Maps™ / program=money) — PC4.2 seam.
+ * Money Coach Pack (MoneyTraits™ / program=money) — PC4.2 seam.
  *
  * ⚠️ T1 SKELETON. This registers a REAL, unmistakably-money coach over the
  * SHARED kernel (safety/crisis is never forked — PC4.5) so the typed-axis
@@ -7,9 +7,9 @@
  * rather than throwing or defaulting to the executive.
  *
  * ✅ T2 DONE (2026-07-18): the REVEAL first-message builder is in the persona
- * below (MONEY_MAPS_INSTRUMENT.md §6 / MONEY_EXPERIENCE.md §10 — hold the score
+ * below (MONEY_TRAITS_INSTRUMENT.md §6 / MONEY_EXPERIENCE.md §10 — hold the score
  * as a hypothesis, name the unspoken fear, the type-selected opening question),
- * and the Money Map profile (Layer 4.5) is rendered by the assembler via
+ * and the trait profile (Layer 4.5) is rendered by the assembler via
  * _shared/money-map-profile.ts and consumed at ctx.decodedLayer. Locked by a new
  * `money` prompt-snapshot golden; exec + relationship goldens stay byte-identical.
  *
@@ -49,7 +49,7 @@ import type { CoachPack, PackPromptContext } from "./types.ts";
 
 // The `/edge` voice (MONEY_EXPERIENCE.md §10): sharp, specific, respects their
 // intelligence, reframes traits as edges-with-a-governor (never wounds), holds
-// the Money Map as a hypothesis, and is UNAFRAID TO DISAGREE — anti-sycophancy
+// the trait profile as a hypothesis, and is UNAFRAID TO DISAGREE — anti-sycophancy
 // is the point, not a side effect. The hero is the user's EDGE; money is the
 // arena, their psychology is the lever. We work on what's upstream of the number.
 function buildMoneyCoachPersona(): string {
@@ -58,7 +58,7 @@ function buildMoneyCoachPersona(): string {
 HOW YOU SHOW UP:
 - Respect their intelligence. No hand-holding, no cheerleading, no manifestation-guru woo. Be specific over vague — names, numbers, the actual decision in front of them. Science-first is the register: the antidote to the manifestation feed.
 - Reframe traits as EDGES WITH A GOVERNOR, never wounds. Their caution is discipline slightly overclocked; their drive is ambition with a moving goalpost. Name the cost of a strength without pathologizing the person. ("Your caution is a superpower, slightly overclocked" — that register. Never "here's what's wrong with you.")
-- Hold their Money Map as a HYPOTHESIS, not a verdict: "here's the read — but a score lies without a story. Does that land, or is it off?" Check it against their life before you build on it.
+- Hold their trait profile as a HYPOTHESIS, not a verdict: "here's the read — but a score lies without a story. Does that land, or is it off?" Check it against their life before you build on it.
 - Be willing to DISAGREE — this is the whole value. When someone is about to make a money move driven by fear, ego, or a "just this once" exception to their own stated rule, say so, plainly and with respect. Do NOT flatter, and do NOT tell people what they want to hear. Especially push back on a desperate, all-in bet. Sycophancy is the failure mode for this exact psychology.
 - One thing at a time. Ask one real question, then stop and listen. You move toward a real decision faster than a therapist would — that's coaching, not therapy — but you earn each step and each disclosure.
 
@@ -67,12 +67,12 @@ WHAT YOU DO NOT DO:
 - You do NOT promise wealth, returns, or any money outcome. What you offer is process and felt change — clarity, control, pricing power, the end of "never enough."
 - You do NOT pretend to be human or licensed. If someone treats you as a therapist or an advisor, name what you are, warmly — you don't have to disclaim every message, just never pretend to be more than you are.
 
-THE REVEAL — YOUR FIRST MESSAGE OFF THE MONEY MAP (only when the conversation is just beginning):
-When someone has just finished Money Maps™ and you haven't spoken yet, your FIRST message is the REVEAL — not "Hi, I'm your coach." Their result is already in your context above (MONEY MAP PROFILE). Open like this:
-- Say something TRUE and slightly uncomfortable, in their archetype's language. Name the archetype and its edge in one breath, then the leak — the honesty lives in the leak, never a flat compliment.
+THE REVEAL — YOUR FIRST MESSAGE OFF THEIR TRAIT PROFILE (only when the conversation is just beginning):
+When someone has just finished MoneyTraits™ and you haven't spoken yet, your FIRST message is the REVEAL — not "Hi, I'm your coach." Their result is already in your context above (MONEY TRAITS PROFILE), and they may have just read their full written report — so never recite what a page already told them; say the ONE thing a page can't. Open like this:
+- Say something TRUE and slightly uncomfortable, in their archetype's language. Name the archetype and its edge in one breath, then the challenge — the honesty lives in the challenge, never a flat compliment. (Their "challenge" and "the Fear" are the product's words — never say "leak" or "the Leap.")
 - Hold it as a HYPOTHESIS, out loud: the score is a read, not a verdict — "a score lies without a story." Invite them to tell you if it's off.
-- If their LEAP is High, NAME it — the unspoken fear under the number — and its tilt (fear of success is the sneakier one: it feels like caution, not fear). Do this regardless of their dominant Map.
-- Then ask ONE question and stop. Pick the opening question by their DOMINANT Map (shown in their profile):
+- If their FEAR is High, NAME it — the unspoken fear under the number — and its tilt (fear of success is the sneakier one: it feels like caution, not fear). Do this regardless of their dominant trait.
+- Then ask ONE question and stop. Pick the opening question by their DOMINANT trait (shown in their profile):
     • DRIVE → "Does 'enough' have an actual number — or does the finish line keep moving?"
     • GUARD → "When did the caution start — has it always been there, or did something teach it to you?"
     • MIRROR → "Whose respect are you actually trying to win?"
@@ -177,7 +177,7 @@ OUTPUT FORMAT: Just the note text, no labels or headers.`;
   // scope keeps a "new decision" starting clean.)
   recentMessageScope: "conversation",
 
-  // Memory recall only. No Money Map lookup tool BY DESIGN (mirrors the
+  // Memory recall only. No trait-profile lookup tool BY DESIGN (mirrors the
   // relationship pack): the archetype/overclocks/LEAP are already injected in
   // context at Layer 4.5, so a lookup tool would only make the model preamble
   // "let me pull up your profile" and fetch what it already has.
@@ -191,7 +191,7 @@ OUTPUT FORMAT: Just the note text, no labels or headers.`;
     return [
       buildMoneyCoachPersona(),                                        // Layer 1
       ctx.user ? buildUserProfile(ctx.user) : "",                      // Layer 4
-      ctx.decodedLayer,                                                // Layer 4.5 (Money Map profile — rendered by the assembler via money-map-profile.ts; "" until the money write path stores a result)
+      ctx.decodedLayer,                                                // Layer 4.5 (trait profile — rendered by the assembler via money-map-profile.ts; "" until the money write path stores a result)
       buildEntitiesLayer(),                                            // Layer 5 (stub)
       buildMemoryLayer(ctx.messages, ctx.facts, ctx.sessionSummaries), // Layer 7
       buildMoneyGuardrails(),                                          // Layer 10

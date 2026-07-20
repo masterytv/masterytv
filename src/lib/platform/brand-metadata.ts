@@ -47,9 +47,8 @@ const BRAND_ICONS: Record<BrandId, Metadata["icons"]> = {
 const SITE_NAME: Record<BrandId, string> = {
   masterytv: "Mastery Coach",
   relatti: "Relatti",
-  // Locked mechanic name (MONEY_EXPERIENCE §12). Public brand name is founder-TBD
-  // (Momatti candidate) — revisit before the first public link.
-  money: "Money Maps",
+  // Public brand locked 2026-07-20: MoneyTraits on moneytraits.com.
+  money: "MoneyTraits",
 };
 
 // Tab-title suffix — shorter than SITE_NAME so titles survive tab truncation
@@ -57,7 +56,7 @@ const SITE_NAME: Record<BrandId, string> = {
 const TITLE_SUFFIX: Record<BrandId, string> = {
   masterytv: "Mastery",
   relatti: "Relatti",
-  money: "Money Maps",
+  money: "MoneyTraits",
 };
 
 /** "{Page} — {Brand}" tab title, e.g. brandTitle("relatti", "Coach") → "Coach — Relatti". */
@@ -72,7 +71,7 @@ export function brandTitle(brandId: BrandId, page: string): string {
 export const BRAND_ORIGINS: Record<BrandId, string> = {
   masterytv: "https://masterytv.com",
   relatti: "https://relatti.com",
-  money: "https://moneymaps.masterytv.com",
+  money: "https://moneytraits.com",
 };
 
 export interface BrandPageMeta {

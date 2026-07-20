@@ -186,25 +186,25 @@ const ASSESS_ONBOARDING: Record<ProgramId, AssessOnboarding> = {
       icon: Compass,
       title: "Finally Understand Your Money Patterns",
       body: (mins) => (
-        <>In about {mins} minutes, the Money Map shows you the beliefs and
-        reflexes that shape how you earn, spend, and price &mdash; before you
-        even decide. Save anytime and come back later.</>
+        <>In about {mins} minutes, MoneyTraits measures the four traits behind
+        how you earn, spend, and price &mdash; before you even decide. Save
+        anytime and come back later.</>
       ),
     },
     invite: {
       title: "Know someone who should take it too?",
-      subtitle: <>The Money Map is free &mdash; share it with someone you know.</>,
+      subtitle: <>MoneyTraits is free &mdash; share it with someone you know.</>,
       showRecipientChips: false,
       valueProp: null,
     },
     primer: {
       title: "A quick, honest quiz",
       dimensions: null,
-      startLabel: "Start My Money Map",
+      startLabel: "Measure My Traits",
       consentIntro: "A couple of quick confirmations before you start:",
       consentItems: [
         <>I confirm I am <strong>18 years or older</strong></>,
-        <>I understand Money Maps is <strong>coaching on the psychology of money</strong> &mdash; not financial, investment, or tax advice.</>,
+        <>I understand MoneyTraits is <strong>coaching on the psychology of money</strong> &mdash; not financial, investment, or tax advice.</>,
       ],
     },
   },
@@ -574,7 +574,7 @@ export default function AssessmentEngine({
         const reportResult = await generateReport(assessmentId);
         if (reportResult.success && reportResult.reportId) {
           setGeneratedReportId(reportResult.reportId);
-          // Money's payoff is the coach's reveal in chat (off the Money Map the
+          // Money's payoff is the coach's reveal in chat (off the trait profile the
           // report row just stored at sections.money_map), not the Big-Five
           // report viewer — go straight there. Report-viewer verticals keep the
           // click-through (autoNavigate:false).

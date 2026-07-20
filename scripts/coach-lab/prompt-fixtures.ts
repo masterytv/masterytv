@@ -539,7 +539,7 @@ const DYAD_TABLES: Record<string, TableFixture> = {
   decoded_invites: [],
 };
 
-// ─── Money (Money Maps™) solo — post-quiz, the reveal moment ─────────────
+// ─── Money (MoneyTraits™) solo — post-quiz, the reveal moment ─────────────
 
 const MONEY_USER = "55555555-5555-4555-8555-555555555505";
 const MONEY_ASSESSMENT = "55555555-5555-4555-8555-5555555555a5";
@@ -740,10 +740,10 @@ export const SCENARIOS: Scenario[] = [
     conversationId: MONEY_CONVERSATION,
     mustInclude: [
       "money coach", // money persona
-      "MONEY MAP PROFILE", // Layer 4.5 rendered by money-map-profile.ts
+      "MONEY TRAITS PROFILE", // Layer 4.5 rendered by money-map-profile.ts
       "The Relentless Builder", // the stored archetype
       "running hot", // overclock rendering
-      "THE LEAP: High", // LEAP band rendering
+      "THE FEAR: High", // Fear band rendering (stored key `leap`; user-facing "the Fear" since 2026-07-20)
       "THE REVEAL", // the reveal first-message builder
       "Does 'enough' have an actual number", // the DRIVE type-selected question
       "ANSWER CHIPS", // the clickable-chip contract (T5)

@@ -19,6 +19,8 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { requireCronSecret } from "../_shared/cron-auth.ts";
 import { createSupabaseClient } from "../_shared/supabase.ts";
 import { calculateCost } from "../_shared/anthropic.ts";
+import { resolveProgram } from "../_shared/resolve-program.ts";
+import { brandForProgram } from "../_shared/brands.ts";
 
 const FUNCTION_NAME = "cron-session-planner";
 
@@ -58,9 +60,12 @@ Deno.serve(async (req: Request) => {
       ...new Set(activeUserIds.map((r) => r.user_id)),
     ] as string[];
 
-    // Proactive-email pause switch (founder decision 2026-07-14): the weekly
-    // session email is not yet brand-aware, so it follows the same opt-in as
-    // morning briefings — users with morning_briefing_time NULL are excluded.
+    // Proactive opt-in switch (founder decision 2026-07-14): weekly sessions
+    // follow the same opt-in as morning briefings — users with
+    // morning_briefing_time NULL are excluded. (Sessions are brand-aware as of
+    // 2026-07-20 — the sender/chrome follow the user's vertical — so this gate
+    // is now purely the opt-in. Session CONTENT is still authored by the
+    // vertical-blind planner prompt below; pack-voiced sessions are T4.)
     const { data: optedIn } = await supabase
       .from("users")
       .select("id")
@@ -280,6 +285,16 @@ IMPORTANT RULES:
   // Simple timezone offset (good enough for scheduling)
   const scheduledFor = mondayMorning.toISOString();
 
+  // Brand the session for the user's vertical — the same spine resolution the
+  // coach itself uses (participant membership → signup_brand → invite → null).
+  // Stamped into context so cron-process-scheduled delivers with the right
+  // sender + email chrome, and stamps `program` on the outbound message so an
+  // email reply threads into the right Coach Pack. Without this stamp every
+  // weekly session went out as Mastery Coach (2026-07-20 mis-brand incident).
+  const resolved = await resolveProgram(supabase, userId, null, null);
+  const program = (resolved.ok ? resolved.program : null) ?? "general";
+  const brand = brandForProgram(program).id;
+
   await supabase.from("scheduled_messages").insert({
     user_id: userId,
     type: "weekly_coaching_session",
@@ -288,6 +303,8 @@ IMPORTANT RULES:
       content: plan.session_message,
       subject: "Your Weekly Coaching Session",
       priority_topic: plan.priority_topic,
+      brand,
+      program,
     },
     status: "pending",
   });

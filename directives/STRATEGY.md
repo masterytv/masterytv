@@ -7,7 +7,7 @@
 > **Supersedes:** the standalone "Mastery Coach + Decoded" B2C consumer framing for go-to-market purposes. The *engine* (Decoded assessment + Mastery Coach) is retained and repurposed.
 > **Methodology:** BMAD + Antigravity Method. This doc is the Phase 0 (Discovery) artifact for the pivot; it consolidates a 6-model deep-research study + internal synthesis.
 >
-> **⭐ AMENDMENT (founder decision, 2026-07-17):** **Stage 2 is now Money-Psychology coaching (mechanic: Money Maps™), and career is DEFERRED.** New order: Relationship → **Money** → Career → White-Label. Rationale + full discovery: [MONEY_DISCOVERY.md](MONEY_DISCOVERY.md); experience spec: [MONEY_EXPERIENCE.md](MONEY_EXPERIENCE.md); build brief: [MONEY_BUILD_HANDOFF.md](MONEY_BUILD_HANDOFF.md). The §1 sequence table below is updated. **Everything else in this doc — the external-stake retention *mechanism* (§2) and the polymorphic spine (§3) — is unchanged and still governs; money rides the same engine.** (Money's external stake = the user's goal/decision + a defined "enough" number; for entrepreneurs specifically, the psychological *edge* with money.)
+> **⭐ AMENDMENT (founder decision, 2026-07-17):** **Stage 2 is now Money-Psychology coaching (mechanic: MoneyTraits™), and career is DEFERRED.** New order: Relationship → **Money** → Career → White-Label. Rationale + full discovery: [MONEY_DISCOVERY.md](MONEY_DISCOVERY.md); experience spec: [MONEY_EXPERIENCE.md](MONEY_EXPERIENCE.md); build brief: [MONEY_BUILD_HANDOFF.md](MONEY_BUILD_HANDOFF.md). The §1 sequence table below is updated. **Everything else in this doc — the external-stake retention *mechanism* (§2) and the polymorphic spine (§3) — is unchanged and still governs; money rides the same engine.** (Money's external stake = the user's goal/decision + a defined "enough" number; for entrepreneurs specifically, the psychological *edge* with money.)
 
 ---
 
@@ -22,7 +22,7 @@
 | Stage | Product | Domain pattern | External stake (retention engine) | Build cost on current stack | Role |
 |:--|:--|:--|:--|:--|:--|
 | **1 — LIVE** | Relationship Coaching (**Relatti**) | `relatti.com/{couples,engaged,married,…}` | **The partner** | Light–Moderate (compatibility/dyad plumbing already exists) | Beachhead + retention-thesis test (live) |
-| **2 — NOW** | Money-Psychology Coaching (**Money Maps™**) | `moneymaps.masterytv.com` (interim; brand TBD, Momatti candidate) | **The goal/decision + a defined "enough"** (for founders: the psychological *edge*) | Moderate (mostly reuse; new = instrument + reveal + Decision Room) | Founder-audience beachhead; chronic, high-retention demand |
+| **2 — NOW** | Money-Psychology Coaching (**MoneyTraits™**) | `moneytraits.com` (decided 2026-07-20; ex-moneymaps.masterytv.com stays as a 301 alias) | **The goal/decision + a defined "enough"** (for founders: the psychological *edge*) | Moderate (mostly reuse; new = instrument + reveal + Decision Room) | Founder-audience beachhead; chronic, high-retention demand |
 | **3 — Deferred** | Career Transition Coaching | `mycareercoach.com/{laidoff,downsized,…}` | **The deadline / job search** | Moderate (cohort grouping + aggregate dashboards) | Build-to-sellable B2B revenue (deferred 2026-07-17 — episodic demand; see MONEY_DISCOVERY.md §4) |
 | **4 — Exit** | White-Label Platform | `growyourcoachingbusiness.com` | **The human coach** | Heavy (full multi-tenancy) | Sellable/acquirable asset |
 

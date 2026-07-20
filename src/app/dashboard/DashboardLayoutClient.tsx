@@ -145,7 +145,7 @@ export default function DashboardLayoutClient({
               shareUrl={broadcastInviteUrl || `${typeof window !== 'undefined' ? window.location.origin : 'https://masterytv.com'}/decoded`}
             />
           ),
-          // Money's share surface (the Money Map card share + the cofounder edge
+          // Money's share surface (the trait card share + the cofounder edge
           // comparison) is a leaf; nothing to share until it ships. `null` keeps
           // money off the Decoded/partner share modals rather than inheriting one.
           money: null,

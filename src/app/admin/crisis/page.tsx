@@ -33,7 +33,7 @@ const BRAND_TAB_LABELS: Record<BrandTab, string> = {
   all: "All brands",
   relatti: "Relatti",
   masterytv: "MasteryTV",
-  money: "Money Maps",
+  money: "MoneyTraits",
   unattributed: "Unattributed",
 };
 

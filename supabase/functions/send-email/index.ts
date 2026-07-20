@@ -76,11 +76,28 @@ const BRANDS: Record<string, EmailBrand> = {
     color: "#E11D48",
     soft: "#FFF1F4",
   },
+  // MoneyTraits has no own Resend account/domain yet (RESEND_API_KEY_MONEY
+  // unset, mail.moneytraits.com unverified as of 2026-07-20) — every send takes
+  // the shared-account fallbackFrom until that infra lands; verifying
+  // mail.moneytraits.com in Resend activates the own-domain from automatically.
+  money: {
+    name: "MoneyTraits",
+    apiKeyEnv: "RESEND_API_KEY_MONEY",
+    from: "MoneyTraits <donotreply@mail.moneytraits.com>",
+    fallbackFrom: "MoneyTraits <donotreply@mail.masterytv.com>",
+    color: "#059669",
+    soft: "#ECFDF5",
+  },
 };
 
 
 function brandForHost(host: string): EmailBrand {
-  return host.toLowerCase().includes("relatti") ? BRANDS.relatti : BRANDS.masterytv;
+  const h = host.toLowerCase();
+  // Money hosts (moneytraits.com + the old moneymaps.masterytv.com alias) must
+  // match BEFORE the masterytv default.
+  if (h.includes("moneytraits") || h.includes("moneymaps")) return BRANDS.money;
+  if (h.includes("relatti")) return BRANDS.relatti;
+  return BRANDS.masterytv;
 }
 
 /**

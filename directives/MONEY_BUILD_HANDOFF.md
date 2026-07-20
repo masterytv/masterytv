@@ -1,6 +1,6 @@
 # **Money Vertical — Build Handoff**
 
-> **Purpose:** the single prompt/brief to start the **build** conversation for the money vertical (brand **Momatti** / mechanic **Money Maps™**). Phases 0–0.5 are done and founder-approved; this hands off to Phase 4 (Build). **Paste the §0 prompt into a fresh Claude Code session** (the build reads a lot of source — start it clean).
+> **Purpose:** the single prompt/brief to start the **build** conversation for the money vertical (brand **MoneyTraits™**). Phases 0–0.5 are done and founder-approved; this hands off to Phase 4 (Build). **Paste the §0 prompt into a fresh Claude Code session** (the build reads a lot of source — start it clean).
 > **Date:** July 17, 2026 · **Author:** Claude Code (Orchestrator)
 > **Why this doc exists:** the last brand build (Relatti) taught us that a new vertical silently inherits the *wrong* vertical's behavior at dozens of seams unless every one is handled. We since built a **typed program axis + CI gates** that turn most of those silent errors into loud compile/gate failures. This handoff makes sure the build *leans on that machinery* instead of freelancing around it.
 
@@ -22,7 +22,7 @@ existing vertical by a single byte.
 2. directives/VERTICAL_PLAYBOOK.md — §5 launch checklist + §5.10 verification sweep
 3. directives/MONEY_BUILD_HANDOFF.md — the build brief (§3 sequence, §4 founder
    decisions, §5 hard stops, §7 mode + the per-phase loop)
-4. The money specs: MONEY_EXPERIENCE.md, MONEY_MAPS_INSTRUMENT.md, MONEY_DISCOVERY.md
+4. The money specs: MONEY_EXPERIENCE.md, MONEY_TRAITS_INSTRUMENT.md, MONEY_DISCOVERY.md
 5. directives/BRAND.md — READ FULLY before ANY .tsx/.jsx/.css. Type-scale tokens
    only, no hardcoded hex, Lucide icons only, metadata via brand-metadata.ts.
 
@@ -137,8 +137,8 @@ Start now with STEP ZERO.
 
 ## 2. Money-specific build rules
 
-- **Scoring:** reproduce the **7 boundary tests in `scripts/money-maps-scoring.mjs`** as the production TS unit tests (tie-break `DRIVE>GUARD>SHADOW>MIRROR`, overclock `≥4.0`, LEAP bands `Low<2.75 / Mod / High≥4.0`, tilt `0.5` margin). **Item text is canonical once shipped** — changing it invalidates stored responses (`DECODED_SCORING.md`). Instrument items/archetypes/reveal are in `MONEY_MAPS_INSTRUMENT.md`.
-- **Coach:** a new `_shared/packs/money-pack.ts` **over the shared kernel** — never fork safety/crisis (PC4.5). Editing the money pack must **not** change the executive or relationship coaches — prove it with **byte-identical prompt-snapshot goldens**. Add money to `resolve-program` + new cases in `check:resolve`. The first message IS the reveal off the Money Map (`MONEY_MAPS_INSTRUMENT.md` §6), not "Hi, I'm your coach."
+- **Scoring:** reproduce the **7 boundary tests in `scripts/money-maps-scoring.mjs`** as the production TS unit tests (tie-break `DRIVE>GUARD>SHADOW>MIRROR`, overclock `≥4.0`, LEAP bands `Low<2.75 / Mod / High≥4.0`, tilt `0.5` margin). **Item text is canonical once shipped** — changing it invalidates stored responses (`DECODED_SCORING.md`). Instrument items/archetypes/reveal are in `MONEY_TRAITS_INSTRUMENT.md`.
+- **Coach:** a new `_shared/packs/money-pack.ts` **over the shared kernel** — never fork safety/crisis (PC4.5). Editing the money pack must **not** change the executive or relationship coaches — prove it with **byte-identical prompt-snapshot goldens**. Add money to `resolve-program` + new cases in `check:resolve`. The first message IS the reveal off the Money Map (`MONEY_TRAITS_INSTRUMENT.md` §6), not "Hi, I'm your coach."
 - **Reveal + funnel:** entry = quiz-first → results-in-chat → **clickable answer chips + free-text** (`MONEY_EXPERIENCE.md` §6). Primary surface = the **Decision Room** (§8) + the **Money OS** living doc (§9), bespoke (ADR-P03), not a re-themed default.
 - **Copy / legal:** FTC line — promise **process and felt change** (clarity, control, pricing power, "end the never-enough"), **NEVER wealth outcomes** (`MONEY_DISCOVERY.md` §6.2). **Coaching, not therapy; not financial/investment advice** — coach the psychology of a decision, refer out for finance; crisis kernel on; **anti-sycophancy is a spec'd behavior** (the coach must push back). **No bank linking in V1.**
 - **Migrations — HARD STOP (§5), not a routine step:** `apply_migration`/CLI writes straight to the **live engine DB**. Stage + commit the file; query live `pg_constraint` **before** touching any status/category vocabulary (the 44-vs-7 history gap — live CHECK constraints are absent from the committed baseline); new SECURITY DEFINER RPCs need `REVOKE … FROM PUBLIC, anon` in the same migration; run the security advisors after DDL. **Apply only on an explicit founder go.**
@@ -150,7 +150,7 @@ Start now with STEP ZERO.
 
 ## 3. Sequence (each a valid stopping point)
 
-1. **§5.0 typed program axis** (`money` slug → follow the compile errors) + the **Money Maps assessment + scoring** (the 7 tests) + the **archetype card** (reuse the card/OG pipeline). → the shareable, testable top-of-funnel and the manual-MVP substrate.
+1. **§5.0 typed program axis** (`money` slug → follow the compile errors) + the **MoneyTraits assessment + scoring** (the 7 tests) + the **archetype card** (reuse the card/OG pipeline). → the shareable, testable top-of-funnel and the manual-MVP substrate.
 2. The **money Coach Pack** + the **reveal** (first-message off the result) + memory wiring + the **clickable-chip chat UI**.
 3. The **Decision Room** surface + the **Money OS** living document.
 4. **Proactive / retention** + the referral ladder (`MONEY_VIRAL_GTM.md`).
@@ -162,7 +162,7 @@ Cheap validation in parallel (beats more building): a **waitlist landing** to th
 ## 4. Founder decisions — ✅ PINNED 2026-07-17 (`MONEY_EXPERIENCE.md` §15)
 
 1. **V1 spine:** ✅ **the Decision Room** (daily/proactive layer supports, doesn't lead).
-2. **Brand/domain:** ✅ **build on `moneymaps.masterytv.com` for now**; public brand name + domain still TBD (Momatti candidate). **Money Maps™** mechanic name is locked.
+2. **Brand/domain:** ✅ **build on `moneymaps.masterytv.com` for now**; public brand name + domain still TBD (resolved 2026-07-20: **MoneyTraits** on moneytraits.com). **MoneyTraits™** mechanic name is locked.
 3. **Roadmap:** ✅ **career DEFERRED; money is Stage 2** — `STRATEGY.md` §1 amended.
 4. *(Still open, non-blocking)* audience size/channels — GTM/founding-cohort sizing only; founder to provide when convenient.
 
@@ -178,7 +178,7 @@ Cheap validation in parallel (beats more building): a **waitlist landing** to th
 ---
 
 ## 6. Where the specs live
-`MONEY_DISCOVERY.md` (viability + regulatory) · `MONEY_VIRAL_GTM.md` (funnel/pricing/virality) · `MONEY_EXPERIENCE.md` (⭐ the experience spec) · `MONEY_MAPS_INSTRUMENT.md` (⭐ the assessment + scoring) · `MONEY_EXPERIENCE_NOTES.md` (design rationale) · `scripts/money-maps-scoring.mjs` (the scoring reference + 7 tests) · this file (the build brief).
+`MONEY_DISCOVERY.md` (viability + regulatory) · `MONEY_VIRAL_GTM.md` (funnel/pricing/virality) · `MONEY_EXPERIENCE.md` (⭐ the experience spec) · `MONEY_TRAITS_INSTRUMENT.md` (⭐ the assessment + scoring) · `MONEY_EXPERIENCE_NOTES.md` (design rationale) · `scripts/money-maps-scoring.mjs` (the scoring reference + 7 tests) · this file (the build brief).
 
 ## 7. Build mode + the per-phase loop (harden pass, 2026-07-17)
 

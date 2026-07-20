@@ -22,7 +22,7 @@ import { requireCronSecret } from "../_shared/cron-auth.ts";
 import { createSupabaseClient } from "../_shared/supabase.ts";
 import { callClaude, calculateCost } from "../_shared/anthropic.ts";
 import { checkNaggingState } from "../_shared/nagging.ts";
-import { EDGE_BRANDS, brandForProgram } from "../_shared/brands.ts";
+import { EDGE_BRANDS, brandForProgram, type BrandId } from "../_shared/brands.ts";
 
 const FUNCTION_NAME = "cron-accountability-checkins";
 
@@ -42,7 +42,7 @@ interface CommitmentWithUser {
 
 /** Where a commitment came from — brand + conversation, for context + linking. */
 interface CommitmentSource {
-  brand: "relatti" | "masterytv";
+  brand: BrandId;
   conversationId: string | null;
   conversationTitle: string | null;
   /** Last few turns of the source conversation, chronological, truncated. */

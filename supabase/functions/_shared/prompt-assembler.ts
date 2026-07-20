@@ -311,7 +311,7 @@ export async function assemblePrompt(
   // ── Build Decoded profile layer (Layer 4.5 — S0.4), gated by the coach axis ──
   let decodedLayer = "";
   if (coachShareLevel !== "none" && decodedReport?.sections?.["money_map"]) {
-    // A money assessment's report carries a Money Map bundle under
+    // A money assessment's report carries a `money_map` bundle under
     // sections.money_map — render THAT profile (Layer 4.5), not the Big-Five
     // one. DATA-DRIVEN, not a `program` check: the assembler stays vertical-
     // blind (see the header note), and a money report can never fall through to
@@ -321,7 +321,7 @@ export async function assemblePrompt(
       const { buildMoneyMapProfileLayer } = await import("./money-map-profile.ts");
       decodedLayer = buildMoneyMapProfileLayer(decodedReport);
     } catch (e) {
-      console.error("[prompt-assembler] Money Map profile build failed:", (e as Error).message);
+      console.error("[prompt-assembler] trait profile build failed:", (e as Error).message);
     }
   } else if (coachShareLevel !== "none" && decodedScores.length > 0 && decodedReport) {
     try {

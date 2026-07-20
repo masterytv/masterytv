@@ -60,11 +60,11 @@ const OG_BRANDS: Record<BrandId, OgPalette> = {
   // exception to check:colors (edge ImageResponse, no CSS vars). The white
   // compass mark shows on the dark gradient, so no markBadge.
   money: {
-    name: "Money Maps",
+    name: "MoneyTraits",
     gradientFrom: "#04231c",
     gradientTo: "#047857",
     accent: "#6ee7b7",
-    domain: "moneymaps.masterytv.com",
+    domain: "moneytraits.com",
   },
 };
 

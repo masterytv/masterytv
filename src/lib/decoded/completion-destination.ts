@@ -50,15 +50,17 @@ const COMPLETION: Record<ProgramId, CompletionPlan> = {
     ready: "Your personalized report is ready.",
     opening: "Opening your report…",
   },
-  // Money: the reveal chat. `context=money_reveal` seeds the coach's Rung-1
-  // reveal (MONEY_EXPERIENCE.md §6) off the just-written Money Map. reportId only
-  // gates the fallback — the profile itself is loaded server-side at Layer 4.5.
+  // Money: the REPORT is the payoff (founder decision 2026-07-20 — the
+  // long-form MoneyTraits report supersedes the chat-first reveal). The report
+  // renders its deterministic layer instantly, fills the LLM narrative in as it
+  // generates, and its closing CTA hands off to the coach's Rung-1 reveal
+  // (context=money_reveal), so the ladder is report → share → coach.
   money: {
-    href: (reportId) => (reportId ? "/dashboard/chat?context=money_reveal" : "/dashboard"),
+    href: (reportId) => (reportId ? `/report/${reportId}` : "/dashboard"),
     autoNavigate: true,
-    cta: "Meet your money coach",
-    ready: "Your Money Map is ready — your coach already has the read.",
-    opening: "Opening your coach…",
+    cta: "Meet my profile",
+    ready: "Your MoneyTraits report is ready.",
+    opening: "Opening your report…",
   },
 };
 

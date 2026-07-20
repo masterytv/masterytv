@@ -1,7 +1,16 @@
 /**
- * Money Maps™ — the money vertical's deterministic scorer (program=money).
+ * MoneyTraits™ — the money vertical's deterministic scorer (program=money).
  *
- * SPEC: directives/MONEY_MAPS_INSTRUMENT.md §3–§4.
+ * ⚠️ TERMINOLOGY SEAM (founder rename, 2026-07-20): user-facing vocabulary is
+ * "the Challenge" (was "Leak") and "the Fear" (was "The Leap"). The STORED
+ * bundle keys in this file (`leak`, `leap`, `dims.LEAP`) and their types
+ * (LeapBand/LeapTilt/MoneyLeapResult) are the persistence schema — live
+ * assessment_reports rows and the deployed edge functions read them — so they
+ * keep the legacy names. Display formatters (describeFear), UI labels, coach
+ * prompts, and the report narrative all speak the NEW names. Never surface
+ * "leak"/"Leap" to a user.
+ *
+ * SPEC: directives/MONEY_TRAITS_INSTRUMENT.md §3–§4.
  * SPEC-LOCK: scripts/money-maps-scoring.mjs — this TS scorer reproduces that
  * reference algorithm and its 7 boundary tests exactly (money-maps.test.ts).
  *
@@ -30,10 +39,10 @@ import {
 /** The four core Maps — stable traits that generate the archetype (§1). */
 export type MoneyMap = "GUARD" | "DRIVE" | "MIRROR" | "SHADOW";
 
-/** All five dimensions: the four core Maps + THE LEAP (a state, not an identity). */
+/** All five dimensions: the four core Maps + the Fear (stored key "LEAP" — a state, not an identity). */
 export type MoneyDimension = MoneyMap | "LEAP";
 
-/** THE LEAP band — how much fear is currently gating the edge (§3.4). */
+/** The Fear band — how much fear is currently gating the edge (§3.4). Stored under `leap.band`. */
 export type LeapBand = "Low" | "Moderate" | "High";
 
 /**
@@ -50,13 +59,13 @@ export interface MoneyArchetypeDef {
   name: string;
   /** The strength, dialed right. */
   edge: string;
-  /** The governor's cost, dialed too high — the honesty lives here, never in the name (§4). */
+  /** The CHALLENGE (stored key `leak`): the governor's cost, dialed too high — the honesty lives here, never in the name (§4). */
   leak: string;
 }
 
 /**
  * THE 12 ARCHETYPES — the canonical, FOUNDER-APPROVED v1 table
- * (MONEY_MAPS_INSTRUMENT.md §4, 2026-07-17). Single source of truth: the
+ * (MONEY_TRAITS_INSTRUMENT.md §4, 2026-07-17). Single source of truth: the
  * scorer derives the name from (dominant, secondary) here, and the card + the
  * coach reveal read the edge/leak from here. `as const` makes every name a
  * literal, so `MoneyArchetype` below is exactly these twelve — a new/renamed
@@ -114,7 +123,7 @@ export interface MoneyMapsScore {
 }
 
 /**
- * The PERSISTED Money Maps™ bundle: the scorer output PLUS the archetype's
+ * The PERSISTED MoneyTraits™ bundle: the scorer output PLUS the archetype's
  * edge/leak copy. This is exactly what the money WRITE path stores at
  * `assessment_reports.sections.money_map` (T2 read contract) and what the money
  * coach reads back to open its reveal.
@@ -178,7 +187,7 @@ export function archetypeForMaps(
   const entry = ARCHETYPE_BY_PAIR.get(`${dominant}>${secondary}`);
   if (!entry) {
     throw new Error(
-      `Money Maps: no archetype for dominant=${dominant} secondary=${secondary}`,
+      `MoneyTraits: no archetype for dominant=${dominant} secondary=${secondary}`,
     );
   }
   return entry;
@@ -187,7 +196,7 @@ export function archetypeForMaps(
 /** Look up an archetype's edge/leak metadata by name (for the card + reveal). Throws on unknown. */
 export function getMoneyArchetype(name: MoneyArchetype): MoneyArchetypeEntry {
   const entry = ARCHETYPE_BY_NAME.get(name);
-  if (!entry) throw new Error(`Money Maps: unknown archetype "${name}"`);
+  if (!entry) throw new Error(`MoneyTraits: unknown archetype "${name}"`);
   return entry;
 }
 
@@ -207,7 +216,7 @@ function itemValue(responses: Record<string, number>, index: number): number {
   const v = responses[String(index)];
   if (typeof v !== "number" || Number.isNaN(v)) {
     throw new Error(
-      `Money Maps scoring: missing or invalid response for item ${index}`,
+      `MoneyTraits scoring: missing or invalid response for item ${index}`,
     );
   }
   return v;
@@ -227,7 +236,7 @@ function meanOf(
 // ---------------------------------------------------------------------------
 
 /**
- * Score a completed Money Maps™ assessment (16 items, 1–6 agreement, keyed
+ * Score a completed MoneyTraits™ assessment (16 items, 1–6 agreement, keyed
  * '1'..'16'). Fully deterministic — reproduces scripts/money-maps-scoring.mjs.
  */
 export function scoreMoneyMaps(responses: Record<string, number>): MoneyMapsScore {

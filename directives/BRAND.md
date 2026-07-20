@@ -3,7 +3,7 @@
 > **Creative North Star: "The Kinetic Curator"**
 > An AI coaching interface that bridges high-velocity SaaS functionality with premium editorial storytelling. The system rejects clinical coldness — opting for **kinetic energy**, where elements feel captured in a moment of purposeful movement. Intentional asymmetry, tonal depth, and authoritative typography create a curated narrative, not a static grid.
 
-> **Last Updated:** July 15, 2026 (§15 v2 — client-page metadata trap closed, route-level gate, brand-aware robots/sitemap/canonicals)  
+> **Last Updated:** July 20, 2026 (§1.1 — the brand-name registry across verticals + the MoneyTraits rename and the gate-enforced "Money Maps" ban)  
 > **Sources:** Stitch Design System (Light + Dark), Existing Codebase (`globals.css`, `onboarding.css`, `chat.css`)  
 > **Status:** Canonical — All Sprint 6+ UI must conform to this guide
 
@@ -13,6 +13,21 @@
 
 ### Name
 **Mastery Coach** — always two words, always capitalized. Never "MasteryCoach" or "mastery coach" in UI.
+
+### 1.1 The brand-name registry (all verticals) — exact wordmarks, no variants
+
+| Vertical (brand id) | Wordmark | Domain | Rules |
+|:---|:---|:---|:---|
+| Executive (`masterytv`) | **Mastery Coach** | masterytv.com | Two words, capitalized. Family name for footers: **MasteryTV** (one word). |
+| Relationship (`relatti`) | **Relatti** | relatti.com | One word. |
+| Money (`money`) | **MoneyTraits** | moneytraits.com | **One word** (house style with MasteryTV/Relatti — never "Money Traits" spaced). "MoneyTraits™" on product artifacts (card chip, report masthead) is fine. |
+
+> [!CAUTION]
+> **🚫 BANNED IN ALL USER-FACING AND MODEL-FACING TEXT: "Money Maps", "MoneyMaps", "Money Map".** The money vertical's interim name turned out to be a **third party's registered trademark** — renamed to MoneyTraits by founder decision 2026-07-20 (full record + naming contract: [`MONEY_TRAITS_RENAME.md`](MONEY_TRAITS_RENAME.md)). Reintroducing it — in UI copy, an email, an LLM prompt, an OG card — is **legal exposure**, not just stale branding.
+>
+> - **Gate-enforced, not convention:** `npm run gate` / CI runs **`check:brand-terms`** (`scripts/check-banned-brand-terms.mjs`) — any spaced form in any case ("Money Maps", "money map", "MONEY MAP PROFILE") or the standalone camel word "MoneyMaps" anywhere in `src/`, `supabase/functions/`, or `scripts/` **fails the build**.
+> - **Locked internal identifiers are exempt and must NEVER be renamed** (storage contracts, invisible to users — renaming them destroys stored assessments): instrument id `money_maps`, JSONB keys `sections.money_map` / `sections.money_narrative`, TS names `MoneyMap`/`StoredMoneyMap`/`scoreMoneyMaps`/`MoneyMapsRadar`, file names `money-maps.ts` / `money-map-*`, the `money_decisions` table, and the transition alias host `moneymaps.masterytv.com` (301s away post-cutover). Never surface any of them in copy.
+> - **Money vocabulary (exact):** the four dimensions are **traits** — GUARD / DRIVE / MIRROR / SHADOW (never "Maps"); the assessment artifact is **"your trait profile"** (never "your Money Map"); the overclocked strength's cost is **"the Challenge"** (never "leak" — founder call 2026-07-20); the fifth measure is **"the Fear"** (never "the Leap"/"LEAP"). The Money Tell LP (`/tell`) is a campaign door under the same MoneyTraits brand.
 
 ### Voice & Personality
 | Dimension | Direction |
@@ -475,6 +490,7 @@ Add to `globals.css` `@theme`:
 > **Colors are gate-enforced, not just convention — the §15 metadata gate's twin.** `npm run gate` (and CI) run two brand-color checks, so a leak fails the build:
 > - **`check:colors`** — no hardcoded brand-identity color (`#6063ee`, `rgba(96, 99, 238, …)`, the Tailwind-arbitrary `text-[#a3a6ff]`, the light-mode navy `rgba(0, 62, 199, …)`, or *any* brand's palette) may appear in a component or shared CSS. Use a semantic token: `var(--color-primary)` / `var(--color-primary-container)`, a `color-mix(in oklch, var(--color-primary-container) N%, transparent)` tint, or a Tailwind token utility (`text-primary`, `bg-primary-container/10`). The ban-set is **derived from `globals.css`**, so a new brand's palette is covered automatically.
 > - **`check:brand-tokens`** — every `[data-brand]` block must override the *full* identity token set in **both** light and dark, so a brand can never silently fall back to the incumbent's color (the exact bug that made Relatti-dark render indigo accents).
+> - **`check:brand-terms`** — banned brand names (today: the money vertical's abandoned "Money Maps"/"MoneyMaps" — a third party's registered mark) may not appear anywhere in `src/`, `supabase/functions/`, or `scripts/`, in any case or spacing. Locked storage identifiers are exempt; full rule + vocabulary in §1.1.
 >
 > The reviewed allowlist for unavoidable literal hex (token definitions, email HTML, the OG image, provably single-brand surfaces) lives in `scripts/check-brand-colors.mjs`. This closes the color-leak class the July 2026 Relatti sweep had to clean up by hand.
 

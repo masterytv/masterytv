@@ -23,6 +23,8 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { requireCronSecret } from "../_shared/cron-auth.ts";
 import { createSupabaseClient } from "../_shared/supabase.ts";
 import { calculateCost } from "../_shared/anthropic.ts";
+import { resolveProgram } from "../_shared/resolve-program.ts";
+import { brandForProgram } from "../_shared/brands.ts";
 
 const FUNCTION_NAME = "cron-arc-strategist";
 
@@ -271,6 +273,12 @@ TONE: Warm, celebratory, but honest. Like a trusted coach reflecting on a journe
   }
 
   // ── 6. Schedule progress review delivery ──
+  // Brand the review for the user's vertical (same stamp as the weekly
+  // session planner) so cron-process-scheduled sends it as the right coach.
+  const resolved = await resolveProgram(supabase, userId, null, null);
+  const program = (resolved.ok ? resolved.program : null) ?? "general";
+  const brand = brandForProgram(program).id;
+
   await supabase.from("scheduled_messages").insert({
     user_id: userId,
     type: "progress_review",
@@ -280,6 +288,8 @@ TONE: Warm, celebratory, but honest. Like a trusted coach reflecting on a journe
       subject: "Your Monthly Progress Review 📊",
       arc_phase: newArcPhase,
       next_month_focus: review.next_month_focus,
+      brand,
+      program,
     },
     status: "pending",
   });

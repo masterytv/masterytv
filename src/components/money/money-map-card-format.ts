@@ -1,10 +1,16 @@
 /**
- * Money Maps™ card — pure display formatters.
+ * MoneyTraits™ card — pure display formatters.
  *
  * Split out of MoneyMapCard.tsx so they carry no JSX/CSS import and can be
  * unit-tested directly (money-map-card-format.test.ts). These are DISPLAY-ONLY
  * stylizations of the stored bundle — they never re-derive anything the scorer
- * owns (SPEC: MONEY_MAPS_INSTRUMENT.md §5, the card).
+ * owns (SPEC: MONEY_TRAITS_INSTRUMENT.md §5, the card).
+ *
+ * TERMINOLOGY SEAM (founder rename, 2026-07-20): the stored bundle keeps its
+ * original keys (`leap`, `leak`, `dims.LEAP` — the T2 read contract live rows
+ * and the deployed coach depend on), but every USER-FACING surface now says
+ * "the Fear" (was "The Leap") and "Challenge" (was "Leak"). Formatters here are
+ * the display side of that seam.
  */
 
 import type { LeapBand, LeapTilt, MoneyMap } from "@/lib/decoded/scoring/money-maps";
@@ -27,14 +33,15 @@ export function secondaryAdjective(map: MoneyMap): string {
 }
 
 /**
- * THE LEAP line value (§5: "High — tilted to fear of success"). The band is the
+ * THE FEAR line value (§5: "High — leaning fear of success"). The band is the
  * state; the tilt is the rarer, higher-value read (fear of success vs failure)
  * and is only surfaced when the facets diverged enough to earn it — a `balanced`
- * leap renders the band alone, never an invented tilt. The "The Leap" label is
- * rendered by the component; this returns only the value.
+ * result renders the band alone, never an invented tilt. The "The Fear" label is
+ * rendered by the component; this returns only the value. (Parameter types keep
+ * the stored bundle's Leap* names — the storage side of the terminology seam.)
  */
-export function describeLeap(band: LeapBand, tilt: LeapTilt): string {
-  if (tilt === "fear-of-success") return `${band} — tilted to fear of success`;
-  if (tilt === "fear-of-failure") return `${band} — tilted to fear of failure`;
+export function describeFear(band: LeapBand, tilt: LeapTilt): string {
+  if (tilt === "fear-of-success") return `${band} — leaning fear of success`;
+  if (tilt === "fear-of-failure") return `${band} — leaning fear of failure`;
   return band;
 }

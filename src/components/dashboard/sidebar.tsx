@@ -93,7 +93,7 @@ export function Sidebar({ open, onClose, assessmentCompleted = false, reportId =
         mark: <RelattiMark className="h-4 w-4" />,
       },
       money: {
-        label: "Money Maps",
+        label: "MoneyTraits",
         mark: <Compass className="h-4 w-4" style={{ color: "var(--color-primary)" }} />,
       },
     },

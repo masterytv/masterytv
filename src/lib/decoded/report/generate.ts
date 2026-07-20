@@ -92,7 +92,7 @@ export async function generateReport(assessmentId: string): Promise<GenerateRepo
   }
 
   // Report generation is program-aware. Money's report is the DETERMINISTIC
-  // Money Maps™ scored bundle the coach reveals off (T2 read contract) — not
+  // MoneyTraits™ scored bundle the coach reveals off (T2 read contract) — not
   // LLM-narrated sections — so it takes its own writer and never fires the
   // decoded-generate-report edge function. Any other program keeps the
   // incumbent path below, byte-for-byte. (REPORT_KIND is exhaustive over
@@ -149,14 +149,22 @@ export async function generateReport(assessmentId: string): Promise<GenerateRepo
 }
 
 /**
- * Money (Money Maps™) report writer — the 'money-map' branch of generateReport.
+ * Money (MoneyTraits™) report writer — the 'money-map' branch of generateReport.
  *
- * Unlike the LLM-sections path, the money report is produced DETERMINISTICALLY,
- * Next-side: score the completed Money Maps™ assessment and persist the bundle
- * the money coach reveals off (assessment_reports.sections.money_map, T2 read
- * contract). No edge function, no LLM — the reveal narration is written live by
- * the coach from this bundle. Runs only after generateReport has already
- * confirmed the report doesn't exist and the assessment is the user's + complete.
+ * Two layers (founder decision 2026-07-20 — the long-form report supersedes the
+ * card-only read of MONEY_EXPERIENCE.md §109):
+ *   1. DETERMINISTIC, Next-side, synchronous: score the completed assessment and
+ *      persist the bundle at assessment_reports.sections.money_map (T2 read
+ *      contract — the coach's Layer 4.5 and the report page's card/charts).
+ *   2. NARRATIVE, edge-side, fire-and-forget: the money-generate-report edge
+ *      function writes the personalized long-form sections.money_narrative from
+ *      the bundle + the user's profile + their own item answers. The report page
+ *      renders the deterministic layer instantly and fills the narrative in as
+ *      it lands (and re-fires the function itself if it ever finds it missing,
+ *      so a lost invocation here self-heals on first view).
+ *
+ * Runs only after generateReport has already confirmed the report doesn't exist
+ * and the assessment is the user's + complete.
  */
 async function writeMoneyMapReport(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -175,13 +183,13 @@ async function writeMoneyMapReport(
 
   if (progressError || !progress?.responses) {
     console.error('[Money] Responses not found for assessment', assessmentId, progressError);
-    return { success: false, error: 'Money Maps responses not found' };
+    return { success: false, error: 'MoneyTraits responses not found' };
   }
 
   const allResponses = progress.responses as Record<string, Record<string, number>>;
   const moneyResponses = allResponses[MONEY_MAPS.id];
   if (!moneyResponses) {
-    return { success: false, error: 'No Money Maps responses on this assessment' };
+    return { success: false, error: 'No MoneyTraits responses on this assessment' };
   }
 
   // Score deterministically. scoreMoneyMaps throws loudly on a missing/invalid
@@ -191,7 +199,7 @@ async function writeMoneyMapReport(
     sections = { money_map: toStoredMoneyMap(scoreMoneyMaps(moneyResponses)) };
   } catch (err) {
     console.error('[Money] Scoring failed for assessment', assessmentId, err);
-    return { success: false, error: 'Failed to score Money Maps assessment' };
+    return { success: false, error: 'Failed to score MoneyTraits assessment' };
   }
 
   const { data: report, error: insertError } = await supabase
@@ -203,7 +211,8 @@ async function writeMoneyMapReport(
       // path); never a hardcoded literal or the brand.
       program,
       sections,
-      // Honest provenance: no LLM generated this — the deterministic scorer did.
+      // Honest provenance for the deterministic layer; the edge function appends
+      // the narrative model once it writes sections.money_narrative.
       generation_model: 'money-maps-scorer',
       report_version: 2,
     })
@@ -215,5 +224,47 @@ async function writeMoneyMapReport(
     return { success: false, error: 'Failed to create report' };
   }
 
+  // Fire-and-forget the narrative writer (mirrors the incumbent path's edge
+  // invocation). Non-fatal on any failure: the deterministic report stands on
+  // its own, and the report page re-fires this whenever the narrative is absent.
+  await fireMoneyNarrative(report.id);
+
   return { success: true, reportId: report.id };
+}
+
+/**
+ * Invoke the money-generate-report edge function for a report row, without
+ * blocking on the generation. Shared by the completion write path (above) and
+ * the report page's self-heal path (a report viewed with no stored narrative).
+ * The function's own already_complete guard makes repeat fires free.
+ *
+ * 'use server' export: takes only the serializable reportId and builds its own
+ * cookie-scoped client — the edge function re-verifies ownership from the
+ * bearer token, so this can never generate for someone else's report.
+ */
+export async function fireMoneyNarrative(reportId: string): Promise<void> {
+  try {
+    const supabase = await createClient();
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData?.session?.access_token;
+    if (!accessToken) return;
+
+    // Await the RESPONSE HEADERS only (the function 202s right after its auth +
+    // already_complete guard, then generates via waitUntil) — a truly un-awaited
+    // fetch can be torn down with the serverless invocation before it ever
+    // reaches the edge. ~300ms, and the invocation is guaranteed delivered.
+    const projectUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    await fetch(`${projectUrl}/functions/v1/money-generate-report`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({ report_id: reportId }),
+    }).catch((err) => {
+      console.error('[Money] Narrative edge invocation error:', err);
+    });
+  } catch (err) {
+    console.error('[Money] Narrative trigger error:', err);
+  }
 }

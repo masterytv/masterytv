@@ -4,6 +4,8 @@ import { redirect, notFound } from 'next/navigation';
 import ReportViewer from './ReportViewer';
 import MoneyReport from './MoneyReport';
 import type { StoredMoneyMap } from '@/lib/decoded/scoring/money-maps';
+import { isMoneyNarrative } from '@/lib/decoded/report/money-narrative';
+import { fireMoneyNarrative } from '@/lib/decoded/report/generate';
 import { getBrand } from '@/lib/platform/brand.server';
 import { getOrCreateBroadcastInviteUrl } from '@/lib/relatti/broadcast-invite';
 import { getDyadNeedToHear, toDyadPointer } from '@/lib/relatti/partner-need-to-hear';
@@ -38,8 +40,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // set explicitly so the report doesn't inherit the root layout's MasteryTV card
   // (the §15 inherited-OG leak). Money hosts are noindex at the robots layer.
   if (brand.programSlug === 'money') {
-    const title = 'Your Money Maps Report';
-    const description = 'Your Money Map — the psychology under how you earn, spend, and price.';
+    const title = 'Your MoneyTraits Report';
+    const description = 'Your MoneyTraits profile — the psychology under how you earn, spend, and price.';
     const ogImage = `/api/og?brand=money&title=${encodeURIComponent(title)}`;
     return {
       title,
@@ -47,7 +49,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       openGraph: {
         title,
         description,
-        images: [{ url: ogImage, width: 1200, height: 630, alt: 'Money Maps' }],
+        images: [{ url: ogImage, width: 1200, height: 630, alt: 'MoneyTraits' }],
       },
       twitter: { card: 'summary_large_image', title, description, images: [ogImage] },
     };
@@ -195,20 +197,49 @@ export default async function ReportPage({ params, searchParams }: PageProps) {
     .single();
 
   if (ownReport) {
-    // Money reports render the Money Maps report (MONEY_EXPERIENCE.md §109: the
-    // card + the one move, vertical-first), NOT the Decoded Big-Five ReportViewer
-    // — a money report carries only sections.money_map (no LLM sections), so the
-    // viewer would sit on "generating" forever and show "Mastery Coach". Data-
-    // driven: only a money report row carries sections.money_map (no brand ternary).
-    const moneyMap = (ownReport.sections as { money_map?: StoredMoneyMap } | null)
-      ?.money_map;
+    // Money reports render the long-form MoneyTraits report, NOT the Decoded
+    // Big-Five ReportViewer — a money report carries sections.money_map (+ the
+    // LLM-written sections.money_narrative), so the viewer would sit on
+    // "generating" forever and show "Mastery Coach". Data-driven: only a money
+    // report row carries sections.money_map (no brand ternary).
+    const moneySections = ownReport.sections as
+      | { money_map?: StoredMoneyMap; money_narrative?: unknown }
+      | null;
+    const moneyMap = moneySections?.money_map;
     if (moneyMap) {
+      // The narrative layer: pass it when stored; when absent (still writing,
+      // failed, or a pre-narrative report), re-fire the edge function — its
+      // already_complete guard makes this free — and let the client poll it in.
+      const narrative = isMoneyNarrative(moneySections?.money_narrative)
+        ? moneySections.money_narrative
+        : null;
+      if (!narrative) {
+        await fireMoneyNarrative(ownReport.id);
+      }
+
+      // First name for the "Prepared for" line (users.name is the profile-phase
+      // field the narrative also personalizes from).
+      const { data: userRow } = await supabase
+        .from('users')
+        .select('name')
+        .eq('id', user.id)
+        .maybeSingle();
+      const firstName = userRow?.name?.trim().split(/\s+/)[0] || null;
+
       const dateLabel = new Date(ownReport.created_at).toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
       });
-      return <MoneyReport map={moneyMap} dateLabel={dateLabel} />;
+      return (
+        <MoneyReport
+          map={moneyMap}
+          initialNarrative={narrative}
+          dateLabel={dateLabel}
+          firstName={firstName}
+          reportId={ownReport.id}
+        />
+      );
     }
 
     // User owns this report — standard rendering

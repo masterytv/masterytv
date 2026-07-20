@@ -1,9 +1,9 @@
 /**
- * Money Maps™ scorer — unit tests.
+ * MoneyTraits™ scorer — unit tests.
  *
  * The seven `describe('the 7 spec-lock boundary cases')` tests REPRODUCE, byte
  * for byte, the CASES self-check in scripts/money-maps-scoring.mjs — the
- * spec-locking reference for MONEY_MAPS_INSTRUMENT.md §3. If either drifts, one
+ * spec-locking reference for MONEY_TRAITS_INSTRUMENT.md §3. If either drifts, one
  * of these fails. They lock: the DRIVE>GUARD>SHADOW>MIRROR tie-break, the ≥4.0
  * overclock flag, the 2.75/4.0 LEAP cutpoints, and the 0.5 tilt margin.
  *

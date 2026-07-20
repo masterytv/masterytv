@@ -56,14 +56,14 @@ export const LEGAL_CONTACT: Record<BrandId, LegalContact> = {
     supportEmail: "support@relatti.com",
     governingLaw: "State of Florida, United States",
   },
-  // Money vertical. Same operating entity. Product name = the locked mechanic
-  // "Money Maps" (public brand TBD). INTERIM emails route to the operating
+  // Money vertical. Same operating entity. Public brand locked 2026-07-20:
+  // MoneyTraits on moneytraits.com. INTERIM emails route to the operating
   // entity's live inbox — money-domain inboxes are a §5.9 prod-config to-do, and
   // a bouncing address in a privacy policy is itself a compliance problem.
   money: {
     entity: "MasteryTV LLC",
-    product: "Money Maps",
-    site: "moneymaps.masterytv.com",
+    product: "MoneyTraits",
+    site: "moneytraits.com",
     privacyEmail: "support@masterytv.com",
     supportEmail: "support@masterytv.com",
     governingLaw: "State of Florida, United States",

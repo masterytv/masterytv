@@ -24,7 +24,7 @@ type SupabaseClient = ReturnType<typeof createSupabaseClient>;
 
 // Program hints the client may name directly. 'general' = the executive coach
 // (the MasteryTV brand sends it explicitly, so Decoded users keep their coach);
-// 'money' = the Money Maps coach (the money web client sends program:'money' via
+// 'money' = the MoneyTraits coach (the money web client sends program:'money' via
 // resolveBrandClient().programSlug — T3). Anything else — including a missing
 // hint — falls through to the spine check, so a stripped/forged body can't
 // silently select the executive persona for a spine-known Relatti user.
