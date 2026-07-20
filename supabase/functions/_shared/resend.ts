@@ -7,15 +7,51 @@
  * Architecture: ARCHITECTURE.md §5.6
  */
 
-const RESEND_API_URL = "https://api.resend.com";
-const FROM_ADDRESS = "Mastery Coach <coach@mail.masterytv.com>";
+import type { BrandId } from "./brands.ts";
 
-// Relatti has its OWN Resend account (RESEND_API_KEY_RELATTI) with
-// mail.relatti.com verified as of 2026-07-02. Callers pass brand: "relatti" to
-// send from it; if that key isn't set we fall back to the shared MasteryTV
-// account with a Relatti display name (mirrors send-email/index.ts BRANDS).
-const RELATTI_FROM = "Relatti <donotreply@mail.relatti.com>";
-const RELATTI_FALLBACK_FROM = "Relatti <donotreply@mail.masterytv.com>";
+const RESEND_API_URL = "https://api.resend.com";
+
+/**
+ * Per-brand coaching sender identity: which Resend account and which
+ * from-address a brand's coach speaks from.
+ *
+ * `preferredFrom` is the brand's own domain — Relatti's own Resend account
+ * (mail.relatti.com, verified 2026-07-02); Money Maps' subdomain of the shared
+ * account (mail.moneymaps.masterytv.com, NOT yet verified as of 2026-07-20 —
+ * no Resend DKIM in DNS). `sharedFrom` is the same coach voice on the
+ * always-verified shared MasteryTV domain.
+ *
+ * Send strategy (mirrors send-email/index.ts): try the preferred identity,
+ * and on a send failure fall back once to the shared identity — a brand whose
+ * domain isn't verified yet still delivers under its own coach name, and
+ * upgrades to its own domain automatically the moment DNS verifies (no
+ * redeploy, no env flip).
+ */
+interface CoachIdentity {
+  /** Env var naming the brand's own Resend API key (absent = shared account). */
+  keyEnv?: string;
+  /** The brand's own-domain sender. */
+  preferredFrom: string;
+  /** Same coach voice on the shared MasteryTV-verified domain. */
+  sharedFrom: string;
+}
+
+const COACH_IDENTITY: Record<BrandId, CoachIdentity> = {
+  masterytv: {
+    preferredFrom: "Mastery Coach <coach@mail.masterytv.com>",
+    sharedFrom: "Mastery Coach <coach@mail.masterytv.com>",
+  },
+  relatti: {
+    keyEnv: "RESEND_API_KEY_RELATTI",
+    preferredFrom: "Relatti Coach <coach@mail.relatti.com>",
+    sharedFrom: "Relatti Coach <coach@mail.masterytv.com>",
+  },
+  money: {
+    keyEnv: "RESEND_API_KEY_MONEY",
+    preferredFrom: "Money Maps Coach <coach@mail.moneymaps.masterytv.com>",
+    sharedFrom: "Money Maps Coach <coach@mail.masterytv.com>",
+  },
+};
 
 // ─── SEND EMAIL ─────────────────────────────────────────────────────────
 
@@ -26,36 +62,21 @@ interface SendEmailParams {
   text?: string;
   replyTo?: string;
   headers?: Record<string, string>;
-  /** Override the default sender (e.g. a per-brand from address). */
+  /** Pin an exact sender — skips the identity registry AND the fallback. */
   from?: string;
-  /** Send from a brand's own Resend account + domain (falls back to shared). */
-  brand?: "relatti" | "masterytv";
+  /** Vertical whose coach identity (account + from) to send as. */
+  brand?: BrandId;
 }
 
 interface SendEmailResult {
   id: string;
 }
 
-/**
- * Send an email via Resend API.
- * Returns the Resend email ID for tracking.
- */
-export async function sendEmail(
+async function postResendEmail(
+  apiKey: string,
+  from: string,
   params: SendEmailParams
 ): Promise<SendEmailResult> {
-  let apiKey = Deno.env.get("RESEND_API_KEY");
-  let from = params.from ?? FROM_ADDRESS;
-  if (params.brand === "relatti") {
-    const relattiKey = Deno.env.get("RESEND_API_KEY_RELATTI");
-    if (relattiKey) {
-      apiKey = relattiKey;
-      from = params.from ?? RELATTI_FROM;
-    } else {
-      from = params.from ?? RELATTI_FALLBACK_FROM;
-    }
-  }
-  if (!apiKey) throw new Error("RESEND_API_KEY not set");
-
   const body: Record<string, unknown> = {
     from,
     to: [params.to],
@@ -82,6 +103,43 @@ export async function sendEmail(
   }
 
   return await response.json();
+}
+
+/**
+ * Send an email via Resend API as the brand's coach identity.
+ * Returns the Resend email ID for tracking.
+ */
+export async function sendEmail(
+  params: SendEmailParams
+): Promise<SendEmailResult> {
+  const brand: BrandId = params.brand ?? "masterytv";
+  const identity = COACH_IDENTITY[brand];
+  const sharedKey = Deno.env.get("RESEND_API_KEY");
+  const ownKey = identity.keyEnv ? Deno.env.get(identity.keyEnv) : undefined;
+  const primaryKey = ownKey ?? sharedKey;
+  if (!primaryKey) throw new Error("RESEND_API_KEY not set");
+
+  const preferredFrom = params.from ?? identity.preferredFrom;
+  try {
+    const result = await postResendEmail(primaryKey, preferredFrom, params);
+    console.log(`[resend] sent as ${brand} "${preferredFrom}" (${result.id})`);
+    return result;
+  } catch (err) {
+    // One shared-identity retry — covers a not-yet-verified brand domain and
+    // a brand-account outage. Never when the caller pinned `from`, and never
+    // when it would just repeat the identical key + from attempt.
+    const differs =
+      preferredFrom !== identity.sharedFrom || primaryKey !== sharedKey;
+    if (params.from || !sharedKey || !differs) throw err;
+    console.warn(
+      `[resend] ${brand} preferred sender failed (${(err as Error).message}); retrying as "${identity.sharedFrom}"`
+    );
+    const result = await postResendEmail(sharedKey, identity.sharedFrom, params);
+    console.log(
+      `[resend] sent as ${brand} "${identity.sharedFrom}" (${result.id})`
+    );
+    return result;
+  }
 }
 
 // ─── RETRIEVE RECEIVED EMAIL ────────────────────────────────────────────
@@ -192,8 +250,24 @@ export function stripEmailNoise(text: string): string {
 
 // ─── HTML EMAIL TEMPLATE ────────────────────────────────────────────────
 
-/** Per-brand coaching-email chrome. Origins double as the deep-link base. */
-const EMAIL_BRANDS = {
+/**
+ * Per-brand coaching-email chrome. Origins double as the deep-link base.
+ * Record<BrandId,…> keeps this exhaustive — a new brand without chrome is a
+ * compile error, not a TypeError mid-send (money was missing until 2026-07-20;
+ * a money-branded send would have crashed on `brand.name`).
+ */
+const EMAIL_BRANDS: Record<
+  BrandId,
+  {
+    name: string;
+    origin: string;
+    gradient: string;
+    darkGradient: string;
+    accent: string;
+    link: string;
+    footerLine: string;
+  }
+> = {
   masterytv: {
     name: "Mastery Coach",
     origin: "https://masterytv.com",
@@ -214,7 +288,18 @@ const EMAIL_BRANDS = {
     footerLine:
       "Relatti · You're receiving this because you enabled email coaching.",
   },
-} as const;
+  // Emerald palette from the money favicon tile (public/money/icon.svg).
+  money: {
+    name: "Money Maps",
+    origin: "https://moneymaps.masterytv.com",
+    gradient: "linear-gradient(135deg, #059669, #047857)",
+    darkGradient: "linear-gradient(135deg, #022c22, #064e3b)",
+    accent: "#047857",
+    link: "#059669",
+    footerLine:
+      "Money Maps by MasteryTV · You're receiving this because you enabled email coaching.",
+  },
+};
 
 export interface CoachingEmailOptions {
   /** Which vertical's chrome to render (default masterytv). */

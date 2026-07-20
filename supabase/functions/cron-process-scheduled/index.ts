@@ -120,14 +120,24 @@ Deno.serve(async (req: Request) => {
         );
 
         if (result.success) {
-          // Store outbound message for coaching context
+          // Store outbound message for coaching context. The `program` stamp
+          // (present on rows created since 2026-07-20) lets an email reply
+          // that threads into this conversation resolve the right Coach Pack
+          // (resolve-program step 1). Only stamp when the creator resolved it
+          // — a guessed "general" would outrank the spine on reply routing.
           await storeOutboundMessage(
             supabase,
             msg.user_id,
             result.channel,
             content,
             conversationId,
-            { type: msg.type, scheduled_message_id: msg.id }
+            {
+              type: msg.type,
+              scheduled_message_id: msg.id,
+              ...(typeof msg.context?.program === "string"
+                ? { program: msg.context.program }
+                : {}),
+            }
           );
 
           // Mark as sent

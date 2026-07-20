@@ -51,8 +51,11 @@ export const EDGE_BRANDS: Record<BrandId, EdgeBrand> = {
   },
   // Money vertical. Origin is the founder-pinned moneymaps.masterytv.com. No
   // inbound inbox on the money domain yet → route replies to the one inbox that
-  // ingests (mail.masterytv.com), same as Relatti. Prod-config TODO (§5.9):
-  // money Resend from-domain + inbound webhook before T4 wires any proactive send.
+  // ingests (mail.masterytv.com), same as Relatti. The from-identity lives in
+  // resend.ts COACH_IDENTITY: "Money Maps Coach", preferring the money
+  // subdomain and auto-falling back to the shared domain until it's verified.
+  // Prod-config TODO (§5.9): verify mail.moneymaps.masterytv.com in Resend
+  // (own-domain from) + inbound webhook.
   money: {
     id: "money",
     programSlug: "money",
