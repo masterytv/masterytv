@@ -2,11 +2,22 @@
 
 import { useState } from "react";
 import { MessageCircle, X, Check } from "lucide-react";
+import { resolveBrandClient } from "@/hooks/useBrand";
 
 /**
- * Floating beta-feedback widget (Relatti). Low-friction capture so testers can
- * tell us what works and what doesn't from any dashboard page. Posts to
- * /api/relatti/feedback, which stores the row and emails the founder.
+ * Feedback capture — platform chrome on every brand's dashboard
+ * (Relatti-only until 2026-07-20; lived in components/relatti/). Low-friction
+ * so testers can tell us what works and what doesn't from any dashboard page.
+ * Posts to /api/feedback with the client-resolved brand id; the route stamps
+ * the row's `program` and emails the founder. Styling is all semantic tokens,
+ * so each brand's palette themes it automatically.
+ *
+ * CONTROLLED open state (2026-07-20, founder mobile feedback): on phones a
+ * floating pill overlapped the chat composer and page CTAs, so the widget
+ * renders NO overlay chrome below md — the mobile entry point is a topbar
+ * icon (in-flow, owned by DashboardLayoutClient via the shared open state)
+ * and the panel opens as a full-width bottom sheet. Desktop (md+) keeps the
+ * floating pill launcher.
  */
 
 const CATEGORIES = [
@@ -16,8 +27,12 @@ const CATEGORIES = [
   { id: "praise", label: "Praise" },
 ] as const;
 
-export function FeedbackWidget() {
-  const [open, setOpen] = useState(false);
+interface FeedbackWidgetProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export function FeedbackWidget({ open, onOpenChange }: FeedbackWidgetProps) {
   const [category, setCategory] = useState<string>("idea");
   const [message, setMessage] = useState("");
   const [rating, setRating] = useState<number | null>(null);
@@ -27,13 +42,14 @@ export function FeedbackWidget() {
     if (!message.trim() || status === "sending") return;
     setStatus("sending");
     try {
-      const res = await fetch("/api/relatti/feedback", {
+      const res = await fetch("/api/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           category,
           message,
           rating,
+          brand: resolveBrandClient().id,
           page_url: typeof window !== "undefined" ? window.location.pathname : null,
           user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
         }),
@@ -43,7 +59,7 @@ export function FeedbackWidget() {
       setMessage("");
       setRating(null);
       setTimeout(() => {
-        setOpen(false);
+        onOpenChange(false);
         setStatus("idle");
       }, 1600);
     } catch {
@@ -52,11 +68,13 @@ export function FeedbackWidget() {
   }
 
   if (!open) {
+    // Desktop-only launcher; below md the topbar icon is the entry point, so
+    // nothing floats over the product.
     return (
       <button
-        onClick={() => setOpen(true)}
+        onClick={() => onOpenChange(true)}
         aria-label="Send feedback"
-        className="fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full px-4 py-3 shadow-elevated transition-opacity hover:opacity-90"
+        className="fixed bottom-5 right-5 z-40 hidden items-center gap-2 rounded-full px-4 py-3 shadow-elevated transition-opacity hover:opacity-90 md:flex"
         style={{ background: "var(--color-primary-container)", color: "#ffffff" }}
       >
         <MessageCircle className="h-4 w-4" />
@@ -66,11 +84,15 @@ export function FeedbackWidget() {
   }
 
   return (
-    <div className="glass fixed bottom-5 right-5 z-40 w-[min(360px,calc(100vw-2.5rem))] rounded-xl p-5 shadow-elevated">
+    <div
+      role="dialog"
+      aria-label="Share feedback"
+      className="glass fixed inset-x-0 bottom-0 z-40 rounded-t-xl p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-elevated md:inset-x-auto md:bottom-5 md:right-5 md:w-[min(360px,calc(100vw-2.5rem))] md:rounded-xl md:pb-5"
+    >
       <div className="mb-1 flex items-center justify-between">
         <h2 className="text-base font-semibold text-text-primary">Share feedback</h2>
         <button
-          onClick={() => setOpen(false)}
+          onClick={() => onOpenChange(false)}
           aria-label="Close feedback"
           className="text-text-muted transition-colors hover:text-text-primary"
         >

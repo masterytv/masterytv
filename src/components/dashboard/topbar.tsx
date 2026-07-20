@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Menu, LogOut, User, ShieldCheck } from "lucide-react";
+import { Menu, LogOut, User, ShieldCheck, MessageCircle } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useBrand } from "@/hooks/useBrand";
@@ -12,9 +12,13 @@ interface TopbarProps {
   userName: string | null;
   onMenuClick?: () => void;
   userRole?: string | null;
+  /** Opens the feedback panel. Renders a MOBILE-ONLY icon (below md): on
+   * phones the floating pill overlapped the chat composer/CTAs, so the entry
+   * point lives in the topbar chrome instead; md+ keeps the floating pill. */
+  onFeedbackClick?: () => void;
 }
 
-export function Topbar({ userName, onMenuClick, userRole }: TopbarProps) {
+export function Topbar({ userName, onMenuClick, userRole, onFeedbackClick }: TopbarProps) {
   const isAdmin = userRole === "admin" || userRole === "superadmin";
   const brand = useBrand();
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -79,8 +83,18 @@ export function Topbar({ userName, onMenuClick, userRole }: TopbarProps) {
         )}
       </div>
 
-      {/* Right side: theme toggle + user avatar */}
+      {/* Right side: feedback (mobile) + theme toggle + user avatar */}
       <div className="flex items-center gap-3">
+        {onFeedbackClick && (
+          <button
+            onClick={onFeedbackClick}
+            aria-label="Send feedback"
+            title="Send feedback"
+            className="rounded-md p-2 text-text-muted transition-colors hover:text-text-primary md:hidden"
+          >
+            <MessageCircle className="h-5 w-5" />
+          </button>
+        )}
         <ThemeToggle />
       <div className="relative" ref={dropdownRef}>
         <button

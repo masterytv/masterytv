@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { notifyFounder, escapeHtml } from "@/lib/relatti/notify";
+import { notifyFounder, escapeHtml } from "@/lib/platform/notify";
+import { BRANDS } from "@/lib/platform/brand";
 
 /**
  * Beta before/after check-ins — shared server-side helpers.
@@ -167,6 +168,8 @@ export async function redeemBetaOffer(
     if (opts.note) {
       await admin.from("feedback").insert({
         user_id: user.id,
+        // Relatti flow by definition — the pledge only exists on relatti.com.
+        program: BRANDS.relatti.programSlug,
         category: "beta_signup",
         message: opts.note,
         page_url: opts.source ?? "/dashboard/beta",
@@ -190,6 +193,7 @@ export async function redeemBetaOffer(
     // aggregate"; identified responses live behind the authenticated admin
     // cockpit, not in email.
     await notifyFounder(
+      "relatti",
       `Beta: new tester unlocked — ${email}`,
       `<div style="font-family:system-ui,sans-serif;max-width:560px;line-height:1.6;color:#1a1a2e">
         <p style="margin:0 0 12px;font-size:12px;color:#888;text-transform:uppercase;letter-spacing:0.05em">Relatti beta · internal notification · no action needed</p>
@@ -311,6 +315,7 @@ export async function resolveBetaAccess(
           .eq("id", user.id);
         if (!error) {
           await notifyFounder(
+            "relatti",
             `Beta: partner auto-enrolled — ${user.email ?? "unknown"}`,
             `<div style="font-family:system-ui,sans-serif;max-width:560px;line-height:1.6;color:#1a1a2e">
               <p style="margin:0 0 12px;font-size:12px;color:#888;text-transform:uppercase;letter-spacing:0.05em">Relatti beta · internal notification · no action needed</p>

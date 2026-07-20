@@ -7,7 +7,7 @@ import { Topbar } from "@/components/dashboard/topbar";
 import { createClient } from "@/lib/supabase/client";
 import ShareModal from "@/components/decoded/ShareModal";
 import PartnerInviteModal from "@/components/relatti/PartnerInviteModal";
-import { FeedbackWidget } from "@/components/relatti/FeedbackWidget";
+import { FeedbackWidget } from "@/components/dashboard/FeedbackWidget";
 import { useBrand, resolveBrandClient } from "@/hooks/useBrand";
 import { byBrand } from "@/lib/platform/brand";
 
@@ -27,6 +27,7 @@ export default function DashboardLayoutClient({
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [assessmentCompleted, setAssessmentCompleted] = useState(false);
   const [reportId, setReportId] = useState<string | null>(null);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -113,6 +114,7 @@ export default function DashboardLayoutClient({
           userName={user?.name ?? null}
           onMenuClick={() => setSidebarOpen(true)}
           userRole={user?.role}
+          onFeedbackClick={() => setFeedbackOpen(true)}
         />
 
         {/* Page content — each page controls its own padding/container */}
@@ -121,8 +123,13 @@ export default function DashboardLayoutClient({
         </main>
       </div>
 
-      {/* Beta feedback widget — Relatti only */}
-      {brand.id === "relatti" && <FeedbackWidget />}
+      {/* Feedback widget — platform chrome, ALL brands (Relatti-only until
+          2026-07-20). Posts to /api/feedback, which stamps the row's program
+          from the resolved brand; tokens theme it per brand automatically.
+          Open state lives here because the MOBILE entry point is the topbar
+          icon (a floating pill blocked the chat composer on phones); the
+          widget's own floating launcher is md+ only. */}
+      <FeedbackWidget open={feedbackOpen} onOpenChange={setFeedbackOpen} />
 
       {/* Invite/Share modal — triggered from the sidebar Share button. Relatti
           gets the partner-invite (the Decoded viral share is off-brand there);

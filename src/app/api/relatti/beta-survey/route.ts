@@ -6,7 +6,7 @@ import {
   parseBeforeSurvey,
   insertBeforeSurvey,
 } from "@/lib/relatti/beta-survey";
-import { notifyFounder, escapeHtml } from "@/lib/relatti/notify";
+import { notifyFounder, escapeHtml } from "@/lib/platform/notify";
 
 /**
  * Beta check-in surveys.
@@ -155,6 +155,7 @@ export async function POST(req: Request) {
     // behind the authenticated admin cockpit.
     const email = user.email ?? "unknown";
     await notifyFounder(
+      "relatti",
       `Beta check-in 2/2 — ${email}`,
       `<div style="font-family:system-ui,sans-serif;max-width:560px;line-height:1.6;color:#1a1a2e">
         <p style="margin:0 0 12px;font-size:12px;color:#888;text-transform:uppercase;letter-spacing:0.05em">Relatti beta · internal notification · no action needed</p>

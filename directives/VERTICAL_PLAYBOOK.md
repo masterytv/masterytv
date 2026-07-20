@@ -128,6 +128,7 @@ This extends the BMAD phases in `CLAUDE.md §8` with one **mandatory new phase**
 - [ ] **`conversations.program` scoping on every conversation-adjacent read** — 🔥 engagement_id alone is not brand isolation; an executive conversation rendered on relatti.com (07-15). Direct `?c=` loads redirect cross-brand ids.
 - [ ] Vertical-only chat widgets module-gated (🔥 the six executive coach voices rendered on relatti chat — `coach_voices` module, 07-15).
 - [ ] Settings page: per-brand copy branches; briefing-time control only if the vertical has proactive touchpoints.
+- [ ] Feedback widget: **nothing to build** — it's platform chrome (2026-07-20; `src/components/dashboard/FeedbackWidget.tsx` mounts in `DashboardLayoutClient` for every brand, `/api/feedback` stamps `feedback.program` from the resolved brand). The new `BrandId` forces the one real decision at compile time: the brand's founder-email sender entry in `src/lib/platform/notify.ts` (`senderFor` Record).
 
 ### 5.6 Consent / privacy / legal elements
 - [ ] Legal docs brand-aware (`(legal)` route branches; new brand = new doc set) + **signup acceptance-gated** + `LEGAL_VERSION` recorded; /privacy §5-class copy must match the actual safety posture (screening is automated; no human-review claims).

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { BRANDS } from "@/lib/platform/brand";
 
 /**
  * Beta funnel aggregation (server-only, service-role).
@@ -131,7 +132,10 @@ export async function getBetaFunnel(
     admin.from("assessment_progress").select("user_id"),
     admin.from("messages").select("user_id, created_at"),
     admin.from("ritual_responses").select("user_id, created_at"),
-    admin.from("feedback").select("id, user_id, category, message, rating, status, created_at").order("created_at", { ascending: false }),
+    // Program-scoped since 20260720220000: the widget mounts on every brand's
+    // dashboard now, and this is the RELATTI beta cockpit — without the filter
+    // it would count MasteryTV/MoneyTraits submissions in the beta stats.
+    admin.from("feedback").select("id, user_id, category, message, rating, status, created_at").eq("program", BRANDS.relatti.programSlug).order("created_at", { ascending: false }),
     admin.from("beta_invite_codes").select("id, code, label, max_uses, uses, active, expires_at, created_at").order("created_at", { ascending: false }),
   ]);
 
