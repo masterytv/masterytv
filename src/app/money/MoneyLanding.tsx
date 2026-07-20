@@ -14,9 +14,9 @@ import { FloatingThemeToggle } from "@/components/floating-theme-toggle";
  * change, never a wealth-outcome promise (MONEY_DISCOVERY.md §6.2). No
  * "no sign-up" claim: /assess gates at login.
  *
- * ⚠️ The deck says "The leak" on the profile cards while the in-product report/
- * card/coach say "the Challenge" (the 2026-07-20 rename) — implemented as
- * approved; flagged to the founder as an open consistency call.
+ * Register note: the deck's "The leak" lines render as "The Challenge" —
+ * founder call 2026-07-20 ("Use Challenge vs Leak"), aligning the landing with
+ * the in-product card/report/coach vocabulary.
  *
  * BRAND.md: semantic tokens only (themes emerald via data-brand="money"), Lucide
  * only (Compass), dual-theme, no hardcoded hex, no sparkle. Static server
@@ -180,7 +180,7 @@ export default function MoneyLanding() {
           Your mix comes back as one of twelve profiles.
         </h2>
         <p className="mx-auto mt-4 max-w-2xl text-center leading-relaxed text-text-secondary">
-          Each profile gets two honest lines — the edge your traits give you, and the leak
+          Each profile gets two honest lines — the edge your traits give you, and the challenge
           they&apos;ve been charging you. Flattery isn&apos;t measurement, so you won&apos;t get any.
         </p>
         <div className="mt-10 grid gap-4 sm:grid-cols-3">
@@ -192,7 +192,7 @@ export default function MoneyLanding() {
               </h3>
               <p className="mt-4 text-[10px] font-semibold uppercase tracking-[0.14em] text-text-muted">The edge</p>
               <p className="mt-1 text-sm leading-relaxed text-text-secondary">{p.edge}</p>
-              <p className="mt-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-text-muted">The leak</p>
+              <p className="mt-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-text-muted">The challenge</p>
               <p className="mt-1 text-sm leading-relaxed text-text-secondary">{p.leak}</p>
             </div>
           ))}
@@ -290,8 +290,8 @@ export default function MoneyLanding() {
           What changes when you can see the mix
         </h2>
         <p className="mx-auto mt-5 max-w-xl leading-relaxed text-text-secondary">
-          Cleaner calls, made for reasons you could say out loud. The leak, watched instead of paid.
-          The rate quoted without the wince. And &ldquo;enough&rdquo; finally getting a number —
+          Cleaner calls, made for reasons you could say out loud. The challenge, watched instead of
+          paid. The rate quoted without the wince. And &ldquo;enough&rdquo; finally getting a number —
           clarity, control, and the end of never-enough.
         </p>
       </section>
