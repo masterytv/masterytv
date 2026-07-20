@@ -14,6 +14,7 @@
 import { useUser } from "@/hooks/useUser";
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { resolveBrandClient } from "@/hooks/useBrand";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Loader2,
@@ -94,6 +95,9 @@ export default function CommitmentsPage() {
       .from("commitments")
       .select("*")
       .eq("user_id", user.id)
+      // Program-scoped (2026-07-20): the money dashboard was listing the
+      // executive coach's commitments. Each vertical sees only its own.
+      .eq("program", resolveBrandClient().programSlug)
       .order("created_at", { ascending: false });
 
     if (!error && data) {

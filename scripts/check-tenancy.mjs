@@ -46,10 +46,20 @@ const PROGRAM_SCOPED = [
   "coach_profiles",       // 2026-07-16 PC2.2
   "coach_profile_history",// 2026-07-16 PC2.2
   "money_decisions",      // 2026-07-18 Decision Room (money §8) — decision log
+  "commitments",          // 2026-07-20 — the money Commitments module killed the
+                          // "executive-only" exemption (the money dashboard was
+                          // listing executive commitments); program col added +
+                          // backfilled the same day (20260720210000)
 ];
 
 // Tenancy flows through a parent FK (assessment_id / conversation_id /
 // report_id / engagement_id) — scoping the parent scopes the child.
+// ⚠️ GATE BLIND SPOT (2026-07-20): this gate verifies PROGRAM_SCOPED reads
+// only — it does NOT yet prove a child-scoped read actually filters through
+// its parent chain. conversation_summaries was read by user_id alone and
+// leaked the executive session summary into the money coach's Layer 7 (fixed
+// in prompt-assembler: summaries now filter via their parent conversation's
+// program). Any new read of these tables must carry the parent filter BY HAND.
 const CHILD_SCOPED = [
   "assessment_scores", "assessment_progress", "assessment_responses",
   "assessment_profiles", "assessment_report_versions",
@@ -69,9 +79,8 @@ const EXEMPT = {
   organizations: "workspace-level, pre-detour B2B remnant",
   shows: "pre-detour MasteryTV content catalog, single-brand",
   ai_tools: "executive-coach tool catalog — revisit at career",
-  commitments: "executive-only machinery (module gated off relatti) — revisit at career",
-  coaching_challenges: "executive-only machinery — revisit at career",
-  coaching_agenda: "executive-only machinery — revisit at career",
+  coaching_challenges: "executive-only machinery (no non-executive pack renders a challenges layer) — revisit at career",
+  coaching_agenda: "executive-only machinery (only the executive pack renders the agenda layer) — revisit at career",
   onboarding_state: "executive onboarding is the only writer (Relatti uses /assess) — revisit at career",
   user_entities: "executive onboarding artifact — revisit at career",
   fact_cache: "executive research cache — revisit at career",
@@ -100,6 +109,8 @@ const EXEMPT = {
 
 // Files allowed to read PROGRAM_SCOPED tables by user_id alone.
 const READ_ALLOW = {
+  "supabase/functions/cron-accountability-checkins/index.ts":
+    "due-commitment sweep is cross-program BY DESIGN — identity + pack resolve PER COMMITMENT (resolveCommitmentSource)",
   "supabase/functions/export-user-data/index.ts": "GDPR-style FULL export — cross-program by definition",
   "supabase/functions/delete-user-data/index.ts": "account deletion — cross-program by definition",
   "supabase/functions/admin-data/index.ts": "internal admin debug view (latest-updated profile; per-program view is future work)",

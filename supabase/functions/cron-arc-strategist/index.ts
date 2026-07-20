@@ -126,6 +126,9 @@ async function assessArcAndGenerateReview(
         .from("commitments")
         .select("description, status, type")
         .eq("user_id", userId)
+        // Executive machinery — reads the GENERAL program explicitly, same as
+        // the coach_profiles read above (commitments program-scoped 2026-07-20).
+        .eq("program", "general")
         .gte("created_at", thirtyDaysAgo),
       supabase
         .from("user_entities")

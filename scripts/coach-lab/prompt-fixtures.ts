@@ -246,8 +246,13 @@ const SOLO_TABLES: Record<string, TableFixture> = {
       message_count: 14,
       first_message_at: "2026-07-03T12:00:00Z",
       last_message_at: "2026-07-03T12:40:00Z",
+      conversation_id: "solo-past-conversation",
     },
   ],
+  // Parent rows for the summaries' child-scoped tenancy filter (2026-07-20):
+  // the assembler resolves each summary's vertical via its parent conversation
+  // and keeps only the active program's (the summaries-leak fix).
+  conversations: [{ id: "solo-past-conversation", program: "relationship" }],
   ai_tools: [],
   assessment_scores: (params: URLSearchParams) => {
     if (params.get("assessment_id") === `eq.${SOLO_ASSESSMENT}`) {
@@ -411,8 +416,11 @@ const DYAD_TABLES: Record<string, TableFixture> = {
       message_count: 16,
       first_message_at: "2026-07-04T12:00:00Z",
       last_message_at: "2026-07-04T12:35:00Z",
+      conversation_id: "dyad-past-conversation",
     },
   ],
+  // Parent rows for the summaries' child-scoped tenancy filter (2026-07-20).
+  conversations: [{ id: "dyad-past-conversation", program: "relationship" }],
   ai_tools: [],
   assessment_scores: (params: URLSearchParams) => {
     if (params.get("assessment_id") === `eq.${DYAD_ASSESSMENT}`) {

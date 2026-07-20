@@ -275,6 +275,9 @@ export async function postProcess(
           "id, description, due_date, created_at, messages!commitments_source_message_id_fkey!inner(conversation_id)"
         )
         .eq("user_id", userId)
+        // Program-scoped as of 2026-07-20 (the conversation join already
+        // implies it; explicit for the tenancy gate + belt-and-suspenders).
+        .eq("program", programScope(program))
         .eq("status", "active")
         .eq("messages.conversation_id", conversationId)
         .order("created_at", { ascending: true })
@@ -386,6 +389,9 @@ export async function postProcess(
           .from("commitments")
           .insert({
             user_id: userId,
+            // A commitment belongs to the vertical it was made in (2026-07-20 —
+            // the money dashboard was listing executive commitments).
+            program: programScope(program),
             type: c.type,
             description: c.description,
             due_date: c.due_date || null,

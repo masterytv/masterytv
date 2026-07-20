@@ -179,7 +179,7 @@ Deno.serve(async (req: Request) => {
         }
 
         // ── 3. Load context for briefing generation ──
-        const context = await loadBriefingContext(supabase, user.id, pack);
+        const context = await loadBriefingContext(supabase, user.id, pack, program ?? "general");
 
         // ── 4. Generate briefing via Claude ──
         const briefing = await generateBriefing(user, context, pack);
@@ -324,13 +324,17 @@ async function resolveBriefingProgram(
 async function loadBriefingContext(
   supabase: ReturnType<typeof createSupabaseClient>,
   userId: string,
-  pack: CoachPack
+  pack: CoachPack,
+  // The user's resolved program — commitments are program-scoped (2026-07-20),
+  // so a briefing may only reference THIS vertical's commitments.
+  program: string
 ): Promise<BriefingContext> {
   // Active commitments (due soon or active)
   const { data: commitments } = await supabase
     .from("commitments")
     .select("description, due_date, type")
     .eq("user_id", userId)
+    .eq("program", program)
     .eq("status", "active")
     .order("due_date", { ascending: true, nullsFirst: false })
     .limit(5);
@@ -353,6 +357,7 @@ async function loadBriefingContext(
     .from("commitments")
     .select("description, completed_at")
     .eq("user_id", userId)
+    .eq("program", program)
     .eq("status", "completed")
     .gte("completed_at", sevenDaysAgo)
     .order("completed_at", { ascending: false })
