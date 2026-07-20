@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 /**
  * POST /api/decoded/deny-upgrade
@@ -39,8 +40,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
     }
 
-    // Clear the upgrade request — sharing level stays the same
-    const { error } = await supabase
+    // Clear the upgrade request — sharing level stays the same. decoded_invites
+    // is service-role-write-only (consent hardening 2026-07-19); the caller is
+    // verified as a party above.
+    const admin = createAdminClient();
+    const { error } = await admin
       .from('decoded_invites')
       .update({
         upgrade_requested_level: null,

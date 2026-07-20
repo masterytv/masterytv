@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { syncEngagementForInvite } from "@/lib/decoded/sync-engagement";
 import { reduceConsent } from "@/lib/relatti/consent-machine";
 
@@ -56,7 +57,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: result.error }, { status: result.httpStatus });
     }
 
-    const { error } = await supabase
+    // decoded_invites is service-role-write-only (consent hardening 2026-07-19);
+    // the caller is verified as a party to this invite above.
+    const admin = createAdminClient();
+    const { error } = await admin
       .from("decoded_invites")
       .update(result.patch)
       .eq("id", inviteId);

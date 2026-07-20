@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { syncEngagementForInvite } from '@/lib/decoded/sync-engagement';
 
 type ShareLevel = 'none' | 'compatibility' | 'type_compatibility' | 'full';
@@ -81,11 +82,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
     }
 
+    // Every consent-state write below goes through the service role:
+    // decoded_invites is service-role-write-only (consent-column hardening
+    // 2026-07-19) so a client cannot self-grant or forge partner access. The
+    // caller is verified as a party to this invite above.
+    const admin = createAdminClient();
+
     // Handle revoking (unsharing)
     const isRevoking = shareLevel === 'none';
 
     if (isRevoking) {
-      const { error } = await supabase
+      const { error } = await admin
         .from('decoded_invites')
         .update({
           share_with_human: 'none',
@@ -117,7 +124,7 @@ export async function POST(req: NextRequest) {
     const otherPartyRequested =
       !!invite.upgrade_requested_by && invite.upgrade_requested_by !== user.id;
     if (!otherPartyRequested) {
-      const { error: requestError } = await supabase
+      const { error: requestError } = await admin
         .from('decoded_invites')
         .update({
           upgrade_requested_level: shareLevel,
@@ -140,7 +147,7 @@ export async function POST(req: NextRequest) {
     const effectiveLevel = minLevel(requesterLevel, shareLevel);
 
     // Update to consented with mutual minimum — clear upgrade request fields
-    const { error } = await supabase
+    const { error } = await admin
       .from('decoded_invites')
       .update({
         share_with_human: effectiveLevel,
@@ -179,7 +186,7 @@ export async function POST(req: NextRequest) {
         .single();
 
       if (recipientReport) {
-        await supabase
+        await admin
           .from('decoded_invites')
           .update({ recipient_report_id: recipientReport.id })
           .eq('id', inviteId);

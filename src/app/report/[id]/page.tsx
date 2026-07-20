@@ -267,7 +267,6 @@ export default async function ReportPage({ params, searchParams }: PageProps) {
     const [inviteUrl, dyad] = isRelationship
       ? await Promise.all([
           getOrCreateBroadcastInviteUrl(
-            supabase,
             user,
             originFromHeaders(await headers()),
             ownReport.id,

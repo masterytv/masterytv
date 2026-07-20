@@ -1,4 +1,5 @@
-import type { SupabaseClient, User } from "@supabase/supabase-js";
+import { createAdminClient } from "@/lib/supabase/admin";
+import type { User } from "@supabase/supabase-js";
 
 /**
  * Get (or lazily create) the caller's stable "broadcast" partner-invite URL —
@@ -22,7 +23,6 @@ import type { SupabaseClient, User } from "@supabase/supabase-js";
  * render a working link.
  */
 export async function getOrCreateBroadcastInviteUrl(
-  supabase: SupabaseClient,
   user: User,
   appUrl: string,
   reportId: string | null,
@@ -34,7 +34,19 @@ export async function getOrCreateBroadcastInviteUrl(
     user.email?.split("@")[0] ||
     "Someone";
 
-  const { data: broadcastInvite } = await supabase
+  // decoded_invites is service-role-write-only (consent-column hardening
+  // 2026-07-19). This upsert creates the caller's OWN broadcast row
+  // (inviter_id = user.id), so the service client is safe here; fall back to a
+  // login URL if the service env is unavailable (preserves the always-returns-a-URL
+  // contract callers rely on).
+  let admin;
+  try {
+    admin = createAdminClient();
+  } catch {
+    return `${appUrl}/login`;
+  }
+
+  const { data: broadcastInvite } = await admin
     .from("decoded_invites")
     .upsert(
       {
