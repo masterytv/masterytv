@@ -47,8 +47,12 @@ const COACH_IDENTITY: Record<BrandId, CoachIdentity> = {
     sharedFrom: "Relatti Coach <coach@mail.masterytv.com>",
   },
   money: {
-    keyEnv: "RESEND_API_KEY_MONEY",
-    preferredFrom: "Money Maps Coach <coach@mail.moneymaps.masterytv.com>",
+    // Founder decision 2026-07-20: money sends from the shared MasteryTV
+    // domain for now — no moneymaps domain is verified in Resend, so a
+    // preferred own-domain attempt would just 403 + retry on every send.
+    // When a money from-domain IS verified, set preferredFrom to it (and
+    // keyEnv if it gets its own account); nothing else needs to change.
+    preferredFrom: "Money Maps Coach <coach@mail.masterytv.com>",
     sharedFrom: "Money Maps Coach <coach@mail.masterytv.com>",
   },
 };
