@@ -50,6 +50,10 @@ const PROGRAM_SCOPED = [
                           // "executive-only" exemption (the money dashboard was
                           // listing executive commitments); program col added +
                           // backfilled the same day (20260720210000)
+  "feedback",             // 2026-07-20 — the feedback widget went ALL-brands
+                          // (was the Relatti-only beta harness); /api/feedback
+                          // stamps program, the beta cockpit filters by it
+                          // (20260720220000)
 ];
 
 // Tenancy flows through a parent FK (assessment_id / conversation_id /
@@ -102,7 +106,6 @@ const EXEMPT = {
   contact_events: "marketing CRM telemetry",
   contact_lists: "marketing CRM",
   contact_subscriptions: "marketing CRM",
-  feedback: "workspace-scoped (E1 spine column)",
   beta_surveys: "Relatti beta instrument, single-program by definition",
   beta_invite_codes: "Relatti beta admission, single-program by definition",
 };

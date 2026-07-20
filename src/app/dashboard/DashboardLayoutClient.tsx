@@ -7,7 +7,7 @@ import { Topbar } from "@/components/dashboard/topbar";
 import { createClient } from "@/lib/supabase/client";
 import ShareModal from "@/components/decoded/ShareModal";
 import PartnerInviteModal from "@/components/relatti/PartnerInviteModal";
-import { FeedbackWidget } from "@/components/relatti/FeedbackWidget";
+import { FeedbackWidget } from "@/components/dashboard/FeedbackWidget";
 import { useBrand, resolveBrandClient } from "@/hooks/useBrand";
 import { byBrand } from "@/lib/platform/brand";
 
@@ -121,8 +121,10 @@ export default function DashboardLayoutClient({
         </main>
       </div>
 
-      {/* Beta feedback widget — Relatti only */}
-      {brand.id === "relatti" && <FeedbackWidget />}
+      {/* Feedback widget — platform chrome, ALL brands (Relatti-only until
+          2026-07-20). Posts to /api/feedback, which stamps the row's program
+          from the resolved brand; tokens theme it per brand automatically. */}
+      <FeedbackWidget />
 
       {/* Invite/Share modal — triggered from the sidebar Share button. Relatti
           gets the partner-invite (the Decoded viral share is off-brand there);

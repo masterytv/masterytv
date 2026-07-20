@@ -2,11 +2,15 @@
 
 import { useState } from "react";
 import { MessageCircle, X, Check } from "lucide-react";
+import { resolveBrandClient } from "@/hooks/useBrand";
 
 /**
- * Floating beta-feedback widget (Relatti). Low-friction capture so testers can
- * tell us what works and what doesn't from any dashboard page. Posts to
- * /api/relatti/feedback, which stores the row and emails the founder.
+ * Floating feedback widget — platform chrome on every brand's dashboard
+ * (Relatti-only until 2026-07-20; lived in components/relatti/). Low-friction
+ * capture so testers can tell us what works and what doesn't from any
+ * dashboard page. Posts to /api/feedback with the client-resolved brand id;
+ * the route stamps the row's `program` and emails the founder. Styling is
+ * all semantic tokens, so each brand's palette themes it automatically.
  */
 
 const CATEGORIES = [
@@ -27,13 +31,14 @@ export function FeedbackWidget() {
     if (!message.trim() || status === "sending") return;
     setStatus("sending");
     try {
-      const res = await fetch("/api/relatti/feedback", {
+      const res = await fetch("/api/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           category,
           message,
           rating,
+          brand: resolveBrandClient().id,
           page_url: typeof window !== "undefined" ? window.location.pathname : null,
           user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
         }),
