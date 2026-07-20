@@ -1,10 +1,10 @@
 /**
- * Money Maps™ card — pure display formatters.
+ * MoneyTraits™ card — pure display formatters.
  *
  * Split out of MoneyMapCard.tsx so they carry no JSX/CSS import and can be
  * unit-tested directly (money-map-card-format.test.ts). These are DISPLAY-ONLY
  * stylizations of the stored bundle — they never re-derive anything the scorer
- * owns (SPEC: MONEY_MAPS_INSTRUMENT.md §5, the card).
+ * owns (SPEC: MONEY_TRAITS_INSTRUMENT.md §5, the card).
  *
  * TERMINOLOGY SEAM (founder rename, 2026-07-20): the stored bundle keeps its
  * original keys (`leap`, `leak`, `dims.LEAP` — the T2 read contract live rows

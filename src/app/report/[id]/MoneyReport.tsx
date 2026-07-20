@@ -50,7 +50,7 @@ import type { StoredMoneyMap, MoneyMap } from "@/lib/decoded/scoring/money-maps"
 // The four core Maps in display order (the Fear is a state, shown separately).
 const MAP_ORDER: readonly MoneyMap[] = ["GUARD", "DRIVE", "MIRROR", "SHADOW"];
 
-// One-line "reads" + running-hot copy per Map (MONEY_MAPS_INSTRUMENT.md §1).
+// One-line "reads" + running-hot copy per Map (MONEY_TRAITS_INSTRUMENT.md §1).
 const MAP_META: Record<MoneyMap, { reads: string; hot: string }> = {
   GUARD: { reads: "protect · control · watch the downside", hot: "worry that won't update; hard to enjoy; fear-based no's" },
   DRIVE: { reads: "more · fuel · progress-as-proof", hot: "the moving goalpost; overwork; “I'll relax when…”" },
@@ -189,7 +189,7 @@ export default function MoneyReport({
         <header className="text-center">
           <p className="flex items-center justify-center gap-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
             <Compass size={14} strokeWidth={2} style={{ color: "var(--color-primary)" }} aria-hidden="true" />
-            Money Maps&trade; · Personal report
+            MoneyTraits&trade; · Personal report
           </p>
           <h1 className="mt-5 font-display text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl">
             {map.archetype}
@@ -229,9 +229,9 @@ export default function MoneyReport({
           <MoneyMapCard map={map} />
         </div>
 
-        {/* ── 01 · The map ── */}
+        {/* ── 01 · The mix ── */}
         <section className="mt-16" aria-label="The shape of your money">
-          <SectionLabel n="01" kicker="The map" />
+          <SectionLabel n="01" kicker="The mix" />
           {n ? <Headline text={n.archetype.headline} /> : <Headline text="The shape of your money" />}
 
           <div className="mt-8 grid items-start gap-8 sm:grid-cols-[minmax(0,300px)_1fr]">
@@ -353,14 +353,14 @@ export default function MoneyReport({
             </blockquote>
             <figcaption className="mt-5 flex items-center justify-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
               <Compass size={12} strokeWidth={2} aria-hidden="true" />
-              {map.archetype} · Money Maps&trade;
+              {map.archetype} · MoneyTraits&trade;
             </figcaption>
           </figure>
         )}
 
-        {/* ── 04 · The quiet map ── */}
-        <section className="mt-16" aria-label="The quiet map">
-          <SectionLabel n="04" kicker="The quiet map" />
+        {/* ── 04 · The quiet trait ── */}
+        <section className="mt-16" aria-label="The quiet trait">
+          <SectionLabel n="04" kicker="The quiet trait" />
           {n ? (
             <>
               <Headline text={n.quiet_map.headline} />
@@ -444,7 +444,7 @@ export default function MoneyReport({
         >
           <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
             <MessageSquare size={13} strokeWidth={2.25} aria-hidden="true" />
-            Where the map ends
+            Where the report ends
           </p>
           {n ? (
             <Prose paras={n.coach_handoff.body} className="mt-4" />
@@ -494,7 +494,7 @@ export default function MoneyReport({
         </section>
 
         <p className="mt-10 text-center text-xs leading-relaxed text-text-muted">
-          Money Maps is coaching and education on the psychology of money &mdash; not therapy, and
+          MoneyTraits is coaching and education on the psychology of money &mdash; not therapy, and
           not financial, investment, or tax advice.
         </p>
       </main>

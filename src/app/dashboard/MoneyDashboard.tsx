@@ -6,7 +6,7 @@
  * dashboard or report viewer).
  *
  * The user brings a live money decision → the money coach applies their WHOLE
- * Money Map profile to it in a thread (Layer 4.5) → they leave a WRITTEN DECISION
+ * trait profile to it in a thread (Layer 4.5) → they leave a WRITTEN DECISION
  * RECORD here. This decision log is the Money OS's (§9) first durable artifact and
  * the retention spine. The richer Money OS living-doc fields (enough-number,
  * non-negotiables, mission, self-sabotage patterns) are the next phase.
@@ -20,7 +20,7 @@
  * BRAND.md: semantic tokens only (money's emerald [data-brand="money"] palette
  * resolves in both themes with no per-brand rules here); Lucide marks only
  * (Compass/ArrowRight/Check/MessageSquare/PenLine/Undo2 — never Sparkles/Zap);
- * public strings use the LOCKED mechanic name "Money Maps". FTC: process + felt
+ * public strings use the LOCKED mechanic name "MoneyTraits". FTC: process + felt
  * change, never wealth outcomes.
  */
 
@@ -142,7 +142,7 @@ export default function MoneyDashboard({
     );
   }
 
-  // ── No assessment yet → the door to Money Maps (Rung 0). ──
+  // ── No assessment yet → the door to MoneyTraits (Rung 0). ──
   if (!hasAssessment) {
     return (
       <div className="dr-root">
@@ -153,11 +153,11 @@ export default function MoneyDashboard({
           <h1 className="dr-gate__title">Welcome, {userName}</h1>
           <p className="dr-gate__body">
             The Decision Room is where you bring a real money decision and think it through with a
-            coach who knows how you&apos;re wired. It starts with Money Maps — a 3-minute read on the
-            psychology under your money calls.
+            coach who knows how you&apos;re wired. It starts with MoneyTraits — a 3-minute measure of
+            the psychology under your money calls.
           </p>
           <Link href="/assess" className="dr-btn dr-btn--primary dr-gate__cta">
-            Take Money Maps
+            Measure my traits
             <ArrowRight size={16} strokeWidth={2} aria-hidden="true" />
           </Link>
         </div>
@@ -175,12 +175,12 @@ export default function MoneyDashboard({
         <header className="dr-header">
           <div className="dr-eyebrow">
             <Compass size={14} strokeWidth={2} aria-hidden="true" />
-            <span>Money Maps™ · Decision Room</span>
+            <span>MoneyTraits™ · Decision Room</span>
           </div>
           <h1 className="dr-title">The Decision Room</h1>
           <p className="dr-lede">
-            Bring a real money decision. Your coach thinks it through with your whole Money Map — and
-            you keep the record of what you decided, and why.
+            Bring a real money decision. Your coach thinks it through with your whole trait profile —
+            and you keep the record of what you decided, and why.
           </p>
           {moneyMap && (
             <Link href="/dashboard/chat" className="dr-anchor">

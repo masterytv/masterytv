@@ -21,14 +21,14 @@ export async function generateMetadata(): Promise<Metadata> {
   const brand = await getBrand();
   return brandPageMetadata(brand.id, {
     title: byBrand(
-      { relatti: "Dashboard — Relatti", masterytv: "Dashboard — Mastery", money: "Dashboard — Money Maps" },
+      { relatti: "Dashboard — Relatti", masterytv: "Dashboard — Mastery", money: "Dashboard — MoneyTraits" },
       brand.id,
     ),
     description: byBrand(
       {
         relatti: "Your relationship dashboard. Assessment, blueprint, and coaching in one place.",
         masterytv: "Your personal mastery dashboard. Assessment, report, and coaching in one place.",
-        money: "Your money dashboard. Your Money Map, decisions, and coaching in one place.",
+        money: "Your money dashboard. Your trait profile, decisions, and coaching in one place.",
       },
       brand.id,
     ),

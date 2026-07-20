@@ -92,7 +92,7 @@ export async function generateReport(assessmentId: string): Promise<GenerateRepo
   }
 
   // Report generation is program-aware. Money's report is the DETERMINISTIC
-  // Money Maps™ scored bundle the coach reveals off (T2 read contract) — not
+  // MoneyTraits™ scored bundle the coach reveals off (T2 read contract) — not
   // LLM-narrated sections — so it takes its own writer and never fires the
   // decoded-generate-report edge function. Any other program keeps the
   // incumbent path below, byte-for-byte. (REPORT_KIND is exhaustive over
@@ -149,7 +149,7 @@ export async function generateReport(assessmentId: string): Promise<GenerateRepo
 }
 
 /**
- * Money (Money Maps™) report writer — the 'money-map' branch of generateReport.
+ * Money (MoneyTraits™) report writer — the 'money-map' branch of generateReport.
  *
  * Two layers (founder decision 2026-07-20 — the long-form report supersedes the
  * card-only read of MONEY_EXPERIENCE.md §109):
@@ -183,13 +183,13 @@ async function writeMoneyMapReport(
 
   if (progressError || !progress?.responses) {
     console.error('[Money] Responses not found for assessment', assessmentId, progressError);
-    return { success: false, error: 'Money Maps responses not found' };
+    return { success: false, error: 'MoneyTraits responses not found' };
   }
 
   const allResponses = progress.responses as Record<string, Record<string, number>>;
   const moneyResponses = allResponses[MONEY_MAPS.id];
   if (!moneyResponses) {
-    return { success: false, error: 'No Money Maps responses on this assessment' };
+    return { success: false, error: 'No MoneyTraits responses on this assessment' };
   }
 
   // Score deterministically. scoreMoneyMaps throws loudly on a missing/invalid
@@ -199,7 +199,7 @@ async function writeMoneyMapReport(
     sections = { money_map: toStoredMoneyMap(scoreMoneyMaps(moneyResponses)) };
   } catch (err) {
     console.error('[Money] Scoring failed for assessment', assessmentId, err);
-    return { success: false, error: 'Failed to score Money Maps assessment' };
+    return { success: false, error: 'Failed to score MoneyTraits assessment' };
   }
 
   const { data: report, error: insertError } = await supabase

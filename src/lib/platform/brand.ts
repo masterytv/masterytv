@@ -82,22 +82,27 @@ export const BRANDS: Record<BrandId, Brand> = {
     domains: ["relatti.com", "www.relatti.com", "staging.relatti.com"],
     familyName: "MasteryTV",
   },
-  // Money vertical (Money Maps™). FOUNDER-PINNED 2026-07-17: build on
-  // moneymaps.masterytv.com for now; public brand name + domain still TBD
-  // (Momatti candidate) — `name` uses the locked mechanic name "Money Maps",
-  // not "Momatti". themeId "money" registered here; its [data-brand="money"]
-  // globals.css palette is a later leaf (no money surface renders yet, so the
-  // brand-tokens gate — which only checks brands WITH a block — stays green).
-  // Staging host staging.moneymaps.masterytv.com registered 2026-07-18 (mirrors
-  // relatti's staging.relatti.com); DNS→Vercel + the Vercel domain assignment
-  // remain infra steps (§5.9). Dev access via ?brand=money on localhost.
+  // Money vertical — public brand "MoneyTraits" on moneytraits.com (FOUNDER
+  // DECISION 2026-07-20; supersedes the interim "Money Maps" mechanic name and
+  // the Momatti candidate — "MoneyMaps" is a third party's registered mark, so
+  // it must never appear on a user-facing surface). The internal slug stays
+  // `money` everywhere (storage contract — see MONEY_TRAITS_RENAME.md §1.2).
+  // The old moneymaps.masterytv.com hosts remain listed as TRANSITION ALIASES
+  // until the moneytraits.com cutover is verified, then get a 301 + removal
+  // (MONEY_TRAITS_RENAME.md §5.7). Dev access via ?brand=money on localhost.
   money: {
     id: "money",
-    name: "Money Maps",
+    name: "MoneyTraits",
     workspaceSlug: "masterytv",
     programSlug: "money",
     themeId: "money",
-    domains: ["moneymaps.masterytv.com", "staging.moneymaps.masterytv.com"],
+    domains: [
+      "moneytraits.com",
+      "www.moneytraits.com",
+      "staging.moneytraits.com",
+      "moneymaps.masterytv.com",
+      "staging.moneymaps.masterytv.com",
+    ],
     familyName: "MasteryTV",
   },
 };

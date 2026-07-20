@@ -1,5 +1,5 @@
-// Money Maps™ v1 — canonical scoring reference + self-check.
-// This is the SPEC-LOCKING reference for directives/MONEY_MAPS_INSTRUMENT.md §3.
+// MoneyTraits™ v1 — canonical scoring reference + self-check.
+// This is the SPEC-LOCKING reference for directives/MONEY_TRAITS_INSTRUMENT.md §3.
 // Deterministic, no LLM. When the production TS scorer lands in the Decoded
 // engine (program=money), its unit tests must reproduce the cases at the bottom.
 // Run:  node scripts/money-maps-scoring.mjs   (exits non-zero on any failure)

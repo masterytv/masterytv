@@ -68,15 +68,15 @@ Each rung is a valid stopping point that has already delivered value — which i
 
 ---
 
-## 5. IP reality on "Money Maps™" (the founder's one risky instinct → a clean opportunity)
+## 5. IP reality on "MoneyTraits™" (the founder's one risky instinct → a clean opportunity)
 
 Verified this turn: **"Money Scripts®" is a registered trademark and the KMSI-R is a copyrighted instrument** (Klontz Consulting Group / Financial Psychology Institute; DataPoints is the exclusive online commercial publisher). The four constructs (avoidance / worship-focus / status / vigilance) are *ideas* and not copyrightable — but the **item wording is**, and the name is trademarked. So the one path to avoid is exactly the tempting one: renaming KMSI-R items and trademarking the result. Three clean paths instead:
 
 1. **White-label / license the KMSI-R from Klontz.** Fast, legally clean, and *adds* credibility (published validity studies). Potential bonus: a relationship with **Brad Klontz himself** — the science-first face of this niche (150M+ video views, national bestseller) — is a marketing asset, not just a compliance cost. Diligence: DataPoints' "exclusive online commercial publisher" status may route or constrain an independent app; check the terms.
-2. **Build an original instrument (Money Maps™).** Measure the same constructs with our *own* items under our *own* validated name — owned forever, trademarkable, tunable to the founder segment. Cost: real psychometric validation work.
-3. **Hybrid (recommended to evaluate):** license the KMSI-R for launch credibility while building + validating Money Maps™ in parallel, then swap. Ship legitimacy now, own the asset later.
+2. **Build an original instrument (MoneyTraits™).** Measure the same constructs with our *own* items under our *own* validated name — owned forever, trademarkable, tunable to the founder segment. Cost: real psychometric validation work.
+3. **Hybrid (recommended to evaluate):** license the KMSI-R for launch credibility while building + validating MoneyTraits™ in parallel, then swap. Ship legitimacy now, own the asset later.
 
-This is a genuine Phase-0.5 decision with a legal and a partnership dimension. Flagging it now so "Money Maps™" doesn't get built on the one foundation that invites a lawsuit.
+This is a genuine Phase-0.5 decision with a legal and a partnership dimension. Flagging it now so "MoneyTraits™" doesn't get built on the one foundation that invites a lawsuit.
 
 ---
 
@@ -98,7 +98,7 @@ The **Fable 5 response** in the founder's dry-run is the quality bar for the coa
 ## 8. Open questions for Phase 0.5 (`MONEY_EXPERIENCE.md`)
 
 1. **The hero reframe** (playbook §3): candidate is *"your relationship with money, decoded — turned into your edge."* Confirm register: /edge (founder performance) leads; /unblock second.
-2. **Instrument decision** (§5): license KMSI-R, build Money Maps™, or hybrid — and the Klontz-partnership question.
+2. **Instrument decision** (§5): license KMSI-R, build MoneyTraits™, or hybrid — and the Klontz-partnership question.
 3. **Decision Room vs. daily loop** — which is the V1 spine? (Leaning Decision Room for the /edge segment.)
 4. ~~**How much story before value**~~ — ✅ **DECIDED 2026-07-17:** quiz first → results in chat → clickable answer chips + free-text (see §3 decision block). Activation metric = time-to-first-reveal. Rungs 2–4 stay progressive.
 5. **The Money OS artifact** — what's in v1, and is it the shareable/exportable object.

@@ -65,7 +65,7 @@ export default function CompletedAssessment({ assessmentId, scores: initialScore
     try {
       const result = await generateReport(assessmentId);
       if (result.success && result.reportId) {
-        // Program-keyed: money lands in the reveal chat (off the Money Map its
+        // Program-keyed: money lands in the reveal chat (off the trait profile its
         // report row just stored), every other vertical in the report viewer.
         router.push(plan.href(result.reportId));
         return;

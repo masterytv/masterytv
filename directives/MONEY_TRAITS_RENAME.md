@@ -1,8 +1,20 @@
-# MONEY_TRAITS_RENAME — MoneyMaps → **Money Traits**
+# MONEY_TRAITS_RENAME — MoneyMaps → **MoneyTraits**
 
-> **Founder decision (2026-07-20):** "MoneyMaps" is someone else's registered trademark and confusable. The money vertical's public brand becomes **Money Traits**, on **moneytraits.com** (registered, researched, defensible). This supersedes the interim "locked mechanic name Money Maps" and the Momatti candidate everywhere.
+> **Founder decision (2026-07-20):** "MoneyMaps" is someone else's registered trademark and confusable. The money vertical's public brand becomes **MoneyTraits**, on **moneytraits.com** (registered, researched, defensible). This supersedes the interim "locked mechanic name Money Maps" and the Momatti candidate everywhere.
 >
-> **Status: PLANNED — not yet executed.** This doc is the full inventory (swept 2026-07-20 on `staging`) + the execution SOP. It also serves as the correct-course record for the mid-build brand change.
+> ## ✅ Status: EXECUTED on `staging` (2026-07-20) — Phases P1–P5 done, P6–P8 pending founder
+>
+> Everything in §2 was applied and gate-verified the same day (founder "Approved" + delivered the Cowork homepage copy; moneytraits.com already in Vercel + Supabase Auth). **Execution deviations from the plan as written:**
+> 1. **Wordmark is ONE word, "MoneyTraits"** (per the approved Cowork deck's nav/footer lockup, matching the MasteryTV/Relatti house style) — not the two-word "Money Traits" this doc drafted. A flip to the spaced form is one mechanical sweep if the founder prefers it.
+> 2. **Mechanic noun:** Map→**trait** implemented per §6.1 (lowercase "trait(s)"; the artifact is "your trait profile"; report kickers now "The mix" / "The quiet trait" / "Where the report ends"; prompts say "the four traits: GUARD, DRIVE, MIRROR, SHADOW").
+> 3. **The homepage was REPLACED with the Cowork deck verbatim** (`MoneyLanding.tsx` + page metadata). ⚠️ **OPEN COPY CALL:** the deck says "**The leak**" on the profile cards and in the payoff section, while the in-product card/report/coach say "**the Challenge**" (the 2026-07-20 Challenge rename). Shipped as approved; founder to pick one register and we align the other side (one-line change either way).
+> 4. **"The Money Tell" LP is NOT built yet** — its copy hasn't been handed off. Proposed route `/tell` stands.
+> 5. Docs: brand name swept in active directives; their historical "Map" construct language is kept under 🏷️ rename banners (MONEY_EXPERIENCE.md, MONEY_TRAITS_INSTRUMENT.md); Momatti lines marked resolved-in-place rather than deleted. The applied migration file and `directives/archive/` were left untouched.
+> 6. Acceptance verified: full `npm run gate` GREEN (typecheck · 313 tests · safety · isolation · metadata · colors · brand-tokens · ternaries · tenancy · resolve 13/13 · snapshot **5/5 byte-identical with ONLY `money.golden.txt` moved**, diff naming-only); scorer 7/7; crawler-style curl on /money · /login · /privacy · /terms · /disclaimer shows MoneyTraits titles/og/site_name/icons and **zero** "Money Maps"; landing visually verified in BOTH themes at `?brand=money`.
+>
+> **Still pending (in order):** P6 founder push of `staging` → Vercel builds staging.moneytraits.com → founder merges staging→main (rides with the queued long-form-report merge) → P7 edge redeploys (`coach`, `send-email`, `money-generate-report` plain; `email-inbound`, `telegram-webhook` `--no-verify-jwt`; all `cron-*` — `_shared/` changed) + probes → P8 §5.4 cutover verification on https://moneytraits.com (brand/favicon, magic-link round-trip, **coach chat = the CORS proof**, report + OG, emails as "MoneyTraits") → later §5.7 (301 the old subdomain) + §5.6 (Resend mail.moneytraits.com, optional).
+>
+> The rest of this doc is the original inventory/SOP, kept as the correct-course record for the mid-build brand change.
 
 ---
 
@@ -36,7 +48,7 @@ Renaming any of these breaks stored data or the edge/src lockstep. Same rule as 
 | Edge fn deployed name `money-generate-report` | Supabase | no brand word in it |
 
 **Two exceptions (do rename):**
-- `directives/MONEY_MAPS_INSTRUMENT.md` → `MONEY_TRAITS_INSTRUMENT.md`, then sweep the ~8 code-comment references (`rg -n 'MONEY_MAPS_INSTRUMENT'`).
+- `directives/MONEY_TRAITS_INSTRUMENT.md` → `MONEY_TRAITS_INSTRUMENT.md`, then sweep the ~8 code-comment references (`rg -n 'MONEY_MAPS_INSTRUMENT'`).
 - The comment at [instruments/money-maps.ts:16](../src/lib/decoded/instruments/money-maps.ts) claiming *"Money Maps™" is our mark* — now false and legally hazardous; rewrite wherever the sweep hits a ™-claim comment.
 
 ### 1.3 Acceptance gate (post-condition)
@@ -110,8 +122,8 @@ After execution, `rg -n 'Money ?Maps' src supabase scripts` (case-sensitive, cat
 
 ### 2.7 Docs / directives (self-anneal)
 
-- Heavy: `MONEY_EXPERIENCE.md` (19 hits), `MONEY_MAPS_INSTRUMENT.md` (8, + file rename), `MONEY_EXPERIENCE_NOTES.md` (8), `MONEY_BUILD_HANDOFF.md` (8), `PROACTIVE_CONTENT_PLAN.md` (4), `STRATEGY.md` (3 — Stage-2 row: name + domain columns).
-- Purge "Momatti candidate" from: STRATEGY.md, brand.ts, brand-metadata.ts, MONEY_MAPS_INSTRUMENT.md, MONEY_EXPERIENCE.md, MONEY_BUILD_HANDOFF.md.
+- Heavy: `MONEY_EXPERIENCE.md` (19 hits), `MONEY_TRAITS_INSTRUMENT.md` (8, + file rename), `MONEY_EXPERIENCE_NOTES.md` (8), `MONEY_BUILD_HANDOFF.md` (8), `PROACTIVE_CONTENT_PLAN.md` (4), `STRATEGY.md` (3 — Stage-2 row: name + domain columns).
+- Purge "Momatti candidate" from: STRATEGY.md, brand.ts, brand-metadata.ts, MONEY_TRAITS_INSTRUMENT.md, MONEY_EXPERIENCE.md, MONEY_BUILD_HANDOFF.md.
 - Do **not** touch `directives/archive/`, `logs/`, or git history.
 - Update the `money-build-state` auto-memory when executed.
 
@@ -143,7 +155,7 @@ Built by Fable 5 in Claude Cowork, already voiced "Money Traits":
 **P1 — Registries + hosts** (§2.1) — additive on hosts: new domains in, old domains kept. `tsc --noEmit`.
 **P2 — Display strings** (§2.2, §2.3) — Money Maps → Money Traits everywhere user-visible, including the Map→Trait mechanic pass (§6.1).
 **P3 — Prompts + fixtures** (§2.4, §2.5) — edit packs/profile/coach/report-writer, update fixture expectations, regenerate goldens, verify the golden diff is naming-only.
-**P4 — Docs** (§2.7) + rename `MONEY_MAPS_INSTRUMENT.md` + Momatti purge.
+**P4 — Docs** (§2.7) + rename `MONEY_TRAITS_INSTRUMENT.md` + Momatti purge.
 **P5 — Verify locally** — `npm run gate` (ternaries, tenancy, vitest, resolve 13/13, snapshot 5/5), then preview at `localhost:3000/?brand=money`: landing → assess intro/consent → dashboard door → card → report → chat reveal → login/compat titles → `/api/og` card text. Never `npm run build` while `next dev` runs.
 **P6 — Ship code** — commit(s) on `staging`, push after founder OK; **founder merges staging→main** (rides with the pending long-form-report merge already queued for prod moneytraits UI).
 **P7 — Edge deploys** (shared by prod+staging — prompts flip prod at deploy; fine, money is dark): `coach`, `send-email`, `money-generate-report` plain; `email-inbound`, `telegram-webhook` **`--no-verify-jwt`**; **all `cron-*` fns too** (`_shared/` changed — pg_cron gotcha). Probe each after deploy.

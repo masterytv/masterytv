@@ -1,8 +1,8 @@
 /**
- * Money Map profile → Coach Handoff: Layer 4.5 for the money vertical (T2).
+ * trait profile → Coach Handoff: Layer 4.5 for the money vertical (T2).
  *
- * The money coach's reveal (MONEY_MAPS_INSTRUMENT.md §6, MONEY_EXPERIENCE.md
- * §10) opens off the user's Money Maps™ result, so the coach must already HAVE
+ * The money coach's reveal (MONEY_TRAITS_INSTRUMENT.md §6, MONEY_EXPERIENCE.md
+ * §10) opens off the user's MoneyTraits™ result, so the coach must already HAVE
  * that result in context. This renders it — the money-vertical analogue of
  * decoded/prompt-layer.ts (which renders the Big-Five profile for the executive/
  * relationship coaches). The assembler picks ONE: the money branch calls this,
@@ -32,7 +32,7 @@ export interface StoredMoneyMapDims {
 }
 
 /**
- * The Money Maps™ scored bundle as persisted for the coach — the output of
+ * The MoneyTraits™ scored bundle as persisted for the coach — the output of
  * src/lib/decoded/scoring/money-maps.ts `scoreMoneyMaps()` plus the archetype's
  * edge/leak copy (from MONEY_ARCHETYPES). Mirrored here as an edge-side type
  * because the edge runtime can't import the src/ scorer.
@@ -70,7 +70,7 @@ function tiltPhrase(tilt: string): string {
 }
 
 /**
- * Extract + shape-check the stored Money Map bundle. Returns null if the report
+ * Extract + shape-check the stored `money_map` bundle. Returns null if the report
  * has no `money_map` (write path not run yet, or a non-money report) — the
  * caller then renders no layer, never a half-formed one.
  */
@@ -90,8 +90,8 @@ function readMoneyMap(report: MoneyReportRow | null | undefined): StoredMoneyMap
 }
 
 /**
- * Build the Money Map profile block (Layer 4.5) for the money coach. Empty
- * string when there is no stored Money Map — a safe no-op that leaves the coach
+ * Build the trait profile block (Layer 4.5) for the money coach. Empty
+ * string when there is no stored trait profile — a safe no-op that leaves the coach
  * running on persona + memory alone.
  */
 export function buildMoneyMapProfileLayer(
@@ -110,10 +110,10 @@ export function buildMoneyMapProfileLayer(
   const parts: string[] = [];
 
   parts.push(
-    `MONEY MAP PROFILE (their Money Maps™ result — you already have this; never say you're "pulling it up" or "checking" it):`,
+    `MONEY TRAITS PROFILE (their MoneyTraits™ result — you already have this; never say you're "pulling it up" or "checking" it):`,
   );
   parts.push(
-    `This user just completed Money Maps™. Hold the result as a HYPOTHESIS, not a verdict — a score lies without a story. It's a read to check against their life, not a label to announce back to them.`,
+    `This user just completed MoneyTraits™. Hold the result as a HYPOTHESIS, not a verdict — a score lies without a story. It's a read to check against their life, not a label to announce back to them.`,
   );
   parts.push("");
 
@@ -124,7 +124,7 @@ export function buildMoneyMapProfileLayer(
   parts.push(`  Challenge (overclocked): ${mm.leak}.`);
   parts.push("");
 
-  parts.push(`THE FOUR MAPS (mean 1–6, their strongest first):`);
+  parts.push(`THE FOUR TRAITS (mean 1–6, their strongest first):`);
   for (const map of ranked) {
     parts.push(`  ${map} ${dims[map]}${hot.has(map) ? " — running hot" : ""}`);
   }
@@ -135,12 +135,12 @@ export function buildMoneyMapProfileLayer(
 
   parts.push(`THE FEAR: ${mm.leap.band} — ${tiltPhrase(mm.leap.tilt)}.`);
   parts.push(
-    `  THE FEAR is how much fear is gating their edge right now — your coaching entry point, not a trait. (Always call it "the Fear" with the user — never "the Leap", its old name, and never "leak".) A High Fear is the rarer, sneakier read: it doesn't feel like fear, it feels like caution. If it's High, name it in the reveal regardless of their dominant Map.`,
+    `  THE FEAR is how much fear is gating their edge right now — your coaching entry point, a state rather than one of the four traits. (Always call it "the Fear" with the user — never "the Leap", its old name, and never "leak".) A High Fear is the rarer, sneakier read: it doesn't feel like fear, it feels like caution. If it's High, name it in the reveal regardless of their dominant trait.`,
   );
   parts.push("");
 
   parts.push(
-    `DOMINANT MAP: ${mm.dominant} — this selects your opening question (see THE REVEAL in your instructions).`,
+    `DOMINANT TRAIT: ${mm.dominant} — this selects your opening question (see THE REVEAL in your instructions).`,
   );
   parts.push("");
 
@@ -152,7 +152,7 @@ export function buildMoneyMapProfileLayer(
     `- It's a hypothesis to pressure-test with them, never scores to read aloud. Don't recite the numbers unless they ask.`,
   );
   parts.push(
-    `- Reframe every Map as an edge with a governor, never a flaw — their overclock is a strength dialed too high.`,
+    `- Reframe every trait as an edge with a governor, never a flaw — their overclock is a strength dialed too high.`,
   );
   parts.push(
     `- USER-FACING VOCABULARY: the cost of their overclocked strength is their "challenge" and the fifth measure is "the Fear" — never say "leak" or "the Leap" to the user (internal legacy names).`,

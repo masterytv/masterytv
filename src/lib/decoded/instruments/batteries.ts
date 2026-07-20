@@ -43,7 +43,7 @@ export const CORE_BATTERY: BatteryConfig = {
 };
 
 /**
- * Money — the single Money Maps™ instrument (16 items), no add-on phase. The
+ * Money — the single MoneyTraits™ instrument (16 items), no add-on phase. The
  * whole point is a fast, in-chat-adjacent quiz that reaches the reveal quickly
  * (MONEY_EXPERIENCE.md §6), not a 30-item wall. Deterministic money scoring
  * (Map means → archetype → LEAP band) is a separate leaf (scripts/money-maps-scoring.mjs).

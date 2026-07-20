@@ -176,7 +176,7 @@
   --cta-to: #be123c;
 }
 
-/* Money (Money Maps) — v0 emerald palette (hue ~162), flagged for a money brand
+/* Money (MoneyTraits) — v0 emerald palette (hue ~162), flagged for a money brand
    spec in BRAND.md like Relatti's. Expressed entirely in OKLCH ON PURPOSE: the
    check-colors gate derives its ban-set from #hex / rgb() token VALUES, so OKLCH
    adds nothing to ban and can't collide with existing success-greens in

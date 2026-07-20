@@ -2,7 +2,7 @@ import { LEGAL_CONTACT, LEGAL_LAST_UPDATED, LEGAL_VERSION } from "@/lib/platform
 import { DocMeta, EmergencyResources, LegalLink } from "./shared";
 
 /**
- * Money Maps AI & Coaching Disclaimer (DRAFT — attorney review pending, E15.6,
+ * MoneyTraits AI & Coaching Disclaimer (DRAFT — attorney review pending, E15.6,
  * consciously deferred with the other verticals' legal review).
  *
  * The money-specific difference from the other verticals: an explicit "NOT

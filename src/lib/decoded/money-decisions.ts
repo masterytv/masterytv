@@ -2,7 +2,7 @@
  * Money Decision Room — the decision log (MONEY_EXPERIENCE.md §8, the V1 spine).
  *
  * Client-side CRUD over `money_decisions`: the user brings a live money decision,
- * the coach applies their whole Money Map profile to it in a thread, and the user
+ * the coach applies their whole trait profile to it in a thread, and the user
  * leaves a WRITTEN DECISION RECORD here. This is the Money OS's (§9) first durable
  * artifact.
  *

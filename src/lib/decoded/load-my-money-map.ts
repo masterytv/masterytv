@@ -1,6 +1,6 @@
 /**
- * Load the signed-in user's Money Maps™ bundle for the inline reveal card
- * (MONEY_MAPS_INSTRUMENT.md §5 — the Rung-0 artifact at the top of the money
+ * Load the signed-in user's MoneyTraits™ bundle for the inline reveal card
+ * (MONEY_TRAITS_INSTRUMENT.md §5 — the Rung-0 artifact at the top of the money
  * reveal chat). Client-side: the reveal NARRATION is built server-side at Layer
  * 4.5, but the CARD is a DOM artifact, so the browser needs the stored bundle.
  *

@@ -1,7 +1,7 @@
 /**
- * Money Maps™ — the money vertical's instrument (program=money).
+ * MoneyTraits™ — the money vertical's instrument (program=money).
  *
- * Founder-approved v1 (MONEY_MAPS_INSTRUMENT.md, 2026-07-17): 16 first-person,
+ * Founder-approved v1 (MONEY_TRAITS_INSTRUMENT.md, 2026-07-17): 16 first-person,
  * entrepreneur-situated items on a 1–6 agreement scale, all POSITIVELY keyed to
  * their Map (agree = more of the construct → no reverse-coding). Five dimensions:
  * four core Maps (GUARD/DRIVE/MIRROR/SHADOW) that generate the archetype, plus
@@ -13,8 +13,10 @@
  *
  * ⚠️ ITEM TEXT IS CANONICAL ONCE SHIPPED — changing it invalidates stored
  * responses and forces retakes (DECODED_SCORING.md rule). Every string below is
- * OUR OWN wording; the construct names are ours; "Money Maps™" is our mark. We
- * never use "Money Scripts®" (Klontz) or KMSI-R items.
+ * OUR OWN wording; the construct names are ours. The public brand is
+ * "MoneyTraits" (locked 2026-07-20 — never the old "Money Maps"/"MoneyMaps", a third
+ * party's registered mark). We never use "Money Scripts®" (Klontz) or KMSI-R
+ * items.
  *
  * SCOPE OF THIS FILE: the item bank only (data). The deterministic SCORER (Map
  * means → dominant/secondary → archetype → overclock flags → LEAP band+tilt) and
@@ -27,14 +29,17 @@
 import type { InstrumentDef } from "./core";
 
 /**
- * Money Maps™ — 16 items, grouped here by Map (delivery order is randomized at
- * presentation, MONEY_MAPS_INSTRUMENT.md §2). The `index` is the canonical,
+ * MoneyTraits™ — 16 items, grouped here by Map (delivery order is randomized at
+ * presentation, MONEY_TRAITS_INSTRUMENT.md §2). The `index` is the canonical,
  * permanent item id the scorer keys on — never renumber a shipped item.
  */
 export const MONEY_MAPS: InstrumentDef = {
+  // ⚠️ `id` is the JSONB storage key in assessment_progress.responses — LOCKED
+  // forever (renaming it invalidates every stored money assessment). Only the
+  // display name/shortName carry the public brand.
   id: "money_maps",
-  name: "Money Maps",
-  shortName: "Money Maps",
+  name: "MoneyTraits",
+  shortName: "MoneyTraits",
   layer: "core",
   itemCount: 16,
   scaleMin: 1,
@@ -80,7 +85,7 @@ export const MONEY_MAPS: InstrumentDef = {
 /**
  * Canonical index→Map binding for the deterministic scorer (the leaf).
  * Core Maps are 3 items each; THE LEAP carries a 4th (its signature weight).
- * LEAP facets (MONEY_MAPS_INSTRUMENT.md §3.4): failure = mean(L1,L3) = indices
+ * LEAP facets (MONEY_TRAITS_INSTRUMENT.md §3.4): failure = mean(L1,L3) = indices
  * 13,15 · success = mean(L2,L4) = indices 14,16. All items positively keyed.
  */
 export const MONEY_MAP_ITEM_INDICES = {

@@ -1,5 +1,7 @@
 # **Money Coach — Experience Discovery (Phase 0.5)**
 
+> 🏷️ **BRAND RENAME (founder, 2026-07-20):** the public brand is **MoneyTraits** on **moneytraits.com** (this doc's original "Money Maps" wording was mechanically swept; the old name is a third party's registered mark). User-facing mechanic noun is now **trait** (the four dimensions), though this doc keeps its historical "Map" construct language. Storage keys (`money_maps`, `sections.money_map`, LEAP) are unchanged. See [MONEY_TRAITS_RENAME.md](MONEY_TRAITS_RENAME.md).
+>
 > **Author:** Claude Code (Orchestrator), commissioned by Thomas Wood
 > **Date:** July 17, 2026 · **Status:** 🟡 **DRAFT — awaiting founder approval of the reframe (Gate 0.5).** Per `VERTICAL_PLAYBOOK.md` §2, this is the mandatory experience spec that must exist and be founder-approved *before any surface is built.*
 > **Package:** the Gate-0 decision docs are [MONEY_DISCOVERY.md](MONEY_DISCOVERY.md) (viability), [MONEY_VIRAL_GTM.md](MONEY_VIRAL_GTM.md) (GTM/pricing), and [MONEY_EXPERIENCE_NOTES.md](MONEY_EXPERIENCE_NOTES.md) (the reasoning behind this spec). **This doc is now the authoritative Phase 0.5 artifact; the notes doc is retained as rationale.**
@@ -40,12 +42,12 @@ So the entire experience is engineered to reach a reveal fast, then keep manufac
 
 ---
 
-## 4. Money Maps™ — our instrument (the new build the founder called for)
+## 4. MoneyTraits™ — our instrument (the new build the founder called for)
 
-**Decision: build our own, based on the money-belief research backbone, with our own construct names, our own item verbiage, and viable entrepreneur-tuned differences.** The four underlying *constructs* are ideas (not copyrightable); the *items* and the *name* "Money Scripts®" are Klontz's and we use neither. "Money Maps™" is ours to trademark.
+**Decision: build our own, based on the money-belief research backbone, with our own construct names, our own item verbiage, and viable entrepreneur-tuned differences.** The four underlying *constructs* are ideas (not copyrightable); the *items* and the *name* "Money Scripts®" are Klontz's and we use neither. "MoneyTraits™" is ours to trademark.
 
 ### 4.1 Why it's genuinely different, not a paraphrase
-The classic four patterns were validated on the *general population* and framed around **dysfunction** (avoidance and worship as problems). Money Maps is re-architected for **entrepreneurs seeking an edge**:
+The classic four patterns were validated on the *general population* and framed around **dysfunction** (avoidance and worship as problems). MoneyTraits is re-architected for **entrepreneurs seeking an edge**:
 - **Strengths-with-a-governor framing.** Every Map is an *asset with an overclock*, not a pathology. ("Your caution is a superpower, slightly overclocked" is the register — never "here's what's wrong with you.")
 - **Entrepreneur-native items.** Situations are pricing a proposal, a launch, losing a big client, a windfall, raising vs. bootstrapping — not general-population money scenarios.
 - **A signature dimension the classic four under-weight** (§4.3) — the piece that made the founder's own reveal land.
@@ -59,9 +61,9 @@ The classic four patterns were validated on the *general population* and framed 
 | **SHADOW** | avoidance | values-grounded, immune to greed | undercharging, avoiding the numbers, "I'm fine with less" as a hidden cage |
 
 ### 4.3 The signature dimension (our "viable difference")
-- **THE LEAP** — how you relate to *downside* **and** to *your own success.* Fear of failure and fear of success are distinct forces and both cap founders; the classic four scripts barely touch them. This is the dimension behind the transcript's killer reveal ("afraid of becoming the version of yourself success required"). **This is Money Maps' signature — the thing a generic money-beliefs test can't tell you.**
+- **THE LEAP** — how you relate to *downside* **and** to *your own success.* Fear of failure and fear of success are distinct forces and both cap founders; the classic four scripts barely touch them. This is the dimension behind the transcript's killer reveal ("afraid of becoming the version of yourself success required"). **This is MoneyTraits' signature — the thing a generic money-beliefs test can't tell you.**
 
-> **✅ DIMENSIONS LOCKED (founder, 2026-07-17): 5 dimensions = the 4 core Maps + THE LEAP. No 6th (ANCHOR/identity-fusion folds into MIRROR + LEAP).** Full instrument (items, scoring, archetypes, card copy) is now built in ⭐ **[MONEY_MAPS_INSTRUMENT.md](MONEY_MAPS_INSTRUMENT.md)** — the implementation spec.
+> **✅ DIMENSIONS LOCKED (founder, 2026-07-17): 5 dimensions = the 4 core Maps + THE LEAP. No 6th (ANCHOR/identity-fusion folds into MIRROR + LEAP).** Full instrument (items, scoring, archetypes, card copy) is now built in ⭐ **[MONEY_TRAITS_INSTRUMENT.md](MONEY_TRAITS_INSTRUMENT.md)** — the implementation spec.
 
 ### 4.4 Output: the typology (the shareable engine)
 Dominant Map × secondary Map → a **named archetype** with a card ("The Relentless Builder" = DRIVE-GUARD; "The Reluctant Rainmaker" = SHADOW-DRIVE; etc.). ~12–20 named types — enough to feel personal, few enough to build card art for. The card carries **one edge and one leak** (never flattery-only; accurate discomfort is what makes it shareable and credible — see `MONEY_VIRAL_GTM.md` §5). Archetype naming is a §11 copy deliverable; the derivation logic (dominant×secondary) is fixed here.
@@ -70,7 +72,7 @@ Dominant Map × secondary Map → a **named archetype** with a card ("The Relent
 - **12–16 items** (the friction budget from §6), 1–6 agreement or forced-choice; our verbiage only.
 - Each item **self-revealing** — the user learns about themselves *as they answer* (a reason the quiz reads as the ride, not the toll).
 - Scored in **code**, deterministic; produces the four+ Map scores → dominant/secondary → archetype. (Reuses the Decoded scoring-engine pattern; `DECODED_SCORING.md` discipline: item text is canonical once shipped — changing it invalidates stored responses.)
-- **Progress metric (no bank data):** re-administer Money Maps quarterly and show the overclock dials coming down, plus a short money-anxiety/decision-confidence check. (Better-fit for this segment than the CFPB well-being scale, which is built around making-ends-meet; keep CFPB FWBS as an optional secondary.)
+- **Progress metric (no bank data):** re-administer MoneyTraits quarterly and show the overclock dials coming down, plus a short money-anxiety/decision-confidence check. (Better-fit for this segment than the CFPB well-being scale, which is built around making-ends-meet; keep CFPB FWBS as an optional secondary.)
 
 ---
 
@@ -105,9 +107,9 @@ Each rung is a valid stopping point that already delivered value, so the next ru
 
 - **Marketing / landing** → hero = the edge reframe (§1); CTA is the Hook line, not a signup form; `entry_segment` slugs `/edge`, `/undercharging`, `/enough`, `/rebuild`. FTC-safe: process/feeling language, **never wealth-outcome promises** (`MONEY_DISCOVERY.md` §6.2 — the draft "know what it's like to be rich" line does not ship).
 - **Entry / signup** → deferred; magic-link (passwordless) at Rung 1, not before. Reuses the platform's magic-link auth.
-- **Assessment** → **Money Maps™** (§4), 12–16 items, in-chat-adjacent, not a 30-item wall. Program `money` on the assessment (spine scoping already shipped, PC2.1).
+- **Assessment** → **MoneyTraits™** (§4), 12–16 items, in-chat-adjacent, not a 30-item wall. Program `money` on the assessment (spine scoping already shipped, PC2.1).
 - **First result / report** → ~~the **card + the live reveal**, not a static 13-page PDF. The report is a byproduct the user can open; the reveal is the product.~~
-  > **⚠️ CORRECT-COURSE (founder, 2026-07-20): the REPORT is now the payoff and the shareable artifact.** Completion lands on `/report/[id]` (report-first), which renders the deterministic layer instantly (card + radar + Map bars + Fear gauge) and fills in a **long-form, LLM-written narrative** (`sections.money_narrative`, written by the `money-generate-report` edge function from the scored bundle + the user's profile — name/age/occupation/relationship/children — + their own strongest item answers). Section ladder: cold-open mirror → the map → the edge → the challenge → pull-quote → the quiet map → the Fear → in-the-wild scenes → dialed-right → coach handoff with tappable first questions. The chat reveal (§10) remains the coach's first message when the report hands off (`context=money_reveal`), told to say the one thing a page can't rather than recite the report. Terminology also renamed user-facing (same decision): **Leak → "the Challenge", THE LEAP → "the Fear"** (storage keys unchanged; see MONEY_MAPS_INSTRUMENT.md v1.1 banner).
+  > **⚠️ CORRECT-COURSE (founder, 2026-07-20): the REPORT is now the payoff and the shareable artifact.** Completion lands on `/report/[id]` (report-first), which renders the deterministic layer instantly (card + radar + Map bars + Fear gauge) and fills in a **long-form, LLM-written narrative** (`sections.money_narrative`, written by the `money-generate-report` edge function from the scored bundle + the user's profile — name/age/occupation/relationship/children — + their own strongest item answers). Section ladder: cold-open mirror → the map → the edge → the challenge → pull-quote → the quiet map → the Fear → in-the-wild scenes → dialed-right → coach handoff with tappable first questions. The chat reveal (§10) remains the coach's first message when the report hands off (`context=money_reveal`), told to say the one thing a page can't rather than recite the report. Terminology also renamed user-facing (same decision): **Leak → "the Challenge", THE LEAP → "the Fear"** (storage keys unchanged; see MONEY_TRAITS_INSTRUMENT.md v1.1 banner).
 - **Dashboard / primary surface** → the **Decision Room** (§8) as home, with the **Money OS** (§9) as the persistent artifact — not a re-themed default dashboard (ADR-P03 bespoke surface).
 - **Coach voice + first message** → §10.
 - **Shared artifacts** → the archetype card, opt-in breakthrough/delta cards, "cofounder edge comparison" (the dyad engine, reused; `MONEY_VIRAL_GTM.md` §3 L2).
@@ -148,14 +150,14 @@ Per the retention thesis (`STRATEGY.md` §2), the product must attach to a stake
 2. **The "enough" number + a live goal/venture with guardrails** — externally checkable, non-gameable; feeds the existing goal/commitment/proactive-check-in engine; the coach follows up on the decision they made.
 3. **The cofounder / mastermind edge comparison** — the partner/peer stake (dyad engine reused), and the viral loop at once.
 
-Retention proof = the **quarterly Money Maps re-score delta** (overclocks coming down), which is also the testimonial engine that powers the authority strategy (§3).
+Retention proof = the **quarterly MoneyTraits re-score delta** (overclocks coming down), which is also the testimonial engine that powers the authority strategy (§3).
 
 ---
 
 ## 12. Brand, domain, copy register
 
-- **Product/mechanic name:** **Money Maps™** (the assessment + the archetypes). Trademark it; never market under "Money Scripts®."
-- **Brand/domain (founder decision, 2026-07-17):** **build on `moneymaps.masterytv.com` for now.** The consumer brand name + public domain are **still being decided** (Momatti.com is the live candidate — `-atti` resonance with Relatti as a house style). The product/mechanic name **Money Maps™** is locked regardless. Revisit the public brand/domain before the first public link.
+- **Product/mechanic name:** **MoneyTraits™** (the assessment + the archetypes). Trademark it; never market under "Money Scripts®."
+- **Brand/domain:** ✅ **RESOLVED 2026-07-20 — public brand = `MoneyTraits` on `moneytraits.com`** (the earlier "Money Maps" interim name is a third party's registered mark and is banned from every user-facing surface; the Momatti candidate is dropped). The old `moneymaps.masterytv.com` hosts stay as transition aliases until the cutover verifies, then 301. Full rename SOP: [MONEY_TRAITS_RENAME.md](MONEY_TRAITS_RENAME.md).
 - **Copy register:** confident, specific, a little irreverent, science-first (the antidote to the manifestation feed). FTC line held everywhere: promise *process and felt change* (clarity, control, pricing power, "end the never-enough"), **never wealth outcomes.**
 
 ---
@@ -172,17 +174,17 @@ Retention proof = the **quarterly Money Maps re-score delta** (overclocks coming
 
 **Reuse (≈80% of the system already runs for Relatti):** long-term memory + semantic recall · proactive outreach · Coach Pack architecture · report generator · goal/commitment tracking + automated follow-up · crisis kernel · the archetype-card + OG pipeline · the invite/dyad engine · magic-link auth · the program-typed spine · beta-code/cockpit machinery.
 
-**New build (the ~20%):** the **Money Maps** instrument (items + scoring + archetypes + card art) · the **reveal choreography** (the prompt-engineering craft — the hardest, highest-leverage work) · the **clickable-chip** chat UI · the **Decision Room** surface · the **Money OS** object · the **money Coach Pack** (`/edge` voice).
+**New build (the ~20%):** the **MoneyTraits** instrument (items + scoring + archetypes + card art) · the **reveal choreography** (the prompt-engineering craft — the hardest, highest-leverage work) · the **clickable-chip** chat UI · the **Decision Room** surface · the **Money OS** object · the **money Coach Pack** (`/edge` voice).
 
-**Sequencing:** (1) Money Maps instrument + card + the Rung-0→1 reveal — this alone is the shareable, testable top-of-funnel and the manual-MVP substrate; (2) the money Coach Pack + memory wiring for Rungs 2–3; (3) Decision Room + Money OS; (4) proactive/retention + the referral ladder (`MONEY_VIRAL_GTM.md`). Validate cheaply in parallel: a waitlist landing test to the founder's audience, and the **manual-MVP loop** (the founder runs the coaching loop by hand on himself + 3–5 audience members before the full build — both LLMs' advice; he is his own ideal first user).
+**Sequencing:** (1) MoneyTraits instrument + card + the Rung-0→1 reveal — this alone is the shareable, testable top-of-funnel and the manual-MVP substrate; (2) the money Coach Pack + memory wiring for Rungs 2–3; (3) Decision Room + Money OS; (4) proactive/retention + the referral ladder (`MONEY_VIRAL_GTM.md`). Validate cheaply in parallel: a waitlist landing test to the founder's audience, and the **manual-MVP loop** (the founder runs the coaching loop by hand on himself + 3–5 audience members before the full build — both LLMs' advice; he is his own ideal first user).
 
 ---
 
 ## 15. Open founder questions (before/into build)
 
 1. ~~**V1 spine**~~ — ✅ **DECIDED 2026-07-17: the Decision Room** (§8).
-2. **Brand/domain:** ✅ **build on `moneymaps.masterytv.com` for now (2026-07-17)**; public brand name + domain still being decided (Momatti candidate). Money Maps™ mechanic name locked.
-3. ~~**Money Maps dimensions**~~ — ✅ **DECIDED 2026-07-17: 4 core Maps + THE LEAP (5 total).** Instrument built in [MONEY_MAPS_INSTRUMENT.md](MONEY_MAPS_INSTRUMENT.md).
+2. **Brand/domain:** ✅ **build on `moneymaps.masterytv.com` for now (2026-07-17)**; public brand name + domain still being decided (resolved 2026-07-20: **MoneyTraits** on moneytraits.com). MoneyTraits™ mechanic name locked.
+3. ~~**MoneyTraits dimensions**~~ — ✅ **DECIDED 2026-07-17: 4 core Maps + THE LEAP (5 total).** Instrument built in [MONEY_TRAITS_INSTRUMENT.md](MONEY_TRAITS_INSTRUMENT.md).
 4. ~~**Gate 0 formalization**~~ — ✅ **DECIDED 2026-07-17: career DEFERRED; money is Stage 2.** `STRATEGY.md` §1 amended.
 5. **Audience specifics** (size/channels) — sizes the founding cohort + the manual-MVP recruit.
 

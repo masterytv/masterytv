@@ -2,7 +2,7 @@ import { LEGAL_CONTACT, LEGAL_LAST_UPDATED, LEGAL_VERSION } from "@/lib/platform
 import { DocMeta, LegalLink } from "./shared";
 
 /**
- * Money Maps Privacy Policy (DRAFT — attorney review pending, E15.6, deferred
+ * MoneyTraits Privacy Policy (DRAFT — attorney review pending, E15.6, deferred
  * with the other verticals). Money's data posture is deliberately LIGHTER than a
  * budgeting app's: we work on the psychology of money and never link to or store
  * bank / financial-account data. Do NOT treat as final published terms — or
@@ -38,8 +38,8 @@ export default function MoneyPrivacy() {
               can sign in and we can reach you.
             </li>
             <li>
-              <strong>Your Money Maps responses</strong> — the answers you give in
-              the assessment, which produce your Money Map.
+              <strong>Your MoneyTraits responses</strong> — the answers you give in
+              the assessment, which produce your trait profile.
             </li>
             <li>
               <strong>Coaching conversations</strong> — what you tell the coach, so
@@ -61,7 +61,7 @@ export default function MoneyPrivacy() {
             How we use it
           </h2>
           <p className="mt-3">
-            We use what you share to generate your Money Map, personalize your
+            We use what you share to generate your trait profile, personalize your
             coaching, and — with your permission — remember context between
             sessions. We do not sell your personal information.
           </p>
@@ -86,7 +86,7 @@ export default function MoneyPrivacy() {
             Sharing
           </h2>
           <p className="mt-3">
-            Your Money Map and conversations are private to you. If you choose to
+            Your trait profile and conversations are private to you. If you choose to
             compare with someone (for example, a cofounder), nothing is shared
             until both of you explicitly agree, and you can revoke that at any
             time.

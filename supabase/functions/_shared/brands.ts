@@ -49,19 +49,19 @@ export const EDGE_BRANDS: Record<BrandId, EdgeBrand> = {
     coachName: "Relatti",
     replyToOverride: "Relatti Coach <coach@mail.masterytv.com>",
   },
-  // Money vertical. Origin is the founder-pinned moneymaps.masterytv.com. No
-  // inbound inbox on the money domain yet → route replies to the one inbox that
-  // ingests (mail.masterytv.com), same as Relatti. The from-identity lives in
-  // resend.ts COACH_IDENTITY: "Money Maps Coach", preferring the money
-  // subdomain and auto-falling back to the shared domain until it's verified.
-  // Prod-config TODO (§5.9): verify mail.moneymaps.masterytv.com in Resend
+  // Money vertical — public brand "MoneyTraits" on moneytraits.com (founder
+  // decision 2026-07-20; never the old "Money Maps" name, a third party's registered mark).
+  // No inbound inbox on the money domain yet → route replies to the one inbox
+  // that ingests (mail.masterytv.com), same as Relatti. The from-identity lives
+  // in resend.ts COACH_IDENTITY: "MoneyTraits Coach" on the shared domain.
+  // Prod-config TODO (§5.9): verify mail.moneytraits.com in Resend
   // (own-domain from) + inbound webhook.
   money: {
     id: "money",
     programSlug: "money",
-    origin: "https://moneymaps.masterytv.com",
-    coachName: "Money Maps",
-    replyToOverride: "Money Maps Coach <coach@mail.masterytv.com>",
+    origin: "https://moneytraits.com",
+    coachName: "MoneyTraits",
+    replyToOverride: "MoneyTraits Coach <coach@mail.masterytv.com>",
   },
 };
 

@@ -2,7 +2,7 @@ import { LEGAL_CONTACT, LEGAL_LAST_UPDATED, LEGAL_VERSION } from "@/lib/platform
 import { DocMeta, LegalLink } from "./shared";
 
 /**
- * Money Maps Terms of Service (DRAFT — attorney review pending, E15.6, deferred
+ * MoneyTraits Terms of Service (DRAFT — attorney review pending, E15.6, deferred
  * with the other verticals). The load-bearing money-specific clauses: coaching &
  * education, NOT financial/investment/tax/legal advice; your decisions are yours;
  * no guaranteed outcomes (FTC). Do NOT treat as final published terms — or expose

@@ -1,5 +1,5 @@
 /**
- * Money Maps™ report narrative — the LLM-written long-form layer stored at
+ * MoneyTraits™ report narrative — the LLM-written long-form layer stored at
  * `assessment_reports.sections.money_narrative` by the money-generate-report
  * edge function (which is the writer AND the structural validator; its
  * validateNarrative() is the enforcement twin of this shape — keep in lockstep).

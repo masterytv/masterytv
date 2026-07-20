@@ -76,14 +76,15 @@ const BRANDS: Record<string, EmailBrand> = {
     color: "#E11D48",
     soft: "#FFF1F4",
   },
-  // Money Maps has no own Resend account/domain yet (RESEND_API_KEY_MONEY
-  // unset, mail.moneymaps.masterytv.com unverified as of 2026-07-20) — every
-  // send takes the shared-account fallbackFrom until that infra lands.
+  // MoneyTraits has no own Resend account/domain yet (RESEND_API_KEY_MONEY
+  // unset, mail.moneytraits.com unverified as of 2026-07-20) — every send takes
+  // the shared-account fallbackFrom until that infra lands; verifying
+  // mail.moneytraits.com in Resend activates the own-domain from automatically.
   money: {
-    name: "Money Maps",
+    name: "MoneyTraits",
     apiKeyEnv: "RESEND_API_KEY_MONEY",
-    from: "Money Maps <donotreply@mail.moneymaps.masterytv.com>",
-    fallbackFrom: "Money Maps <donotreply@mail.masterytv.com>",
+    from: "MoneyTraits <donotreply@mail.moneytraits.com>",
+    fallbackFrom: "MoneyTraits <donotreply@mail.masterytv.com>",
     color: "#059669",
     soft: "#ECFDF5",
   },
@@ -92,8 +93,9 @@ const BRANDS: Record<string, EmailBrand> = {
 
 function brandForHost(host: string): EmailBrand {
   const h = host.toLowerCase();
-  // moneymaps.masterytv.com must match BEFORE the masterytv default.
-  if (h.includes("moneymaps")) return BRANDS.money;
+  // Money hosts (moneytraits.com + the old moneymaps.masterytv.com alias) must
+  // match BEFORE the masterytv default.
+  if (h.includes("moneytraits") || h.includes("moneymaps")) return BRANDS.money;
   if (h.includes("relatti")) return BRANDS.relatti;
   return BRANDS.masterytv;
 }

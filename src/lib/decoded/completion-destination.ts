@@ -51,15 +51,15 @@ const COMPLETION: Record<ProgramId, CompletionPlan> = {
     opening: "Opening your report…",
   },
   // Money: the REPORT is the payoff (founder decision 2026-07-20 — the
-  // long-form Money Maps report supersedes the chat-first reveal). The report
+  // long-form MoneyTraits report supersedes the chat-first reveal). The report
   // renders its deterministic layer instantly, fills the LLM narrative in as it
   // generates, and its closing CTA hands off to the coach's Rung-1 reveal
   // (context=money_reveal), so the ladder is report → share → coach.
   money: {
     href: (reportId) => (reportId ? `/report/${reportId}` : "/dashboard"),
     autoNavigate: true,
-    cta: "See my Money Map",
-    ready: "Your Money Maps report is ready.",
+    cta: "Meet my profile",
+    ready: "Your MoneyTraits report is ready.",
     opening: "Opening your report…",
   },
 };

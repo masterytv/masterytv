@@ -40,8 +40,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // set explicitly so the report doesn't inherit the root layout's MasteryTV card
   // (the §15 inherited-OG leak). Money hosts are noindex at the robots layer.
   if (brand.programSlug === 'money') {
-    const title = 'Your Money Maps Report';
-    const description = 'Your Money Map — the psychology under how you earn, spend, and price.';
+    const title = 'Your MoneyTraits Report';
+    const description = 'Your MoneyTraits profile — the psychology under how you earn, spend, and price.';
     const ogImage = `/api/og?brand=money&title=${encodeURIComponent(title)}`;
     return {
       title,
@@ -49,7 +49,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       openGraph: {
         title,
         description,
-        images: [{ url: ogImage, width: 1200, height: 630, alt: 'Money Maps' }],
+        images: [{ url: ogImage, width: 1200, height: 630, alt: 'MoneyTraits' }],
       },
       twitter: { card: 'summary_large_image', title, description, images: [ogImage] },
     };
@@ -197,7 +197,7 @@ export default async function ReportPage({ params, searchParams }: PageProps) {
     .single();
 
   if (ownReport) {
-    // Money reports render the long-form Money Maps report, NOT the Decoded
+    // Money reports render the long-form MoneyTraits report, NOT the Decoded
     // Big-Five ReportViewer — a money report carries sections.money_map (+ the
     // LLM-written sections.money_narrative), so the viewer would sit on
     // "generating" forever and show "Mastery Coach". Data-driven: only a money

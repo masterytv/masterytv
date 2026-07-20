@@ -27,7 +27,7 @@ export type ModuleId =
   | "dyad"
   | "blueprint"
   | "beta_program"
-  // Money (Money Maps) — bespoke primary surfaces (ADR-P03). The routes + nav +
+  // Money (MoneyTraits) — bespoke primary surfaces (ADR-P03). The routes + nav +
   // ROUTE_MODULES guards for these are the surface leaves (Decision Room / Money
   // OS); the module IDs are reserved here so money's declared capability set is
   // honest and the leaves add the page, not re-touch this union.

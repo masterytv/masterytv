@@ -1,6 +1,6 @@
 /**
  * Answer-chip parsing for the coach chat (the money reveal's clickable quick
- * replies; MONEY_MAPS_INSTRUMENT.md §6, MONEY_EXPERIENCE.md §6).
+ * replies; MONEY_TRAITS_INSTRUMENT.md §6, MONEY_EXPERIENCE.md §6).
  *
  * A coach message MAY end with a machine-readable marker on its own last line:
  *   [[CHIPS: option one | option two | option three]]

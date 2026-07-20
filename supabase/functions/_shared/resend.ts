@@ -16,10 +16,10 @@ const RESEND_API_URL = "https://api.resend.com";
  * from-address a brand's coach speaks from.
  *
  * `preferredFrom` is the brand's own domain — Relatti's own Resend account
- * (mail.relatti.com, verified 2026-07-02); Money Maps' subdomain of the shared
- * account (mail.moneymaps.masterytv.com, NOT yet verified as of 2026-07-20 —
- * no Resend DKIM in DNS). `sharedFrom` is the same coach voice on the
- * always-verified shared MasteryTV domain.
+ * (mail.relatti.com, verified 2026-07-02); MoneyTraits' future own domain
+ * (mail.moneytraits.com, NOT yet verified as of 2026-07-20 — no Resend DKIM
+ * in DNS). `sharedFrom` is the same coach voice on the always-verified shared
+ * MasteryTV domain.
  *
  * Send strategy (mirrors send-email/index.ts): try the preferred identity,
  * and on a send failure fall back once to the shared identity — a brand whose
@@ -48,12 +48,13 @@ const COACH_IDENTITY: Record<BrandId, CoachIdentity> = {
   },
   money: {
     // Founder decision 2026-07-20: money sends from the shared MasteryTV
-    // domain for now — no moneymaps domain is verified in Resend, so a
-    // preferred own-domain attempt would just 403 + retry on every send.
-    // When a money from-domain IS verified, set preferredFrom to it (and
-    // keyEnv if it gets its own account); nothing else needs to change.
-    preferredFrom: "Money Maps Coach <coach@mail.masterytv.com>",
-    sharedFrom: "Money Maps Coach <coach@mail.masterytv.com>",
+    // domain for now — no money domain is verified in Resend, so a preferred
+    // own-domain attempt would just 403 + retry on every send. When
+    // mail.moneytraits.com IS verified, set preferredFrom to
+    // "MoneyTraits Coach <coach@mail.moneytraits.com>" (and keyEnv if it gets
+    // its own account); nothing else needs to change.
+    preferredFrom: "MoneyTraits Coach <coach@mail.masterytv.com>",
+    sharedFrom: "MoneyTraits Coach <coach@mail.masterytv.com>",
   },
 };
 
@@ -294,14 +295,14 @@ const EMAIL_BRANDS: Record<
   },
   // Emerald palette from the money favicon tile (public/money/icon.svg).
   money: {
-    name: "Money Maps",
-    origin: "https://moneymaps.masterytv.com",
+    name: "MoneyTraits",
+    origin: "https://moneytraits.com",
     gradient: "linear-gradient(135deg, #059669, #047857)",
     darkGradient: "linear-gradient(135deg, #022c22, #064e3b)",
     accent: "#047857",
     link: "#059669",
     footerLine:
-      "Money Maps by MasteryTV · You're receiving this because you enabled email coaching.",
+      "MoneyTraits by MasteryTV · You're receiving this because you enabled email coaching.",
   },
 };
 

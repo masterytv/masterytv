@@ -106,7 +106,7 @@ function ChatPageInner() {
     };
   }, [user?.id]);
 
-  // ── Rung-0 Money Map card (MONEY_MAPS_INSTRUMENT.md §5) ──
+  // ── Rung-0 trait card (MONEY_TRAITS_INSTRUMENT.md §5) ──
   // Data-driven, NOT brand-gated: load the current program's stored bundle and
   // let the DATA decide. Only a report carrying sections.money_map (money's)
   // yields a card — general/relationship reports carry LLM sections, so they get
@@ -209,7 +209,7 @@ function ChatPageInner() {
       // Build a natural opening message from the deep link context. Brand-aware:
       // Relatti users read a "relationship profile," not a "Decoded report."
       const profileLabel = byBrand(
-        { relatti: "relationship profile", masterytv: "report", money: "Money Map" },
+        { relatti: "relationship profile", masterytv: "report", money: "MoneyTraits profile" },
         resolveBrandClient().id,
       );
       const openingMessage = topic
@@ -262,15 +262,15 @@ function ChatPageInner() {
       router.replace('/dashboard/chat', { scroll: false });
     } else if (contextType === 'money_reveal') {
       // Money post-completion (completion-destination.ts). The coach's FIRST
-      // message is the REVEAL off the Money Map — Layer 4.5 is already loaded in
+      // message is the REVEAL off the trait profile — Layer 4.5 is already loaded in
       // the coach's context server-side, so a plain first user turn triggers it
-      // (MONEY_MAPS_INSTRUMENT.md §6). The seed reads as the user asking for the
+      // (MONEY_TRAITS_INSTRUMENT.md §6). The seed reads as the user asking for the
       // read — the "one tap" of Rung 0 → Rung 1. Only fire on a FRESH thread so a
       // returning user is never re-revealed (the persona also self-guards on
       // "conversation just beginning").
       deepLinkProcessed.current = true;
       if (messages.length === 0) {
-        setTimeout(() => handleSendMessage("I just finished Money Maps. What do you see?"), 300);
+        setTimeout(() => handleSendMessage("I just finished MoneyTraits. What do you see?"), 300);
       }
       router.replace('/dashboard/chat', { scroll: false });
     } else if (contextType === 'money_report_question') {
@@ -292,7 +292,7 @@ function ChatPageInner() {
       // money_decisions row, so it rides through ?c= — the coach creates the
       // conversation under that id and the log links straight back). Seed the
       // opening turn carrying the decision title as context so the coach applies
-      // the whole Money Map profile to THIS decision (the coach fn injects the
+      // the whole trait profile to THIS decision (the coach fn injects the
       // Decision Room instruction off context.topic). Fresh-thread only, so
       // re-opening the thread later (Continue → ?c=, no context) never re-seeds.
       deepLinkProcessed.current = true;

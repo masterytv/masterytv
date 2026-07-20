@@ -1,7 +1,7 @@
 /**
  * Edge Function: money-generate-report
  *
- * Writes the LONG-FORM Money Maps™ report narrative (founder decision
+ * Writes the LONG-FORM MoneyTraits™ report narrative (founder decision
  * 2026-07-20, supersedes the card-only read of MONEY_EXPERIENCE.md §109): a
  * personalized, metaphor-driven dossier built from the deterministic scored
  * bundle PLUS everything else we know about the person (name, age, occupation,
@@ -195,7 +195,7 @@ function buildGroundTruth(
   const ranked = [...CORE_ORDER].sort(
     (a, b) => (dims[b] - dims[a]) || (CORE_ORDER.indexOf(a) - CORE_ORDER.indexOf(b)),
   );
-  lines.push("THEIR MONEY MAP (scored 1–6; 4.0+ = that Map is running hot / overclocked):");
+  lines.push("THEIR MONEY TRAITS (scored 1–6; 4.0+ = that trait is running hot / overclocked):");
   lines.push(`- Archetype: "${map.archetype}" (dominant ${map.dominant}, secondary ${map.secondary})`);
   for (const m of ranked) {
     lines.push(`- ${m} ${dims[m].toFixed(2)}${hot.has(m) ? " — RUNNING HOT" : ""} · ${MAP_MEANING[m as CoreMap]}`);
@@ -205,7 +205,7 @@ function buildGroundTruth(
   const quiet = ranked[3] as CoreMap;
   const quietGap = dims[ranked[2] as CoreMap] - dims[quiet];
   lines.push(
-    `- Quietest Map: ${quiet} at ${dims[quiet].toFixed(2)} (${quietGap >= 0.75 ? "distinctly quieter than the rest" : "only slightly behind the pack"})`,
+    `- Quietest trait: ${quiet} at ${dims[quiet].toFixed(2)} (${quietGap >= 0.75 ? "distinctly quieter than the rest" : "only slightly behind the pack"})`,
   );
   lines.push("");
 
@@ -271,7 +271,7 @@ function buildGroundTruth(
 // ─────────────────────────────────────────────────────────────────────────────
 
 function buildSystemPrompt(): string {
-  return `You are the profile writer for Money Maps™ — you write the sharpest money-psychology read the reader has ever had done on them. The register: a performance psychologist who has watched them operate for a year, writing the private debrief they'd pay serious money for. Second person, present tense, unhurried confidence.
+  return `You are the profile writer for MoneyTraits™ — you write the sharpest money-psychology read the reader has ever had done on them. The register: a performance psychologist who has watched them operate for a year, writing the private debrief they'd pay serious money for. Second person, present tense, unhurried confidence.
 
 WHO YOU ARE WRITING FOR: one specific, intelligent, self-aware adult who is allergic to horoscope flattery and can smell a mail merge from the first sentence. The bar for EVERY sentence: it could not appear in a stranger's report. If a line would be true of most people, cut it and write the one that is only true of them.
 
@@ -297,10 +297,10 @@ PERSONALIZATION (weave, never recite):
 - Never assume gender roles, income level, wealth, debt, or any fact not in the ground truth. Write around gaps; never fill them.
 
 TERMINOLOGY (exact, non-negotiable):
-- The four Maps: GUARD, DRIVE, MIRROR, SHADOW — capitalize when naming them; use each at most a few times, as proper nouns.
+- The four traits: GUARD, DRIVE, MIRROR, SHADOW — capitalize the NAMES when using them; use each at most a few times, as proper nouns. Call them "traits" (never "Maps", the old internal name).
 - "the Challenge" — the cost of the overclocked strength. NEVER the word "leak".
-- "the Fear" — the fifth measure, a state, not a trait. NEVER "the Leap" or "LEAP".
-- "running hot" — a Map at or past its useful ceiling. Never "disorder", "dysfunction", "pathology".
+- "the Fear" — the fifth measure, a state rather than one of the four traits. NEVER "the Leap" or "LEAP".
+- "running hot" — a trait at or past its useful ceiling. Never "disorder", "dysfunction", "pathology".
 
 HARD SAFETY LINES (violating any of these fails the report):
 - Coaching and education on the PSYCHOLOGY of money only. No financial, investment, securities, tax, or accounting advice; never tell them what to do with money, name products, or suggest allocations.
@@ -310,24 +310,24 @@ HARD SAFETY LINES (violating any of these fails the report):
 
 WRITING RULES (house style — every one is enforced):
 - Do not use em dashes. Separate clauses with commas, colons, semicolons, parentheses, or full stops.
-- Never expose raw scores or decimals in prose. Say "your loudest Map", "well past the line where it runs hot", "barely registers". The charts carry the numbers.
+- Never expose raw scores or decimals in prose. Say "your loudest trait", "well past the line where it runs hot", "barely registers". The charts carry the numbers.
 - Vary sentence openings; never start consecutive sentences with "You" or "Your". Vary sentence length: short declaratives for weight, longer builds for texture.
 - Concrete over abstract, always. "The invoice you rounded down" beats "undervaluing your services".
 - Short paragraphs, 2 to 4 sentences. No bullet lists, no headings, no markdown inside prose fields.
 - Banned words and moves: "journey", "unlock", "empower", "delve", "tapestry", "testament", "navigate" (metaphorically), "it's important to note", "remember,", rhetorical questions as filler, and any sentence that begins "As a" followed by their occupation.
 - Section headlines: 3 to 8 words, in the metaphor world where natural, no colons, sentence case, no generic labels ("Your Strengths" is dead; "The moat is working. That's the problem." is alive — that register).
 
-THE PULL-QUOTE: one line, 18 words or fewer, that they would screenshot and send to someone who knows them. An identity claim, slightly dangerous, unmistakably theirs. No numbers, no Map names, no jargon. It should sting a little and flatter a little at the same time.
+THE PULL-QUOTE: one line, 18 words or fewer, that they would screenshot and send to someone who knows them. An identity claim, slightly dangerous, unmistakably theirs. No numbers, no trait names, no jargon. It should sting a little and flatter a little at the same time.
 
 THE COACH HANDOFF: the last section earns the next click. One short paragraph that says, plainly: this report can name the pattern, and the pattern will out-argue a report; their coach starts where this page stops, already knowing everything in it. Then exactly three first_questions, phrased in the FIRST PERSON as the reader would ask their coach ("Why do I…", "What would it take for me to…"), each one specific to THEIR data, each one a question they have almost certainly asked themselves in private. No generic questions.
 
 OUTPUT: Return ONLY a JSON object, exactly this shape (no extra keys, no markdown):
 {
-  "cold_open": "60–90 words. The mirror. A specific scene or behavioral read of THEM, mid-pattern, before any concept or Map name appears. No greeting, no 'welcome to your report'.",
-  "archetype": { "headline": "3–8 words", "body": ["2 paragraphs, 170–240 words total: what their archetype actually is as an operating system, how their dominant and secondary Maps combine into it, why it was probably installed early and cheaply, held as a hypothesis to check, not a verdict"] },
+  "cold_open": "60–90 words. The mirror. A specific scene or behavioral read of THEM, mid-pattern, before any concept or trait name appears. No greeting, no 'welcome to your report'.",
+  "archetype": { "headline": "3–8 words", "body": ["2 paragraphs, 170–240 words total: what their archetype actually is as an operating system, how their dominant and secondary traits combine into it, why it was probably installed early and cheaply, held as a hypothesis to check, not a verdict"] },
   "edge": { "headline": "3–8 words", "body": ["2 paragraphs, 150–220 words total: the case FOR their wiring, argued with specifics"], "strengths": [{ "label": "2–4 word name", "line": "one sentence grounding it in their data or working world" }, { }, { }] },
   "challenge": { "headline": "3–8 words", "body": ["2 paragraphs, 150–220 words total: the same wiring overclocked, the bill it runs, with respect and zero shame"], "tells": ["3–4 items; each one sentence, present tense, a recognizable moment they will have lived this month — the register of 'You know your rate is low. You quote it anyway.'"] },
-  "quiet_map": { "headline": "3–8 words", "body": ["1 paragraph, 70–110 words: what their QUIETEST Map says about them — the noise they don't have, the cost or blind spot of its silence"] },
+  "quiet_map": { "headline": "3–8 words", "body": ["1 paragraph, 70–110 words: what their QUIETEST trait says about them — the noise they don't have, the cost or blind spot of its silence"] },
   "fear": { "headline": "3–8 words", "body": ["2–3 paragraphs, 170–240 words total: name the band and tilt in plain language (never the score), what it protects, what it costs, ending on the open loop pointed at the coach — unresolved on purpose"] },
   "in_the_wild": { "headline": "3–8 words", "scenes": [{ "setting": "2–5 words, a moment in their real week", "moment": "40–70 words, second person, present tense: the pattern firing in that moment, written so precisely it feels surveilled (kindly)" }, { }, { }] },
   "dialed_right": { "headline": "3–8 words", "body": ["1–2 paragraphs, 120–180 words total: what the SAME wiring looks like dialed right — not a different person, the same person with the governor set on purpose; felt change only, no outcome promises"], "shifts": [{ "from": "short phrase, the overclocked setting", "to": "short phrase, the dialed-right setting" }, { }, { }] },
@@ -341,7 +341,7 @@ function buildUserPrompt(groundTruth: string): string {
 
 ${groundTruth}
 
-Write their Money Maps™ report now. Every sentence specific to THIS person. Return only the JSON object.`;
+Write their MoneyTraits™ report now. Every sentence specific to THIS person. Return only the JSON object.`;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
