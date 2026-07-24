@@ -6,91 +6,96 @@ import { HeroChat, type HeroChatMessage } from "@/components/landing/HeroChat";
 /**
  * MoneyTraits homepage (the money vertical's marketing surface).
  *
- * Copy: the founder-approved "MONEYTRAITS — Homepage Copy" deck (Cowork,
- * approved 2026-07-20), implemented VERBATIM — the measurement frame: traits
- * set early, running quietly under every decision; the assessment measures the
- * mix, the profile names it, the coach helps you work it. Leads with the
- * self-aware struggler ("it was never about the math"), hooks the edge-seeker
- * with trait-as-starting-position. FTC line held everywhere — process and felt
- * change, never a wealth-outcome promise (MONEY_DISCOVERY.md §6.2). No
- * "no sign-up" claim: /assess gates at login.
+ * Copy: the "/land2 rewrite", founder-approved as THE homepage 2026-07-24 —
+ * supersedes the verbatim Cowork deck copy (approved 2026-07-20; in git
+ * history at this file, pre-2026-07-24). The rewrite keeps the deck's
+ * measurement frame but is written against known AI-copy tells: concrete
+ * scenes over abstractions, hard sentence-length variance, a damaging-
+ * admission section, plain conversational voice, hero mirrors the visitor's
+ * inner monologue (Copyhackers structure) with the time cost upfront.
  *
- * Register note: the deck's "The leak" lines render as "The Challenge" —
- * founder call 2026-07-20 ("Use Challenge vs Leak"), aligning the landing with
- * the in-product card/report/coach vocabulary.
+ * Layout mirrors the pre-rewrite page section-for-section (founder ask,
+ * 2026-07-24): two-column hero with the live coach panel, centered H2s,
+ * traits in a 2-col card grid, profiles in a 3-col card grid (deliberately
+ * unequal copy lengths inside), how-it-works steps, a 3-card honesty band,
+ * final CTA block.
  *
- * BRAND.md: semantic tokens only (themes emerald via data-brand="money"), Lucide
- * only (Compass), dual-theme, no hardcoded hex, no sparkle. Static server
- * component — CTAs are plain links into the quiz-first funnel.
+ * Guardrails: FTC line — process and felt change, never a wealth-outcome
+ * promise (MONEY_DISCOVERY.md §6.2). Money vocabulary per BRAND.md §1.1
+ * (traits, "Challenge" register, never "leak"/"LEAP"). No fabricated
+ * testimonials or stats (pre-launch: there are none to quote). No "no
+ * sign-up" claim: /assess gates at login.
+ *
+ * BRAND.md: semantic tokens only (emerald via data-brand="money"), Lucide
+ * only (Compass), dual-theme, no hardcoded hex. Static server component —
+ * CTAs are plain links into the quiz-first funnel.
+ *
+ * Also served at /land2 (the route the rewrite shipped on, kept as an alias
+ * so shared comparison links keep working).
  */
 
-// The three teaser profiles, verbatim from the approved deck (deck-edited
-// variants of the MONEY_ARCHETYPES lines).
-const SAMPLE_PROFILES = [
+// A Decision Room scene in miniature — invoicing, with SHADOW named. The
+// coach ends on process, never an outcome (FTC). Illustrative only; the
+// footnote says so.
+const HERO_EXCHANGE: HeroChatMessage[] = [
+  { who: "person", text: "I've had the invoice drafted since Tuesday." },
+  { who: "coach", text: "What's the number on it?" },
+  { who: "person", text: "4,800. It was 6,000 on Monday." },
   {
-    pair: "SHADOW × DRIVE",
-    name: "The Reluctant Rainmaker",
-    edge: "Ambitious with a conscience.",
-    leak: "Self-sabotages at the threshold; undercharges what they're best at.",
+    who: "coach",
+    text: "So what happened between Monday and Tuesday?",
   },
+  { who: "person", text: "I kept picturing them opening it." },
+  {
+    who: "coach",
+    text: "That picture is SHADOW talking, and it's been wrong about this client twice already. Send it at six tonight. Tell me tomorrow what they actually said.",
+  },
+];
+
+// Trait lines are deliberately unequal in shape and length — matched-template
+// card copy is one of the AI tells the rewrite exists to avoid.
+const TRAITS: Array<[string, string]> = [
+  [
+    "DRIVE",
+    "The pushing one. How much you want, and what wanting it that badly does to your judgment.",
+  ],
+  [
+    "GUARD",
+    "Protects what you have. Useful, right up until it starts costing you the good risks.",
+  ],
+  [
+    "SHADOW",
+    "The oldest of the four. It's whatever money meant in the house you grew up in, still voting from the back of the room. Most people have never heard theirs out loud.",
+  ],
+  [
+    "MIRROR",
+    "What the number says about you, to you. People with a loud MIRROR hit their target and then move the target.",
+  ],
+];
+
+// Three sample profiles in prose — one deep, two quick. Unequal on purpose.
+const SAMPLE_PROFILES: Array<{ pair: string; name: string; body: string[] }> = [
   {
     pair: "GUARD × DRIVE",
     name: "The Fortress Builder",
-    edge: "Builds safe and compounds. Never blows up.",
-    leak: "Too walled-in to make the big leap — a treadmill with a moat.",
+    body: [
+      "Saves like it's a moral duty. Has never blown up an account in their life and is quietly proud of that. Also hasn't made a single move in four years that could genuinely change their situation, because every option looks like a threat when GUARD is the one doing the looking.",
+      "A Fortress Builder doesn't need a budgeting app. They need someone to say, kindly, that the moat has become the problem.",
+    ],
+  },
+  {
+    pair: "SHADOW × DRIVE",
+    name: "The Reluctant Rainmaker",
+    body: [
+      "Ambitious, with a conscience that bills at a discount. Knows the rate is low. Quotes it anyway, then quietly resents it.",
+    ],
   },
   {
     pair: "DRIVE × MIRROR",
     name: "The Mogul",
-    edge: "Enormous motivation. Plays big.",
-    leak: "Worth rides on the scoreboard, so it never reads “enough.”",
-  },
-];
-
-// The recognition list — deck order, verbatim.
-const RECOGNITION = [
-  "You make good money. You couldn't say where it goes.",
-  "You know your rate is low. You quote it anyway.",
-  "The plan said hold. Your nerves hit sell.",
-  "The opportunity was right there. You watched yourself not take it.",
-];
-
-// The four traits — deck order + deck lines, verbatim.
-const TRAITS: Array<[string, string]> = [
-  ["DRIVE", "How hard you push for more, and what the pushing is really for."],
-  ["GUARD", "How you protect what you have, and what your protection costs you."],
-  [
-    "SHADOW",
-    "The money story you inherited before you could argue with it. It still gets a vote.",
-  ],
-  [
-    "MIRROR",
-    "What your number says about you, to you. The trait that decides whether “enough” ever arrives.",
-  ],
-];
-
-// The hero's sample exchange — a Decision Room moment in miniature: the coach
-// names the trait that's doing the deciding and pushes back. Deliberately ends
-// on process, never an outcome or a return (FTC line, MONEY_DISCOVERY.md §6.2).
-// Illustrative only; the footnote says so.
-const HERO_EXCHANGE: HeroChatMessage[] = [
-  {
-    who: "person",
-    text: "Client wants the quote tonight. I was going to say eight thousand.",
-  },
-  {
-    who: "coach",
-    text: "Your last three quotes came down before anyone pushed back on them. That's GUARD deciding, not you.",
-  },
-  { who: "person", text: "Eight already feels like a lot to ask for." },
-  {
-    who: "coach",
-    text: "Feels like. What's the number if the fear of hearing no weren't in the room?",
-  },
-  { who: "person", text: "…Twelve." },
-  {
-    who: "coach",
-    text: "Then send twelve and let them be the one to say no. I'll ask you Friday what you actually sent.",
+    body: [
+      "Plays big and wins often. Still checks the scoreboard the way other people check the weather, because “enough” keeps moving.",
+    ],
   },
 ];
 
@@ -113,10 +118,8 @@ export default function MoneyLanding() {
           <span className="font-display text-lg font-semibold tracking-tight">MoneyTraits</span>
         </div>
         <div className="flex items-center gap-4 sm:gap-5">
-          {/* Toggle lives IN the flex flow (desktop only) so it can't overlap the
-              nav — as a fixed overlay it sat on top of "Measure my traits" on
-              desktop and "Sign in" on mobile. On mobile it moves to the footer,
-              same as Relatti. */}
+          {/* Toggle lives IN the flex flow (desktop only) so it can't overlap
+              the nav; on mobile it moves to the footer, same as Relatti. */}
           <span className="theme-toggle-inline hidden sm:block">
             <FloatingThemeToggle />
           </span>
@@ -128,7 +131,7 @@ export default function MoneyLanding() {
             className="hidden rounded-xl px-4 py-2 text-sm font-semibold text-text-inverse transition-opacity hover:opacity-90 sm:inline-flex"
             style={ctaStyle}
           >
-            Measure my traits
+            Take the test
           </Link>
         </div>
       </nav>
@@ -140,17 +143,16 @@ export default function MoneyLanding() {
             centering would drag the headline down with it. */}
         <div className="grid items-start gap-12 lg:grid-cols-2 lg:gap-14">
           <div className="text-center lg:text-left">
-            <h1 className="font-display text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl">
-              You don&apos;t run your money.
-              <span className="block">
-                Your <span style={{ color: "var(--color-primary)" }}>traits</span> do.
+            <h1 className="font-display text-4xl font-bold leading-[1.08] tracking-tight sm:text-5xl">
+              You keep making the same money mistake.
+              <span className="block" style={{ color: "var(--color-primary)" }}>
+                You already know which one.
               </span>
             </h1>
             <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-text-secondary lg:mx-0">
-              They were set before you ever earned a dollar — and they still decide what you charge,
-              what you risk, and what counts as enough, a half-second before you think you&apos;ve
-              decided. Sixteen questions measure the four traits behind every dollar you&apos;ve
-              made, kept, or lost. Because a trait you can see is a trait you can work.
+              Maybe it&apos;s the quote you soften before anyone has even seen it. Maybe
+              it&apos;s the move you research for a month and then let pass. Whatever yours
+              is, it has a pattern, and the pattern has a name. Sixteen questions find it.
             </p>
             <div className="mt-9 flex flex-col items-center gap-3 lg:items-start">
               <Link
@@ -158,10 +160,10 @@ export default function MoneyLanding() {
                 className="inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-base font-semibold text-text-inverse shadow-lg transition-opacity hover:opacity-90"
                 style={ctaStyle}
               >
-                Measure my traits
+                Take the three-minute test
               </Link>
               <p className="text-sm text-text-muted">
-                Free · sixteen questions · three minutes · no bank linking, ever
+                It&apos;s free, and we never ask to see your bank account.
               </p>
             </div>
           </div>
@@ -169,36 +171,39 @@ export default function MoneyLanding() {
           <HeroChat
             messages={HERO_EXCHANGE}
             label="Sample exchange"
-            footnote="An illustration, not a real client. MoneyTraits coaches the psychology behind the decision — it isn't financial advice, and it never links to your bank."
+            footnote="An illustration, not a real client. MoneyTraits coaches the psychology behind the decision. It isn't financial advice, and it never links to your bank."
           />
         </div>
       </section>
 
-      {/* The recognition */}
+      {/* The pattern — scenes in prose */}
       <section className="mx-auto max-w-2xl px-6 pb-20">
         <h2 className="text-center font-display text-2xl font-bold tracking-tight sm:text-3xl">
-          It was never about the math.
+          It shows up in small ways first.
         </h2>
-        <p className="mt-6 text-center leading-relaxed text-text-secondary">
-          You&apos;ve read the books. The problem was never information.
-        </p>
-        <div className="mt-10 space-y-7">
-          {RECOGNITION.map((line) => (
-            <p key={line} className="font-display text-lg font-semibold leading-snug sm:text-xl">
-              {line}
-            </p>
-          ))}
+        <div className="mt-8 space-y-5 leading-relaxed text-text-secondary">
+          <p>
+            There&apos;s a version of this that happens at invoicing time. You typed 6,000,
+            looked at it for a while, and sent 4,800 with a line about keeping things simple.
+            There&apos;s a version at the brokerage login you avoid after a bad week. A version
+            in the raise you&apos;ve deserved for two years and rehearsed asking for exactly
+            once.
+          </p>
+          <p>
+            The books call this &ldquo;money mindset&rdquo; and hand you affirmations for it.
+            Wrong tool. What you&apos;re looking at is a trait: a fixed way of handling money
+            you learned before you were old enough to argue with it. Traits ignore
+            information. You can&apos;t read your way out of one, which is why the fourth
+            personal-finance book worked exactly as well as the first. Seeing your traits during
+            decisions, however, is something that can be learned.
+          </p>
         </div>
-        <p className="mt-10 leading-relaxed text-text-secondary">
-          None of that is a knowledge gap, and none of it is a character flaw. It&apos;s a trait doing
-          exactly what it was built to do — quietly, automatically, and without asking you first.
-        </p>
       </section>
 
-      {/* The four traits */}
+      {/* The four traits — 2-col card grid */}
       <section className="mx-auto max-w-4xl px-6 pb-20">
         <h2 className="text-center font-display text-2xl font-bold tracking-tight sm:text-3xl">
-          Four traits run every money decision you make.
+          There are four of them.
         </h2>
         <div className="mt-10 grid gap-4 sm:grid-cols-2">
           {TRAITS.map(([name, line]) => (
@@ -214,19 +219,15 @@ export default function MoneyLanding() {
           ))}
         </div>
         <p className="mt-8 text-center leading-relaxed text-text-secondary">
-          You carry all four. The mix is yours alone — and the mix is measurable.
+          Everyone runs all four. The mix is what the test measures.
         </p>
       </section>
 
-      {/* The profile */}
+      {/* The profiles — 3-col card grid, one card deeper than the others */}
       <section className="mx-auto max-w-5xl px-6 pb-20">
         <h2 className="text-center font-display text-2xl font-bold tracking-tight sm:text-3xl">
           Your mix comes back as one of twelve profiles.
         </h2>
-        <p className="mx-auto mt-4 max-w-2xl text-center leading-relaxed text-text-secondary">
-          Each profile gets two honest lines — the edge your traits give you, and the challenge
-          they&apos;ve been charging you. Flattery isn&apos;t measurement, so you won&apos;t get any.
-        </p>
         <div className="mt-10 grid gap-4 sm:grid-cols-3">
           {SAMPLE_PROFILES.map((p) => (
             <div key={p.name} className="rounded-2xl bg-surface-50 p-6">
@@ -234,16 +235,19 @@ export default function MoneyLanding() {
               <h3 className="mt-2 font-display text-lg font-semibold" style={{ color: "var(--color-primary)" }}>
                 {p.name}
               </h3>
-              <p className="mt-4 text-[10px] font-semibold uppercase tracking-[0.14em] text-text-muted">The edge</p>
-              <p className="mt-1 text-sm leading-relaxed text-text-secondary">{p.edge}</p>
-              <p className="mt-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-text-muted">The challenge</p>
-              <p className="mt-1 text-sm leading-relaxed text-text-secondary">{p.leak}</p>
+              <div className="mt-3 space-y-3">
+                {p.body.map((para) => (
+                  <p key={para.slice(0, 24)} className="text-sm leading-relaxed text-text-secondary">
+                    {para}
+                  </p>
+                ))}
+              </div>
             </div>
           ))}
         </div>
-        <p className="mt-8 text-center leading-relaxed text-text-secondary">
-          Nine more where those came from. Sixteen questions tell you which one has been signing your
-          name.
+        <p className="mx-auto mt-8 max-w-2xl text-center leading-relaxed text-text-secondary">
+          That&apos;s the level the profiles work at. There are nine others. The test tells you
+          which one is yours, and it won&apos;t flatter you to keep you comfortable.
         </p>
       </section>
 
@@ -254,18 +258,18 @@ export default function MoneyLanding() {
           {[
             [
               "01",
-              "Measure.",
-              "Sixteen questions, three minutes. Built to be self-revealing — you'll catch a trait in the act before the score ever comes back.",
+              "Answer sixteen questions.",
+              "Multiple choice, about three minutes. A few are uncomfortable in a way you'll recognize.",
             ],
             [
               "02",
-              "Meet your profile.",
-              "Your coach walks you through the result and names something true you hadn't said out loud. It's a working hypothesis, not a verdict — wrong reads get updated, not defended.",
+              "Read your profile.",
+              "It's specific enough to argue with. Some people do argue, and the coach takes that seriously. A profile is a first read, and first reads get corrected.",
             ],
             [
               "03",
-              "Work the traits.",
-              "Bring a real decision: pricing, hiring, raising, quitting. In the Decision Room, your coach runs it through your full profile — and pushes back when a trait is doing the deciding instead of you. It will disagree with you. That's the point.",
+              "Bring it a real decision.",
+              "Pricing a job, sitting on an offer, deciding whether to quit. The coach knows your profile, so it can tell when a trait is doing the talking instead of you. Expect pushback. A coach that agreed with you all the time would be useless.",
             ],
           ].map(([n, h, b]) => (
             <div key={n} className="flex gap-5">
@@ -283,41 +287,29 @@ export default function MoneyLanding() {
             className="inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-base font-semibold text-text-inverse transition-opacity hover:opacity-90"
             style={ctaStyle}
           >
-            Measure my traits
+            Take the three-minute test
           </Link>
         </div>
       </section>
 
-      {/* The objection */}
-      <section className="mx-auto max-w-2xl px-6 pb-20">
-        <div className="rounded-3xl bg-surface-50 px-8 py-10">
-          <h2 className="font-display text-xl font-bold tracking-tight sm:text-2xl">
-            &ldquo;So my traits are just&hellip; who I am?&rdquo;
-          </h2>
-          <p className="mt-4 leading-relaxed text-text-secondary">
-            No. A trait is a starting position, not a sentence. The Fortress Builder doesn&apos;t have
-            to become reckless to make the leap — he has to know Guard is voting, hear the vote, and
-            decide anyway. The trait doesn&apos;t change first. The outcome does. That&apos;s the
-            whole method: not a new you, just a you that stops deciding unsupervised.
-          </p>
-        </div>
-      </section>
-
-      {/* What this is / isn't */}
+      {/* What this won't do — the honesty band, 3 cards */}
       <section className="mx-auto max-w-5xl px-6 pb-20">
-        <div className="grid gap-4 sm:grid-cols-3">
+        <h2 className="text-center font-display text-2xl font-bold tracking-tight sm:text-3xl">
+          What this won&apos;t do
+        </h2>
+        <div className="mt-10 grid gap-4 sm:grid-cols-3">
           {[
             [
-              "Psychology, not your bank account.",
-              "No budgets. No net-worth tracking. No bank linking — ever. We work upstream of the numbers, on the person setting them.",
+              "It won't manage your money.",
+              "There's no budget screen, no net-worth graph, and we never connect to your bank. Plenty of apps do that already. The problem we work on sits earlier, in the person making the calls.",
             ],
             [
-              "Science, not woo.",
-              "Built on published money-belief research — the antidote to the manifestation feed. Psychology and habits predict financial well-being more strongly than financial knowledge does. You never needed another course. You needed a mirror with better resolution.",
+              "It isn't financial advice.",
+              "The questions come from published research on money beliefs, and the coaching stays inside what that research supports: the psychology of the decision. What you actually do with your money stays entirely yours.",
             ],
             [
-              "A coach, not a curriculum.",
-              "Whether you're playing offense or getting out of your own way, you get a scouting report and a corner coach. Not a diagnosis. Not a guru. Not twelve weeks of homework.",
+              "It won't land perfectly for everyone.",
+              "Some people read their profile and think we got them wrong. Honestly, those tend to be the most useful starting points. Disagreeing with a specific description of yourself teaches you more than nodding along with a vague one ever has.",
             ],
           ].map(([h, b]) => (
             <div key={h} className="rounded-2xl bg-surface-50 p-6">
@@ -328,34 +320,22 @@ export default function MoneyLanding() {
         </div>
       </section>
 
-      {/* The payoff */}
-      <section className="mx-auto max-w-2xl px-6 pb-20 text-center">
-        <h2 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">
-          What changes when you can see the mix
-        </h2>
-        <p className="mx-auto mt-5 max-w-xl leading-relaxed text-text-secondary">
-          Cleaner calls, made for reasons you could say out loud. The challenge, watched instead of
-          paid. The rate quoted without the wince. And &ldquo;enough&rdquo; finally getting a number —
-          clarity, control, and the end of never-enough.
-        </p>
-      </section>
-
       {/* Final CTA */}
       <section className="mx-auto max-w-3xl px-6 pb-24 text-center">
         <div className="rounded-3xl bg-surface-50 px-8 py-14">
           <h2 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">
-            Twenty years of money decisions, explained in three minutes.
+            You already know something&apos;s there.
+            <span className="block">Find out what it&apos;s called.</span>
           </h2>
           <Link
             href="/assess"
             className="mt-8 inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-base font-semibold text-text-inverse transition-opacity hover:opacity-90"
             style={ctaStyle}
           >
-            Measure my traits
+            Take the three-minute test
           </Link>
           <p className="mt-4 text-sm text-text-muted">
-            Free · sixteen questions · If it doesn&apos;t tell you something true about you, close
-            the tab.
+            Free. If your profile reads like a stranger, close the tab.
           </p>
         </div>
       </section>
@@ -381,8 +361,9 @@ export default function MoneyLanding() {
             </span>
           </div>
           <p className="mt-6 text-center text-xs leading-relaxed text-text-muted sm:text-left">
-            MoneyTraits is coaching and education on the psychology of money — not therapy, and not
-            financial, investment, or tax advice. We never link to or touch your bank account.
+            MoneyTraits is coaching and education on the psychology of money. It is not therapy,
+            and not financial, investment, or tax advice. We never link to or touch your bank
+            account.
           </p>
         </div>
       </footer>

@@ -15,10 +15,10 @@ import MoneyLanding from "./MoneyLanding";
  * /money to the sitemap + robots isProductionHost) at go-public.
  */
 export const metadata: Metadata = brandPageMetadata("money", {
-  title: "MoneyTraits — You don't run your money. Your traits do.",
+  title: "MoneyTraits — You keep making the same money mistake.",
   description:
-    "Sixteen questions measure the four traits behind every dollar you've made, kept, or lost — then a coach helps you work them. Psychology, not your bank account. No budgets, no bank linking, ever.",
-  ogTitle: "You don't run your money. Your traits do.",
+    "Sixteen questions put a name on the pattern behind your money decisions. About three minutes, free, and we never ask to see your bank account.",
+  ogTitle: "You keep making the same money mistake. You already know which one.",
   noindex: true,
   // ogImage ON despite noindex: the helper's default couples the two, but they
   // answer different questions — noindex keeps us out of the SEARCH index while

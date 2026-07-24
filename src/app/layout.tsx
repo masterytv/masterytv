@@ -95,7 +95,7 @@ export default function RootLayout({
                   // avoiding the "\\/" template-literal footgun that killed this
                   // whole script 06-22→07-02.
                   var moneyHost = (host === 'moneytraits.com' || host === 'www.moneytraits.com' || host === 'staging.moneytraits.com' || host === 'moneymaps.masterytv.com' || host === 'staging.moneymaps.masterytv.com');
-                  var moneyPath = (path === '/money' || path.indexOf('/money/') === 0 || path === '/tell' || path.indexOf('/tell/') === 0);
+                  var moneyPath = (path === '/money' || path.indexOf('/money/') === 0 || path === '/tell' || path.indexOf('/tell/') === 0 || path === '/land2' || path.indexOf('/land2/') === 0);
                   var hostBrand = (relattiHost || relattiPath) ? 'relatti' : 'masterytv';
                   var brand = (urlBrand === 'relatti' || urlBrand === 'masterytv' || urlBrand === 'money') ? urlBrand
                     : (relattiHost || relattiPath) ? 'relatti'
