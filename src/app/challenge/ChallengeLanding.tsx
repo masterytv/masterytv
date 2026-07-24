@@ -90,7 +90,7 @@ export default function ChallengeLanding({ initialCode }: { initialCode: string 
           <span className="font-display text-xl font-semibold tracking-tight">Relatti</span>
         </Link>
         <div className="flex items-center gap-2 sm:gap-4">
-          <span className="relatti-theme-inline hidden sm:block">
+          <span className="theme-toggle-inline hidden sm:block">
             <FloatingThemeToggle />
           </span>
           <Link
@@ -290,7 +290,7 @@ export default function ChallengeLanding({ initialCode }: { initialCode: string 
             <Link href="/privacy" className="transition-colors hover:text-text-secondary">Privacy</Link>
             <Link href="/terms" className="transition-colors hover:text-text-secondary">Terms</Link>
           </div>
-          <span className="relatti-theme-inline sm:hidden">
+          <span className="theme-toggle-inline sm:hidden">
             <FloatingThemeToggle />
           </span>
         </div>

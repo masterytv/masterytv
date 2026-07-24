@@ -179,7 +179,7 @@ export default function RelattiLanding({
           {/* Theme toggle lives IN the flex flow (desktop only) so it can never
               overlap the nav links; a fixed overlay collided at some width no
               matter where it was pinned. On mobile it moves to the footer. */}
-          <span className="relatti-theme-inline hidden sm:block">
+          <span className="theme-toggle-inline hidden sm:block">
             <FloatingThemeToggle />
           </span>
           {authed ? (
@@ -419,7 +419,7 @@ export default function RelattiLanding({
           </div>
           {/* On mobile the theme toggle lives here (the header has no room for a
               third control at phone widths); on sm+ it's inline in the header. */}
-          <span className="relatti-theme-inline sm:hidden">
+          <span className="theme-toggle-inline sm:hidden">
             <FloatingThemeToggle />
           </span>
         </div>

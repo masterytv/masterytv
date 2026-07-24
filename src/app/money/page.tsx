@@ -20,6 +20,11 @@ export const metadata: Metadata = brandPageMetadata("money", {
     "Sixteen questions measure the four traits behind every dollar you've made, kept, or lost — then a coach helps you work them. Psychology, not your bank account. No budgets, no bank linking, ever.",
   ogTitle: "You don't run your money. Your traits do.",
   noindex: true,
+  // ogImage ON despite noindex: the helper's default couples the two, but they
+  // answer different questions — noindex keeps us out of the SEARCH index while
+  // pre-launch; the card is what renders when the founder texts the link to a
+  // tester. Without it iMessage falls back to a bare title + domain bubble.
+  ogImage: true,
 });
 
 export default function MoneyPage() {
