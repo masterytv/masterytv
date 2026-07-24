@@ -1029,3 +1029,77 @@ body {
     transition: none;
   }
 }
+
+/* ─── Hero chat panel (landing heroes — components/landing/HeroChat.tsx) ─── */
+
+.hero-chat-bubble {
+  animation: hero-chat-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes hero-chat-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Typing dots — the coach "thinking" before its line lands. */
+.hero-chat-typing {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  animation: hero-chat-in 0.3s ease both;
+}
+
+.hero-chat-typing i {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--color-text-muted);
+  animation: hero-chat-dot 1.2s ease-in-out infinite;
+}
+
+.hero-chat-typing i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.hero-chat-typing i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes hero-chat-dot {
+  0%,
+  60%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+/* The rest of the exchange, revealed only when scripting is unavailable so the
+   panel still reads as a conversation without JavaScript. */
+.hero-chat-noscript {
+  display: none;
+}
+
+@media (scripting: none) {
+  .hero-chat-noscript {
+    display: contents;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-chat-bubble,
+  .hero-chat-typing,
+  .hero-chat-typing i {
+    animation: none;
+  }
+}

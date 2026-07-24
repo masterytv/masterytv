@@ -28,6 +28,32 @@ import {
   Compass,
 } from "lucide-react";
 import { FloatingThemeToggle } from "@/components/floating-theme-toggle";
+import { HeroChat, type HeroChatMessage } from "@/components/landing/HeroChat";
+
+// The hero's sample exchange. Written to show the three things the pillars
+// claim — it holds both profiles, it translates instead of taking sides, and
+// each partner's side of the conversation stays private. Illustrative only:
+// no real couple, no real transcript (the footnote says so).
+const HERO_EXCHANGE: HeroChatMessage[] = [
+  {
+    who: "person",
+    text: "We had the Sunday planning fight again. I'm done being the only one who tracks everything.",
+  },
+  {
+    who: "coach",
+    text: "You two run on different clocks — you plan ahead to feel settled, Sam decides late to stay free. Neither of you is being careless.",
+  },
+  { who: "person", text: "So what do I even say this time?" },
+  {
+    who: "coach",
+    text: "Try: “I'm not asking you to care about the calendar. I'm asking not to hold it alone.” That's the need underneath the fight.",
+  },
+  { who: "person", text: "That's actually it." },
+  {
+    who: "coach",
+    text: "Fifteen minutes Sunday, one shared list, phones down. I'll check in after — and none of this gets shown to Sam.",
+  },
+];
 
 const PILLARS = [
   {
@@ -189,59 +215,72 @@ export default function RelattiLanding({
         </div>
       </header>
 
-      {/* ── Hero ── */}
-      <section className="mx-auto max-w-3xl px-6 pt-16 pb-20 text-center sm:pt-24">
-        <span
-          className="mb-6 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium"
-          style={{
-            background: "color-mix(in oklch, var(--color-primary-container) 12%, transparent)",
-            color: "var(--color-primary)",
-          }}
-        >
-          {c.eyebrow}
-        </span>
+      {/* ── Hero — copy on one side, the coach in conversation on the other.
+             Stacks to a single centered column below lg. ── */}
+      <section className="mx-auto max-w-6xl px-6 pt-14 pb-20 sm:pt-20">
+        {/* items-start, not center: the panel grows as the exchange plays, and
+            centering would drag the headline down with it. */}
+        <div className="grid items-start gap-12 lg:grid-cols-2 lg:gap-14">
+          <div className="text-center lg:text-left">
+            <span
+              className="mb-6 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium"
+              style={{
+                background: "color-mix(in oklch, var(--color-primary-container) 12%, transparent)",
+                color: "var(--color-primary)",
+              }}
+            >
+              {c.eyebrow}
+            </span>
 
-        <h1 className="font-display text-4xl font-bold leading-[1.1] tracking-tight sm:text-6xl">
-          {c.headlineTop}
-          <br />
-          <span style={{ color: "var(--color-primary)" }}>{c.headlineAccent}</span>
-        </h1>
+            <h1 className="font-display text-4xl font-bold leading-[1.1] tracking-tight sm:text-5xl">
+              {c.headlineTop}
+              <br />
+              <span style={{ color: "var(--color-primary)" }}>{c.headlineAccent}</span>
+            </h1>
 
-        <p className="mx-auto mt-6 max-w-xl text-lg text-text-secondary">
-          {c.subhead}
-        </p>
+            <p className="mx-auto mt-6 max-w-xl text-lg text-text-secondary lg:mx-0">
+              {c.subhead}
+            </p>
 
-        <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <Link
-            href={authed ? "/dashboard" : "/beta"} /* BETA GATE (temporary) */
-            className="group inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-base font-semibold text-text-inverse shadow-card transition-transform hover:-translate-y-0.5"
-            style={{ background: "var(--color-primary-container)" }}
-          >
-            {authed ? "Pick up where you left off" : "Take the free quiz"}
-            <ArrowRight className="h-4.5 w-4.5 transition-transform group-hover:translate-x-0.5" />
-          </Link>
-          <a
-            href="#how"
-            className="inline-flex items-center gap-2 rounded-xl px-6 py-3.5 text-base font-medium text-text-secondary transition-colors hover:text-text-primary"
-          >
-            See how it works
-          </a>
+            <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row lg:justify-start">
+              <Link
+                href={authed ? "/dashboard" : "/beta"} /* BETA GATE (temporary) */
+                className="group inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-base font-semibold text-text-inverse shadow-card transition-transform hover:-translate-y-0.5"
+                style={{ background: "var(--color-primary-container)" }}
+              >
+                {authed ? "Pick up where you left off" : "Take the free quiz"}
+                <ArrowRight className="h-4.5 w-4.5 transition-transform group-hover:translate-x-0.5" />
+              </Link>
+              <a
+                href="#how"
+                className="inline-flex items-center gap-2 rounded-xl px-6 py-3.5 text-base font-medium text-text-secondary transition-colors hover:text-text-primary"
+              >
+                See how it works
+              </a>
+            </div>
+
+            <p className="mt-5 text-sm text-text-muted">
+              Free to start &middot; about 10 minutes &middot; no card required
+            </p>
+
+            <p className="mt-3 text-sm">
+              <Link
+                href="/challenge"
+                className="inline-flex items-center gap-1 font-medium underline underline-offset-2 transition-opacity hover:opacity-80"
+                style={{ color: "var(--color-primary)" }}
+              >
+                Doing it together? Take the 14-Day Challenge
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </p>
+          </div>
+
+          <HeroChat
+            messages={HERO_EXCHANGE}
+            label="Sample exchange"
+            footnote="An illustration, not a real couple. In Relatti, each partner's conversations stay private — you share a blueprint, never a transcript."
+          />
         </div>
-
-        <p className="mt-5 text-sm text-text-muted">
-          Free to start &middot; about 10 minutes &middot; no card required
-        </p>
-
-        <p className="mt-3 text-sm">
-          <Link
-            href="/challenge"
-            className="inline-flex items-center gap-1 font-medium underline underline-offset-2 transition-opacity hover:opacity-80"
-            style={{ color: "var(--color-primary)" }}
-          >
-            Doing it together? Take the 14-Day Challenge
-            <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
-        </p>
       </section>
 
       {/* ── The belief block: the mission, stated plainly ── */}

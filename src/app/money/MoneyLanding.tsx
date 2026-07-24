@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Compass } from "lucide-react";
 import { FloatingThemeToggle } from "@/components/floating-theme-toggle";
+import { HeroChat, type HeroChatMessage } from "@/components/landing/HeroChat";
 
 /**
  * MoneyTraits homepage (the money vertical's marketing surface).
@@ -68,6 +69,31 @@ const TRAITS: Array<[string, string]> = [
   ],
 ];
 
+// The hero's sample exchange — a Decision Room moment in miniature: the coach
+// names the trait that's doing the deciding and pushes back. Deliberately ends
+// on process, never an outcome or a return (FTC line, MONEY_DISCOVERY.md §6.2).
+// Illustrative only; the footnote says so.
+const HERO_EXCHANGE: HeroChatMessage[] = [
+  {
+    who: "person",
+    text: "Client wants the quote tonight. I was going to say eight thousand.",
+  },
+  {
+    who: "coach",
+    text: "Your last three quotes came down before anyone pushed back on them. That's GUARD deciding, not you.",
+  },
+  { who: "person", text: "Eight already feels like a lot to ask for." },
+  {
+    who: "coach",
+    text: "Feels like. What's the number if the fear of hearing no weren't in the room?",
+  },
+  { who: "person", text: "…Twelve." },
+  {
+    who: "coach",
+    text: "Then send twelve and let them be the one to say no. I'll ask you Friday what you actually sent.",
+  },
+];
+
 export default function MoneyLanding() {
   const ctaStyle = {
     backgroundImage: "linear-gradient(135deg, var(--cta-from), var(--cta-to))",
@@ -102,31 +128,44 @@ export default function MoneyLanding() {
         </div>
       </nav>
 
-      {/* Hero */}
-      <section className="mx-auto max-w-3xl px-6 pb-20 pt-16 text-center lg:pt-24">
-        <h1 className="font-display text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">
-          You don&apos;t run your money.
-          <span className="block">
-            Your <span style={{ color: "var(--color-primary)" }}>traits</span> do.
-          </span>
-        </h1>
-        <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-text-secondary">
-          They were set before you ever earned a dollar — and they still decide what you charge, what
-          you risk, and what counts as enough, a half-second before you think you&apos;ve decided.
-          Sixteen questions measure the four traits behind every dollar you&apos;ve made, kept, or
-          lost. Because a trait you can see is a trait you can work.
-        </p>
-        <div className="mt-9 flex flex-col items-center gap-3">
-          <Link
-            href="/assess"
-            className="inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-base font-semibold text-text-inverse shadow-lg transition-opacity hover:opacity-90"
-            style={ctaStyle}
-          >
-            Measure my traits
-          </Link>
-          <p className="text-sm text-text-muted">
-            Free · sixteen questions · three minutes · no bank linking, ever
-          </p>
+      {/* Hero — copy on one side, the coach mid-decision on the other. Stacks
+          to a single centered column below lg. */}
+      <section className="mx-auto max-w-6xl px-6 pb-20 pt-14 lg:px-10 lg:pt-20">
+        {/* items-start, not center: the panel grows as the exchange plays, and
+            centering would drag the headline down with it. */}
+        <div className="grid items-start gap-12 lg:grid-cols-2 lg:gap-14">
+          <div className="text-center lg:text-left">
+            <h1 className="font-display text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl">
+              You don&apos;t run your money.
+              <span className="block">
+                Your <span style={{ color: "var(--color-primary)" }}>traits</span> do.
+              </span>
+            </h1>
+            <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-text-secondary lg:mx-0">
+              They were set before you ever earned a dollar — and they still decide what you charge,
+              what you risk, and what counts as enough, a half-second before you think you&apos;ve
+              decided. Sixteen questions measure the four traits behind every dollar you&apos;ve
+              made, kept, or lost. Because a trait you can see is a trait you can work.
+            </p>
+            <div className="mt-9 flex flex-col items-center gap-3 lg:items-start">
+              <Link
+                href="/assess"
+                className="inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-base font-semibold text-text-inverse shadow-lg transition-opacity hover:opacity-90"
+                style={ctaStyle}
+              >
+                Measure my traits
+              </Link>
+              <p className="text-sm text-text-muted">
+                Free · sixteen questions · three minutes · no bank linking, ever
+              </p>
+            </div>
+          </div>
+
+          <HeroChat
+            messages={HERO_EXCHANGE}
+            label="Sample exchange"
+            footnote="An illustration, not a real client. MoneyTraits coaches the psychology behind the decision — it isn't financial advice, and it never links to your bank."
+          />
         </div>
       </section>
 
