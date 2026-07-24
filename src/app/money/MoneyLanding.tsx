@@ -171,7 +171,7 @@ export default function MoneyLanding() {
           <HeroChat
             messages={HERO_EXCHANGE}
             label="Sample exchange"
-            footnote="An illustration, not a real client. MoneyTraits coaches the psychology behind the decision — it isn't financial advice, and it never links to your bank."
+            footnote="An illustration, not a real client. MoneyTraits coaches the psychology behind the decision. It isn't financial advice, and it never links to your bank."
           />
         </div>
       </section>
@@ -194,8 +194,8 @@ export default function MoneyLanding() {
             Wrong tool. What you&apos;re looking at is a trait: a fixed way of handling money
             you learned before you were old enough to argue with it. Traits ignore
             information. You can&apos;t read your way out of one, which is why the fourth
-            personal-finance book worked exactly as well as the first. Seeing yours coming,
-            though — that can be learned.
+            personal-finance book worked exactly as well as the first. Seeing your traits during
+            decisions, however, is something that can be learned.
           </p>
         </div>
       </section>
@@ -264,7 +264,7 @@ export default function MoneyLanding() {
             [
               "02",
               "Read your profile.",
-              "It's specific enough to argue with. Some people do argue, and the coach takes that seriously — a profile is a first read, and first reads get corrected.",
+              "It's specific enough to argue with. Some people do argue, and the coach takes that seriously. A profile is a first read, and first reads get corrected.",
             ],
             [
               "03",
@@ -309,7 +309,7 @@ export default function MoneyLanding() {
             ],
             [
               "It won't land perfectly for everyone.",
-              "Some people read their profile and think we got them wrong. Honestly, those tend to be the most useful starting points — disagreeing with a specific description of yourself teaches you more than nodding along with a vague one ever has.",
+              "Some people read their profile and think we got them wrong. Honestly, those tend to be the most useful starting points. Disagreeing with a specific description of yourself teaches you more than nodding along with a vague one ever has.",
             ],
           ].map(([h, b]) => (
             <div key={h} className="rounded-2xl bg-surface-50 p-6">
@@ -361,8 +361,9 @@ export default function MoneyLanding() {
             </span>
           </div>
           <p className="mt-6 text-center text-xs leading-relaxed text-text-muted sm:text-left">
-            MoneyTraits is coaching and education on the psychology of money — not therapy, and not
-            financial, investment, or tax advice. We never link to or touch your bank account.
+            MoneyTraits is coaching and education on the psychology of money. It is not therapy,
+            and not financial, investment, or tax advice. We never link to or touch your bank
+            account.
           </p>
         </div>
       </footer>
