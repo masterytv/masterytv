@@ -101,8 +101,6 @@ export default function MoneyLanding() {
 
   return (
     <main className="relative min-h-screen bg-surface-0 text-text-primary">
-      <FloatingThemeToggle />
-
       {/* Nav */}
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5 lg:px-10">
         <div className="flex items-center gap-2.5">
@@ -114,7 +112,14 @@ export default function MoneyLanding() {
           </span>
           <span className="font-display text-lg font-semibold tracking-tight">MoneyTraits</span>
         </div>
-        <div className="flex items-center gap-5">
+        <div className="flex items-center gap-4 sm:gap-5">
+          {/* Toggle lives IN the flex flow (desktop only) so it can't overlap the
+              nav — as a fixed overlay it sat on top of "Measure my traits" on
+              desktop and "Sign in" on mobile. On mobile it moves to the footer,
+              same as Relatti. */}
+          <span className="theme-toggle-inline hidden sm:block">
+            <FloatingThemeToggle />
+          </span>
           <Link href="/login" className="text-sm font-medium text-text-secondary transition-colors hover:text-text-primary">
             Sign in
           </Link>
@@ -369,6 +374,11 @@ export default function MoneyLanding() {
               <Link href="/terms" className="transition-colors hover:text-text-primary">Terms</Link>
               <Link href="/disclaimer" className="transition-colors hover:text-text-primary">Disclaimer</Link>
             </div>
+            {/* Mobile home for the theme toggle — the nav has no room for a third
+                control at phone widths; on sm+ it's inline in the nav. */}
+            <span className="theme-toggle-inline sm:hidden">
+              <FloatingThemeToggle />
+            </span>
           </div>
           <p className="mt-6 text-center text-xs leading-relaxed text-text-muted sm:text-left">
             MoneyTraits is coaching and education on the psychology of money — not therapy, and not

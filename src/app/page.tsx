@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { brandPageMetadata } from "@/lib/platform/brand-metadata";
 import { createClient } from "@/lib/supabase/server";
 import LandingPage from "./landing";
 
@@ -11,10 +12,21 @@ import LandingPage from "./landing";
  * SEO: Targets "personality test + coaching" positioning.
  */
 
+// Through the helper (BRAND.md §15) rather than a hand-rolled object: the old
+// literal set og:title/description but no og:image and no icons, so texting
+// masterytv.com previewed as a bare title bubble while relatti.com rendered a
+// full card. The helper emits title + og + twitter + the brand icon set as one
+// unit, so no key can fall back or go missing.
 export const metadata: Metadata = {
-  title: "MasteryTV — The Personality Test That Gives You a Coach",
-  description:
-    "15 validated personality tests in 30 minutes. Get a deep report, your archetype, and a coach that knows everything about you. Free.",
+  ...brandPageMetadata("masterytv", {
+    title: "MasteryTV — The Personality Test That Gives You a Coach",
+    description:
+      "15 validated personality tests in 30 minutes. Get a deep report, your archetype, and a coach that knows everything about you. Free.",
+    ogTitle: "The personality test that gives you a coach.",
+    ogDescription:
+      "Know yourself deeper than ever. 15 validated instruments in 30 minutes, a personalized report, and a coach that remembers everything.",
+    canonical: "/",
+  }),
   keywords: [
     "personality test",
     "personality assessment",
@@ -27,27 +39,6 @@ export const metadata: Metadata = {
     "career assessment",
     "emotional intelligence",
   ],
-  openGraph: {
-    title: "MasteryTV — The Personality Test That Gives You a Coach",
-    description:
-      "Know yourself deeper than ever. 15 validated instruments in 30 minutes, a personalized report, and a coach that remembers everything.",
-    type: "website",
-    siteName: "MasteryTV",
-    locale: "en_US",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "MasteryTV — The Personality Test That Gives You a Coach",
-    description:
-      "15 personality tests. 30 minutes. A coach that knows everything about you.",
-  },
-  robots: {
-    index: true,
-    follow: true,
-  },
-  alternates: {
-    canonical: "https://masterytv.com",
-  },
 };
 
 const jsonLd = {

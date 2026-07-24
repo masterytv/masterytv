@@ -43,7 +43,9 @@ const ALLOWLIST = new Set([
   // The one place the default-brand (MasteryTV) fallback metadata is DEFINED.
   ROOT_LAYOUT,
   // MasteryTV/Decoded-only marketing + product surfaces (masterytv.com only).
-  "src/app/page.tsx",
+  // NOTE: src/app/page.tsx graduated off this list 2026-07-24 — it now goes
+  // through brandPageMetadata, which is what gave masterytv.com link previews
+  // an og:image and its own icon set instead of a bare title bubble.
   "src/app/types/page.tsx",
   "src/app/legacy/page.tsx",
   "src/app/decoded/landing/page.tsx",

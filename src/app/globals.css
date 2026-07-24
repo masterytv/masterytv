@@ -779,11 +779,12 @@ body {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-/* Relatti landing: the toggle sits IN the layout flow (header on desktop,
+/* Marketing landings: the toggle sits IN the layout flow (header on desktop,
    footer on mobile) instead of a fixed overlay. Fixed positioning collided
    with the nav links at some viewport width no matter where it was pinned
-   (right-aligned covered "Get started"; centered covered "Log in"). */
-.relatti-theme-inline .floating-theme-toggle {
+   (right-aligned covered "Get started"/"Measure my traits"; centered covered
+   "Log in"). Any vertical's landing should use this, not the fixed overlay. */
+.theme-toggle-inline .floating-theme-toggle {
   position: static;
   box-shadow: none;
 }
