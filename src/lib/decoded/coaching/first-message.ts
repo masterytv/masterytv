@@ -149,7 +149,7 @@ export function generateFirstMessage(
     }
     parts.push('');
     parts.push(
-      `These aren't a rigid agenda — they're starting compass points. As we talk, we'll refine what matters most to you right now.`
+      `These are starting compass points. As we talk, we'll refine what matters most to you right now.`
     );
   }
 
