@@ -80,8 +80,8 @@ export async function POST(req: NextRequest) {
       .single();
 
     // Step 2b: consent gate (founder, 2026-07-15). If the recipient ALREADY has
-    // an account, this is not an onboarding invite — it's a CONNECT REQUEST to
-    // an existing member, and it must NOT auto-connect (the old behavior linked
+    // an account, treat it as a CONNECT REQUEST to an existing member rather
+    // than an onboarding invite: it must NOT auto-connect (the old behavior linked
     // two independent signups without the recipient ever agreeing). Record the
     // inviter's request on the invite (the invite-consent accept path reads it),
     // claim the row for the recipient so it appears on their Compatibility page,

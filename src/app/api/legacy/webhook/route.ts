@@ -152,7 +152,7 @@ async function sendDeliveryEmail(email: string, firstName: string, orderId: stri
               Your future self has written you a letter. It's ready.
             </p>
             <p style="font-size: 17px; line-height: 1.7; color: #4a4a4a; margin-bottom: 32px;">
-              This isn't a generic motivational piece — it's deeply personal, written from your answers, 
+              It's deeply personal, written from your answers,
               from the version of you who made it through everything you're facing right now.
             </p>
             <a href="${downloadUrl}" 
