@@ -41,7 +41,7 @@
  * Run: node scripts/check-copy-tells.mjs [--strict] [--self-test]
  */
 
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
 const ROOTS = ["src", "supabase/functions"];
@@ -49,24 +49,56 @@ const SELF = "scripts/check-copy-tells.mjs"; // contains the patterns as samples
 const TEXT_EXT = /\.(tsx?|m?js|cjs)$/i;
 const STRICT = process.argv.includes("--strict") || process.env.COPY_TELLS_STRICT === "1";
 
+// Apostrophes: source copy uses the CURLY ’ (U+2019) as often as the straight
+// one — the live Relatti H1 was "aren’t"/"They’re" — so every contraction here
+// matches both. A straight-quote-only pattern silently misses half the corpus.
+const AP = "['’]";
+const NEG = `(?:(?:is|are|was|were)\\s+not|is${AP}?n${AP}?t|isn${AP}t|aren${AP}t|wasn${AP}t|weren${AP}t)`;
+// The restatement half: a subject pronoun + copula. Requiring this is what
+// keeps ordinary negations ("this isn't financial advice") out of the results.
+// `that`/`this` are deliberately NOT in the list. They usually refer back to a
+// whole preceding clause as commentary rather than restating the negated
+// subject, which produced the one real false positive this pattern had:
+// "…and aren't easily swayed. That's a leadership asset." is an evaluation,
+// not a pivot. `we`/`you` stay — "We aren't a vendor. We're a partner." is the
+// genuine article.
+const RESTATE = `(?:it|they|we|you|he|she)(?:${AP}s|${AP}re| is| are| was| were)`;
+
 const TELLS = [
   {
-    re: /\bnot (?:just|only|merely|simply)\b[^.?!]{0,80}[,;.]\s*(?:it|that|this|they|we|you)(?:'s|'re| is| are| was)\b/i,
+    re: new RegExp(
+      `\\bnot (?:just|only|merely|simply)\\b[^.?!]{0,80}[,;.]\\s*${RESTATE}\\b`,
+      "i",
+    ),
     label: '"not just X, it\'s Y" pivot',
   },
   {
+    // Was `isn't|is not` + a REQUIRED article, straight apostrophe only, which
+    // missed the whole aren't/wasn't/weren't family and any predicate without
+    // an article. That is how "The best relationships aren’t lucky. They’re
+    // understood." — the live Relatti H1 — sat on the homepage uncaught.
     // Separator class includes the em/en dash on purpose: the pivot's most
     // common live form pairs BOTH tells ("isn't a label — it's a lens").
-    re: /\b(?:isn't|is not)\s+(?:a|an|the|about)\b[^.?!]{0,60}[.,;:—–]\s*(?:it|It)(?:'s| is)\b/i,
-    label: '"isn\'t X. It\'s Y" pivot',
+    re: new RegExp(`\\b${NEG}\\b[^.?!]{0,60}[.,;:—–]\\s*${RESTATE}\\b`, "i"),
+    label: '"isn\'t/aren\'t X. It\'s/They\'re Y" pivot',
   },
   {
-    re: /\b(?:is|are)\s+not\s+(?:a|an|the)\b[^.?!]{0,50},\s*(?:but|it's)\b/i,
+    re: new RegExp(
+      `\\b(?:is|are|was|were)\\s+not\\s+(?:a|an|the)\\b[^.?!]{0,50},\\s*(?:but|it${AP}s)\\b`,
+      "i",
+    ),
     label: '"is not a X, but Y" pivot',
   },
   {
     re: /\bNot (?:a|an|the) \w+[.!]\s+(?:A|An|The) \w+/,
     label: '"Not a X. A Y." pivot',
+  },
+  {
+    // Repeated negation as a definition ("Not couples therapy. Not a
+    // journaling app.") — the article-free sibling of the pattern above, still
+    // live on /samefight.
+    re: /\bNot\s+\w[^.?!]{0,40}[.!]\s+Not\s+\w/,
+    label: '"Not X. Not Y." repeated negation',
   },
 ];
 
@@ -79,6 +111,15 @@ if (process.argv.includes("--self-test")) {
     "Not a chatbot. A coach that knows your name.",
     "not only a report, it is a plan",
     "This is not the end. It's the beginning.",
+    // The 2026-08-05 blind spot: the aren't/wasn't family, CURLY apostrophes,
+    // and a predicate with no article. All three appeared at once in the live
+    // Relatti H1, which is why it survived the first version of this gate.
+    "The best relationships aren’t lucky. They’re understood.",
+    "The best relationships aren't lucky. They're understood.",
+    "These aren't features. They're commitments.",
+    "It wasn’t a bug. It was a design choice.",
+    "Not couples therapy. Not a journaling app.",
+    "We aren't a vendor. We're a partner.",
   ];
   const mustSpare = [
     "This isn't financial advice.",
@@ -90,6 +131,16 @@ if (process.argv.includes("--self-test")) {
     "const isNotFound = status === 404;",
     "It is not available on the free plan.",
     "The trait is not fixed forever.",
+    // Loosening the pattern (no article, more copulas) must not start eating
+    // plain negations that happen to be followed by a sentence about the
+    // same subject.
+    "We aren’t able to process that right now. Please try again.",
+    "Your answers aren’t shared with your partner. Ever.",
+    "These aren't required. Skip any question you want.",
+    // Real line from first-message.ts that the loosened pattern wrongly caught:
+    // "That's" evaluates the whole preceding clause, it does not restate the
+    // negated subject.
+    "You have strong convictions and aren't easily swayed. That's a leadership asset.",
   ];
   const caught = (s) => TELLS.some((t) => t.re.test(s));
   const missed = mustCatch.filter((s) => !caught(s));
@@ -106,6 +157,11 @@ if (process.argv.includes("--self-test")) {
 }
 
 // ─── the scan ───
+/** The contents of every quoted string on a line, joined — the copy without the code. */
+function quoted(line) {
+  return (line.match(/"[^"]*"|`[^`]*`/g) || []).map((s) => s.slice(1, -1)).join(" ");
+}
+
 function* walk(dir) {
   for (const name of readdirSync(dir)) {
     const p = join(dir, name);
@@ -119,16 +175,46 @@ const violations = [];
 let scanned = 0;
 
 for (const root of ROOTS) {
+  // Skip roots that aren't present rather than crashing: the gate should still
+  // run in a partial checkout or when pointed at a subtree.
+  if (!existsSync(root)) continue;
   for (const file of walk(root)) {
     const rel = relative(".", file).replaceAll("\\", "/");
     if (rel === SELF) continue;
     if (!TEXT_EXT.test(rel)) continue;
     scanned++;
     const lines = readFileSync(file, "utf8").split("\n");
+    // Each line is checked alone, and ONLY if neither it nor the next line
+    // matches alone is the joined pair checked. A pivot is routinely split
+    // across two adjacent fields — the live Relatti H1 was
+    // `headlineTop: "…aren’t lucky."` / `headlineAccent: "They’re understood."`
+    // on consecutive lines — so a strictly per-line scan cannot see the shape
+    // at all, no matter how good the pattern is. The window is 2, not N: the
+    // gap classes forbid sentence punctuation, so a wider join would start
+    // stitching unrelated statements into false positives. The
+    // neither-matches-alone guard is what stops one pivot being reported twice
+    // (once on its own line, once via the preceding line's pair).
     lines.forEach((line, i) => {
-      const hit = TELLS.find((t) => t.re.test(line));
-      if (!hit) return;
-      violations.push(`${rel}:${i + 1} — ${hit.label}\n    ${line.trim().slice(0, 160)}`);
+      const single = TELLS.find((t) => t.re.test(line));
+      if (single) {
+        violations.push(`${rel}:${i + 1} — ${single.label}\n    ${line.trim().slice(0, 160)}`);
+        return;
+      }
+      const next = lines[i + 1];
+      if (next === undefined || TELLS.some((t) => t.re.test(next))) return;
+      // Two joins, because the halves can be separated by either whitespace
+      // (wrapped JSX text) or code (`", headlineAccent: "`). The literal join
+      // strips the syntax between adjacent string fields so the copy reads as
+      // one sentence, which is how a visitor reads it on the page.
+      const raw = `${line.trim()} ${next.trim()}`;
+      const literal = `${quoted(line)} ${quoted(next)}`.trim();
+      const joined = [raw, literal].find((c) => TELLS.some((t) => t.re.test(c)));
+      const pairHit = joined && TELLS.find((t) => t.re.test(joined));
+      if (pairHit) {
+        violations.push(
+          `${rel}:${i + 1} — ${pairHit.label}, split across lines ${i + 1}-${i + 2}\n    ${joined.slice(0, 160)}`,
+        );
+      }
     });
   }
 }
