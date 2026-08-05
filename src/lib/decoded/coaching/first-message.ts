@@ -50,7 +50,7 @@ export function generateFirstMessage(
     );
     parts.push('');
     parts.push(
-      `You came out as **${profile.archetype.sublabel || profile.archetype.base}**.${profile.archetype.tagline ? ' ' + profile.archetype.tagline + '.' : ''} This isn't a label — it's a lens. It tells me how you naturally approach problems, relationships, and growth.`
+      `You came out as **${profile.archetype.sublabel || profile.archetype.base}**.${profile.archetype.tagline ? ' ' + profile.archetype.tagline + '.' : ''} Think of it as a lens: it tells me how you naturally approach problems, relationships, and growth.`
     );
   } else {
     parts.push(

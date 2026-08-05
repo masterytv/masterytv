@@ -18,9 +18,10 @@
     "check:colors": "node scripts/check-brand-colors.mjs",
     "check:brand-tokens": "node scripts/check-brand-tokens.mjs",
     "check:brand-terms": "node scripts/check-banned-brand-terms.mjs",
+    "check:copy-tells": "node scripts/check-copy-tells.mjs",
     "check:ternaries": "node scripts/check-brand-ternaries.mjs",
     "check:tenancy": "node scripts/check-tenancy.mjs",
-    "gate": "npm run typecheck && npm run test && npm run safety && npm run isolation && npm run check:metadata && npm run check:colors && npm run check:brand-tokens && npm run check:brand-terms && npm run check:ternaries && npm run check:tenancy && npm run check:resolve && npm run snapshot:prompts"
+    "gate": "npm run typecheck && npm run test && npm run safety && npm run isolation && npm run check:metadata && npm run check:colors && npm run check:brand-tokens && npm run check:brand-terms && npm run check:copy-tells && npm run check:ternaries && npm run check:tenancy && npm run check:resolve && npm run snapshot:prompts"
   },
   "dependencies": {
     "@react-pdf/renderer": "^4.0.0",

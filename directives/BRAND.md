@@ -580,6 +580,34 @@ Before adding any icon, illustration, or decorative element:
 > [!IMPORTANT]
 > **This applies retroactively.** Any existing component using banned icons or the AI aesthetic must be updated in the next sprint that touches that component. Do not leave old violations in place and do not add new ones.
 
+### 14.6 Banned copy constructions — the written half of the AI aesthetic
+
+§14.1 bans the *visual* signature of AI-built products. This section bans the *prose* signature. A page can pass every color and icon rule and still read as machine-written, which costs exactly the same credibility.
+
+> [!CAUTION]
+> **🚫 THE NEGATION PIVOT — "It's not X, it's Y."** The single most recognizable LLM writing tell. Variants: "not just a test, it's a mirror" · "isn't a label, it's a lens" · "Not a chatbot. A coach." · "not only… but also…". One per page is a rhetorical device; three is a signature. The pre-rewrite MoneyTraits homepage used it roughly **fifteen times on one page** (founder call, 2026-08-05).
+>
+> **Gate-enforced:** `npm run gate` / CI run **`check:copy-tells`** (`scripts/check-copy-tells.mjs`), which flags the pivot in `src/` and `supabase/functions/`. It is **warn-only today** (reports, exits 0) while we learn its noise level on live edits; flip it to blocking with `--strict` in the package.json script once trusted. Self-test: `node scripts/check-copy-tells.mjs --self-test`.
+>
+> **The fix is not a synonym — cut the negative half and assert the positive.** "This isn't a label, it's a lens" → "Think of it as a lens." The negation was scaffolding; removing it loses nothing and shortens the line.
+>
+> **Plain negations are fine and are NOT flagged**, including the ones we are legally required to make: "This isn't financial advice", "We never link to your bank", "not therapy, and not financial, investment, or tax advice."
+
+**Not gate-enforced (regex can't separate these from legitimate code, comments, and identifiers) but equally banned in user-facing copy** — these are review concerns, and the `humanizer` skill catches them on a finishing pass:
+
+| Construction | Why | Instead |
+|:---|:---|:---|
+| **Em dashes** (—, –) | Second-most-cited tell; founder ask 2026-07-24 to remove every one | Period, comma, colon, or parentheses |
+| **Triads everywhere** ("faster, simpler, smarter") | Rule-of-three on every line becomes a drumbeat | Use once per page at most |
+| **Metronomic rhythm** (every sentence 15–20 words) | Uniform cadence reads as generated | Vary hard: a long sentence, then a three-word one |
+| **Matched-template cards** | Three cards, identical grammar, identical length | Break one on purpose |
+| **An epigram per section** | If every section ends on a mic drop, none land | Let some sections end flat |
+| **AI vocabulary** | unlock, unleash, elevate, empower, seamless, effortless, transform, journey, delve, leverage, harness, foster, navigate, robust, comprehensive, holistic, game-changer, revolutionary, landscape, ecosystem, tapestry, realm, cutting-edge, streamline | Plain verbs |
+| **Throat-clearing transitions** | "That being said", "It's worth noting", "At its core", "In today's landscape", "In conclusion" | Start where the tension is |
+| **Exclamation points** | Never earned in this brand's register | Remove |
+
+**Copy tooling:** the `copywriter` skill drafts against these rules (it also carries the positioning/awareness diagnosis that precedes any headline); the `humanizer` skill is the finishing pass. Draft with copywriter, polish with humanizer — never the reverse, because humanizer is tuned for encyclopedic neutrality and will flatten legitimate persuasion if it drafts.
+
 ---
 
 ## 15. Page Metadata & Link Previews (MANDATORY for every new page)

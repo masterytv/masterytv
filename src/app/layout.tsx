@@ -5,7 +5,7 @@ import { ThemeProviderWrapper } from "@/components/theme-provider-wrapper";
 export const metadata: Metadata = {
   title: "Mastery Coach — Coaching for High-Performers",
   description:
-    "Not a chatbot. A coach that knows your name. Mastery Coach remembers your people, your goals, your fears, and your wins — and uses 20+ proven frameworks to coach you in your own style.",
+    "A coach that knows your name. Mastery Coach remembers your people, your goals, your fears, and your wins, and uses 20+ proven frameworks to coach you in your own style.",
   keywords: [
     "personal coaching",
     "executive coaching",
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Mastery Coach — Coaching for High-Performers",
     description:
-      "Not a chatbot. A coach that knows your name, your goals, and your blind spots.",
+      "A coach that knows your name, your goals, and your blind spots.",
   },
   robots: {
     index: true,
