@@ -236,7 +236,7 @@ export default function TellLanding() {
             ],
             [
               "A corner coach, not a guru.",
-              "Whether you're playing offense or getting out of your own way, you get a scouting report and a coach in your corner. Not a diagnosis. Not a 12-week curriculum. Not a healing journey.",
+              "Whether you're playing offense or getting out of your own way, you get a scouting report and a coach in your corner. Plain language about how you actually play, and one thing worth trying this week.",
             ],
           ].map(([h, b]) => (
             <div key={h} className="rounded-2xl bg-surface-50 p-6">

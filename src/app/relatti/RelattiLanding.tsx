@@ -108,13 +108,45 @@ const STEPS = [
     icon: Send,
     step: "2",
     title: "Share it with your partner",
-    body: "Your result is the conversation starter. They take theirs, and now you’re linked, privately and by consent.",
+    // Was "Your result is the conversation starter. They take theirs, and now
+    // you're linked…" — the vaguest copy on the page, on the step that fails
+    // (assessment→partner-invite 0/3). It never said what the partner actually
+    // receives or how long their side takes, so the sender was asked to send
+    // something they couldn't picture. Both specifics below are the SHIPPED
+    // ones: the subject line comes from invite-email.ts (relatti.subject) and
+    // the 10 minutes is what that same email tells them. If either changes
+    // there, change it here.
+    body: "They get an email saying you invited them to understand your relationship together. Ten minutes on their side, then you’re linked, privately and by consent.",
   },
   {
     icon: Compass,
     step: "3",
     title: "Meet your coach",
     body: "Get your shared Relationship Blueprint and a coach that understands you both: where you naturally fit, and where you’ll grow.",
+  },
+];
+
+// The #1 objection for any couples product, and the one this page answered
+// nowhere while 100% of the funnel's drop-off sits at the partner step
+// (assessment→partner-invite 0/3, RELATTI_EXPERIENCE.md §5.1).
+//
+// Both answers are load-bearing product decisions, not reassurance. Solo users
+// get the FULL coach by design (§5.6: "never gate coaching or shame the gap"),
+// so "start anyway" is literally true. And what the partner opens is a
+// description of the SENDER, which is the entire reason the hero is
+// outcome-framed rather than pain-framed: the hero is the invite.
+//
+// Two questions, not three. The page already spends its rule-of-three budget on
+// the pillars and the steps (BRAND.md §14.6), and a third answer would dilute
+// the one that matters.
+const OBJECTIONS = [
+  {
+    q: "“My partner won’t do this.”",
+    a: "Start anyway. Your side works on its own: your profile, and a coach that can help with whatever conversation you’re dreading this week. Plenty of people arrive here as the only one willing to work on it, and we built for them. If your partner joins later, everything you’ve already done still counts.",
+  },
+  {
+    q: "“Won’t sending it feel like an accusation?”",
+    a: "What they open is your result: how you love, and what you need when things get hard. Most people send it because they want to be known, and that’s how it reads on the other end.",
   },
 ];
 
@@ -155,13 +187,20 @@ const DEFAULT_CONTENT: LandingContent = {
     "Ten minutes tells you how you attach and what you need to hear when things get hard. Send it to your partner. The coach starts knowing you both. Grounded in the research behind the most studied couples therapies.",
 };
 
-// The pre-2026-07 problem-first hero, preserved verbatim for /samefight.
+// The pre-2026-07 problem-first hero, kept for /samefight.
+//
+// The headline stays frozen: it is the distress-intent entry and converts that
+// avatar best. The SUBHEAD was unfrozen by the founder 2026-08-05: it opened on
+// a pair of bare negations ("Not couples therapy…") and carried an em dash,
+// making it one of the last two lines blocking check:copy-tells from --strict.
+// The therapy distancing survives as a plain negation, which §14.6 permits and
+// the gate spares by design.
 export const SAMEFIGHT_CONTENT: LandingContent = {
   eyebrow: "A coach that knows both of you",
   headlineTop: "Stop having the same fight.",
   headlineAccent: "Start having the last one.",
   subhead:
-    "Not couples therapy. Not a journaling app. A relationship coach grounded in each partner’s real psychology — that mediates issues, runs gentle check-ins, and helps the moment a fight starts.",
+    "Coaching, not therapy: a relationship coach grounded in each partner’s real psychology. It mediates issues, runs gentle check-ins, and helps the moment a fight starts.",
 };
 
 export default function RelattiLanding({
@@ -285,8 +324,15 @@ export default function RelattiLanding({
               </a>
             </div>
 
+            {/* BETA GATE (temporary): was "Free to start · about 10 minutes ·
+                no card required" while all three start CTAs route to /beta,
+                where BetaOffer gates submit on a valid invite code. Promising
+                "free to start" and then showing a code wall is a bait read, so
+                the requirement is named BEFORE the click. At public launch this
+                goes back to "Free to start · … · no card required" along with
+                the /beta → /assess switch below. */}
             <p className="mt-5 text-sm text-text-muted">
-              Free to start &middot; about 10 minutes &middot; no card required
+              Free during the beta &middot; about 10 minutes &middot; invite code required
             </p>
 
             <p className="mt-3 text-sm">
@@ -390,6 +436,26 @@ export default function RelattiLanding({
           ))}
         </div>
       </section>
+
+      {/* ── Objections, answered right before the last CTA. Plain prose, no
+             icon tiles: every other section on this page is a card grid, and
+             §14.6 asks that one template get broken on purpose. Skipped on
+             /samefight, which is frozen. ── */}
+      {!legacy && (
+        <section className="mx-auto max-w-3xl px-6 pb-16">
+          <h2 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">
+            The two questions we get most
+          </h2>
+          <div className="mt-8 space-y-8">
+            {OBJECTIONS.map((o) => (
+              <div key={o.q}>
+                <h3 className="font-display text-lg font-semibold">{o.q}</h3>
+                <p className="mt-2 leading-relaxed text-text-secondary">{o.a}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ── Differentiator strip ── */}
       <section className="mx-auto max-w-4xl px-6 pb-20">

@@ -55,7 +55,7 @@ WRITING RULES (apply to every voice):
  */
 const V2_DEFAULT_VOICE = `VOICE & TONE:
 - Write in second person ("You tend to…", "Your pattern shows…")
-- Be direct, warm, and specific. Not clinical. Not flattering. Not vague.
+- Be direct, warm, and specific. Avoid clinical distance, flattery, and vague generalities.
 - Think of this as the first session of a coaching relationship: you've just read their full file
 - Surprise them with insight they haven't heard before
 - Every paragraph should make them feel SEEN, not labeled`;
