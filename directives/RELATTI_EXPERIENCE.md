@@ -120,8 +120,10 @@ The coach and the copy should **adapt tone per person** (same content, tuned del
 Reviewed in journey order. Each surface: **current → target**, with the principle(s) it must satisfy.
 
 ### 5.1 Marketing / landing (`/`, `/couples`, `/engaged`)
-- **Current:** relationship-framed, decent.
 - **Target:** lead with the *relationship outcome* ("understand each other, fight less, feel closer — in 5 minutes a day"), not the quiz. The quiz is the *on-ramp*, named as a way to *be understood by your partner*, never as a personality test. One clear CTA → `/assess`.
+- **✅ Current: MET as of 2026-08-05 (live on prod).** The homepage had been violating this section at its single most important element — the hero CTA read "Take the free quiz" and the final CTA "Find your archetype", with Step 1 promising "your archetype". All three are gone. Hero is now **"Find out what you're like to love." / "Then hear what they'd say."**, both CTAs match it verbatim, and Step 1 is "Start with your side".
+- 🔑 **The reason the hero is framed this way, and the rule to keep:** *the hero IS the invite.* Whatever the homepage says becomes the implicit subject line when partner 1 forwards the link, and the forward is this funnel's only real failure point (signup→assessment 3/5, assessment→partner-invite **0/3**). A pain-framed hero ("Stop having the same fight") makes that forward read as an accusation about the relationship; an outcome-framed one makes it read as an invitation. **`og:title`/`og:description` therefore outrank the tab title on this page** — they are literally what the partner sees. The problem-first hero is preserved on `/samefight` for distress-intent traffic: positive on the homepage, pain there, routed by intent.
+- **Still unmet on this surface (copy audit 2026-08-05):** Step 2 ("Share it with your partner") is the vaguest copy on the page *and* the step that fails — it never says what the partner receives or how long their side takes. And the #1 objection for any couples product, **"my partner won't do this,"** is unanswered anywhere on the page.
 - Principles: 1, 2.
 
 ### 5.2 Signup (`LoginPanel.tsx`)
