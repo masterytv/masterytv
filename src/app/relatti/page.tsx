@@ -22,7 +22,7 @@ export const metadata: Metadata = relattiPageMetadata({
   canonical: "/",
   title: "Relatti — The Relationship Coach for Both of You",
   description:
-    "Ten minutes tells you how you attach and what you need to hear when things get hard. Send it to your partner, and the coach starts knowing you both. Grounded in Gottman's research and the attachment science behind EFT.",
+    "Ten minutes tells you how you attach and what you need to hear when things get hard. Send it to your partner, and the coach starts knowing you both. Grounded in the research behind the most studied couples therapies.",
   ogTitle: "Relatti — Find out what you're like to love.",
   ogDescription:
     "Ten minutes on how you love and what you need when things get hard. Then hear what your partner would say.",

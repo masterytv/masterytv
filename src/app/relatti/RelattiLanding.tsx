@@ -135,16 +135,24 @@ export interface LandingContent {
 // /samefight (SAMEFIGHT_CONTENT below) — positive here, pain there, routed by
 // intent.
 //
-// Names Gottman + EFT rather than "a century of relationship science": the
-// unnamed authority was repeated twice on the page and a named researcher is
-// more credible than a decade count. Matches the claims already made on
-// /science ("EFT and Gottman findings"). No em dashes (BRAND.md §14.6).
+// Credential line: plain English, no researcher names. "Gottman" and "EFT"
+// were tried first and cut (founder, 2026-08-05) — a named authority only buys
+// credibility when the reader recognizes the name, and EFT is jargon to a
+// layperson. The names live one click away on /science, which is the right
+// division of labor: hero states the promise, /science carries the citations.
+//
+// "Most studied" is deliberate, NOT "most successful": the latter is an
+// efficacy superlative (an outcome claim we would have to substantiate), while
+// the former is a defensible statement about volume of evidence. It is also the
+// stronger word — it says the same thing without asking to be believed.
+// Describes where the RESEARCH comes from, never what Relatti delivers; the
+// Terms disclaim therapy explicitly (RelattiTerms.tsx). No em dashes (§14.6).
 const DEFAULT_CONTENT: LandingContent = {
   eyebrow: "A coach for the two of you",
   headlineTop: "Find out what you’re like to love.",
   headlineAccent: "Then hear what they’d say.",
   subhead:
-    "Ten minutes tells you how you attach and what you need to hear when things get hard. Send it to your partner, and the coach starts knowing you both. Grounded in Gottman’s research and the attachment science behind EFT.",
+    "Ten minutes tells you how you attach and what you need to hear when things get hard. Send it to your partner, and the coach starts knowing you both. Grounded in the research behind the most studied couples therapies.",
 };
 
 // The pre-2026-07 problem-first hero, preserved verbatim for /samefight.
