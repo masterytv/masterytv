@@ -103,7 +103,7 @@ export const RELATIONSHIP_CHALLENGES: Record<string, RelationshipChallenges> = {
   },
   'Fearful-Avoidant': {
     intro:
-      'You crave deep connection and you protect it fiercely — reaching for closeness and bracing against it at the same time. That push-pull is exhausting, and it makes complete sense: somewhere you learned that the people you need most could also hurt you. Wanting both safety and distance isn’t a contradiction to fix — it’s a heart that’s trying to do both at once.',
+      'You crave deep connection and you protect it fiercely, reaching for closeness and bracing against it at the same time. That push-pull is exhausting, and it makes complete sense: somewhere you learned that the people you need most could also hurt you. Wanting both safety and distance is a heart trying to do both at once. There is nothing there to fix.',
     challenges: [
       {
         title: 'Hot-and-cold cycles',
@@ -116,7 +116,7 @@ export const RELATIONSHIP_CHALLENGES: Record<string, RelationshipChallenges> = {
     ],
     whatHelps: [
       'Name the push-pull out loud — "part of me wants to be close and part of me is scared." Saying it disarms it.',
-      'Go slow on purpose. Safety isn’t declared, it’s built — in small, repeated moments that prove it’s okay.',
+      'Go slow on purpose. Safety gets built in small, repeated moments that prove it’s okay.',
       'Take one tiny risk at a time — a feeling shared, a need named — and let it land before reaching for the next.',
     ],
   },
