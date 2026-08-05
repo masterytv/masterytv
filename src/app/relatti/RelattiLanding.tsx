@@ -41,7 +41,7 @@ const HERO_EXCHANGE: HeroChatMessage[] = [
   },
   {
     who: "coach",
-    text: "You two run on different clocks — you plan ahead to feel settled, Sam decides late to stay free. Neither of you is being careless.",
+    text: "You two run on different clocks. You plan ahead to feel settled, Sam decides late to stay free. Neither of you is being careless.",
   },
   { who: "person", text: "So what do I even say this time?" },
   {
@@ -51,7 +51,7 @@ const HERO_EXCHANGE: HeroChatMessage[] = [
   { who: "person", text: "That's actually it." },
   {
     who: "coach",
-    text: "Fifteen minutes Sunday, one shared list, phones down. I'll check in after — and none of this gets shown to Sam.",
+    text: "Fifteen minutes Sunday, one shared list, phones down. I'll check in after. None of this gets shown to Sam.",
   },
 ];
 
@@ -59,17 +59,17 @@ const PILLARS = [
   {
     icon: Users,
     title: "It knows both of you",
-    body: "Each partner takes a short, validated assessment. The coach holds both profiles at once — how you each attach, what closeness looks like to you, what you each need to feel loved.",
+    body: "Each partner takes a short, validated assessment. The coach holds both profiles at once: how you each attach, what closeness looks like to you, what you each need to feel loved.",
   },
   {
     icon: MessageCircle,
     title: "It turns friction into understanding",
-    body: "Every couple has friction — that’s two real people, not a flaw. When it flares, the coach translates instead of taking sides: “here’s what that might sound like from their side.” It coaches the relationship, not just whoever’s typing.",
+    body: "Every couple has friction. That’s two real people, not a flaw. When it flares, the coach translates instead of taking sides: “here’s what that might sound like from their side.” It coaches the relationship itself, whoever happens to be typing.",
   },
   {
     icon: Heart,
     title: "It’s there in the moments that matter",
-    body: "Before the big conversation. In the middle of the hard one. After the one that went sideways. Get a grounded next step — or have it read a hot message before you hit send.",
+    body: "Before the big conversation. In the middle of the hard one. After the one that went sideways. Get a grounded next step, or have it read a hot message before you hit send.",
   },
 ];
 
@@ -108,13 +108,13 @@ const STEPS = [
     icon: Send,
     step: "2",
     title: "Share it with your partner",
-    body: "Your result is the conversation starter. They take theirs, and now you’re linked — privately, and by consent.",
+    body: "Your result is the conversation starter. They take theirs, and now you’re linked, privately and by consent.",
   },
   {
     icon: Compass,
     step: "3",
     title: "Meet your coach",
-    body: "Get your shared Relationship Blueprint and a coach that understands you both — where you naturally fit, and where you’ll grow.",
+    body: "Get your shared Relationship Blueprint and a coach that understands you both: where you naturally fit, and where you’ll grow.",
   },
 ];
 
@@ -152,7 +152,7 @@ const DEFAULT_CONTENT: LandingContent = {
   headlineTop: "Find out what you’re like to love.",
   headlineAccent: "Then hear what they’d say.",
   subhead:
-    "Ten minutes tells you how you attach and what you need to hear when things get hard. Send it to your partner, and the coach starts knowing you both. Grounded in the research behind the most studied couples therapies.",
+    "Ten minutes tells you how you attach and what you need to hear when things get hard. Send it to your partner. The coach starts knowing you both. Grounded in the research behind the most studied couples therapies.",
 };
 
 // The pre-2026-07 problem-first hero, preserved verbatim for /samefight.
@@ -304,7 +304,7 @@ export default function RelattiLanding({
           <HeroChat
             messages={HERO_EXCHANGE}
             label="Sample exchange"
-            footnote="An illustration, not a real couple. In Relatti, each partner's conversations stay private — you share a blueprint, never a transcript."
+            footnote="An illustration, not a real couple. In Relatti, each partner's conversations stay private."
           />
         </div>
       </section>
@@ -315,26 +315,32 @@ export default function RelattiLanding({
           <h2 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">
             We believe more relationships can work.
           </h2>
+          {/* Was five anaphoric "When…" clauses of near-identical length,
+              closing on "One couple at a time" (humanizer pass 2026-08-05):
+              uniform parallel structure is one of the clearest machine-written
+              signatures, and the closer was a stock phrase. Now three sentences
+              of deliberately different lengths. The "hundred years of
+              relationship science" clause is gone rather than reworded: the
+              hero already carries the research credential, and after the
+              Gottman/EFT rewrite the two lines contradicted each other. */}
           <div className="mt-8 space-y-4 text-lg leading-relaxed text-text-secondary">
             <p>
-              When two people work at it <em>together</em> — not alone.
+              Two people working at it <em>together</em>, with a blueprint
+              instead of guesswork.
             </p>
-            <p>When there&rsquo;s a blueprint instead of guesswork.</p>
             <p>
-              When a hundred years of relationship science lives in your
-              pocket, not in a library.
+              Hard conversations that happen without a week of dread beforehand.
             </p>
-            <p>When the hard conversations happen without the dread.</p>
             <p>
-              When anger gives way to understanding — and understanding to
-              something stronger than what you started with.
+              Anger that turns into understanding often enough that you stop
+              bracing for it.
             </p>
           </div>
           <p
             className="mt-8 font-display text-xl font-semibold"
             style={{ color: "var(--color-primary)" }}
           >
-            That&rsquo;s the future we&rsquo;re building. One couple at a time.
+            That&rsquo;s what we&rsquo;re building.
           </p>
         </section>
       )}
@@ -390,12 +396,16 @@ export default function RelattiLanding({
         <div className="rounded-3xl bg-surface-50 px-8 py-12 text-center">
           <ShieldCheck className="mx-auto h-7 w-7" style={{ color: "var(--color-primary)" }} />
           <h2 className="mx-auto mt-4 max-w-2xl font-display text-2xl font-semibold leading-snug sm:text-3xl">
-            Your coach knows you&rsquo;re a couple — but never shares what you say
+            Your coach knows you&rsquo;re a couple, but never shares what you say
             with each other.
           </h2>
+          {/* "You share a blueprint, not a transcript" is the one tailing
+              negation kept on the page (humanizer pass 2026-08-05): it is the
+              differentiator stated at its sharpest, and the hero-chat footnote
+              that used to duplicate it was shortened so this owns it. */}
           <p className="mx-auto mt-4 max-w-xl text-text-secondary">
-            It understands both of you and what happens between you. But each
-            partner&rsquo;s conversations stay private — always. You share a
+            It understands both of you and what happens between you. Each
+            partner&rsquo;s conversations stay private, always. You share a
             blueprint, not a transcript. That&rsquo;s what makes it safe to be
             honest, and honesty is what makes it work.
           </p>
@@ -411,7 +421,7 @@ export default function RelattiLanding({
           </Link>
           {/* Quiet trust links — for the skeptical reader, deliberately understated */}
           <p className="mt-6 text-sm text-text-muted">
-            Built on published relationship research —{" "}
+            Built on published relationship research.{" "}
             <Link
               href="/science"
               className="underline underline-offset-2 transition-opacity hover:opacity-80"
