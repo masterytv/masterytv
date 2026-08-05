@@ -288,7 +288,10 @@ TONE: Warm, celebratory, but honest. Like a trusted coach reflecting on a journe
     scheduled_for: new Date().toISOString(), // Send ASAP
     context: {
       content: review.review_message,
-      subject: "Your Monthly Progress Review 📊",
+      // No emoji: BRAND.md §14.2 bans emoji as UI decoration, and the default
+      // for this message type in cron-process-scheduled is already the plain
+      // "Your Monthly Progress Review" — the two now match.
+      subject: "Your Monthly Progress Review",
       arc_phase: newArcPhase,
       next_month_focus: review.next_month_focus,
       brand,

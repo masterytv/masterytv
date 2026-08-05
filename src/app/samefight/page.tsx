@@ -14,8 +14,13 @@ import RelattiLanding, { SAMEFIGHT_CONTENT } from "../relatti/RelattiLanding";
 export const metadata: Metadata = relattiPageMetadata({
   canonical: "/samefight",
   title: "Relatti — The Coach That Knows Both of You",
+  // Was a pair of bare negations ("Not couples therapy…") plus an em dash.
+  // Repeated negation is the #1 LLM tell (BRAND.md §14.6) and this page
+  // was one of the last two lines still carrying it. Founder unfroze it
+  // 2026-08-05 so the gate could go blocking. The therapy distancing is kept
+  // as a plain negation, which §14.6 explicitly permits and the gate spares.
   description:
-    "Not couples therapy. Not a journaling app. A relationship coach grounded in both partners' psychology — it mediates real issues, runs gentle check-ins, and helps in the moment a fight is happening.",
+    "Coaching, not therapy: a relationship coach grounded in both partners' psychology. It mediates real issues, runs gentle check-ins, and helps in the moment a fight is happening.",
   ogTitle: "Relatti — Stop having the same fight",
   ogDescription:
     "A relationship coach that knows both of you. Built on validated psychology for each partner.",
