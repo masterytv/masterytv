@@ -97,8 +97,12 @@ const STEPS = [
   {
     icon: ClipboardList,
     step: "1",
-    title: "Take the free quiz",
-    body: "Find out what kind of partner you are — your archetype, in about 10 minutes.",
+    // Was "Take the free quiz" / "your archetype": RELATTI_EXPERIENCE.md §5.1
+    // requires the on-ramp be named as a way to be understood by your partner,
+    // NEVER as a personality test, and §0 makes the archetype an instrument
+    // rather than the destination.
+    title: "Start with your side",
+    body: "About ten minutes on how you love and what you need when things get hard.",
   },
   {
     icon: Send,
@@ -121,12 +125,26 @@ export interface LandingContent {
   subhead: string;
 }
 
+// Hero: option B of the 2026-08-05 copy audit (founder pick). The headline IS
+// the invite — whatever this says becomes the implicit subject line when one
+// partner forwards the link, and the funnel's only real failure point is the
+// dyad step (signup→assessment 3/5, assessment→partner-invite 0/3, per
+// RELATTI_EXPERIENCE.md). A pain-framed hero ("stop having the same fight")
+// makes that forward read as an accusation; this one makes it read as a gift.
+// The problem-first hero is preserved for distress-intent traffic on
+// /samefight (SAMEFIGHT_CONTENT below) — positive here, pain there, routed by
+// intent.
+//
+// Names Gottman + EFT rather than "a century of relationship science": the
+// unnamed authority was repeated twice on the page and a named researcher is
+// more credible than a decade count. Matches the claims already made on
+// /science ("EFT and Gottman findings"). No em dashes (BRAND.md §14.6).
 const DEFAULT_CONTENT: LandingContent = {
   eyebrow: "A coach for the two of you",
-  headlineTop: "The best relationships aren’t lucky.",
-  headlineAccent: "They’re understood.",
+  headlineTop: "Find out what you’re like to love.",
+  headlineAccent: "Then hear what they’d say.",
   subhead:
-    "Relatti is a relationship coach for both of you — built on a century of relationship science and each partner’s real psychology. Understand how you each love, bond, and handle hard moments. Then put that understanding to work.",
+    "Ten minutes tells you how you attach and what you need to hear when things get hard. Send it to your partner, and the coach starts knowing you both. Grounded in Gottman’s research and the attachment science behind EFT.",
 };
 
 // The pre-2026-07 problem-first hero, preserved verbatim for /samefight.
@@ -248,7 +266,7 @@ export default function RelattiLanding({
                 className="group inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-base font-semibold text-text-inverse shadow-card transition-transform hover:-translate-y-0.5"
                 style={{ background: "var(--color-primary-container)" }}
               >
-                {authed ? "Pick up where you left off" : "Take the free quiz"}
+                {authed ? "Pick up where you left off" : "Find out what you’re like to love"}
                 <ArrowRight className="h-4.5 w-4.5 transition-transform group-hover:translate-x-0.5" />
               </Link>
               <a
@@ -340,7 +358,7 @@ export default function RelattiLanding({
           How Relatti works
         </h2>
         <p className="mx-auto mt-3 max-w-lg text-center text-text-secondary">
-          The quiz is the invite. Sharing your result is how your partner joins.
+          Your result is the invite. Sharing it is how your partner joins.
         </p>
 
         <div className="mt-12 grid gap-8 sm:grid-cols-3">
@@ -378,7 +396,9 @@ export default function RelattiLanding({
             className="mt-8 inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-base font-semibold text-text-inverse transition-transform hover:-translate-y-0.5"
             style={{ background: "var(--color-primary-container)" }}
           >
-            {authed ? "Open your dashboard" : "Find your archetype"}
+            {/* Matches the hero CTA verbatim: two different labels for the same
+                action was a decision tax for no gain (copy audit 2026-08-05). */}
+            {authed ? "Open your dashboard" : "Find out what you’re like to love"}
             <ArrowRight className="h-4.5 w-4.5" />
           </Link>
           {/* Quiet trust links — for the skeptical reader, deliberately understated */}
