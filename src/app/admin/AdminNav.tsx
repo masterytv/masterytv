@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart2, Users, ArrowLeft, Fingerprint, Shield, AlertTriangle, Layers, Gauge } from "lucide-react";
+import { BarChart2, Users, ArrowLeft, Fingerprint, Shield, AlertTriangle, Layers, Gauge, Aperture } from "lucide-react";
 
 interface AdminNavProps {
   role: "admin" | "superadmin";
@@ -32,6 +32,12 @@ export default function AdminNav({ role, email }: AdminNavProps) {
     {
       label: "Relatti",
       links: [{ href: "/admin/beta", label: "Beta Cockpit", icon: Gauge }],
+    },
+    // Sprint 0 kill gate. No brand yet, on purpose: the vertical does not exist
+    // until the founder's go/no-go on I1 (INTEGRATION_SPRINT.md §3).
+    {
+      label: "Integration · Sprint 0",
+      links: [{ href: "/admin/integration", label: "The Company bench", icon: Aperture }],
     },
   ];
 
