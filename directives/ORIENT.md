@@ -59,6 +59,7 @@ Read **only** what the task needs. (⭐ = current source of truth.)
 | What to build next / sprint | ⭐ [RELATIONSHIP_SPRINT.md](RELATIONSHIP_SPRINT.md) + [PLATFORM_SPRINT.md](PLATFORM_SPRINT.md) |
 | The couples *experience* (report/coach/ritual) | ⭐ [RELATTI_EXPERIENCE.md](RELATTI_EXPERIENCE.md) |
 | Launching a NEW vertical | ⭐ [VERTICAL_PLAYBOOK.md](VERTICAL_PLAYBOOK.md) (research experience FIRST) |
+| **Integration coaching** (proposed Stage 3 — transformational/anomalous-experience) | ⭐ [INTEGRATION_SPRINT.md](INTEGRATION_SPRINT.md) (build order, Gate 3 pending) → [INTEGRATION_EXPERIENCE.md](INTEGRATION_EXPERIENCE.md) (✅ Gate 0.5 approved) → [INTEGRATION_DISCOVERY.md](INTEGRATION_DISCOVERY.md) (research + risk). Rides the Project Profound corpus (separate Supabase project). |
 | **Any UI/CSS/.tsx work** | ⭐ [BRAND.md](BRAND.md) — **mandatory before touching styles** (§14 bans hardcoded hex, emoji, Sparkles icon) |
 | Coach behavior / safety | [COACHING_BRAIN.md](COACHING_BRAIN.md), [COACHING_GUARDRAILS.md](COACHING_GUARDRAILS.md) |
 | Assessment internals | [DECODED_SCHEMA.md](DECODED_SCHEMA.md), [DECODED_SCORING.md](DECODED_SCORING.md), [DECODED_ARCHETYPES.md](DECODED_ARCHETYPES.md), [DECODED_REPORT_STRUCTURE.md](DECODED_REPORT_STRUCTURE.md), [DECODED_CARD_DESIGN_SPEC.md](DECODED_CARD_DESIGN_SPEC.md) |
