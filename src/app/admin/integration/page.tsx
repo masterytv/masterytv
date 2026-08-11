@@ -104,13 +104,17 @@ export default function IntegrationBenchPage() {
   return (
     <div className="ad-content">
       <div className="ad-content__inner">
-        <h1 className="ad-page-title">The Company</h1>
+        <h1 className="ad-page-title">Who else describes this</h1>
 
         <p style={{ ...styles.note, marginTop: "-1rem", marginBottom: "1.75rem" }}>
-          Paste an account and it returns matched excerpts from the Project Profound corpus,
-          grouped by the part of the account each one answers. Retrieval only, so nothing here is
-          written by a model. Nothing typed on this page is stored.
+          Paste what one person wrote about their own experience. This returns excerpts from other
+          people&apos;s accounts in the Project Profound corpus, grouped by which part of their
+          account each excerpt answers. Retrieval only, so a model writes none of it, and nothing
+          typed on this page is stored. In the docs this surface is called The Company
+          (EXPERIENCE §5.4).
         </p>
+
+        <p style={styles.claimLabel}>Their account, in their own words</p>
 
         <textarea
           value={account}
@@ -130,7 +134,7 @@ export default function IntegrationBenchPage() {
               cursor: loading || !account.trim() ? "default" : "pointer",
             }}
           >
-            {loading ? "Searching the corpus" : "Find the company"}
+            {loading ? "Searching the corpus" : "Find matching accounts"}
           </button>
           <span style={styles.note}>{account.trim().length} characters</span>
         </div>
@@ -148,7 +152,7 @@ export default function IntegrationBenchPage() {
 
             {claimsWithMatches.map((claim) => (
               <section key={claim.index} style={styles.claimBlock}>
-                <p style={styles.claimLabel}>Matched on what you said here</p>
+                <p style={styles.claimLabel}>Matched on this part of their account</p>
                 <blockquote style={styles.claimText}>{claim.text.replace(/\s+/g, " ").trim()}</blockquote>
 
                 {reveal.accounts
@@ -335,7 +339,9 @@ const styles: Record<string, React.CSSProperties> = {
     margin: 0,
     fontSize: "0.95rem",
     lineHeight: 1.75,
-    color: "var(--text-body)",
+    // The highest-contrast text on the page, deliberately. Somebody else's
+    // account is the whole point of the surface, so it outranks the chrome.
+    color: "var(--text-heading)",
   },
   attribution: { margin: "0.9rem 0 0 0", fontSize: "0.75rem", color: "var(--text-hint)" },
   link: { color: "var(--color-primary)", textDecoration: "none" },
