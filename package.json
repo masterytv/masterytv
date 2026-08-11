@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "check:deno": "deno check --node-modules-dir=none \"supabase/functions/_shared/**/*.ts\" \"scripts/coach-lab/*.ts\"",
     "test": "vitest run",
     "test:watch": "vitest",
     "safety": "node scripts/coach-lab/safety-battery.mjs",
@@ -24,7 +25,7 @@
     "check:deny-list": "node scripts/check-integration-deny-list.mjs --self-test && node scripts/check-integration-deny-list.mjs",
     "check:ternaries": "node scripts/check-brand-ternaries.mjs",
     "check:tenancy": "node scripts/check-tenancy.mjs",
-    "gate": "npm run typecheck && npm run test && npm run safety && npm run isolation && npm run check:metadata && npm run check:colors && npm run check:brand-tokens && npm run check:brand-terms && npm run check:copy-tells && npm run check:deny-list && npm run check:ternaries && npm run check:tenancy && npm run check:resolve && npm run check:provenance && npm run snapshot:prompts"
+    "gate": "npm run typecheck && npm run check:deno && npm run test && npm run safety && npm run isolation && npm run check:metadata && npm run check:colors && npm run check:brand-tokens && npm run check:brand-terms && npm run check:copy-tells && npm run check:deny-list && npm run check:ternaries && npm run check:tenancy && npm run check:resolve && npm run check:provenance && npm run snapshot:prompts"
   },
   "dependencies": {
     "@react-pdf/renderer": "^4.0.0",

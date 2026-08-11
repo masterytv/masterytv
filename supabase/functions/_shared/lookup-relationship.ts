@@ -49,10 +49,13 @@ export async function handleLookupRelationship(
   // and the OTHER person's name/email matches the search
   const { data: invites } = await supabase
     .from("decoded_invites")
+    // ⚠️ ONE string literal, deliberately. supabase-js parses the select list
+    // at the TYPE level, and a `+` concatenation hands it `string` instead of a
+    // literal — every row then resolves to `GenericStringError` and the 26
+    // errors propagate to every file that imports this one, which is what kept
+    // `deno check` out of the gate. Same characters, same query.
     .select(
-      "id, inviter_id, recipient_id, inviter_name, recipient_email, " +
-      "compatibility_report_inviter, compatibility_report_recipient, compatibility_report, " +
-      "inviter_report_id, recipient_report_id, share_with_human, status"
+      "id, inviter_id, recipient_id, inviter_name, recipient_email, compatibility_report_inviter, compatibility_report_recipient, compatibility_report, inviter_report_id, recipient_report_id, share_with_human, status",
     )
     .in("status", ["consented", "connected"])
     .or(`inviter_id.eq.${userId},recipient_id.eq.${userId}`);
