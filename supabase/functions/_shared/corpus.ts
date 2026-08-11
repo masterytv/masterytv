@@ -216,7 +216,15 @@ const USAGE_RULE =
   "found for — name that part in their words if you name anything, and never " +
   "invent a resemblance the retrieval did not find. " +
   "Text marked corpus_analysis is an analyst's note about an account, not the " +
-  "person's own words — never present it as a quote.";
+  "person's own words — never present it as a quote. " +
+  // Founder decision, August 11: this lands in a chat turn, on a phone, and
+  // one day in a text message or a Telegram thread. Three accounts read as
+  // company; nine read as a search result, and a wall of quotes on a small
+  // screen is the same "you are a case being processed" feeling the whole
+  // surface exists to defeat.
+  "Show no more than three of these, whichever answer the person best. Keep " +
+  "the excerpts short and put each one's link next to it, so someone reading " +
+  "on a phone gets company rather than a page of search results.";
 
 // ─── THE PROVENANCE CONTRACT ──────────────────────────────────────────────
 
@@ -1107,11 +1115,20 @@ export const FIND_SIMILAR_ACCOUNTS_TOOL = {
   name: "find_similar_accounts",
   description:
     "Find real accounts from other people whose experience matches what this person has " +
-    "described, and return their own words. Use it once the person has told you what " +
-    "happened, when showing them they are not the only one would land better than anything " +
-    "you could say. Returns attributed excerpts and, optionally, what changed for those " +
-    "people afterwards. It reports what others said; it never establishes what anything was " +
-    "or what caused it.",
+    "described, and return their own words. Returns attributed excerpts and, optionally, " +
+    "what changed for those people afterwards. It reports what others said; it never " +
+    "establishes what anything was or what caused it.\n\n" +
+    // Founder decision, August 11: when NOT to call this is the whole skill.
+    // Reaching for it the moment somebody describes what happened turns
+    // listening into retrieval, and the first thing this population needs is
+    // to be heard by someone who does not immediately produce evidence.
+    "WHEN TO USE IT. Not on the turn their account arrives, and not every time they add " +
+    "another piece of it — listen first, and keep listening. Use it when they say, in " +
+    "whatever words, that they are alone in this, that nobody else could have been through " +
+    "it, that they wonder whether anyone has, or that they cannot say it out loud to " +
+    "anyone. That is the moment other people's words do something yours cannot. If you " +
+    "are not sure they feel that way, ask them rather than guessing, and wait. Once per " +
+    "conversation is usually right; a second call needs a new thing they have told you.",
   input_schema: {
     type: "object" as const,
     properties: {
@@ -1124,7 +1141,7 @@ export const FIND_SIMILAR_ACCOUNTS_TOOL = {
       },
       limit: {
         type: "number",
-        description: "How many accounts to return. Optional; 5 by default, 10 at most.",
+        description: "How many accounts to return. Optional; 3 by default, and 3 is the most.",
       },
       include_what_happened_next: {
         type: "boolean",
@@ -1138,8 +1155,14 @@ export const FIND_SIMILAR_ACCOUNTS_TOOL = {
   },
 };
 
-/** Fewer than the reveal surface shows — this result rides inside a chat turn. */
-const TOOL_DEFAULT_ACCOUNTS = 5;
+/**
+ * Far fewer than the bench shows — this result rides inside a chat turn, on a
+ * phone, and eventually in an SMS or a Telegram message. Three is the founder's
+ * ceiling (August 11) and it is a ceiling rather than a default, so a model that
+ * asks for nine still gets three.
+ */
+const TOOL_DEFAULT_ACCOUNTS = 3;
+const TOOL_MAX_ACCOUNTS = 3;
 
 /**
  * Coach-facing handler.
@@ -1169,7 +1192,7 @@ export async function handleFindSimilarAccounts(
   }
 
   const result = await findSimilarAccounts(description, {
-    limit: input.limit ?? TOOL_DEFAULT_ACCOUNTS,
+    limit: Math.min(input.limit ?? TOOL_DEFAULT_ACCOUNTS, TOOL_MAX_ACCOUNTS),
     withTransformation: input.include_what_happened_next === true,
   });
 

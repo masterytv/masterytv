@@ -223,6 +223,16 @@ Rules:
 - **Never build evidence-collection features.** On von Lucadou's model, attention and attempted verification prolong the phenomena; clinically they entrench the person in the investigative frame instead of the meaning frame. The corpus is for company, never for proof.
 - The second move — *what happened next* — is the part nobody else can build. Every corpus record carries a 10-domain transformation profile with direction indicators (up / down / mixed / shifted) and an `integration_notes` field. That supports "people whose Relationships domain went down while Purpose went up described this, three years on," which is exactly the timeline honesty §3.10 requires.
 
+> **Amendment, August 11 2026 (founder). The Company is a chat turn, not a page — and its hardest requirement is silence.**
+>
+> The block above still describes what the payoff *says*. It over-describes the vessel: nine excerpts and a headline count is a reveal screen, and this arrives in a conversation, on a phone, and later over SMS or Telegram. **Three accounts at most, short, each with its link.**
+>
+> The timing is now the load-bearing part. **Never on the turn the account arrives** — producing seven strangers the moment somebody finishes telling you the strangest hour of their life is solving instead of listening, and it is the failure this surface is likeliest to ship. **Not on every message that touches the experience** either. It fires on a signal: they are alone in it, nobody else can have been through it, they wonder whether anyone has, there is no one they can say it to. If the coach cannot tell, it asks and waits.
+>
+> **This is either well integrated or left out.** Stated as a removal condition, not a preference — a model that reaches for the corpus early is worse than a model with no corpus at all, because it converts the one surface that proves the person is not alone into evidence that they are being processed. Build order: invocation policy in the tool description, rendering policy in `USAGE_RULE`, a hard clamp at three, and an acceptance test at [INTEGRATION_SPRINT.md](INTEGRATION_SPRINT.md) §3 / I4.4.
+>
+> Also decided: **the person's account is stored, and the coach remembers it.** It is their story, and a product that makes them tell it twice has failed at the thing it exists for. What may *not* be stored is anything the coach concludes from it — that distinction is I3.1's, and the consent screen (I5.5) precedes the first write.
+
 ### 5.5 The Footing check — the instrument
 
 **Current:** `getBattery(programSlug)` → 66 items (relationship) or 16 (money), presented as an assessment, administered first.
