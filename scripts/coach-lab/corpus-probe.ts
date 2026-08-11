@@ -158,6 +158,11 @@ check(
     `${widened < result.accounts.length ? " — the rest had no reachable boundary" : ""}`,
 );
 
+console.log(
+  `  english only: ${result.excluded_non_english} non-English account(s) dropped before ranking` +
+    " (Portuguese + French channels, machine-translated subtitles)",
+);
+
 const sims = result.accounts.map((a) => a.similarity);
 if (sims.length) {
   console.log(
@@ -195,14 +200,14 @@ for (const claim of result.claims) {
   }
 }
 
-section("5. Founder's eyes only — NOT shown to a tester");
+section("5. Founder's eyes only — NOT sent to a tester's coach at all");
 
-// Probe finding 3 (August 11): the `integration_notes` across nine accounts
-// were formulaic — "X seems to have integrated their experiences into their
-// life" — and reading nine in a row makes the page feel machine-made, which is
-// the precise impression The Company exists to defeat. It is analyst prose, not
-// the experiencer speaking, so it stays out of §4 above and out of the reveal.
-// It is retrieval signal and a founder's read, nothing else.
+// Founder decision, August 11: analyst prose (`corpus_analysis`) reaches
+// tom@masterytv.com and nobody else. `projectForCoach` omits it for every other
+// viewer, so the model cannot relay what it was never given. It read as
+// formulaic in bulk — "X seems to have integrated their experiences into their
+// life" — which is the machine-made impression The Company exists to defeat.
+// Here it is retrieval signal and a founder's read, nothing else.
 for (const a of result.accounts) {
   const notes = a.transformation?.integration_notes;
   if (notes) console.log(`\n  [${a.source.video_id}] ${notes.text}`);

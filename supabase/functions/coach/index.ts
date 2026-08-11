@@ -609,7 +609,10 @@ Deno.serve(async (req: Request) => {
                   });
                 }
               } else if (pendingToolUse.name === "find_similar_accounts" && corpusBridgeOn) {
-                const result = await handleFindSimilarAccounts(toolInput);
+                // The email comes from the verified JWT, never from the model:
+                // it gates whether Project Profound's ANALYST prose is in the
+                // payload at all (founder only — INTEGRATION_SPRINT.md I1).
+                const result = await handleFindSimilarAccounts(toolInput, { email: user.email });
                 toolResult = JSON.stringify(result);
                 if (debugMode) {
                   toolCallsDebug.push({

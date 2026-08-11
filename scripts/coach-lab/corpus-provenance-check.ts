@@ -36,6 +36,9 @@ import {
   type AccountClaim,
   type AnalysisRow,
   assertClaimsAreUserText,
+  filterEnglishOnly,
+  isFounder,
+  projectForCoach,
   assertDistinctFromEngine,
   assertNoAuthoredText,
   buildResult,
@@ -381,7 +384,63 @@ ok(
     assembled.accounts_with_transformation === 1,
 );
 
-// ─── 5. authored text cannot get through ──────────────────────────────────
+// ─── 5. English only, and analyst prose is founder-only ───────────────────
+
+const PT_CHANNEL = "AFINAL, O QUE SOMOS NÓS? / AFTER ALL, WHAT ARE WE?";
+const CHANNELS = new Map<string, string>([
+  ["AAA", "Life After Life NDE"],
+  ["BBB", "IANDS"],
+  ["DDD", "Heaven Awaits"],
+  ["SSS", PT_CHANNEL],
+  ["TTT", " confessions emi-nde "], // whitespace and casing must not matter
+  ["CCC", "Beyond The Light"],
+]);
+
+const english = filterEnglishOnly(PER_CLAIM, CHANNELS);
+const keptIds = new Set(english.perClaim.flat().map((r) => r.metadata?.video_id));
+
+ok(
+  "drops the Portuguese and French channels' accounts",
+  !keptIds.has("SSS") && !keptIds.has("TTT"),
+  `kept ${JSON.stringify([...keptIds])}`,
+);
+ok("keeps every English account", keptIds.has("AAA") && keptIds.has("BBB") && keptIds.has("DDD"));
+ok("counts what it dropped rather than dropping it silently", english.excluded === 2);
+ok(
+  "an account whose channel cannot be named is not vouched for",
+  !new Set(
+    filterEnglishOnly([[chunk(9, "ZZZ", "an account with no channel row", 0.8)]], CHANNELS)
+      .perClaim.flat().map((r) => r.metadata?.video_id),
+  ).has("ZZZ"),
+);
+ok(
+  "a failed channel lookup degrades the filter instead of emptying the reveal",
+  filterEnglishOnly(PER_CLAIM, new Map()).perClaim.flat().length === PER_CLAIM.flat().length,
+);
+
+const testerView = JSON.stringify(projectForCoach(assembled, { email: "tester@example.com" }));
+const founderView = JSON.stringify(projectForCoach(assembled, { email: " TOM@MasteryTV.com " }));
+
+ok(
+  "a tester's coach is never handed Project Profound's analyst prose",
+  !testerView.includes("integration_notes") && !testerView.includes(NOTES_B) &&
+    !testerView.includes(EVIDENCE_B),
+);
+ok(
+  "the founder's own view keeps it — case and whitespace tolerant",
+  founderView.includes(NOTES_B),
+);
+ok(
+  "an anonymous caller is a tester, not the founder",
+  !JSON.stringify(projectForCoach(assembled)).includes(NOTES_B) && !isFounder(null) &&
+    !isFounder("tom@masterytv.com.attacker.example"),
+);
+ok(
+  "both views still carry the experiencer's own key_quote",
+  testerView.includes(QUOTE_B) && founderView.includes(QUOTE_B),
+);
+
+// ─── 6. authored text cannot get through ──────────────────────────────────
 
 /** The assertion must THROW — a violation that can be handled is not a contract. */
 function rejects(name: string, mutate: (r: FindSimilarAccountsResult) => unknown): void {
@@ -460,7 +519,7 @@ throws(
   "every claim is retrieved for",
 );
 
-// ─── 6. the payload cannot be edited after the fact ───────────────────────
+// ─── 7. the payload cannot be edited after the fact ───────────────────────
 
 const before = assembled.accounts[0].excerpt.text;
 let frozen = false;
@@ -474,7 +533,7 @@ ok(
   frozen && assembled.accounts[0].excerpt.text === before,
 );
 
-// ─── 7. the corpus key is never the engine's ──────────────────────────────
+// ─── 8. the corpus key is never the engine's ──────────────────────────────
 
 Deno.env.set("SUPABASE_URL", "https://lwmadssysqcwbsoiaokc.supabase.co");
 Deno.env.set("SUPABASE_SERVICE_ROLE_KEY", "engine-service-key");

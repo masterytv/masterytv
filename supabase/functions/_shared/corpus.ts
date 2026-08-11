@@ -150,6 +150,45 @@ const MAX_EXPANSION_CHARS = 400;
 const MIN_EXCERPT_CHARS = 120;
 
 /**
+ * English only, for now (founder decision, August 11 2026).
+ *
+ * These channels publish in Portuguese and French with machine-translated
+ * subtitles. The transcripts come back in English, so no language check on the
+ * text can catch them — but they read as translated rather than as somebody
+ * talking, and the first probe put one at the top of the reveal. In a surface
+ * whose entire job is *"these are real people and one of them is you"*, that is
+ * the wrong first impression.
+ *
+ * Derived from the live corpus, not guessed — 2 of 66 channels, 646 of 10,957
+ * videos. ⚠️ Re-derive if Project Profound adds channels:
+ *
+ *   select "channelName", count(*),
+ *          count(*) filter (where title ilike '%EQM%' or title ilike '%experiência%'
+ *            or title ilike '%expérience%' or title ilike '%experiencia%') as flagged
+ *   from nde_vids group by 1 having count(*) filter (where …) > 0;
+ */
+const NON_ENGLISH_CHANNELS: readonly string[] = [
+  "AFINAL, O QUE SOMOS NÓS? / AFTER ALL, WHAT ARE WE?",
+  "Confessions EMI-NDE",
+];
+
+/**
+ * Who may see Project Profound's ANALYST prose (`corpus_analysis`).
+ *
+ * Founder decision, August 11 2026: nobody but the founder, and that includes
+ * the coach — the notes read as formulaic in bulk (*"X seems to have integrated
+ * their experiences into their life"*), which is the machine-made impression
+ * The Company exists to defeat. The provenance tag stops it being rendered as a
+ * quote; this stops it reaching a tester at all. It stays in the payload for
+ * the founder's own bench and as retrieval signal.
+ */
+const FOUNDER_EMAIL = "tom@masterytv.com";
+
+export function isFounder(email: string | null | undefined): boolean {
+  return (email ?? "").trim().toLowerCase() === FOUNDER_EMAIL;
+}
+
+/**
  * Below this, the match is topical rather than phenomenological, and a bad
  * match is worse than no match — this population has been fobbed off with
  * generic reassurance by everyone else already. Tune during I1.5 against the
@@ -301,6 +340,12 @@ export interface FindSimilarAccountsResult {
   /** Per-claim counts, so a surface can say what matched the specific thing. */
   readonly claim_matches: readonly ClaimMatchTally[];
   readonly accounts: readonly MatchedAccount[];
+  /**
+   * Accounts dropped for being non-English before any of this was ranked.
+   * Reported rather than silent — a filter nobody can see is a filter nobody
+   * remembers is on.
+   */
+  readonly excluded_non_english: number;
   /** Empty unless transformation profiles were requested and found. */
   readonly domain_directions: readonly DomainDirectionTally[];
   /** How many of `accounts` carry a transformation profile — the denominator. */
@@ -511,9 +556,13 @@ export function expandToSentence(transcript: string, chunk: string): string | nu
   const at = transcript.indexOf(chunk);
   if (at < 0) return null;
 
-  let start = sentenceStartBefore(transcript, at);
-  let end = sentenceEndAfter(transcript, at + chunk.length);
-  if (start === null || end === null) return null;
+  const firstStart = sentenceStartBefore(transcript, at);
+  const firstEnd = sentenceEndAfter(transcript, at + chunk.length);
+  if (firstStart === null || firstEnd === null) return null;
+  // Annotated: without this the growth loop below infers `start`/`end` from
+  // assignments that read them, and the inference goes circular.
+  let start: number = firstStart;
+  let end: number = firstEnd;
 
   // Grow a sentence at a time — forwards first, so the excerpt keeps reading
   // from where the match was — until it is long enough to sound like speech.
@@ -672,7 +721,12 @@ export async function findSimilarAccounts(
     claims.map((_, i) => matchChunks(supabase, embeddings[i], limit * PER_CLAIM_OVERFETCH)),
   );
 
-  const picked = mergeClaimMatches(claims, perClaim, limit);
+  // English only, before anything is ranked — so the counts, the reveal and the
+  // "what happened next" tallies all describe the same set of accounts.
+  const channels = await loadChannels(supabase, distinctVideoIds(perClaim));
+  const english = filterEnglishOnly(perClaim, channels);
+
+  const picked = mergeClaimMatches(claims, english.perClaim, limit);
   const videoIds = picked.accounts.map((a) => a.videoId);
   const [analyses, transcripts] = await Promise.all([
     options.withTransformation
@@ -681,7 +735,72 @@ export async function findSimilarAccounts(
     loadTranscripts(supabase, videoIds),
   ]);
 
-  return buildResult({ picked, analyses, transcripts, startedAtMs: started });
+  return buildResult({
+    picked,
+    analyses,
+    transcripts,
+    excludedNonEnglish: english.excluded,
+    startedAtMs: started,
+  });
+}
+
+/** Every distinct account id across the claim windows. */
+export function distinctVideoIds(perClaim: readonly ChunkRow[][]): string[] {
+  const ids = new Set<string>();
+  for (const rows of perClaim) {
+    for (const row of rows) if (row.metadata?.video_id) ids.add(row.metadata.video_id);
+  }
+  return [...ids];
+}
+
+/**
+ * Drop the non-English channels' accounts.
+ *
+ * Fails OPEN on a lookup failure (an empty channel map keeps everything) and
+ * CLOSED on a row we did look up and could not place: a hiccup on the corpus
+ * project should degrade the filter, not empty the reveal, but an account whose
+ * channel we cannot name is an account we cannot vouch for.
+ */
+export function filterEnglishOnly(
+  perClaim: readonly ChunkRow[][],
+  channels: Map<string, string>,
+): { perClaim: ChunkRow[][]; excluded: number } {
+  if (!channels.size) return { perClaim: perClaim.map((rows) => [...rows]), excluded: 0 };
+
+  const banned = new Set(NON_ENGLISH_CHANNELS.map((c) => c.trim().toLowerCase()));
+  const dropped = new Set<string>();
+  const kept = perClaim.map((rows) =>
+    rows.filter((row) => {
+      const videoId = row.metadata?.video_id;
+      if (!videoId) return false;
+      const channel = channels.get(videoId);
+      if (channel === undefined || banned.has(channel.trim().toLowerCase())) {
+        dropped.add(videoId);
+        return false;
+      }
+      return true;
+    })
+  );
+  return { perClaim: kept, excluded: dropped.size };
+}
+
+async function loadChannels(
+  supabase: SupabaseClient,
+  videoIds: string[],
+): Promise<Map<string, string>> {
+  if (!videoIds.length) return new Map();
+  const { data, error } = await supabase
+    .from("nde_vids")
+    .select("videoId,channelName")
+    .in("videoId", videoIds)
+    .overrideTypes<{ videoId: string; channelName: string | null }[]>();
+  if (error) {
+    console.error("[corpus] channel load failed — language filter degraded:", error.message);
+    return new Map();
+  }
+  const byId = new Map<string, string>();
+  for (const row of data ?? []) if (row.channelName) byId.set(row.videoId, row.channelName);
+  return byId;
 }
 
 async function matchChunks(
@@ -793,6 +912,7 @@ export function buildResult(input: {
   analyses: Map<string, AnalysisRow>;
   /** videoId → `subtitles_punctuated`. Missing entries keep the raw chunk. */
   transcripts: Map<string, string>;
+  excludedNonEnglish?: number;
   startedAtMs: number;
 }): FindSimilarAccountsResult {
   const { picked, analyses, transcripts, startedAtMs } = input;
@@ -836,6 +956,7 @@ export function buildResult(input: {
     claims: Object.freeze(picked.claims.map((c) => Object.freeze({ ...c }))),
     claim_matches: Object.freeze([...picked.claimMatches]),
     accounts: Object.freeze(accounts),
+    excluded_non_english: input.excludedNonEnglish ?? 0,
     domain_directions: tallyDirections(accounts),
     accounts_with_transformation: accounts.filter((a) => a.transformation).length,
     usage_rule: USAGE_RULE,
@@ -1029,11 +1150,15 @@ const TOOL_DEFAULT_ACCOUNTS = 5;
  * surface (I6.3) to use. Projection drops fields; it never edits text, so the
  * provenance contract is untouched.
  */
-export async function handleFindSimilarAccounts(input: {
-  description?: string;
-  limit?: number;
-  include_what_happened_next?: boolean;
-}): Promise<Record<string, unknown>> {
+export async function handleFindSimilarAccounts(
+  input: {
+    description?: string;
+    limit?: number;
+    include_what_happened_next?: boolean;
+  },
+  /** The signed-in user, from the verified JWT — never from the model. */
+  viewer: { email?: string | null } = {},
+): Promise<Record<string, unknown>> {
   const description = (input.description ?? "").trim();
   if (!description) {
     return {
@@ -1047,6 +1172,21 @@ export async function handleFindSimilarAccounts(input: {
     limit: input.limit ?? TOOL_DEFAULT_ACCOUNTS,
     withTransformation: input.include_what_happened_next === true,
   });
+
+  return projectForCoach(result, viewer);
+}
+
+/**
+ * The model-facing view. Pure, so the gate can prove what a tester's coach is
+ * and is not handed.
+ */
+export function projectForCoach(
+  result: FindSimilarAccountsResult,
+  viewer: { email?: string | null } = {},
+): Record<string, unknown> {
+  // Analyst prose never reaches a tester's coach — not as a quote, not as
+  // paraphrase, not at all. The model cannot relay what it was not given.
+  const showAnalysis = isFounder(viewer.email);
 
   return {
     matched_count: result.matched_count,
@@ -1065,7 +1205,7 @@ export async function handleFindSimilarAccounts(input: {
       transformation: a.transformation
         ? {
           classification: a.transformation.classification,
-          integration_notes: a.transformation.integration_notes,
+          ...(showAnalysis ? { integration_notes: a.transformation.integration_notes } : {}),
           domains: a.transformation.domains.map((d) => ({
             code: d.code,
             name: d.name,
