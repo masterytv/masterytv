@@ -254,7 +254,7 @@ I1 Corpus bridge + VALIDATION  ──▶  ⛔ FOUNDER GO / NO-GO  ⛔
 ### I11 — Legal, privacy & compliance  ⚖️🔒  *(before I9 — copy is the likeliest enforcement trigger)*
 | Story | Tasks | Done |
 |:--|:--|:--|
-| **I11.1** The deny-list ⚖️ | Shipped in §2 setup; verify it covers marketing copy, UI strings, **system prompts**, email templates and metadata. LLM prompts count as copy — a banned construction handed to the model reads as an accidental few-shot example. | Gate blocking; planted violation fails the build. 🧪⚖️ |
+| **I11.1** The deny-list ⚖️ | Shipped in §2 setup; verify it covers marketing copy, UI strings, **system prompts**, email templates and metadata. LLM prompts count as copy — a banned construction handed to the model reads as an accidental few-shot example. ✅ **VERIFIED August 11, 2026 by planting a real violation in each category** rather than by reading the regex: marketing copy under an `integration` path segment, a pack prompt at `packs/integration-pack.ts`, an `integration:` metadata block and an `integration:` email-subject block **all failed the build**. Every textual file under the scanned roots is `.ts`/`.tsx` — the only others are CSS and `.env`, so there is no un-scanned HTML template. 🔥 **One gap found and closed:** the same violation on `src/app/<brandname>/page.tsx` **passed silently**, because §2 locks `integration` as an internal slug and the public wordmark is cleared separately — so the vertical's landing pages, its highest-risk copy, carry no `integration` literal and match neither scope. Fixed with an `ALSO_OWNED` registry that feeds both scopes, proven by a self-test case; **the brand slug goes in it the moment the name is chosen, before any copy is written.** | ✅ Gate blocking; planted violation fails the build in all four covered categories, and the fifth is a one-line registration on the §6.1 checklist. 🧪⚖️ |
 | **I11.2** State blocklist ⚖️ | Capture state at signup. Block **Illinois** (WOPR Act §20(a) requires the service be conducted by *an individual* who is licensed — no compliance path for an AI, only a geofence) and **Rhode Island** (bans the product category: AI companions for emotional support, and AI that simulates attachment). **Nevada with counsel.** Config-driven; review every legislative session. | Blocked-state signup is refused with a clear message; list is a config file, not an architectural assumption. 🧪⚖️ |
 | **I11.3** 18+ gate ⚖️ | Hard gate plus an underage-signal classifier. Removes the single largest liability category for near-zero product cost. | Gate live; classifier flags an underage-signalling transcript. 🧪⚖️ |
 | **I11.4** Crisis stack, nationwide ⚖️🔒 | 988 + Crisis Text Line referral, a **published** protocol (California SB 243 requires publication), AI-disclosure at session start and every three hours (NY GBL §1702). **On positive detection the conversation changes state** — continuation after detection is the specific harm theory in *Garcia* and *Raine*. Log every detection, the exact text shown, and the subsequent turns. | Detection → state change → logged, verified end to end. 🧪🔒⚖️ |
@@ -341,7 +341,7 @@ I1 Corpus bridge + VALIDATION  ──▶  ⛔ FOUNDER GO / NO-GO  ⛔
 | I8 The Map | — | ⬜ Blocked on I6, I7 | |
 | I9 Doors + triage | — | ⬜ Blocked on I10, I11 | |
 | I10 Brand + theme | — | ⬜ Blocked on the name decision | |
-| I11 Legal & compliance | — | ⬜ Blocked on clinical advisor | I11.1 can land immediately. |
+| I11 Legal & compliance | — | 🟡 **I11.1 ✅ DONE**, rest blocked on clinical advisor | **I11.1 verified August 11 by planting a violation in each of the five categories**, not by reading the regex: marketing copy, system prompts, email templates and metadata all fail the build; the fifth — a landing page under the **public brand name** — passed silently, because the deny-list scopes on the internal slug and the brand's pages carry no such literal. Closed with an `ALSO_OWNED` registry (both scopes, self-tested) plus a §6.1 checklist item: **the brand slug goes in before any copy is written.** |
 | I12 Dashboard + Aperture | — | ⬜ Blocked on I3.6, I8 | |
 | I13 Telling Ladder | — | ⬜ Blocked on I12 | |
 | I14 Family explainer | — | ⬜ Blocked on I13 | |
@@ -361,6 +361,7 @@ Check every box before any public link. Items marked 🔥 exist because we shipp
 ### 6.1 Brand
 - [ ] BRAND.md read fully; tokens only, Lucide only, dual-theme, no sparkle (I10.1)
 - [ ] 🔥 Public name trademark-cleared **before** it enters any copy, prompt or email; naming contract written (§2)
+- [ ] 🔥 **Brand slug added to `ALSO_OWNED` in `scripts/check-integration-deny-list.mjs` the moment the name is chosen** — the deny-list scopes on the `integration` slug, and the brand's own landing pages contain no such literal, so until this line exists the vertical's highest-risk copy is unscanned (I11.1, verified by planting)
 - [ ] `BRANDS` entry + host→brand map (I2.1)
 - [ ] 🔥 Theme tokens with the combined `[data-brand][data-theme="light"]` selector (I10.2)
 - [ ] 🔥 Favicon/apple-touch + head-script brand lists (`\\/` in regexes; never remove Next-managed `<head>` nodes) (I10.3)

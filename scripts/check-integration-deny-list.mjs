@@ -70,10 +70,35 @@ const SELF = "scripts/check-integration-deny-list.mjs"; // holds every term as a
 const TEXT_EXT = /\.(tsx?|m?js|cjs)$/i;
 const WARN_ONLY = process.argv.includes("--warn");
 
-/** The two code forms of the program slug. Ordinary English "integration" is not one. */
-const SLUG_IN_CODE = /(["'`]integration["'`]|\bintegration\s*:)/;
-/** Path scope: an `integration` directory segment, or an `integration-` / `integration.` basename. */
-const SLUG_IN_PATH = /(^|\/)integration([/.-]|$)/;
+/**
+ * Extra tokens that also mean "this text belongs to the integration vertical".
+ *
+ * 🔥 Verified empirically for I11.1 (August 11, 2026): the two scopes below
+ * catch marketing copy, system prompts, email templates and metadata — and MISS
+ * the one file that matters most. §2 locks `integration` as an INTERNAL slug and
+ * clears the public wordmark separately, so the vertical's landing pages will
+ * live under a directory named for the brand and will contain no "integration"
+ * literal anywhere. A planted `We treat the aftermath` in
+ * `src/app/<brandname>/page.tsx` passed the build; the identical line under
+ * `src/app/integration/` failed it.
+ *
+ * **Add the brand slug here the moment the name is chosen** — before any copy
+ * is written, not after. §6.1 carries the checklist item.
+ */
+const ALSO_OWNED = [];
+
+/** Every token that opens scope. Ordinary English "integration" is not one of them. */
+function ownedPatterns(tokens) {
+  const alt = tokens.join("|");
+  return {
+    /** The two code forms: a bare quoted literal, or an object key. */
+    code: new RegExp(`(["'\`](?:${alt})["'\`]|\\b(?:${alt})\\s*:)`),
+    /** A directory segment, or a `<token>-` / `<token>.` basename. */
+    path: new RegExp(`(^|/)(?:${alt})([/.-]|$)`),
+  };
+}
+
+const { code: SLUG_IN_CODE, path: SLUG_IN_PATH } = ownedPatterns(["integration", ...ALSO_OWNED]);
 
 /** `deny-list-ok: <reason>` — reason required, ≥ 4 chars, so the escape hatch stays a decision. */
 const PRAGMA = /deny-list-ok:\s*\S.{3,}/;
@@ -214,18 +239,29 @@ if (process.argv.includes("--self-test")) {
     !PRAGMA.test("// deny-list-ok:") &&
     !PRAGMA.test("// deny-list-ok: x");
 
+  // The extension point must work before anyone's launch depends on it: the
+  // public brand name is not the slug, and its landing pages are the highest-risk
+  // copy in the vertical (I11.1, verified by planting a violation in both).
+  const extended = ownedPatterns(["integration", "aftermath"]);
+  const extensionOk =
+    extended.path.test("src/app/aftermath/page.tsx") &&
+    extended.code.test('BRANDS = { aftermath: { blurb: "…" } }') &&
+    !extended.path.test("src/app/thecompany/page.tsx") &&
+    !SLUG_IN_PATH.test("src/app/aftermath/page.tsx");
+
   const problems = [];
   if (missed.length) problems.push(`NOT caught: ${missed.join(" · ")}`);
   if (overcaught.length) problems.push(`false positives: ${overcaught.join(" · ")}`);
   if (!scopeOk) problems.push(`block scope wrong: ${JSON.stringify(flags)}`);
   if (!pragmaOk) problems.push("pragma requires a reason, and it does not");
+  if (!extensionOk) problems.push("ALSO_OWNED does not extend scope — the brand's pages would go unscanned");
   if (problems.length) {
     for (const p of problems) console.error(`✗ self-test: ${p}`);
     process.exit(1);
   }
   console.log(
     `Deny-list self-test passed — ${mustCatch.length} banned constructions caught, ` +
-      `${mustSpare.length} legitimate lines spared, block scope and pragma verified.`,
+      `${mustSpare.length} legitimate lines spared, block scope, pragma and brand-scope extension verified.`,
   );
   process.exit(0);
 }
