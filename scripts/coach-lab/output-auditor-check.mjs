@@ -252,6 +252,155 @@ ok(
   ).verdict === "block",
 );
 
+// ─── CORPUS NAMES ARE NOT COINAGES (the 2026-08-12 live defect) ───────────
+//
+// Measured in production, not reasoned about: with only the person's vocabulary
+// allowed, this class blocked EVERY faithful rendering of The Company, because
+// corpus accounts are interview transcripts full of names and each carries a
+// video title. Both corpus turns of the first live run blocked twice and the
+// person got the fixed line on the exact turn they asked whether anybody else
+// had been through it. These cases lock the fix and, more importantly, lock
+// what the fix must NOT have loosened.
+console.log("\n─── corpus names are not coinages ───\n");
+
+const NAMED_EXCERPTS = [
+  "Sandra was there at the end of the bed and I knew her straight away, though she died when I was nine.",
+  "I came back over the Mersey and I could see the whole of Liverpool underneath me.",
+];
+const NAMED_TITLES = [
+  "Margaret Hulse — Cardiac Arrest NDE | IANDS Interview",
+  "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+];
+const cctx = { ...ctx, corpusExcerpts: NAMED_EXCERPTS, corpusAttribution: NAMED_TITLES };
+
+ok(
+  "a name from inside an excerpt does not read as a coinage",
+  auditDraft("One of them describes Sandra being there at the end of the bed.", cctx).verdict === "pass",
+  JSON.stringify(auditDraft("One of them describes Sandra being there at the end of the bed.", cctx).newProperNouns),
+);
+ok(
+  "a place from inside an excerpt does not read as a coinage",
+  auditDraft("Another talks about seeing Liverpool from above the Mersey.", cctx).verdict === "pass",
+);
+ok(
+  "the ATTRIBUTION is nameable — this is the one that blocked live",
+  auditDraft("That one is Margaret Hulse, talking to IANDS.", cctx).verdict === "pass",
+);
+ok(
+  "a clean corpus turn reports a mirroring index of 0, not 0/0",
+  auditDraft("Margaret describes Sandra at the end of the bed.", cctx).mirroringIndex === 0,
+);
+// …and the half that matters more.
+ok(
+  "a COINED entity still blocks on a corpus turn",
+  auditDraft("What you met sounds like what the others call Lumina.", cctx).verdict === "block",
+  JSON.stringify(auditDraft("What you met sounds like what the others call Lumina.", cctx).newProperNouns),
+);
+ok(
+  "a coinage hiding among corpus names still blocks",
+  auditDraft("Margaret and Sandra both crossed what you'd call the Threshold.", cctx).newProperNouns
+    .some((n) => /threshold/i.test(n)),
+);
+ok(
+  "a LOWERCASE corpus word does not license capitalising it into a title",
+  auditDraft(
+    "You stood at the Veil.",
+    { ...ctx, corpusExcerpts: ["there was a veil between us and I could not pass it"] },
+  ).verdict === "block",
+);
+ok(
+  "attribution is nameable but NOT quotable — a title in quotes is still unfaithful",
+  quoteFidelity('He said: "Margaret Hulse — Cardiac Arrest NDE | IANDS Interview"', NAMED_EXCERPTS)
+    .unfaithful.length === 1,
+);
+ok(
+  "with no corpus on the turn, nothing changes",
+  auditDraft("What you met sounds like what the others call Lumina.", ctx).verdict === "block",
+);
+
+// ─── the two shapes the reveal actually renders ──────────────────────────
+// Both are false blocks that survived the first version of this fix, and both
+// were found by running the auditor over what the payload's own usage rule asks
+// the model to write rather than over invented drafts.
+ok(
+  "the LINK the usage rule asks for is not a coinage (a video id carries capitals)",
+  auditDraft(
+    "One of them is Margaret Hulse: https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    cctx,
+  ).verdict === "pass",
+  JSON.stringify(auditDraft("One of them is Margaret Hulse: https://www.youtube.com/watch?v=dQw4w9WgXcQ", cctx).newProperNouns),
+);
+ok(
+  "a MANGLED link is still a coinage",
+  auditDraft("You can watch it at https://www.youtube.com/watch?v=Zx9qQPlmNo", cctx).verdict === "block",
+);
+// `quoteFidelity` tolerates a capitalised first letter on a quotation that
+// starts mid-sentence; before this, the proper-noun scan then blocked that same
+// capital as a coined name. Two classes in one file disagreeing about one
+// string, and the reveal is where they meet.
+const MIDSENTENCE = ["and then everything went quiet and I could hear somebody saying my name"];
+ok(
+  "capitalising the first word of a faithful mid-sentence quote is not a coinage",
+  auditDraft(
+    'One person put it like this: "Everything went quiet and I could hear somebody saying my name"',
+    { ...ctx, corpusExcerpts: MIDSENTENCE },
+  ).verdict === "pass",
+);
+ok(
+  "a coinage OUTSIDE the quotation marks still blocks on the same draft",
+  auditDraft(
+    'That is the Threshold. One of them: "Everything went quiet and I could hear somebody saying my name"',
+    { ...ctx, corpusExcerpts: MIDSENTENCE },
+  ).newProperNouns.some((n) => /threshold/i.test(n)),
+);
+ok(
+  "an UNFAITHFUL quotation is not blanked — its names are the model's",
+  auditDraft(
+    'One person: "Everything went quiet and Lumina was saying my name over and over"',
+    { ...ctx, corpusExcerpts: MIDSENTENCE },
+  ).newProperNouns.includes("Lumina"),
+);
+
+ok(
+  "the word after a faithful quotation is not a coinage (the blank must keep the sentence break)",
+  auditDraft(
+    'One of them says: "Sandra was there at the end of the bed and I knew her straight away, though she died when I was nine." Another describes something similar.',
+    cctx,
+  ).verdict === "pass",
+  JSON.stringify(auditDraft('One of them says: "Sandra was there at the end of the bed and I knew her straight away, though she died when I was nine." Another describes something similar.', cctx).newProperNouns),
+);
+// 🔥 The exact shape that blocked the battery's reveal on 2026-08-12. Every
+// paragraph of the reveal ends on a markdown link, so there is no terminator
+// anywhere before the next paragraph's first word — only the break itself.
+// `Another` was scored as a coined name, twice, and the person got the fixed
+// line. The tokenizer now reads a line break as a sentence boundary, which is
+// what `sentenceAround` in this same file has always done.
+const REVEAL =
+  'One person said: "Sandra was there at the end of the bed and I knew her straight away, though she died when I was nine." ' +
+  "[https://www.youtube.com/watch?v=dQw4w9WgXcQ](https://www.youtube.com/watch?v=dQw4w9WgXcQ)\n\n" +
+  "Another was also above her body during surgery.";
+ok(
+  "a paragraph opening after a link, with no full stop anywhere, is ordinary prose",
+  auditDraft(REVEAL, cctx).verdict === "pass",
+  JSON.stringify(auditDraft(REVEAL, cctx).newProperNouns),
+);
+ok(
+  "…and a coinage in that same position is still caught when it recurs mid-sentence",
+  auditDraft(`${REVEAL}\n\nThe others call it Lumina.`, cctx).newProperNouns.includes("Lumina"),
+);
+// Mid-sentence is the position that matters: a name at the START of a sentence
+// is never counted (ordinary prose), which is the only reason the live run's
+// "Tom. Thank you for finding a way to say it." survived at all.
+ok(
+  "the person's own name is sayable mid-sentence — they never type it themselves",
+  auditDraft("That took something to write down, Tom.", { ...ctx, userName: "Tom" }).verdict === "pass",
+  JSON.stringify(auditDraft("That took something to write down, Tom.", { ...ctx, userName: "Tom" }).newProperNouns),
+);
+ok(
+  "…and with no profile name it IS caught, so the allowance is the name and not a hole",
+  auditDraft("That took something to write down, Tom.", ctx).newProperNouns.includes("Tom"),
+);
+
 // ─── THE REGENERATION NOTE ────────────────────────────────────────────────
 console.log("\n─── the regeneration note ───\n");
 

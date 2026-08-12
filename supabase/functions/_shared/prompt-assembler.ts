@@ -75,6 +75,8 @@ export async function assemblePrompt(
     messageCount: number;
     /** Retrieved facts as `subject: content` — see the note at the return. */
     factTexts: string[];
+    /** The person's own name, for the draft audit — see the note at the return. */
+    userName: string | null;
   };
   debugTrace: PromptDebugTrace | null;
 }> {
@@ -644,6 +646,16 @@ IMPORTANT ACCESS RULES:
       activeChallenges: challenges,
       factCount: facts.length,
       messageCount: messages.length,
+      /**
+       * The person's own name, for the same audit. 🔥 Measured 2026-08-12: the
+       * mirroring index counted "Dana" as a coinage, because a person does not
+       * type their own name at the coach and the index only knows what they
+       * wrote. Addressing somebody by name is the most ordinary thing this
+       * coach does — the live run's very first reply opened with it — so
+       * without this the auditor blocks the warmest sentence in the vertical.
+       * Additive, like `factTexts`: nothing renders it, so no golden moves.
+       */
+      userName: user?.name ?? null,
       /**
        * The retrieved facts as `subject: content`, for the buffered draft audit
        * (`_shared/draft-audit.ts` → `buildUserTextForAudit`). 🔥 The mirroring

@@ -437,6 +437,9 @@ Deno.serve(async (req: Request) => {
       const toolCallsDebug: Array<{ name: string; query: string; result_confidence: string; cached: boolean; duration_ms: number }> = [];
       // Corpus excerpts handed to the model this turn, for the draft audit.
       const corpusExcerptsSeen: string[] = [];
+      // Their attribution — quotable never, nameable always. See the collection
+      // site below and `AuditContext.corpusAttribution`.
+      const corpusAttributionSeen: string[] = [];
       let draftAudit: DraftAuditOutcome | null = null;
 
       try {
@@ -635,9 +638,30 @@ Deno.serve(async (req: Request) => {
                 // class: anything the reply puts in quotation marks has to be a
                 // contiguous run of one of these. Measured necessary — the model
                 // splices them with ellipses however plainly it is told not to.
-                for (const account of (result.accounts ?? []) as Array<{ excerpt?: { text?: string } }>) {
+                // …and the ATTRIBUTION separately (video titles). The mirroring
+                // index needs it or every faithful reveal reads as a coinage —
+                // measured live 2026-08-12, when naming a source blocked the
+                // draft twice and the person got the fixed line instead of the
+                // company they had just asked for. It stays out of the excerpt
+                // array on purpose: a title is not something anybody said, and
+                // quoteFidelity treats that array as the quotable haystack.
+                for (
+                  const account of (result.accounts ?? []) as Array<
+                    {
+                      excerpt?: { text?: string };
+                      source?: { video_title?: string | null; video_url?: string | null };
+                    }
+                  >
+                ) {
                   const text = account.excerpt?.text;
                   if (text) corpusExcerptsSeen.push(text);
+                  // Title AND link. The payload's usage rule tells the model to
+                  // put each excerpt's link next to it, and a YouTube id carries
+                  // interior capitals — so the reveal would block on its own
+                  // citations if the URL were left out of the allowed names.
+                  const { video_title: title, video_url: url } = account.source ?? {};
+                  if (title) corpusAttributionSeen.push(title);
+                  if (url) corpusAttributionSeen.push(url);
                 }
                 if (debugMode) {
                   toolCallsDebug.push({
@@ -719,6 +743,9 @@ Deno.serve(async (req: Request) => {
               previousDraft: [...conversationHistory].reverse()
                 .find((m) => m.role === "assistant")?.content,
               corpusExcerpts: corpusExcerptsSeen,
+              corpusAttribution: corpusAttributionSeen,
+              // They never type their own name; the coach says it constantly.
+              userName: metadata.userName,
             },
           });
           fullContent = draftAudit.text;

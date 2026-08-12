@@ -54,7 +54,7 @@
 
 import { integrationPack, integrationStage } from "../../supabase/functions/_shared/packs/integration-pack.ts";
 import { handleFindSimilarAccounts } from "../../supabase/functions/_shared/corpus.ts";
-import { quoteFidelity } from "../../supabase/functions/_shared/output-auditor.ts";
+import { auditDraft, quoteFidelity } from "../../supabase/functions/_shared/output-auditor.ts";
 import { auditAndFinalizeDraft, judgeDraft } from "../../supabase/functions/_shared/draft-audit.ts";
 import { detectConversationSignals } from "../../supabase/functions/_shared/conversation-signals.ts";
 import { confirmConversationSignals } from "../../supabase/functions/_shared/safety-sweep.ts";
@@ -693,6 +693,17 @@ async function runTimingSuite(): Promise<void> {
   // coach path (I3.4). Until it is, the prompt is the only thing holding this,
   // and the August 12 runs are the evidence that a prompt does not hold it.
   const excerpts = accounts.map((a) => ((a.excerpt as Record<string, unknown>)?.text ?? "") as string);
+  // The attribution, mirrored from the coach's own collection site. Without it
+  // the battery audits a context production does not have, and would keep
+  // reporting the fallback the live run traced to `titling` on source names.
+  // Title AND link, exactly as the coach collects them. The link matters: a
+  // video id carries interior capitals, and an untrusted one is a coinage by
+  // design, so a battery that withheld it would keep failing for the wrong
+  // reason (measured — it reported `M`, `P`, `Q`).
+  const attribution = accounts.flatMap((a) => {
+    const source = (a.source ?? {}) as Record<string, unknown>;
+    return [source.video_title, source.video_url].filter(Boolean) as string[];
+  });
   const { quoted, unfaithful } = quoteFidelity(continuation.text, excerpts);
   advisory(
     `every quotation is corpus text, not a paraphrase (${quoted.length} quoted)`,
@@ -702,13 +713,30 @@ async function runTimingSuite(): Promise<void> {
       : "",
   );
 
+  // ── the deterministic audit of the RAW reveal, every run ──
+  // Free, and it must not hide inside the quote-fidelity branch below: whether
+  // the reveal trips `titling` on its own source names is independent of whether
+  // the model quoted faithfully this time, and gating it meant a green run
+  // proved nothing about the defect it exists to catch (measured 2026-08-12).
+  const rawAudit = auditDraft(continuation.text, {
+    userText: TIMING_TURNS.map((t) => t.say).join("\n"),
+    corpusExcerpts: excerpts,
+    corpusAttribution: attribution,
+    userName: USER?.name ?? null,
+  });
+  console.log(
+    `  coinages on the raw draft: [${rawAudit.newProperNouns.join(", ")}] (index ${rawAudit.mirroringIndex.toFixed(2)})`,
+  );
+  check(
+    "the reveal does not block on `titling` — corpus names, links and their own name are not coinages",
+    !rawAudit.violations.some((v) => v.moveClass === "titling"),
+    `coinages=[${rawAudit.newProperNouns.join(", ")}]`,
+  );
+
   // ── and what the coach actually sends, once the auditor has had it ──
-  // The advisory above measures the RAW draft. This measures the shipped path:
-  // the same text through `auditAndFinalizeDraft` with the real model doing the
-  // rewrite, which is what `integrationPack.auditDrafts` puts in front of every
-  // reply. Only runs when the raw draft failed, because that is the only case
-  // where the auditor has anything to do.
-  if (unfaithful.length > 0) {
+  // Only runs when the raw draft failed a BLOCKING class, because that is the
+  // only case where the auditor has anything to rewrite.
+  if (rawAudit.verdict === "block") {
     const finalized = await auditAndFinalizeDraft({
       draft: continuation.text,
       system: systemPrompt(),
@@ -718,9 +746,21 @@ async function runTimingSuite(): Promise<void> {
         { role: "user", content: [{ type: "tool_result", tool_use_id: firedUse.id, content: JSON.stringify(result) }] },
       ] as unknown as Parameters<typeof auditAndFinalizeDraft>[0]["messages"],
       maxTokens: COACH_MAX_TOKENS,
-      ctx: { userText: TIMING_TURNS.map((t) => t.say).join("\n"), corpusExcerpts: excerpts },
+      ctx: {
+        userText: TIMING_TURNS.map((t) => t.say).join("\n"),
+        corpusExcerpts: excerpts,
+        corpusAttribution: attribution,
+        // They never type their own name; the coach opens with it.
+        userName: USER?.name ?? null,
+      },
     });
-    console.log(`\n  after the auditor (attempts=${finalized.attempts}, fell_back=${finalized.fellBack}):\n${finalized.text}\n`);
+    // The CLASSES, not just the outcome. "fell_back=true" alone cost a live
+    // session's worth of guessing on 2026-08-12: the cause was `titling` on
+    // corpus source names, and nothing printed here would have said so.
+    console.log(
+      `\n  after the auditor (attempts=${finalized.attempts}, fell_back=${finalized.fellBack}, ` +
+        `blocked=[${finalized.blocked.join(",")}], still=[${finalized.stillBlocked.join(",")}]):\n${finalized.text}\n`,
+    );
     check(
       "the audited reply carries no unfaithful quotation",
       quoteFidelity(finalized.text, excerpts).unfaithful.length === 0,

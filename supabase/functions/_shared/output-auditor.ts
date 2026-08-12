@@ -70,6 +70,36 @@ export interface AuditContext {
    * of these — see `quoteFidelity`.
    */
   corpusExcerpts?: readonly string[];
+  /**
+   * The ATTRIBUTION the corpus tool returned this turn — video titles and their
+   * links, and anything else naming a source rather than quoting one.
+   *
+   * 🔥 THE LINK IS NOT OPTIONAL HERE. The tool payload's own usage rule tells
+   * the model to put each excerpt's link next to it, and a YouTube id carries
+   * interior capitals (`…v=dQw4w9WgXcQ` yields `WgXcQ`), which the proper-noun
+   * scan reads as a coined name. Rendering the reveal the way it is asked to be
+   * rendered would block on its own citations.
+   *
+   * 🔑 A SEPARATE FIELD FROM `corpusExcerpts`, and it must stay separate.
+   * `quoteFidelity` uses that array as the haystack for everything the draft
+   * puts in quotation marks, and a video title is not something anybody said.
+   * Folding titles in there would let the model present a title as a spoken
+   * quotation — precisely the failure quoteFidelity exists to stop. Titles are
+   * trusted for NAMES and never for QUOTES; that is the whole distinction.
+   */
+  corpusAttribution?: readonly string[];
+  /**
+   * The person's own name, from their profile.
+   *
+   * 🔥 They never type it — you do not say your own name to a coach — so the
+   * mirroring index, which knows only what they wrote, reads the coach saying
+   * it as a coinage. Measured 2026-08-12: "Dana" was flagged on the battery's
+   * reveal turn, and the live run's warmest sentence ("Tom. Thank you for
+   * finding a way to say it.") survived only because it happened to sit at the
+   * start of a sentence, where the scan is lenient. One clause earlier and the
+   * coach could not have said their name.
+   */
+  userName?: string | null;
 }
 
 export interface AuditViolation {
@@ -236,6 +266,65 @@ function sentenceAround(text: string, index: number): string {
   return text.slice(start, end);
 }
 
+/**
+ * Every CAPITALIZED token in trusted corpus text, lowercased.
+ *
+ * Position-agnostic, unlike `properNouns`: a name at the start of a sentence in
+ * an excerpt is still a name the coach may repeat, and this text is trusted, so
+ * there is nothing to protect against by excluding it.
+ *
+ * 🔑 Capitalized only, and that is the load-bearing part. Matching every word
+ * would let the classic titling move through — capitalising an ordinary noun
+ * that happens to appear in a transcript ("the Veil", "the Threshold") is
+ * exactly how a coach names somebody's experience for them, and lowercase
+ * "threshold" in an excerpt must not license "the Threshold" in a reply.
+ */
+function capitalizedTokens(text: string): Set<string> {
+  const out = new Set<string>();
+  // Same tokenizer as `properNouns`, or the two sides never meet: a title
+  // reading "Clip-Phil's riveting…" tokenizes as `Clip-Phil's`, while the draft
+  // says "Phil," and tokenizes as `Phil`. Whole-token comparison misses it, and
+  // the reveal blocks on the name it was handed. So each capitalized token also
+  // contributes its pieces, split on apostrophes and hyphens.
+  for (const m of text.matchAll(/[A-Za-z][A-Za-z'’-]*/g)) {
+    const token = m[0];
+    if (!/^[A-Z]/.test(token)) continue;
+    out.add(token.toLowerCase());
+    for (const piece of token.split(/['’-]/)) {
+      // Uppercase-initial pieces only. A lowercase piece must not license
+      // capitalising it — that is the titling move this class exists to catch.
+      if (/^[A-Z]/.test(piece)) out.add(piece.toLowerCase());
+    }
+  }
+  return out;
+}
+
+/**
+ * A link the CORPUS returned is never a coinage. A link the model made up is.
+ *
+ * 🔥 Measured 2026-08-12: `properNouns` reads a YouTube id as a name —
+ * `m2MaYzFZQCY` tokenizes to `MaYzFZQCY`, which starts with a capital and is in
+ * nobody's vocabulary. The Company's whole delivery is three excerpts EACH WITH
+ * ITS LINK, so every faithful reveal shipped three fake coinages and blocked on
+ * them.
+ *
+ * 🔑 Blanking every URL was the first fix and it was too generous: it also
+ * excused an invented one. Blanking only the links the payload actually
+ * returned keeps the same provenance rule the rest of this function runs on —
+ * and it buys a link-fidelity check for nothing, because a mangled or
+ * hallucinated address keeps its capitals and blocks. That matters here more
+ * than most places: these links carry a real person's name, and a wrong one
+ * sends somebody to a stranger's video as though it were the account they were
+ * just shown.
+ */
+function withoutTrustedUrls(text: string, trusted: string): string {
+  return text.replace(/(?:https?:\/\/|\bwww\.)\S+/gi, (url) => {
+    // Trailing sentence punctuation belongs to the prose, not the address.
+    const bare = url.replace(/[.,;:!?)\]]+$/, "");
+    return trusted.includes(bare) ? " " : url;
+  });
+}
+
 /** Hedges. Their density is the proxy for expressed certainty (class 13). */
 const HEDGES =
   /\b(might|maybe|perhaps|possibly|could|seems?|sounds?\s+like|I\s+wonder|it\s+may|some\s+people|often|sometimes|not\s+sure|unclear|unknown|we\s+don'?t\s+know|no\s+one\s+knows)\b/gi;
@@ -322,15 +411,104 @@ export function auditDraft(draft: string, ctx: AuditContext): AuditResult {
     });
   }
 
+  // ── quotation fidelity, computed FIRST (corpus turns only) ──
+  // It is checked at the bottom of this function, but the mirroring index needs
+  // its answer, because otherwise the two classes contradict each other on the
+  // same string: `quoteFidelity` deliberately tolerates a capitalised first
+  // letter on a quotation that starts mid-sentence (every writer does it), and
+  // the proper-noun scan then reads that capital as a coined name — measured,
+  // an excerpt beginning "and then everything went quiet" quoted as
+  // "Everything went quiet" blocks on `Everything`.
+  const fidelity = ctx.corpusExcerpts && ctx.corpusExcerpts.length > 0
+    ? quoteFidelity(draft, ctx.corpusExcerpts)
+    : { quoted: [] as string[], unfaithful: [] as string[] };
+  // A quotation this function has just PROVED to be a contiguous run of corpus
+  // text is not the coach's prose, so no word inside it can be the coach's
+  // coinage. Blanking it is the same proof `corpus.ts` runs on, applied one
+  // layer later. An unfaithful quotation is left in — it is already blocking
+  // below, and its names are not provably anybody's but the model's.
+  const faithful = fidelity.quoted.filter((q) => !fidelity.unfaithful.includes(q));
+  // …and so do the links the payload returned, for the reason
+  // `withoutTrustedUrls` gives: a video id is an address with interior capitals,
+  // not an entity, and the reveal ships three of them by design. A link that is
+  // NOT in the payload stays in and blocks — an invented address is a coinage
+  // with somebody's name attached to it.
+  const trustedUrls = [...(ctx.corpusAttribution ?? []), ...(ctx.corpusExcerpts ?? [])].join("\n");
+  // 🔑 Blanked with A WORD AND a terminator, and both halves are load-bearing.
+  // `properNouns` is lenient about a capital that starts a sentence and strict
+  // about one in the middle, and a quotation is nearly always followed by a new
+  // sentence — `"…the whole picture." Another describes…`. Blanking to " … "
+  // made `Another` look mid-sentence and it was reported as a coinage on three
+  // consecutive real reveals (measured 2026-08-12, `None` and `Another`).
+  // A bare " . " does not fix it either: that scan only opens a new sentence
+  // after a WORD followed by a terminator, and a full stop with nothing in
+  // front of it is invisible to it. Hence a lowercase placeholder — lowercase
+  // so the placeholder is not itself read as a name.
+  //
+  // ⚠️ The narrow cost, named: a coinage in mid-sentence attribution right after
+  // a quotation (`"…," Lumina told him`) now sits in sentence-initial position
+  // and is not counted. Rare in this pack, which attributes BEFORE the quote,
+  // and the second pass's `titling` label covers a name being given to somebody
+  // regardless of where it sits.
+  const scanText = withoutTrustedUrls(
+    faithful.reduce((t, q) => t.split(q).join(" quoted. "), draft),
+    trustedUrls,
+  );
+
   // ── classes 4 + 8: the mirroring index ──
   // Names the person used, in any case, are theirs to use. Everything else in
   // the draft is a coinage, and a coinage is how a coach becomes a co-author.
+  //
+  // 🔥 …AND SO ARE THE NAMES THE CORPUS RETURNED, measured live on 2026-08-12.
+  // With only the person's vocabulary allowed, this class blocked every faithful
+  // rendering of The Company: corpus accounts are interview transcripts full of
+  // names and places, each carrying a video title, so attributing an excerpt
+  // trips `titling` BY CONSTRUCTION. Both corpus turns of the first live run
+  // blocked twice and fell back to the fixed line — on the exact turn somebody
+  // had asked whether anybody else had been through this.
+  //
+  // The fix widens what counts as provably not model-authored rather than
+  // weakening the class, on the same reasoning `expandToSentence` runs on:
+  // `assertNoAuthoredText` already proves every one of these strings came back
+  // from the corpus byte-identical, so a name inside them is not a coinage. A
+  // coined entity in a corpus turn still blocks, because it is in neither set.
+  //
+  // ⚠️ THE TRADE, stated: this trusts a corpus name's PROVENANCE, not its
+  // APPLICATION. The model could still pick a name out of somebody else's
+  // account and attach it to this person's experience ("what you saw is what
+  // they called the Veil"), and that is titling by borrowing. No surface form
+  // can catch it — the string is genuinely corpus text. It belongs to the
+  // second pass, whose `titling` label is about a name being GIVEN to them,
+  // and that division is deliberate: deterministic layer owns provenance, the
+  // model owns application.
   const userNames = new Set(properNouns(ctx.userText).map((n) => n.toLowerCase()));
+  const corpusNames = capitalizedTokens(
+    [...(ctx.corpusExcerpts ?? []), ...(ctx.corpusAttribution ?? [])].join("\n"),
+  );
+  const allowedNames = new Set([
+    ...userNames,
+    ...corpusNames,
+    // `capitalizedTokens`, not `properNouns`: a bare name is a single
+    // sentence-initial word, which the proper-noun scan drops by design, so
+    // `properNouns("Tom")` is empty and the allowance would silently do nothing.
+    // This also handles "Mary-Jane" and "O'Brien", which arrive as one token.
+    ...capitalizedTokens(ctx.userName ?? ""),
+  ]);
   // Sentence-initial capitals in a draft are ordinary prose, so the draft's own
-  // names are read with the user's vocabulary as corroboration — the same rule
+  // names are read with the allowed vocabulary as corroboration — the same rule
   // the memory filter uses, for the same reason.
-  const draftNames = properNouns(draft, userNames);
-  const newProperNouns = [...new Set(draftNames.filter((n) => !userNames.has(n.toLowerCase())))];
+  const draftNames = properNouns(scanText, allowedNames);
+  // 🔑 THE DENOMINATOR, decided rather than fallen into. Attribution names stay
+  // in it and quoted text does not, and the line between them is who wrote the
+  // sentence. Naming a source is the coach's own prose with a source behind it,
+  // so it belongs in "how much of what I named did I invent" — and keeping it
+  // there is also what stops a long reveal from diluting a real coinage toward
+  // zero. A quotation is not the coach's prose at all; counting the source's
+  // names as the coach's naming would measure the transcript, not the reply.
+  // A clean reveal therefore reads 0.00 rather than 0/0. The BLOCK is driven by
+  // the count below and never by this number, so a coinage hiding among corpus
+  // names still stops the draft.
+  const newProperNouns = [...new Set(draftNames.filter((n) => !allowedNames.has(n.toLowerCase())))];
   const mirroringIndex = draftNames.length === 0
     ? 0
     : newProperNouns.length / draftNames.length;
@@ -345,8 +523,11 @@ export function auditDraft(draft: string, ctx: AuditContext): AuditResult {
 
   // Specifics the person never gave: dates, counts, durations. Flagged rather
   // than blocked because a coach may legitimately echo "three weeks" back.
+  // `scanText` for the same reason as the names: an age or a year inside a
+  // verified quotation is the account's specific, not the coach elaborating,
+  // and flagging it on every reveal would bury the class it exists to catch.
   const userNumbers = new Set((ctx.userText.match(NUMBERISH) ?? []).map((s) => s.toLowerCase().trim()));
-  const newNumbers = (draft.match(NUMBERISH) ?? [])
+  const newNumbers = (scanText.match(NUMBERISH) ?? [])
     .map((s) => s.trim())
     .filter((s) => !userNumbers.has(s.toLowerCase()));
   if (newNumbers.length > 0) {
@@ -376,15 +557,13 @@ export function auditDraft(draft: string, ctx: AuditContext): AuditResult {
   }
 
   // ── quotation fidelity (corpus turns only) ──
-  if (ctx.corpusExcerpts && ctx.corpusExcerpts.length > 0) {
-    const { unfaithful } = quoteFidelity(draft, ctx.corpusExcerpts);
-    if (unfaithful.length > 0) {
-      violations.push({
-        moveClass: "quote_infidelity",
-        matched: unfaithful.map((q) => q.slice(0, 60)).join(" | "),
-        action: "block",
-      });
-    }
+  // Computed at the top of the function; this is where it is reported.
+  if (fidelity.unfaithful.length > 0) {
+    violations.push({
+      moveClass: "quote_infidelity",
+      matched: fidelity.unfaithful.map((q) => q.slice(0, 60)).join(" | "),
+      action: "block",
+    });
   }
 
   return {
