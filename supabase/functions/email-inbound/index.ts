@@ -215,9 +215,14 @@ Deno.serve(async (req: Request) => {
       { brand }
     );
 
+    // In-Reply-To/References must carry the inbound mail's RFC 2822 Message-ID
+    // (`<...@host>`), never Resend's `email_id` UUID — a bare UUID is not a
+    // valid msg-id, so every client silently dropped the header and threading
+    // fell through to subject-matching alone. Resend returns the real one as
+    // `message_id` on the received-email payload.
     const threadHeaders = buildThreadHeaders(
       result.conversationId,
-      emailId // Reply-To the received email
+      email.message_id
     );
 
     await sendEmail({

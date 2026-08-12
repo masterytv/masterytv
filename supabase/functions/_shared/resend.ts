@@ -151,6 +151,12 @@ export async function sendEmail(
 
 interface ReceivedEmail {
   id: string;
+  /**
+   * The RFC 2822 Message-ID (`<...@host>`) — NOT `id`, which is Resend's UUID.
+   * This is the only value mail clients will thread on; optional because a
+   * malformed inbound message can arrive without one.
+   */
+  message_id?: string;
   from: string;
   to: string[];
   subject: string;
@@ -205,7 +211,11 @@ export function buildThreadHeaders(
     "Message-ID": messageId,
   };
 
-  if (previousMessageId) {
+  // Only a real RFC 2822 msg-id threads. Anything else (notably Resend's
+  // `email_id` UUID, which this was called with until 2026-07-24) is dropped
+  // rather than emitted — a malformed In-Reply-To is worse than none, since
+  // some clients treat the whole header set as suspect.
+  if (previousMessageId && /^<[^\s<>@]+@[^\s<>@]+>$/.test(previousMessageId)) {
     headers["In-Reply-To"] = previousMessageId;
     headers["References"] = previousMessageId;
   }
