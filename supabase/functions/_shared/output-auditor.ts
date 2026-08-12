@@ -508,7 +508,14 @@ export function auditDraft(draft: string, ctx: AuditContext): AuditResult {
   // A clean reveal therefore reads 0.00 rather than 0/0. The BLOCK is driven by
   // the count below and never by this number, so a coinage hiding among corpus
   // names still stops the draft.
-  const newProperNouns = [...new Set(draftNames.filter((n) => !allowedNames.has(n.toLowerCase())))];
+  // A leading or trailing apostrophe is punctuation the tokenizer swallowed,
+  // not part of the name: `[A-Za-z][A-Za-z'’-]*` reads `'Account AAA'` as
+  // `Account` and `AAA'`, and `AAA'` matches nothing in the allowed set. Found
+  // by a markdown link title, which is single-quoted — but it is the general
+  // shape of any quoted name, so it is fixed on the comparison rather than at
+  // the one call site. A coinage stripped of its quotes is still a coinage.
+  const bare = (n: string) => n.replace(/^['’\-]+|['’\-]+$/g, "").toLowerCase();
+  const newProperNouns = [...new Set(draftNames.filter((n) => !allowedNames.has(bare(n))))];
   const mirroringIndex = draftNames.length === 0
     ? 0
     : newProperNouns.length / draftNames.length;

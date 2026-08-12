@@ -1429,12 +1429,26 @@ export function renderCorpusReveal(payload: unknown): string | null {
   const blocks = quotable.map(({ text, title, url }) => {
     const quoted = `"${text}"`;
     if (!url || !/^https:\/\//i.test(url)) return quoted;
-    // A link label must survive the chat client's markdown, which reads to the
-    // first `]`. A title carrying one would render as broken syntax on the
-    // payoff surface, so that title steps aside for a constant rather than
-    // being edited into shape.
-    const label = title && !/[[\]]/.test(title) ? title : "the recording";
-    return `${quoted}\n[${label}](${url})`;
+    // 🔑 THE LABEL IS NEUTRAL, AND THE TITLE RIDES THE HOVER (founder call,
+    // 2026-08-12, after reading a real one). These are YouTube titles and they
+    // are written to be clicked: "Woman DIES! What happens next is the MOST
+    // PROFOUND Near Death Experience EVER!" is honest attribution and it is
+    // also tabloid shouting, arriving directly under somebody's account of the
+    // worst hour of their life. The title stays reachable: one hover, or one
+    // click through a link that still goes exactly where it says. What changes
+    // is that the register of this surface belongs to us rather than YouTube.
+    //
+    // 🔑 SINGLE-quoted, which markdown allows and which is load-bearing here.
+    // A double-quoted title is a 25+ character run inside quotation marks, so
+    // `quoteFidelity` reads it as a quotation, fails to find it among the
+    // excerpts, and blocks the reveal for misquoting somebody — the auditor
+    // catching the renderer, measured on the first battery run after this
+    // landed. That check treats single quotes as apostrophes and never as
+    // delimiters, so this form is invisible to it. A title carrying its own
+    // apostrophe would close the delimiter early, and loses the hover rather
+    // than being edited into shape.
+    const hover = title && !/['\n]/.test(title) ? ` '${title}'` : "";
+    return `${quoted}\n[the recording](${url}${hover})`;
   });
 
   return [

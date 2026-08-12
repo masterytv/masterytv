@@ -568,6 +568,7 @@ const projected = projectForCoach(assembled, { email: "tom@masterytv.com" });
 const reveal = renderCorpusReveal(projected)!;
 
 const shown = assembled.accounts.slice(0, 3);
+const attributionLines = reveal.split("\n").filter((l) => l.startsWith("["));
 
 ok("a real payload renders", typeof reveal === "string" && reveal.length > 0);
 ok(
@@ -590,9 +591,20 @@ ok("the no-proof line is there (I6.4)", reveal.includes("not making it up"));
 const ourWords = reveal.replace(/"[\s\S]*?"/g, "").replace(/\[[^\]]*\]\([^)]*\)/g, "");
 ok("it asks nothing — this is the turn not to", !ourWords.includes("?"), ourWords);
 ok(
-  "attribution is a bare link to the RECORDING — never 'X said', since these transcripts carry no speaker labels",
-  reveal.split("\n").filter((l) => l.startsWith("[")).length === shown.length &&
-    reveal.split("\n").filter((l) => l.startsWith("[")).every((l) => /^\[[^\]]+\]\(https:\/\/[^)]+\)$/.test(l)),
+  "attribution is a link to the RECORDING — never 'X said', since these transcripts carry no speaker labels",
+  attributionLines.length === shown.length &&
+    attributionLines.every((l) => /^\[the recording\]\(https:\/\/\S+( '.*')?\)$/.test(l)),
+  attributionLines.join(" | "),
+);
+// Founder call, 2026-08-12, made after reading a real one. These are YouTube
+// headlines — "Woman DIES! What happens next is the MOST PROFOUND Near Death
+// Experience EVER!" — and they were landing directly under somebody's account
+// of the worst hour of their life. The title is not hidden: it rides the hover,
+// and the link still goes exactly where it says it does.
+ok(
+  "the source's own title rides the HOVER rather than the label",
+  shown.every((a) => reveal.includes(`'${a.source.video_title}')`)),
+  attributionLines.join(" | "),
 );
 
 // …and the half that matters. Every one of these is a way authored text could
@@ -643,7 +655,7 @@ ok(
   })!.includes("javascript:"),
 );
 ok(
-  "a title carrying a bracket steps aside rather than breaking the link",
+  "a title carrying an apostrophe drops the HOVER rather than breaking the link",
   renderCorpusReveal({
     matched_count: 2,
     accounts: [{
@@ -652,7 +664,7 @@ ok(
         provenance: "verbatim_excerpt",
         source: {
           video_id: "X",
-          video_title: "NDE [Full Interview]",
+          video_title: "NDE Full Interview, Sara's account",
           video_url: "https://www.youtube.com/watch?v=X",
         },
       },
