@@ -65,6 +65,85 @@ Is this a genuine expression of suicidal ideation, self-harm, or intent to harm 
   }
 }
 
+/** The categories only the `integration` program can produce (I3.2). */
+const INTEGRATION_CATEGORIES = new Set<CrisisCategory>([
+  "desire_to_return",
+  "command_content",
+  "medication_stopping",
+]);
+
+/**
+ * Layer 2 for the integration categories.
+ *
+ * The whole difficulty of this population in one function. Somebody who nearly
+ * died will say "I didn't want to come back" about a Tuesday in 2019, and
+ * somebody who wants to be dead this week will say exactly the same words, in
+ * the same calm voice, because for them it has settled into a preference rather
+ * than a crisis. Hopelessness, the signal every general classifier is tuned on,
+ * is absent from both. So the only question worth asking is about TENSE and
+ * PRESENT INTENT, and the prompt asks nothing else.
+ *
+ * Deliberately NOT asked: whether the experience was real, whether the belief
+ * is plausible, or whether the person seems unwell. Those are the judgments
+ * this vertical refuses to make, and a classifier that made them here would
+ * leak that stance into the highest-stakes turn in the product.
+ *
+ * Safety-first fallback matches the rest of the file: an LLM failure flags.
+ */
+export async function confirmIntegrationRiskWithLLM(
+  message: string,
+  matchedKeywords: string[],
+  category: CrisisCategory,
+): Promise<boolean> {
+  const question: Record<string, string> = {
+    desire_to_return:
+      "Is this person expressing a PRESENT wish to be dead, to not be alive here, or to return to a place they reached when they nearly died? " +
+      "Answer NOT_RISK if they are recounting how they felt at the time of a past event, or describing a belief about an afterlife without any present wish to get there sooner. " +
+      "A calm, settled, articulate tone is NOT evidence against risk in this population — judge the tense and the wish, not the distress.",
+    command_content:
+      "Is this person reporting that something they experienced INSTRUCTED them to take an action in the world — and are they describing following it, or intending to? " +
+      "Answer NOT_RISK if they are recounting the content of an experience without any action attached to it.",
+    medication_stopping:
+      "Is this person describing stopping, reducing, or refusing psychiatric medication OUTSIDE of medical supervision, or planning to? " +
+      "Answer NOT_RISK if a prescriber directed the change, or if they are describing something a doctor supervised.",
+  };
+
+  try {
+    const response = await callClaude({
+      system:
+        "You are a risk classifier for a coaching product used by people integrating a near-death, anomalous, or worldview-shattering experience. " +
+        "You never assess whether the experience was real. Respond with ONLY 'RISK' or 'NOT_RISK'. No explanation.",
+      messages: [
+        {
+          role: "user",
+          content: `Message: "${message.slice(0, 500)}"
+
+Phrases flagged: ${matchedKeywords.join(", ")}
+
+${question[category] ?? question.desire_to_return}`,
+        },
+      ],
+      maxTokens: 10,
+    });
+
+    const text = response.content
+      .filter((b) => b.type === "text")
+      .map((b) => b.text ?? "")
+      .join("")
+      .trim()
+      .toUpperCase();
+
+    // Match RISK only when NOT_RISK is absent — "NOT_RISK" contains "RISK".
+    return text.includes("RISK") && !text.includes("NOT_RISK");
+  } catch (e) {
+    console.warn(
+      "[crisis-l2-integration] LLM check failed, defaulting to flagged:",
+      (e as Error).message,
+    );
+    return true;
+  }
+}
+
 /**
  * Abuse confirmation (Layer 2 for the abuse category). Filters false positives:
  * a strict boss, figurative language, or control unrelated to an intimate
@@ -125,6 +204,33 @@ Please reach out to people who can help, free and confidential, 24/7:
 If you're in immediate danger, please call **911** or your local emergency number.
 
 None of this is your fault, and you don't have to figure it out alone. I'm here for other things whenever you're ready. 💛`;
+}
+
+/**
+ * Medication hard stop (I3.5).
+ *
+ * Its own response because the 988 script is the wrong answer to "I came off my
+ * lithium" — it treats a medication decision as a suicidal one and, worse, it
+ * teaches the person that mentioning medication ends the conversation.
+ *
+ * §3/I3.5 is explicit that medication gets a hard stop **with no further
+ * exploration**: name the stakes, decline to advise, route to a person who can.
+ * So this says the one true thing and stops. It does not ask why, does not
+ * offer to think it through, and does not comment on whether they need it —
+ * the coach has no standing to hold an opinion about that, and an AI agreeing
+ * that somebody does not need their medication is the single worst output this
+ * product could produce.
+ *
+ * Register per INTEGRATION_EXPERIENCE: warm, plain, unhurried. No cheerfulness.
+ */
+export function buildMedicationResponse(): string {
+  return `I want to stop and be straight with you about this one, because it matters more than anything else we could talk about today.
+
+**I'm an AI, and I have no business having an opinion about your medication.** Not what you take, not what you stop, not what an experience seemed to tell you about it. Stopping or changing psychiatric medication can go badly in ways that are hard to reverse, and it is genuinely dangerous to do it without the person who prescribed it.
+
+Please talk to your prescriber before you change anything, or if you have already changed it, tell them what you have done. You do not have to explain the experience to them to do that.
+
+I'm here for the rest of it whenever you want to carry on.`;
 }
 
 /**
@@ -273,7 +379,10 @@ export async function runCrisisDetection(
   matchedKeywords?: string[];
   escalate?: boolean;
 }> {
-  const keywords = detectCrisisKeywords(message);
+  // PC5.4's resolved program now reaches Tier 1 too (I3.2/I3.3). `integration`
+  // adds its own pattern groups and carves terror-alone out of the abuse
+  // hard-stop; every other program's result is byte-identical to before.
+  const keywords = detectCrisisKeywords(message, ctx.program);
 
   if (!keywords.isCrisis) {
     return { isCrisis: false };
@@ -288,6 +397,16 @@ export async function runCrisisDetection(
   let confirmed = true;
   if (keywords.category === "abuse") {
     confirmed = await confirmAbuseWithLLM(message, keywords.matchedKeywords);
+  } else if (INTEGRATION_CATEGORIES.has(keywords.category)) {
+    // NOT confirmCrisisWithLLM. That classifier is tuned to separate genuine
+    // ideation from figurative speech ("killing it", "dead tired"), and it would
+    // clear every one of these as a description of something that already
+    // happened — which is exactly the miss I3.2 exists to fix.
+    confirmed = await confirmIntegrationRiskWithLLM(
+      message,
+      keywords.matchedKeywords,
+      keywords.category,
+    );
   } else if (keywords.severity === "moderate") {
     confirmed = await confirmCrisisWithLLM(message, keywords.matchedKeywords);
   }
@@ -314,17 +433,32 @@ export async function runCrisisDetection(
       {
         source: "keyword",
         subjectScope: "self",
-        coachHandled: true, // the canned crisis/DV response always surfaces resources
+        // command_content is logged but NOT canned-answered — see below.
+        coachHandled: keywords.category !== "command_content",
         conversationId,
         engagementId: ctx.engagementId ?? null,
         program: ctx.program ?? null,
       }
     );
 
+    // I3.2 — command content is DETECTED, not intercepted.
+    //
+    // Someone reporting that the experience told them to do something needs the
+    // coach, not a canned reply: §3/I4.2's claim-type C is engaged fully and
+    // checked for reversibility, and I3.5's tripwire owns the irreversible
+    // subset. Replacing the turn with a crisis script here would confirm the
+    // one thing this vertical must never confirm — that saying it out loud gets
+    // you handled. The flag is written above, so the crisis queue still sees it.
+    if (keywords.category === "command_content") {
+      return { isCrisis: false };
+    }
+
     return {
       isCrisis: true,
       response:
-        keywords.category === "abuse"
+        keywords.category === "medication_stopping"
+          ? buildMedicationResponse()
+          : keywords.category === "abuse"
           ? buildAbuseResponse()
           : buildCrisisResponse(severity),
       severity,
