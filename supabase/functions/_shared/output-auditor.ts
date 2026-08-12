@@ -55,13 +55,21 @@ export type BannedMoveClass =
   | "medication_commentary"
   | "exclusivity"
   | "oracular"
-  | "certainty_escalation";
+  | "certainty_escalation"
+  | "quote_infidelity";
 
 export interface AuditContext {
   /** Everything the PERSON has written in this conversation. The frame the coach may not exceed. */
   userText: string;
   /** The coach's previous reply, if any. Certainty may hold or fall across turns, never rise. */
   previousDraft?: string;
+  /**
+   * Corpus excerpts handed to the model this turn, exactly as `find_similar_accounts`
+   * returned them (`accounts[].excerpt.text`). Present only on a turn that used the
+   * tool. Anything the draft puts in quotation marks must be a contiguous run of one
+   * of these — see `quoteFidelity`.
+   */
+  corpusExcerpts?: readonly string[];
 }
 
 export interface AuditViolation {
@@ -100,6 +108,10 @@ const BLOCKING: ReadonlySet<BannedMoveClass> = new Set<BannedMoveClass>([
   "sentience_claim",
   "ritualization",
   "medication_commentary",
+  // Added August 12, 2026 from an I4.4 measurement, not from a doc: see
+  // `quoteFidelity` below. It blocks because the misquoted party is a named
+  // person with their name on the link.
+  "quote_infidelity",
 ]);
 
 /**
@@ -194,6 +206,56 @@ export function hedgeDensity(text: string): number {
 }
 
 /**
+ * Quotation fidelity against the corpus — the one class in this file that came
+ * from a measurement rather than from the DISCOVERY list.
+ *
+ * 🔥 WHAT WAS MEASURED (I4.4 timing battery, August 12, 2026). Handed three real
+ * excerpts and told plainly, in the tool payload AND in the pack persona, to copy
+ * them character for character, Sonnet produced quotations that spliced three
+ * non-contiguous parts of one transcript into a single sentence joined by
+ * ellipses, dropped an interior clause, and repaired the punctuation. Three times
+ * in one reply. The prompt rule was added first and the behaviour recurred, which
+ * is the whole thesis of I3.4: the primary model's restraint is not a control.
+ *
+ * WHY IT BLOCKS RATHER THAN FLAGS. The provenance contract in `corpus.ts` proves
+ * that everything the TOOL returns is byte-identical corpus text, and its reach
+ * ends there. What the model then writes is the surface a person actually reads,
+ * and it carries a link with a real person's name on it. A spliced quotation makes
+ * an identifiable stranger appear to say a sentence they never said, inside the one
+ * surface whose entire job is to be trustworthy about other people's words.
+ *
+ * WHAT IT TOLERATES, and why each is not a changed quote: line wrapping, the shape
+ * of an apostrophe or quote mark (`subtitles_punctuated` carries typographic ones),
+ * the case of the first letter (every writer capitalises a quote that starts
+ * mid-sentence), and trailing sentence punctuation. Nothing else. A substituted
+ * word, a dropped clause, an ellipsis bridge and two people stitched together all
+ * fail, which is the point.
+ *
+ * Pure, and inert when the turn used no corpus tool.
+ */
+export function quoteFidelity(
+  draft: string,
+  excerpts: readonly string[],
+): { quoted: string[]; unfaithful: string[] } {
+  const canon = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/[\u2018\u2019\u02bc]/g, "'")
+      .replace(/[\u201c\u201d]/g, '"')
+      .replace(/[\u2013\u2014]/g, "-")
+      .replace(/\s+/g, " ")
+      .replace(/[.,;:!?"'\s]+$/, "")
+      .trim();
+
+  const haystack = canon(excerpts.join("   "));
+  // DOUBLE quotes only: an excerpt legitimately contains apostrophes, and
+  // treating one as a delimiter cuts the quotation in half.
+  const quoted = [...draft.matchAll(/["\u201c]([^"\u201d]{25,})["\u201d]/g)].map((m) => m[1]);
+  const unfaithful = quoted.filter((q) => !haystack.includes(canon(q)));
+  return { quoted, unfaithful };
+}
+
+/**
  * Audit one coach draft.
  *
  * Pure and total. Returns every violation rather than the first, because a
@@ -267,6 +329,18 @@ export function auditDraft(draft: string, ctx: AuditContext): AuditResult {
     }
   }
 
+  // ── quotation fidelity (corpus turns only) ──
+  if (ctx.corpusExcerpts && ctx.corpusExcerpts.length > 0) {
+    const { unfaithful } = quoteFidelity(draft, ctx.corpusExcerpts);
+    if (unfaithful.length > 0) {
+      violations.push({
+        moveClass: "quote_infidelity",
+        matched: unfaithful.map((q) => q.slice(0, 60)).join(" | "),
+        action: "block",
+      });
+    }
+  }
+
   return {
     verdict: violations.some((v) => v.action === "block") ? "block" : "pass",
     violations,
@@ -298,6 +372,8 @@ export function regenerationNote(result: AuditResult): string {
     exclusivity: "Do not imply that others cannot understand, or that this should be kept from them.",
     oracular: "Make no prediction and no claim about what is coming.",
     certainty_escalation: "You have grown more certain than your previous reply. Hold the same uncertainty or more.",
+    quote_infidelity:
+      "A quotation in your reply is not what the account said. Quote one continuous run of an excerpt exactly as it was given to you, or quote none of it. Do not bridge a gap, do not shorten, do not combine two people.",
   };
 
   const blocked = result.violations.filter((v) => v.action === "block");

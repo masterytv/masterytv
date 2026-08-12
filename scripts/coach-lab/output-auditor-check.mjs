@@ -10,7 +10,7 @@
  * Run:  node scripts/coach-lab/output-auditor-check.mjs  (npm run check:auditor)
  */
 
-import { auditDraft, regenerationNote } from "../../supabase/functions/_shared/output-auditor.ts";
+import { auditDraft, quoteFidelity, regenerationNote } from "../../supabase/functions/_shared/output-auditor.ts";
 
 let pass = 0;
 const failures = [];
@@ -134,6 +134,92 @@ ok(
     .violations.some((v) => v.moveClass === "certainty_escalation"),
 );
 
+// ─── QUOTATION FIDELITY (the corpus class, I4.4) ──────────────────────────
+// Every case here is a real shape from the August 12 timing battery, not an
+// invented one: what the model actually did with three real excerpts after being
+// told in two places to copy them exactly.
+console.log("\n─── quotation fidelity ───\n");
+
+const EXCERPTS = [
+  "I ran out of questions because I got it, I got the whole picture, the perfect knowledge that is present in the mind of God or everywhere. And I understood it now.",
+  "when I say ‘I,’ my consciousness was above, watching the body down below, which was mine",
+  "they sort of let me know, but on such a deep level that I really understood it.",
+];
+const qctx = { ...ctx, corpusExcerpts: EXCERPTS };
+
+ok(
+  "an exact quotation passes",
+  auditDraft(
+    'One person said: "they sort of let me know, but on such a deep level that I really understood it."',
+    qctx,
+  ).verdict === "pass",
+);
+ok(
+  "a quotation re-wrapped across lines passes",
+  auditDraft(
+    'She said: "when I say ‘I,’ my consciousness was above,\n  watching the body down below, which was mine"',
+    qctx,
+  ).verdict === "pass",
+);
+ok(
+  "straight apostrophes for typographic ones pass",
+  auditDraft(
+    `He said: "when I say 'I,' my consciousness was above, watching the body down below, which was mine"`,
+    qctx,
+  ).verdict === "pass",
+);
+ok(
+  "a capitalised first letter on a mid-sentence quote passes",
+  auditDraft(
+    'One of them: "They sort of let me know, but on such a deep level that I really understood it."',
+    qctx,
+  ).verdict === "pass",
+);
+ok(
+  "a shorter continuous run of an excerpt passes",
+  auditDraft('Someone wrote: "I got the whole picture, the perfect knowledge"', qctx).verdict === "pass",
+);
+ok(
+  "an ELLIPSIS BRIDGE across non-contiguous parts is blocked",
+  auditDraft(
+    'He said: "I ran out of questions because I got it... I was sitting above my body"',
+    qctx,
+  ).violations.some((v) => v.moveClass === "quote_infidelity" && v.action === "block"),
+);
+ok(
+  "a dropped interior clause is blocked",
+  auditDraft(
+    'She said: "I ran out of questions because I got it, the perfect knowledge that is present in the mind of God"',
+    qctx,
+  ).violations.some((v) => v.moveClass === "quote_infidelity"),
+);
+ok(
+  "two people stitched into one quotation is blocked",
+  auditDraft(
+    'One said: "they sort of let me know, but on such a deep level that I really understood it, and my consciousness was above, watching the body down below"',
+    qctx,
+  ).violations.some((v) => v.moveClass === "quote_infidelity"),
+);
+ok(
+  "a wholly invented quotation is blocked",
+  auditDraft(
+    'Another person put it this way: "the light knew my name and told me my work was not finished"',
+    qctx,
+  ).violations.some((v) => v.moveClass === "quote_infidelity"),
+);
+ok(
+  "with no corpus turn, quotations are none of this check's business",
+  auditDraft('You said: "the light knew my name and my work was not finished, it said"', ctx).verdict === "pass",
+);
+ok(
+  "the regeneration note names the fidelity problem",
+  regenerationNote(
+    auditDraft('He said: "I ran out of questions because I got it... I was sitting above my body"', qctx),
+  ).includes("continuous run"),
+);
+const fid = quoteFidelity('He said: "I ran out of questions because I got it... I was above"', EXCERPTS);
+ok("it reports WHICH quotation failed, not just that one did", fid.unfaithful.length === 1 && fid.quoted.length === 1);
+
 // ─── THE REGENERATION NOTE ────────────────────────────────────────────────
 console.log("\n─── the regeneration note ───\n");
 
@@ -152,4 +238,7 @@ if (failures.length) {
   console.log("");
   process.exit(1);
 }
-console.log("Output-auditor gate passed — 13 classes covered, mirroring index enforced, the coach can still speak.\n");
+console.log(
+  "Output-auditor gate passed — 14 classes covered (13 from \u00a75.3 plus quotation fidelity), " +
+    "mirroring index enforced, the coach can still speak.\n",
+);

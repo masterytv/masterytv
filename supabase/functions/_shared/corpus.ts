@@ -207,7 +207,21 @@ const DEFAULT_ACCOUNTS = 9;
  * where a rule buried in a system prompt does not.
  */
 const USAGE_RULE =
-  "Quote these excerpts or do not use them. Do not summarise across accounts, " +
+  "Quote these excerpts or do not use them. " +
+  // Added August 12, 2026, after the I4.4 timing test measured what a model
+  // actually does with these: it tidied them. Sonnet stitched two halves of one
+  // excerpt with an em dash, cut the middle clause, and repaired the
+  // punctuation — three times in one reply. The provenance contract guarantees
+  // what the TOOL returns and cannot reach what the model writes, so the rule
+  // has to be said here in the words of the failure. It is still only a rule:
+  // the enforcement is a quote-fidelity check on the draft (I3.4).
+  "When you quote one, copy it CHARACTER FOR CHARACTER. Do not shorten it, do " +
+  "not join two of its parts with a dash or an ellipsis, do not repair its " +
+  "punctuation, and never stitch two accounts into one quotation. A shortened " +
+  "quote is a different quote, and these are real people's words about the " +
+  "worst or strangest hour of their lives. If an excerpt is too long for the " +
+  "message, show fewer accounts rather than a tidied version of one. " +
+  "Do not summarise across accounts, " +
   "do not say what any of it means, and do not claim the match says anything " +
   "about what caused their experience — it says only that they are not an " +
   "outlier. Every count you need is already given to you as a number; do not " +

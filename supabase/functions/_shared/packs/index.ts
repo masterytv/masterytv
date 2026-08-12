@@ -21,9 +21,10 @@ import type { CoachPack, PackPromptContext } from "./types.ts";
 import { executivePack } from "./executive-pack.ts";
 import { relationshipPack } from "./relationship-pack.ts";
 import { moneyPack } from "./money-pack.ts";
+import { integrationPack } from "./integration-pack.ts";
 
 export type { CoachPack, PackPromptContext };
-export { executivePack, relationshipPack, moneyPack };
+export { executivePack, integrationPack, moneyPack, relationshipPack };
 
 export type ProgramId = "general" | "relationship" | "money" | "integration";
 
@@ -37,25 +38,16 @@ const PACKS: Record<ProgramId, CoachPack | null> = {
   general: executivePack,
   relationship: relationshipPack,
   money: moneyPack,
-  // Integration — REGISTERED, NOT BUILT (INTEGRATION_SPRINT.md §3 / I4.1).
+  // Integration — BUILT at I4.1 (August 12, 2026), and it arrived in the order
+  // §3 insists on: I3's memory-write filter, crisis patterns, output auditor and
+  // irreversible-decision tripwire all landed BEFORE this line stopped being
+  // `null`. A narrative that has ratcheted through months of stored facts cannot
+  // be un-ratcheted, which is why the pack was not allowed to speak first.
   //
-  // `null` on purpose, and it is load-bearing. The program axis has to carry
-  // this slug now (I2) so every exhaustive Record in the codebase is forced to
-  // declare its integration behaviour, but the PACK itself must not exist yet:
-  // §3 puts the safety kernel (I3) ahead of the pack deliberately, because the
-  // memory-write filter governs what a pack is allowed to store and a narrative
-  // that has ratcheted through months of stored facts cannot be un-ratcheted.
-  //
-  // A stub persona here would be worse than nothing — it would resolve, speak,
-  // and write memory in whatever voice the placeholder happened to carry. So
-  // null keeps `resolvePack` failing LOUDLY, exactly as an unregistered program
-  // used to, while the type system still forces this line to be written by hand.
-  //
-  // Unreachable today by construction, verified rather than assumed:
-  // `KNOWN_PROGRAM_HINTS` in resolve-program.ts is its own explicit set and does
-  // not contain "integration", and no `signup_brand` case yields it. I4.5 adds
-  // those, and it lands after I3 and I4.1.
-  integration: null,
+  // Still DARK: reaching this pack needs `integrationEngineEnabled(userId)`
+  // (resolve-program.ts step 3), so an unflagged client sending
+  // program:'integration' does not get an unlaunched coach.
+  integration: integrationPack,
 };
 
 /**

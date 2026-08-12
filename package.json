@@ -29,7 +29,8 @@
     "check:memory-filter": "node scripts/coach-lab/memory-filter-check.mjs",
     "check:auditor": "node scripts/coach-lab/output-auditor-check.mjs",
     "check:tripwire": "node scripts/coach-lab/tripwire-check.mjs",
-    "check:trajectory": "node scripts/coach-lab/trajectory-check.mjs"
+    "check:trajectory": "node scripts/coach-lab/trajectory-check.mjs",
+    "battery:integration": "deno run --node-modules-dir=none --allow-net --allow-env --allow-read --env-file=.env.local --env-file=supabase/functions/.env scripts/coach-lab/integration-battery.ts"
   },
   "dependencies": {
     "@react-pdf/renderer": "^4.0.0",

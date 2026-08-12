@@ -631,6 +631,111 @@ const MONEY_TABLES: Record<string, TableFixture> = {
   decoded_invites: [],
 };
 
+// ─── Integration (Stage 3, I4) — two scenarios, one per derived stage ────
+
+// I4.6's stage gate is DERIVED (integration-pack.ts `integrationStage`), so it
+// needs two fixtures to be worth anything: the same coach, the same tables, one
+// memory fact of difference, and a different set of instructions in the prompt.
+// Stage 1 is the turn the account arrives on and forbids interpretation
+// outright; stage 2 is any turn after it is on file.
+const INTEGRATION_USER = "66666666-6666-4666-8666-666666666606";
+const INTEGRATION_CONVERSATION = "66666666-6666-4666-8666-6666666666f6";
+const INTEGRATION_SEEN_CONVERSATION = "66666666-6666-4666-8666-6666666666f7";
+
+// No assessment of any kind: the Footing check is I7, so `decodedLayer` renders
+// "" and the derived stage can never reach 3 yet. Empty rather than borrowed —
+// an integration user must not pick up another vertical's battery or profile.
+const INTEGRATION_BASE_TABLES: Record<string, TableFixture> = {
+  assessments: [],
+  assessment_scores: [],
+  assessment_reports: [],
+  users: [
+    {
+      id: INTEGRATION_USER,
+      name: "Dana",
+      email: "dana@fixture.test",
+      timezone: "America/New_York",
+      preferred_channel: "email",
+      subscription_tier: "free",
+      ai_tools: [],
+    },
+  ],
+  // A coach profile exists (every signup gets one) and must render NOTHING here:
+  // the delivery-style dials are executive machinery, and "be direct and blunt"
+  // is the opposite of the container tone this vertical runs on.
+  coach_profiles: [
+    {
+      directness: 8,
+      framing: 8,
+      warmth: 2,
+      autonomy: 5,
+      pacing: 8,
+      evidence_style: 2,
+      accountability: 8,
+      challenge_level: 8,
+      trust_level: 6,
+      framework_affinity: {},
+    },
+  ],
+  coaching_challenges: [],
+  framework_config: [],
+  coaching_agenda: [],
+  conversation_summaries: [],
+  ai_tools: [],
+  participant: [],
+  decoded_invites: [],
+};
+
+const INTEGRATION_FIRST_TURN_TABLES: Record<string, TableFixture> = {
+  ...INTEGRATION_BASE_TABLES,
+  messages: [
+    {
+      role: "user",
+      content:
+        "I don't know how to say this. During the surgery I was up near the ceiling watching them work on me, and then I was somewhere else and there was a line I understood I wasn't meant to cross. I haven't told anyone except my wife and she changed the subject.",
+      created_at: "2026-08-12T12:00:00Z",
+    },
+  ],
+  // Nothing about the experience on file: this IS the turn it arrives on. The
+  // post-processor writes the account after this reply, which is what makes the
+  // listen-before-you-interpret split mechanical rather than a request.
+  memory_facts: [],
+};
+
+const INTEGRATION_SEEN_TABLES: Record<string, TableFixture> = {
+  ...INTEGRATION_BASE_TABLES,
+  messages: [
+    { role: "user", content: "The line is the part I keep coming back to. I knew what it meant without being told.", created_at: "2026-08-13T12:03:00Z" },
+    { role: "coach", content: "Stay there for a second. When you say you knew, where in you does that knowing sit?", created_at: "2026-08-13T12:02:00Z" },
+    { role: "user", content: "I slept about three hours again.", created_at: "2026-08-13T12:01:00Z" },
+    { role: "coach", content: "I'm glad you came back. How has the week been on you?", created_at: "2026-08-13T12:00:00Z" },
+  ],
+  // Shaped the way the memory-write filter (I3.1) stores them: attributed
+  // report, the coined term quoted, no interpretation, and no coach-authored
+  // frame. The `account` fact is what moves the derived stage from 1 to 2.
+  memory_facts: [
+    {
+      category: "account",
+      subject: "what they describe",
+      content:
+        'Reports being up near the ceiling during surgery, then somewhere else, with "a line" they understood they were not meant to cross.',
+      importance: 0.9,
+    },
+    {
+      category: "disclosure",
+      subject: "their wife",
+      content: "Reports telling their wife, who changed the subject. Has told no one else.",
+      importance: 0.8,
+    },
+    {
+      category: "cost",
+      subject: "sleep",
+      content: "Reports sleeping around three hours a night since it happened.",
+      importance: 0.7,
+    },
+  ],
+};
+
 // ─── Scenarios ───────────────────────────────────────────────────────────
 
 export const SCENARIOS: Scenario[] = [
@@ -772,5 +877,76 @@ export const SCENARIOS: Scenario[] = [
       "RELATIONSHIP DYAD MODE",
     ],
     tables: MONEY_TABLES,
+  },
+  {
+    name: "integration-first-turn",
+    userId: INTEGRATION_USER,
+    userMessage:
+      "I don't know how to say this. During the surgery I was up near the ceiling watching them work on me, and then I was somewhere else and there was a line I understood I wasn't meant to cross. I haven't told anyone except my wife and she changed the subject.",
+    program: "integration",
+    mode: null,
+    engagementId: null,
+    conversationId: INTEGRATION_CONVERSATION,
+    mustInclude: [
+      "been through something they cannot place", // the integration persona
+      "I am not going to tell you what it was", // the undecidability policy, said once
+      "WHAT KIND OF CLAIM IS ON THE TABLE", // I4.2 the claim-type router
+      "THE AGENCY EXCEPTION", // the invariant that outranks undecidability
+      "STAGE 1, STEADY", // I4.6 derived stage — nothing on file yet
+      "may be arriving in this very message", // the listen-only instruction
+      "NO GROWTH LANGUAGE", // the non-optional sequencing rule
+      "SAFETY RULES:", // the SHARED crisis kernel, never forked
+    ],
+    mustExclude: [
+      // No cross-vertical persona bleed.
+      "executive and business coach",
+      "warm relationship coach",
+      "money coach",
+      "Emotionally Focused Therapy",
+      // None of the executive machinery, and none of another vertical's profile.
+      "DELIVERY STYLE:",
+      "INTERVENTION SELECTION",
+      "ACTIVE COACHING THREADS",
+      "COACHING AGENDA",
+      "COACHING RELATIONSHIP STAGE",
+      "DECODED PERSONALITY ASSESSMENT",
+      "MONEY TRAITS PROFILE",
+      "RELATIONSHIP DYAD MODE",
+      // The gate PROOF for the derived stage: this fixture must not reach stage 2.
+      "STAGE 2, SEEN",
+      "RELEVANT FACTS FROM MEMORY:",
+    ],
+    tables: INTEGRATION_FIRST_TURN_TABLES,
+  },
+  {
+    name: "integration-seen",
+    userId: INTEGRATION_USER,
+    userMessage: "The line is the part I keep coming back to. I knew what it meant without being told.",
+    program: "integration",
+    mode: null,
+    engagementId: null,
+    conversationId: INTEGRATION_SEEN_CONVERSATION,
+    mustInclude: [
+      "been through something they cannot place",
+      "STAGE 2, SEEN", // the account is on file, so this is not the turn it arrived on
+      "no longer the turn it arrived on",
+      "[account] what they describe", // the stored account, in the filter's shape
+      "[disclosure] their wife", // the fact that drives the Telling Ladder
+      "NO GROWTH LANGUAGE", // still off at stage 2, and at every derivable stage
+      "SAFETY RULES:",
+    ],
+    mustExclude: [
+      "executive and business coach",
+      "warm relationship coach",
+      "money coach",
+      "DELIVERY STYLE:",
+      "INTERVENTION SELECTION",
+      "DECODED PERSONALITY ASSESSMENT",
+      "MONEY TRAITS PROFILE",
+      // The other half of the derived-stage proof.
+      "STAGE 1, STEADY",
+      "may be arriving in this very message",
+    ],
+    tables: INTEGRATION_SEEN_TABLES,
   },
 ];
