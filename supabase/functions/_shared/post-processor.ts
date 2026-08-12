@@ -14,6 +14,7 @@ import { updateCoachProfile } from "./profile-updater.ts";
 import type { ProfileSignals } from "./debug-types.ts";
 import { resolvePack, programScope } from "./packs/index.ts";
 import type { PackExtraction } from "./packs/types.ts";
+import { filterMemoryWrites } from "./memory-filter.ts";
 
 // ─── FRAMEWORK ASSIGNMENT ──────────────────────────────────────────────
 
@@ -323,6 +324,42 @@ export async function postProcess(
 
     const data = await response.json();
     const extracted = JSON.parse(data.choices[0].message.content);
+
+    // I3.1 — THE MEMORY-WRITE FILTER, before anything is embedded or stored.
+    //
+    // Runs here rather than in the prompt because the prompt is a request and
+    // this is a guarantee. §3/I3.4 is explicit that the primary model's
+    // restraint is not a control, and memory is the one surface where a single
+    // bad write compounds: a fact stored today is read back into the prompt for
+    // months, and the model treats its own stored facts as settled background.
+    //
+    // Ordering matters twice over. It runs BEFORE the embedding call so the
+    // `factEmbeddings[i]` mapping below stays aligned with the surviving facts
+    // (filtering afterwards would silently pair each fact with its neighbour's
+    // vector), and it runs before the insert so a dropped fact costs an OpenAI
+    // call rather than a row.
+    //
+    // Integration only. The shipped verticals' extraction is untouched.
+    if (programScope(program) === "integration" && extracted.facts?.length > 0) {
+      const filtered = filterMemoryWrites(extracted.facts, {
+        userMessage,
+        coachResponse,
+      });
+      if (filtered.dropped.length > 0) {
+        // Logged as counts by reason, never content — an internal log carrying
+        // somebody's account of their experience is the same disclosure the
+        // 92d221d rule bans from internal email (I11.9).
+        const byReason = filtered.dropped.reduce<Record<string, number>>((acc, d) => {
+          acc[d.reason] = (acc[d.reason] ?? 0) + 1;
+          return acc;
+        }, {});
+        console.log(
+          `[post-process] memory filter dropped ${filtered.dropped.length} fact(s):`,
+          JSON.stringify(byReason),
+        );
+      }
+      extracted.facts = filtered.kept;
+    }
 
     // Store facts + generate embeddings
     if (extracted.facts?.length > 0) {
