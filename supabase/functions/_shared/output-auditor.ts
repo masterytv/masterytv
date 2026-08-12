@@ -192,6 +192,50 @@ const PATTERNS: ReadonlyArray<readonly [BannedMoveClass, RegExp]> = [
   ["oracular", /\bdestin(ed|y)\b/i],
 ];
 
+/**
+ * Constructions that make a matched surface form legitimate, tested against the
+ * SENTENCE the match sits in.
+ *
+ * 🔥 These are not politeness. Both were live false blocks, found on August 12,
+ * 2026 the moment the auditor was actually wired into the coach path — before
+ * that `auditDraft` was called by nothing, so its false positives cost nothing
+ * and hid:
+ *
+ *   1. "I am not going to tell you it wasn't real" is the pack's OWN prescribed
+ *      undecidability line, said once, early, as policy. The denial pattern
+ *      matched the tail of it. Wired, that means the coach's signature sentence
+ *      is blocked, regenerated, said again (it is in the persona), and the person
+ *      ends on the fixed fallback — the vertical's most important sentence made
+ *      unsayable by its own safety control.
+ *   2. "It was real to you" is the validating move: it claims nothing about what
+ *      the thing was and everything about believing them. The auditor's own
+ *      header already protects "I believe you" for exactly this reason; this is
+ *      the same sentence with a different subject.
+ *
+ * Sentence-scoped rather than draft-scoped on purpose. A draft-wide exemption
+ * would let one legitimate clause launder a real violation three sentences away.
+ */
+const EXEMPTIONS: ReadonlyArray<readonly [BannedMoveClass, RegExp]> = [
+  // "I'm not going to tell you it wasn't real" / "I won't say it was real."
+  ["ontological_denial", /\b(not\s+going\s+to|won'?t|will\s+not|can'?t|cannot|couldn'?t)\s+(tell|say|decide|settle)/i],
+  ["ontological_confirmation", /\b(not\s+going\s+to|won'?t|will\s+not|can'?t|cannot|couldn'?t)\s+(tell|say|decide|settle)/i],
+  // Real TO THEM — belief in the person, not a ruling on the world.
+  ["ontological_confirmation", /\breal\s+(to|for)\s+(you|them|him|her)\b/i],
+];
+
+/** The sentence a match sits in, so an exemption cannot reach across the draft. */
+function sentenceAround(text: string, index: number): string {
+  const start = Math.max(
+    0,
+    ...[".", "!", "?", "\n"].map((c) => text.lastIndexOf(c, Math.max(0, index - 1)) + 1),
+  );
+  const ends = [".", "!", "?", "\n"]
+    .map((c) => text.indexOf(c, index))
+    .filter((i) => i !== -1);
+  const end = ends.length > 0 ? Math.min(...ends) + 1 : text.length;
+  return text.slice(start, end);
+}
+
 /** Hedges. Their density is the proxy for expressed certainty (class 13). */
 const HEDGES =
   /\b(might|maybe|perhaps|possibly|could|seems?|sounds?\s+like|I\s+wonder|it\s+may|some\s+people|often|sometimes|not\s+sure|unclear|unknown|we\s+don'?t\s+know|no\s+one\s+knows)\b/gi;
@@ -267,13 +311,15 @@ export function auditDraft(draft: string, ctx: AuditContext): AuditResult {
 
   for (const [moveClass, pattern] of PATTERNS) {
     const match = draft.match(pattern);
-    if (match) {
-      violations.push({
-        moveClass,
-        matched: match[0],
-        action: BLOCKING.has(moveClass) ? "block" : "flag",
-      });
-    }
+    if (!match) continue;
+    const sentence = sentenceAround(draft, match.index ?? 0);
+    const exempt = EXEMPTIONS.some(([cls, re]) => cls === moveClass && re.test(sentence));
+    if (exempt) continue;
+    violations.push({
+      moveClass,
+      matched: match[0],
+      action: BLOCKING.has(moveClass) ? "block" : "flag",
+    });
   }
 
   // ── classes 4 + 8: the mirroring index ──

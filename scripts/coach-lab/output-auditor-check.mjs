@@ -220,6 +220,38 @@ ok(
 const fid = quoteFidelity('He said: "I ran out of questions because I got it... I was above"', EXCERPTS);
 ok("it reports WHICH quotation failed, not just that one did", fid.unfaithful.length === 1 && fid.quoted.length === 1);
 
+// ─── THE EXEMPTIONS (live false blocks, August 12) ───────────────────────
+// Both were found the moment the auditor was WIRED into the coach path. Until
+// then nothing called auditDraft, so its false positives cost nothing and hid.
+console.log("\n─── sentence-scoped exemptions ───\n");
+
+ok(
+  "the pack's own undecidability line is not a denial",
+  auditDraft(
+    "I'm not going to tell you what it was, and I'm not going to tell you it wasn't real. What was the room like?",
+    ctx,
+  ).verdict === "pass",
+);
+ok(
+  '"it was real to you" is belief in the person, not a ruling on the world',
+  auditDraft("It was real to you. What I can't tell you is what it was.", ctx).verdict === "pass",
+);
+ok(
+  "a bare ontological denial still blocks",
+  auditDraft("That wasn't real, and you should let it go.", ctx).verdict === "block",
+);
+ok(
+  "a bare ontological confirmation still blocks",
+  auditDraft("What you saw was real.", ctx).verdict === "block",
+);
+ok(
+  "an exemption cannot launder a violation in ANOTHER sentence",
+  auditDraft(
+    "I'm not going to tell you what it was. It was real, and they chose you.",
+    ctx,
+  ).verdict === "block",
+);
+
 // ─── THE REGENERATION NOTE ────────────────────────────────────────────────
 console.log("\n─── the regeneration note ───\n");
 
