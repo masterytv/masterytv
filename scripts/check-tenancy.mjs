@@ -50,6 +50,10 @@ const PROGRAM_SCOPED = [
                           // "executive-only" exemption (the money dashboard was
                           // listing executive commitments); program col added +
                           // backfilled the same day (20260720210000)
+  "trajectory_scores",    // 2026-08-11 I3.6 — per-user narrowing score; carries
+                          // program because a spiral is a property of ONE
+                          // vertical's conversation, and the money coach must
+                          // never inherit an integration user's score
   "feedback",             // 2026-07-20 — the feedback widget went ALL-brands
                           // (was the Relatti-only beta harness); /api/feedback
                           // stamps program, the beta cockpit filters by it

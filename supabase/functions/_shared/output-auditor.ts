@@ -187,7 +187,7 @@ const HEDGES =
 /** Words in the draft that are specific enough to count as a claim's content. */
 const NUMBERISH = /\b(\d{2,}|\d+\s*(days?|weeks?|months?|years?)|(nineteen|twenty)\s?\d{2})\b/gi;
 
-function hedgeDensity(text: string): number {
+export function hedgeDensity(text: string): number {
   const words = text.split(/\s+/).filter(Boolean).length;
   if (words === 0) return 1;
   return (text.match(HEDGES)?.length ?? 0) / words;
