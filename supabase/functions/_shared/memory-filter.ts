@@ -122,12 +122,28 @@ function distinctiveTokens(text: string): Set<string> {
 export function properNouns(text: string, known: Set<string> = new Set()): string[] {
   const out: string[] = [];
   const sentenceStart = new Set<number>();
-  // Index of the first word after start-of-string or a terminator.
-  let expectStart = true;
+  // A word is sentence-initial when the run of characters since the previous
+  // word contains a terminator OR a line break.
+  //
+  // 🔥 Both halves are measured, not assumed. This used to look at the two
+  // characters immediately after the previous word, which misses a terminator
+  // with anything between — and the corpus reveal ends every paragraph on a
+  // link, so "…uRTo)\n\nAnother was also above her body" left `Another` looking
+  // like a name in mid-sentence. It blocked the reveal live on 2026-08-12.
+  // `sentenceAround` in the output auditor has always treated a newline as a
+  // boundary; this makes the tokenizer agree with it.
+  //
+  // ⚠️ THE TRADE: a coinage on a line of its own, never repeated mid-sentence,
+  // is now read as an ordinary opener and missed. That is the same exposure the
+  // sentence-initial rule has always carried, widened to paragraph breaks, and
+  // `known` still catches any coinage the text uses mid-sentence anywhere. The
+  // alternative — every paragraph opener scored as a name — blocks ordinary
+  // prose, which is the failure that actually happened.
+  let prevEnd: number | null = null;
   for (const m of text.matchAll(WORD)) {
-    if (expectStart) sentenceStart.add(m.index ?? -1);
-    const after = text.slice((m.index ?? 0) + m[0].length, (m.index ?? 0) + m[0].length + 2);
-    expectStart = /^[.!?]/.test(after);
+    const at = m.index ?? 0;
+    if (prevEnd === null || /[.!?\n]/.test(text.slice(prevEnd, at))) sentenceStart.add(at);
+    prevEnd = at + m[0].length;
   }
   for (const m of text.matchAll(WORD)) {
     const w = m[0];
