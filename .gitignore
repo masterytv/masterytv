@@ -27,6 +27,8 @@ yarn-error.log*
 
 # env files
 .env*.local
+# `supabase functions serve` reads this one; it is NOT covered by .env*.local
+supabase/functions/.env
 
 # vercel
 .vercel

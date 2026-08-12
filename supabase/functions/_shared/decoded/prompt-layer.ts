@@ -13,7 +13,7 @@
  * Sprint 0.4 — S0.4.2
  */
 
-import type { AssessmentProfile } from './assessment-profile';
+import type { AssessmentProfile } from './assessment-profile.ts';
 import { attachmentNaming } from './attachment-style.ts';
 
 /**

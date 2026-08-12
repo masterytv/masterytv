@@ -22,6 +22,8 @@ import { generateEmbedding, logEmbeddingCost } from "../_shared/embeddings.ts";
 import { handleSearchFacts } from "../_shared/search-facts.ts";
 import { handleLookupAssessment } from "../_shared/lookup-assessment.ts";
 import { handleLookupRelationship } from "../_shared/lookup-relationship.ts";
+import { FIND_SIMILAR_ACCOUNTS_TOOL, handleFindSimilarAccounts } from "../_shared/corpus.ts";
+import { integrationEngineEnabled } from "../_shared/flags.ts";
 import { resolvePack, programScope } from "../_shared/packs/index.ts";
 import { resolveProgram } from "../_shared/resolve-program.ts";
 import {
@@ -135,7 +137,24 @@ Deno.serve(async (req: Request) => {
     // not essays). The tighter cap backstops the persona's length rules — the old
     // 1024 executive budget left room for the 5-step framework dumps.
     const coachMaxTokens = 700;
-    const coachTools = pack.tools;
+
+    // ── Sprint 0 / I1: the corpus bridge rides the EXISTING coach ──
+    // The integration vertical has no ProgramId, no brand and no pack yet, on
+    // purpose: I1 is a kill gate, and nothing downstream of it should exist
+    // until the founder's go/no-go. So the tool is appended here rather than
+    // declared by a pack, gated on INTEGRATION_ENGINE (global) or on the
+    // per-user allow-list that carries the I1.5 testers.
+    //
+    // ⚠️ TEMPORARY BY DESIGN. This block moves into `integration-pack.ts`
+    // `tools` at I4.4 and comes back out of the orchestrator — a vertical
+    // behaviour living here is exactly the smell PC4.2 exists to prevent.
+    const corpusBridgeOn = integrationEngineEnabled(userId);
+    const coachTools = corpusBridgeOn
+      ? [...pack.tools, FIND_SIMILAR_ACCOUNTS_TOOL]
+      : pack.tools;
+    if (corpusBridgeOn) {
+      console.log(`[${FUNCTION_NAME}] Corpus bridge ON for ${userId} (I1, flagged)`);
+    }
 
     // ── 2.5 Free tier message limit check (S5.9) ──
     // Sprint 0.4: Deep link messages from report CTAs get bonus allowance
@@ -585,6 +604,21 @@ Deno.serve(async (req: Request) => {
                     name: pendingToolUse.name,
                     query: toolInput.person_name ?? "",
                     result_confidence: result.found ? "high" : "low",
+                    cached: false,
+                    duration_ms: Math.round(performance.now() - toolCallStart),
+                  });
+                }
+              } else if (pendingToolUse.name === "find_similar_accounts" && corpusBridgeOn) {
+                // The email comes from the verified JWT, never from the model:
+                // it gates whether Project Profound's ANALYST prose is in the
+                // payload at all (founder only — INTEGRATION_SPRINT.md I1).
+                const result = await handleFindSimilarAccounts(toolInput, { email: user.email });
+                toolResult = JSON.stringify(result);
+                if (debugMode) {
+                  toolCallsDebug.push({
+                    name: pendingToolUse.name,
+                    query: String(toolInput.description ?? "").slice(0, 80),
+                    result_confidence: (result.matched_count as number) > 0 ? "high" : "low",
                     cached: false,
                     duration_ms: Math.round(performance.now() - toolCallStart),
                   });
