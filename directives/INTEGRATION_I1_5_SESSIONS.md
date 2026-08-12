@@ -68,7 +68,9 @@ Say the true thing about what you keep. If you are keeping their account, say so
 
 ### Before
 
-- `/admin/integration` open in a tab you have already signed into. Confirm it works today — run the built-in sample first, not their account.
+- **`https://masterytv.com/admin/integration`**, signed in as `tom@masterytv.com`, in a tab you opened *before* the call. It resolves on any of the hosts (`relatti.com`, `moneytraits.com` too) — the admin surface is not brand-scoped and they all hit the same edge function.
+- **Confirm it works today, before they are on the line.** Paste any few sentences into the page and check that excerpts come back. Three things can refuse you, each with its own message: `Admins only.` (your `users.role`), `INTEGRATION_ENGINE is off for this account.` (your uuid is missing from the `INTEGRATION_ENGINE_USERS` edge secret), and a corpus error (`PROFOUND_URL` / `PROFOUND_SERVICE_KEY`). The terminal equivalent, with a built-in sample account and the assertions, is `npm run corpus:probe`.
+- **The analyst-notes block at the bottom is keyed to your email and appears for nobody else.** It is still on your screen. Scroll up, or close it, before you turn the laptop around.
 - Decide, and be ready to say, what happens to their account afterwards. There is no consented store yet, so anything you keep is a personal note. The product decision — that a person's account is stored and the coach remembers it — is real and is Sprint 1's job (§5), not this session's.
 - Have 988 and the Crisis Text Line number where you can see them. See §6.
 - Notepad, not a recording, unless they explicitly agree to one.
