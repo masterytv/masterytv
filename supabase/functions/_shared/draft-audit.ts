@@ -454,5 +454,9 @@ export function buildUserTextForAudit(opts: {
   const theirTurns = opts.history
     .filter((m) => m.role === "user")
     .map((m) => m.content);
+  // Their NAME is deliberately not folded in here. It is not something they
+  // wrote, and smuggling it into this blob would need a fake sentence around it
+  // to survive the tokenizer's sentence-initial rule. It travels as its own
+  // field instead — `AuditContext.userName`.
   return [...theirTurns, opts.currentMessage, ...opts.factTexts].join("\n");
 }

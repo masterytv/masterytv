@@ -19,6 +19,7 @@ import { executivePack } from "../../supabase/functions/_shared/packs/executive-
 import { moneyPack } from "../../supabase/functions/_shared/packs/money-pack.ts";
 import { relationshipPack } from "../../supabase/functions/_shared/packs/relationship-pack.ts";
 import { auditDraft } from "../../supabase/functions/_shared/output-auditor.ts";
+import { mergeMessageMetadata } from "../../supabase/functions/_shared/message-metadata.ts";
 import type { AnthropicResponse } from "../../supabase/functions/_shared/anthropic.ts";
 
 function auditDraftPassesCleanly(draft: string): boolean {
@@ -333,6 +334,45 @@ ok("the executive pack does not", executivePack.auditDrafts === false);
 ok("the relationship pack does not", relationshipPack.auditDrafts === false);
 ok("the money pack does not", moneyPack.auditDrafts === false);
 
+// ─── 10. the record survives the write path ───────────────────────────────
+//
+// It lives in THIS gate because `draft_audit` is what the clobber destroyed:
+// every outcome above was decided correctly in production and then erased
+// seconds later by `post-processor`'s whole-object `update({ metadata })`,
+// which is why the live run could not say why anybody got the fixed line.
+// 🔑 The lesson the placement is meant to carry: everything above this section
+// tests a RETURN VALUE, and a return value nobody can read afterwards is not an
+// audit trail. The merge is shared by every vertical, not just this one.
+console.log("\n─── the metadata merge (shared write path) ───\n");
+
+const coachWrote = {
+  model: "claude-sonnet-4-5",
+  program: "integration",
+  tokens_in: 4200,
+  draft_audit: { attempts: 2, blocked: ["titling"], still_blocked: [], fell_back: false },
+};
+const merged = mergeMessageMetadata(coachWrote, { sentiment: "distressed", topics: ["nde"] });
+
+ok("the post-processor's keys land", merged.sentiment === "distressed");
+ok(
+  "and the coach's audit trail survives — the 0-of-5 case",
+  JSON.stringify(merged.draft_audit) === JSON.stringify(coachWrote.draft_audit),
+  JSON.stringify(merged),
+);
+ok("so does the program stamp every vertical writes", merged.program === "integration");
+ok(
+  "a row with no metadata yet still gets the patch",
+  mergeMessageMetadata(null, { sentiment: "calm" }).sentiment === "calm",
+);
+ok(
+  "a non-object column is treated as absent rather than thrown on",
+  mergeMessageMetadata("corrupt" as unknown, { sentiment: "calm" }).sentiment === "calm",
+);
+ok(
+  "on a genuine collision the newer measurement wins",
+  mergeMessageMetadata({ sentiment: "old" }, { sentiment: "new" }).sentiment === "new",
+);
+
 console.log(`\nDraft-audit gate: ${pass}/${pass + failures.length} passed`);
 if (failures.length) {
   console.log("\nFAILURES:");
@@ -342,5 +382,6 @@ if (failures.length) {
 }
 console.log(
   "Draft-audit gate passed — blocked drafts regenerate once, a stubborn one gets the fixed reply, " +
-    "the coach never 500s on the auditor, and only the integration pack buffers.\n",
+    "the coach never 500s on the auditor, only the integration pack buffers, and the record of all " +
+    "of it survives the post-processor.\n",
 );

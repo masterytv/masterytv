@@ -15,6 +15,7 @@ import type { ProfileSignals } from "./debug-types.ts";
 import { resolvePack, programScope } from "./packs/index.ts";
 import type { PackExtraction } from "./packs/types.ts";
 import { filterMemoryWrites } from "./memory-filter.ts";
+import { mergeMessageMetadata } from "./message-metadata.ts";
 
 // ─── FRAMEWORK ASSIGNMENT ──────────────────────────────────────────────
 
@@ -504,17 +505,42 @@ export async function postProcess(
       }
     }
 
-    // Update message metadata with sentiment + topics
+    // Update message metadata with sentiment + topics.
+    //
+    // 🔥 MERGE, NEVER REPLACE. This used to write the whole object and so
+    // deleted everything the coach had just stamped on the row — `program`,
+    // token counts, and integration's `draft_audit`, which survived 0 of 5 live
+    // turns. See `message-metadata.ts` for the measurement.
+    //
+    // Read-then-write rather than a jsonb `||` in SQL, deliberately: the coach
+    // INSERTS this row and awaits it before triggering post-processing, so this
+    // is the only writer left by the time it runs, and an RPC would cost a
+    // migration plus the SECURITY DEFINER grant dance for no property this
+    // ordering does not already give.
     if (extracted.sentiment || extracted.topics) {
-      await supabase
+      const { data: existing, error: readErr } = await supabase
         .from("messages")
-        .update({
-          metadata: {
-            sentiment: extracted.sentiment,
-            topics: extracted.topics,
-          },
-        })
-        .eq("id", coachMessageId);
+        .select("metadata")
+        .eq("id", coachMessageId)
+        .maybeSingle();
+
+      if (readErr) {
+        // Skipping is the safe direction: sentiment and topics are analytics,
+        // and the coach's object is the audit trail.
+        console.warn(
+          `[post-process] Could not read message metadata to merge into (${readErr.message}) — leaving it alone rather than overwriting it.`,
+        );
+      } else {
+        await supabase
+          .from("messages")
+          .update({
+            metadata: mergeMessageMetadata(existing?.metadata, {
+              sentiment: extracted.sentiment,
+              topics: extracted.topics,
+            }),
+          })
+          .eq("id", coachMessageId);
+      }
     }
 
     // Log post-processor cost
