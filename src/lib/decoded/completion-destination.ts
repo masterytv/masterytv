@@ -62,6 +62,19 @@ const COMPLETION: Record<ProgramId, CompletionPlan> = {
     ready: "Your MoneyTraits report is ready.",
     opening: "Opening your report…",
   },
+  // Integration: back to the conversation, never to a report viewer. This is
+  // the vertical's flow rather than a placeholder — INTEGRATION_EXPERIENCE.md
+  // inverts the engine's assess → report → coach order into tell → be met →
+  // be placed → then measure, so the Footing check is administered mid-stream
+  // AFTER The Company and hands the person back to where they were talking.
+  // The artifact (The Map, I8) is assembled later and read on its own terms.
+  integration: {
+    href: () => "/dashboard/chat",
+    autoNavigate: true,
+    cta: "Go back",
+    ready: "That's the last of the questions.",
+    opening: "Taking you back…",
+  },
 };
 
 /**

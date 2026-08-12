@@ -32,11 +32,11 @@ export type BrandId = "masterytv" | "relatti" | "money";
  * ⚠️ LOCKSTEP TWIN: supabase/functions/_shared/packs/index.ts declares the same
  * union (edge functions can't import from src/). Add new programs in BOTH.
  */
-export type ProgramId = "general" | "relationship" | "money";
+export type ProgramId = "general" | "relationship" | "money" | "integration";
 
 /** Type guard for a known program slug (raw DB strings, client hints). */
 export function isProgramId(x?: string | null): x is ProgramId {
-  return x === "general" || x === "relationship" || x === "money";
+  return x === "general" || x === "relationship" || x === "money" || x === "integration";
 }
 
 export interface Brand {

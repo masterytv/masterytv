@@ -25,7 +25,7 @@ import { moneyPack } from "./money-pack.ts";
 export type { CoachPack, PackPromptContext };
 export { executivePack, relationshipPack, moneyPack };
 
-export type ProgramId = "general" | "relationship" | "money";
+export type ProgramId = "general" | "relationship" | "money" | "integration";
 
 /**
  * Adding a program to the union makes this Record a COMPILE ERROR until the
@@ -33,10 +33,29 @@ export type ProgramId = "general" | "relationship" | "money";
  * brand axis already had (11 Record<BrandId,…> maps) applied to the program
  * axis, where a new vertical actually arrives.
  */
-const PACKS: Record<ProgramId, CoachPack> = {
+const PACKS: Record<ProgramId, CoachPack | null> = {
   general: executivePack,
   relationship: relationshipPack,
   money: moneyPack,
+  // Integration — REGISTERED, NOT BUILT (INTEGRATION_SPRINT.md §3 / I4.1).
+  //
+  // `null` on purpose, and it is load-bearing. The program axis has to carry
+  // this slug now (I2) so every exhaustive Record in the codebase is forced to
+  // declare its integration behaviour, but the PACK itself must not exist yet:
+  // §3 puts the safety kernel (I3) ahead of the pack deliberately, because the
+  // memory-write filter governs what a pack is allowed to store and a narrative
+  // that has ratcheted through months of stored facts cannot be un-ratcheted.
+  //
+  // A stub persona here would be worse than nothing — it would resolve, speak,
+  // and write memory in whatever voice the placeholder happened to carry. So
+  // null keeps `resolvePack` failing LOUDLY, exactly as an unregistered program
+  // used to, while the type system still forces this line to be written by hand.
+  //
+  // Unreachable today by construction, verified rather than assumed:
+  // `KNOWN_PROGRAM_HINTS` in resolve-program.ts is its own explicit set and does
+  // not contain "integration", and no `signup_brand` case yields it. I4.5 adds
+  // those, and it lands after I3 and I4.1.
+  integration: null,
 };
 
 /**
@@ -56,7 +75,14 @@ export function normalizeProgram(program: string | null | undefined): ProgramId 
 }
 
 export function resolvePack(program: string | null | undefined): CoachPack {
-  return PACKS[normalizeProgram(program)];
+  const id = normalizeProgram(program);
+  const pack = PACKS[id];
+  if (!pack) {
+    throw new Error(
+      `Program '${id}' is registered on the program axis but has no Coach Pack yet — build it before routing anyone to this vertical's coach (_shared/packs/${id}-pack.ts)`,
+    );
+  }
+  return pack;
 }
 
 /**

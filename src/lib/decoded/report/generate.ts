@@ -24,7 +24,7 @@ export interface GenerateReportResult {
 }
 
 /** How a program's report is produced (T2). */
-type ReportKind = 'llm-sections' | 'money-map';
+type ReportKind = 'llm-sections' | 'money-map' | 'not-built';
 
 /**
  * Report-generation strategy per program. Record<ProgramId,…> ON PURPOSE
@@ -34,11 +34,23 @@ type ReportKind = 'llm-sections' | 'money-map';
  *   are filled asynchronously by the decoded-generate-report edge function.
  * - 'money-map' — a DETERMINISTIC scored bundle written Next-side
  *   (writeMoneyMapReport), no LLM, no edge function.
+ * - 'not-built' — the vertical's artifact does not exist yet. Refuses with an
+ *   error instead of writing a row. Reserved for a registered program whose
+ *   report epic has not run; it is never a resting state for a live vertical.
  */
 const REPORT_KIND: Record<ProgramId, ReportKind> = {
   general: 'llm-sections',
   relationship: 'llm-sections',
   money: 'money-map',
+  // Integration's artifact is The Map (INTEGRATION_SPRINT.md §3 / I8): six
+  // sections, vertical-first order, no archetype and no card, and the word
+  // "report" is retired in that vertical. It is a THIRD report shape, so it
+  // cannot borrow either path — 'llm-sections' would hand it the Big Five
+  // narrative renderer and produce a page about a personality nobody measured.
+  // 🔥 I8.4: when the shape lands, register it everywhere the artifact is
+  // summarized (dashboard digest, email chrome), not just here — a new shape
+  // rendered as a bare headline is the bug the last vertical shipped.
+  integration: 'not-built',
 };
 
 /**
@@ -98,8 +110,17 @@ export async function generateReport(assessmentId: string): Promise<GenerateRepo
   // incumbent path below, byte-for-byte. (REPORT_KIND is exhaustive over
   // ProgramId, so a new vertical is forced to choose here rather than silently
   // inheriting one of these.)
-  if (REPORT_KIND[assessment.program as ProgramId] === 'money-map') {
+  const reportKind = REPORT_KIND[assessment.program as ProgramId];
+  if (reportKind === 'money-map') {
     return writeMoneyMapReport(supabase, assessmentId, user.id, assessment.program);
+  }
+  // A registered program whose artifact epic has not run yet. Refuse loudly
+  // rather than write a row through a renderer built for another vertical.
+  if (reportKind === 'not-built') {
+    return {
+      success: false,
+      error: `No report artifact is built for program '${assessment.program}' yet.`,
+    };
   }
 
   // Create the report row with empty sections
