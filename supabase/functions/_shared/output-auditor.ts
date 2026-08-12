@@ -378,5 +378,25 @@ export function regenerationNote(result: AuditResult): string {
 
   const blocked = result.violations.filter((v) => v.action === "block");
   const lines = [...new Set(blocked.map((v) => reasons[v.moveClass]))];
+
+  // 🔥 Quotation fidelity is the ONE class where the offending text is named
+  // back, and the exception is principled rather than convenient. Everywhere else
+  // the banned thing is a CONSTRUCTION, and handing a model a construction reads
+  // as a demonstration (BRAND.md §14.6). Here the banned thing is a specific
+  // wrong string among two or three quotations, and a note that does not say
+  // which one leaves the model to guess — measured on August 12, 2026: it guesses
+  // wrong, splices again, and the person ends up with the fallback line instead
+  // of the other people's words they asked to see.
+  const infidelity = blocked.find((v) => v.moveClass === "quote_infidelity");
+  if (infidelity) {
+    lines.push(
+      `The quotation that is wrong starts: ${JSON.stringify(infidelity.matched.slice(0, 70))}. ` +
+        "Go back to the excerpt it came from in the tool result and copy ONE unbroken stretch of it, " +
+        "exactly as it stands there — a single sentence is usually right. No ellipsis anywhere inside " +
+        "a quotation, nothing joined, nothing tidied. If the part you want is not one unbroken stretch, " +
+        "quote less of it.",
+    );
+  }
+
   return `Rewrite your reply. ${lines.join(" ")}`;
 }

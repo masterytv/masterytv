@@ -24,6 +24,11 @@ import { handleLookupAssessment } from "../_shared/lookup-assessment.ts";
 import { handleLookupRelationship } from "../_shared/lookup-relationship.ts";
 import { handleFindSimilarAccounts } from "../_shared/corpus.ts";
 import { handleLookupFooting } from "../_shared/lookup-footing.ts";
+import {
+  auditAndFinalizeDraft,
+  buildUserTextForAudit,
+  type DraftAuditOutcome,
+} from "../_shared/draft-audit.ts";
 import { resolvePack, programScope } from "../_shared/packs/index.ts";
 import { resolveProgram } from "../_shared/resolve-program.ts";
 import {
@@ -430,6 +435,9 @@ Deno.serve(async (req: Request) => {
       let outputTokens = 0;
       let stopReason = "";
       const toolCallsDebug: Array<{ name: string; query: string; result_confidence: string; cached: boolean; duration_ms: number }> = [];
+      // Corpus excerpts handed to the model this turn, for the draft audit.
+      const corpusExcerptsSeen: string[] = [];
+      let draftAudit: DraftAuditOutcome | null = null;
 
       try {
         await writer.write(
@@ -505,9 +513,15 @@ Deno.serve(async (req: Request) => {
                   case "content_block_delta":
                     if (event.delta?.type === "text_delta" && event.delta.text) {
                       fullContent += event.delta.text;
-                      await writer.write(
-                        encoder.encode(sseEvent("delta", { text: event.delta.text }))
-                      );
+                      // I3.4: a pack that audits its drafts sends NOTHING here.
+                      // The whole reply is emitted after the audit below, because
+                      // a delta that has left the server cannot be un-sent and
+                      // "hard block + regenerate" is meaningless without that.
+                      if (!pack.auditDrafts) {
+                        await writer.write(
+                          encoder.encode(sseEvent("delta", { text: event.delta.text }))
+                        );
+                      }
                     } else if (event.delta?.type === "input_json_delta" && event.delta.partial_json) {
                       toolInputBuffer += event.delta.partial_json;
                     }
@@ -617,6 +631,14 @@ Deno.serve(async (req: Request) => {
                 // payload at all (founder only — INTEGRATION_SPRINT.md I1).
                 const result = await handleFindSimilarAccounts(toolInput, { email: user.email });
                 toolResult = JSON.stringify(result);
+                // Keep the excerpts for the draft audit's quotation-fidelity
+                // class: anything the reply puts in quotation marks has to be a
+                // contiguous run of one of these. Measured necessary — the model
+                // splices them with ellipses however plainly it is told not to.
+                for (const account of (result.accounts ?? []) as Array<{ excerpt?: { text?: string } }>) {
+                  const text = account.excerpt?.text;
+                  if (text) corpusExcerptsSeen.push(text);
+                }
                 if (debugMode) {
                   toolCallsDebug.push({
                     name: pendingToolUse.name,
@@ -676,6 +698,37 @@ Deno.serve(async (req: Request) => {
           break;
         }
 
+        // ── 6.5 The buffered draft audit (I3.4) ──
+        // Only for a pack that asked for it. Nothing has been sent to the client
+        // yet in that case, so a blocking move class can still be regenerated —
+        // which is the whole reason the draft was buffered. Runs before the cost
+        // block so the regeneration's tokens land in the same row.
+        if (pack.auditDrafts && fullContent.trim()) {
+          draftAudit = await auditAndFinalizeDraft({
+            draft: fullContent,
+            system: contextualSystem,
+            messages: toolUseMessages,
+            maxTokens: coachMaxTokens,
+            ctx: {
+              userText: buildUserTextForAudit({
+                currentMessage: message,
+                history: conversationHistory,
+                factTexts: metadata.factTexts,
+              }),
+              // Certainty may hold or fall across turns, never rise (class 13).
+              previousDraft: [...conversationHistory].reverse()
+                .find((m) => m.role === "assistant")?.content,
+              corpusExcerpts: corpusExcerptsSeen,
+            },
+          });
+          fullContent = draftAudit.text;
+          inputTokens += draftAudit.extraUsage.input;
+          outputTokens += draftAudit.extraUsage.output;
+          // The reply goes out whole, as one delta — the event the web client
+          // already renders, so no client change is needed for this vertical.
+          await writer.write(encoder.encode(sseEvent("delta", { text: fullContent })));
+        }
+
         // ── 7. Stream complete — store, log, post-process ──
         const claudeMs = debugMode ? performance.now() - claudeStart : 0;
         // calculateCost's second arg means "Claude (Sonnet) rates". This used to
@@ -701,6 +754,19 @@ Deno.serve(async (req: Request) => {
             framework: c.framework,
             phase: c.framework_phase,
           })),
+          // I3.4: class names and counts only, never the blocked draft text. It
+          // is coach prose but it quotes the person, and a stored copy of a reply
+          // that was judged unsafe to send is a copy of it (I11.9's rule).
+          ...(draftAudit
+            ? {
+              draft_audit: {
+                attempts: draftAudit.attempts,
+                blocked: draftAudit.blocked,
+                still_blocked: draftAudit.stillBlocked,
+                fell_back: draftAudit.fellBack,
+              },
+            }
+            : {}),
         };
 
         // Store debug trace in message metadata (only for admin debug mode)

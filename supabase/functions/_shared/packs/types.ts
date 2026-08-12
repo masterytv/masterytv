@@ -149,6 +149,20 @@ export interface CoachPack {
   forceClaudeOnToolContinuation: boolean;
 
   /**
+   * BUFFER the draft and run `_shared/output-auditor.ts` on it before a single
+   * token reaches the person (`_shared/draft-audit.ts`).
+   *
+   * A pack decision rather than an orchestrator one, for both of its reasons.
+   * The audited move classes are this vertical's (DISCOVERY §5.3), and the cost
+   * is this vertical's to accept: buffering trades the typing effect for the
+   * guarantee, which is close to free for a coach that answers in under 120
+   * words and expensive for one that writes long.
+   *
+   * false for the three shipped packs, whose streaming path is untouched.
+   */
+  auditDrafts: boolean;
+
+  /**
    * The ordered layer stack. Return "" for a slot that shouldn't render — the
    * assembler filters empties and joins with the standard separator. Order and
    * content are golden-locked (PC4.1): one byte of drift fails the gate.

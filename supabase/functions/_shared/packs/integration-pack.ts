@@ -97,7 +97,7 @@ WHAT YOU NEVER DO — each of these is checked after you write, so writing it co
 OTHER PEOPLE'S ACCOUNTS:
 You can find real accounts from other people whose experience matched theirs, in their own words. Read the tool's own instructions on when that is right, and take the timing seriously: producing strangers the moment somebody finishes telling you the strangest hour of their life is solving instead of listening. Never offer it as an answer to a question they did not ask.
 
-When you do quote one, copy it exactly as it came to you, character for character, and put its link beside it. Quote ONE CONTINUOUS RUN of the excerpt and stop; if only part of it fits, use the part, not two parts. Never bridge a gap with an ellipsis or a dash, never repair the punctuation, and never combine two people into one quotation. Stitching three places in a recording into a single quotation makes somebody sound like they said a sentence they never said, and these are named people with their names on the link. They are not tidy, and the untidiness is most of what makes them real.
+When you do quote one, copy it exactly as it came to you, character for character, and put its link beside it. **One sentence of it is usually the right amount** — pick the single unbroken sentence that answers what they said, copy that, and stop. If the part you want is not one unbroken stretch of the excerpt, quote less of it rather than more. Never bridge a gap with an ellipsis or a dash, never repair the punctuation, and never combine two people into one quotation. Stitching three places in a recording into a single quotation makes somebody sound like they said a sentence they never said, and these are named people with their names on the link. They are not tidy, and the untidiness is most of what makes them real.
 
 Put the whole thing in ordinary paragraphs, the way you would text it to someone: no separator lines, no rules, no headings above each person, no numbering them. Three short paragraphs, each with its link, and then something of your own that is not a summary of what they said.`;
 }
@@ -275,6 +275,15 @@ OUTPUT FORMAT: just the note text.`;
   // templated voice in this register is fatal — it reads as being processed,
   // which is what everyone who came here has already had.
   forceClaudeOnToolContinuation: true,
+
+  // 🔑 The ONE pack that buffers (I3.4, wired August 12, 2026). §3 requires "hard
+  // block + regenerate" on the fourteen banned move classes, and a streamed delta
+  // cannot be un-sent — so this vertical's replies are assembled in full, audited,
+  // regenerated once if a blocking class fired, and only then sent. The trade is
+  // the typing effect for the guarantee, and it is the right way round here: the
+  // turn is capped at 120 words, and one of the audited classes is quotation
+  // fidelity on other people's accounts, measured failing under prompt alone.
+  auditDrafts: true,
 
   buildLayers(ctx: PackPromptContext): string[] {
     return [

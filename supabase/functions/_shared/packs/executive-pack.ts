@@ -412,6 +412,10 @@ OUTPUT FORMAT: Just the briefing text, no labels or headers.`;
   // Tool-loop continuations may fall back to the secondary provider.
   forceClaudeOnToolContinuation: false,
 
+  // Streams token by token, exactly as it always has (I3.4's buffered draft
+  // path is opt-in per pack).
+  auditDrafts: false,
+
   buildLayers(ctx: PackPromptContext): string[] {
     return [
       buildExecutivePersona(),                                 // Layer 1

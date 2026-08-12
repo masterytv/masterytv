@@ -128,8 +128,22 @@ export async function callClaude(opts: {
   messages: AnthropicMessage[];
   tools?: AnthropicTool[];
   maxTokens?: number;
+  /**
+   * Skip the GPT-4o primary and go straight to Claude, mirroring
+   * `callClaudeStreaming`'s option of the same name. Added for the integration
+   * coach's regeneration call (I3.4): a regenerated draft has to come from the
+   * same model that produced the first one, or the rewrite arrives in a
+   * different voice than the conversation — and this pack's whole register is
+   * the thing being protected. Defaults to false, so every existing caller
+   * keeps the GPT-4o-primary behaviour byte for byte.
+   */
+  forceClaude?: boolean;
 }): Promise<AnthropicResponse> {
   const openaiKey = Deno.env.get("OPENAI_API_KEY");
+
+  if (opts.forceClaude) {
+    return await callClaudeDirectly(opts);
+  }
 
   if (!openaiKey) {
     console.warn("[llm] OPENAI_API_KEY not set — using Claude directly");

@@ -187,6 +187,10 @@ OUTPUT FORMAT: Just the note text, no labels or headers.`;
   // Fable/Claude-class response) — never fall back mid-conversation.
   forceClaudeOnToolContinuation: true,
 
+  // Streams token by token, exactly as it always has (I3.4's buffered draft
+  // path is opt-in per pack).
+  auditDrafts: false,
+
   buildLayers(ctx: PackPromptContext): string[] {
     return [
       buildMoneyCoachPersona(),                                        // Layer 1

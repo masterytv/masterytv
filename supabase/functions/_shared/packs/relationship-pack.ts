@@ -186,6 +186,10 @@ OUTPUT FORMAT: Just the note text, no labels or headers.`;
   // stance is tuned against Claude.
   forceClaudeOnToolContinuation: true,
 
+  // Streams token by token, exactly as it always has (I3.4's buffered draft
+  // path is opt-in per pack).
+  auditDrafts: false,
+
   buildLayers(ctx: PackPromptContext): string[] {
     return [
       buildRelationshipCoachPersona(),                         // Layer 1

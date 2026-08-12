@@ -49,6 +49,7 @@
 import { integrationPack, integrationStage } from "../../supabase/functions/_shared/packs/integration-pack.ts";
 import { handleFindSimilarAccounts } from "../../supabase/functions/_shared/corpus.ts";
 import { quoteFidelity } from "../../supabase/functions/_shared/output-auditor.ts";
+import { auditAndFinalizeDraft } from "../../supabase/functions/_shared/draft-audit.ts";
 import type { MemoryFact, Message } from "../../supabase/functions/_shared/prompt-layers.ts";
 import type { PackPromptContext } from "../../supabase/functions/_shared/packs/types.ts";
 
@@ -315,12 +316,16 @@ function check(label: string, pass: boolean, detail = ""): void {
  * A measurement that is REPORTED and does not fail the run.
  *
  * Exactly one property uses this: quotation fidelity on a corpus turn. It is not
- * advisory because it matters less — it blocks in `output-auditor.ts`, which is
- * the strongest verdict in that file. It is advisory HERE because the auditor is
- * not yet wired into the coach's draft path (I3.4's owed half), so this battery
- * is currently measuring what a prompt can hold, and three consecutive runs on
- * August 12, 2026 said: not this. Once the auditor runs on drafts, move this back
- * to `check` and it should never fire again.
+ * advisory because it matters less — it hard-blocks in `output-auditor.ts`, and
+ * since August 12, 2026 the coach ENFORCES it: `integrationPack.auditDrafts` is
+ * true, so the draft is buffered, audited, and regenerated before a token
+ * reaches anyone (`_shared/draft-audit.ts`, `npm run check:draft-audit`).
+ *
+ * It is advisory HERE because this battery calls the model directly rather than
+ * through the coach, so what it measures is the RAW draft — in other words, how
+ * often the auditor has to intervene, which is worth watching and is not a
+ * failure. It fired on 2 of 3 accepted runs, which is why the enforcement exists.
+ * If it ever stops firing, the prompt got better; the block stays either way.
  */
 function advisory(label: string, pass: boolean, detail = ""): void {
   if (pass) {
@@ -680,6 +685,37 @@ async function runTimingSuite(): Promise<void> {
       ? unfaithful.map((q) => JSON.stringify(q.slice(0, 100))).join("\n      ")
       : "",
   );
+
+  // ── and what the coach actually sends, once the auditor has had it ──
+  // The advisory above measures the RAW draft. This measures the shipped path:
+  // the same text through `auditAndFinalizeDraft` with the real model doing the
+  // rewrite, which is what `integrationPack.auditDrafts` puts in front of every
+  // reply. Only runs when the raw draft failed, because that is the only case
+  // where the auditor has anything to do.
+  if (unfaithful.length > 0) {
+    const finalized = await auditAndFinalizeDraft({
+      draft: continuation.text,
+      system: systemPrompt(),
+      messages: [
+        ...messages,
+        { role: "assistant", content: [{ type: "tool_use", id: firedUse.id, name: firedUse.name, input: firedUse.input }] },
+        { role: "user", content: [{ type: "tool_result", tool_use_id: firedUse.id, content: JSON.stringify(result) }] },
+      ] as unknown as Parameters<typeof auditAndFinalizeDraft>[0]["messages"],
+      maxTokens: COACH_MAX_TOKENS,
+      ctx: { userText: TIMING_TURNS.map((t) => t.say).join("\n"), corpusExcerpts: excerpts },
+    });
+    console.log(`\n  after the auditor (attempts=${finalized.attempts}, fell_back=${finalized.fellBack}):\n${finalized.text}\n`);
+    check(
+      "the audited reply carries no unfaithful quotation",
+      quoteFidelity(finalized.text, excerpts).unfaithful.length === 0,
+      quoteFidelity(finalized.text, excerpts).unfaithful.map((q) => JSON.stringify(q.slice(0, 80))).join(" · "),
+    );
+    check(
+      "the person is not left with the fixed fallback line",
+      !finalized.fellBack,
+      "two drafts in a row spliced a quote, so the fallback went out instead of other people's words",
+    );
+  }
 }
 
 // ─── run ─────────────────────────────────────────────────────────────────

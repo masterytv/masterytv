@@ -73,6 +73,8 @@ export async function assemblePrompt(
     activeChallenges: ActiveChallenge[];
     factCount: number;
     messageCount: number;
+    /** Retrieved facts as `subject: content` — see the note at the return. */
+    factTexts: string[];
   };
   debugTrace: PromptDebugTrace | null;
 }> {
@@ -642,6 +644,17 @@ IMPORTANT ACCESS RULES:
       activeChallenges: challenges,
       factCount: facts.length,
       messageCount: messages.length,
+      /**
+       * The retrieved facts as `subject: content`, for the buffered draft audit
+       * (`_shared/draft-audit.ts` → `buildUserTextForAudit`). 🔥 The mirroring
+       * index treats any proper noun the person has not used as a coach coinage
+       * and blocks it, so a name they gave weeks ago — which lives in
+       * `memory_facts`, quoted, and not in this conversation's window — would
+       * make the coach unable to say their own word for their own experience.
+       * Additive: nothing renders it, so no prompt golden moves, and no caller
+       * writes it to a row.
+       */
+      factTexts: facts.map((f) => `${f.subject}: ${f.content}`),
     },
     debugTrace,
   };
