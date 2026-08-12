@@ -19,6 +19,10 @@ import {
 // (so it's importable by the Node safety battery too). Re-export so existing
 // import sites (coach/index.ts, channel-router.ts) keep working unchanged.
 export { detectCrisisKeywords };
+import {
+  detectIrreversibleDecision,
+  buildTripwireResponse,
+} from "./irreversible-decisions.ts";
 export type { CrisisCategory, CrisisResult };
 
 /**
@@ -328,6 +332,39 @@ const ESCALATION_DEDUP_MS = 12 * 60 * 60 * 1000;
  * re-email. Queried BEFORE inserting the current flag so it only sees PRIOR flags.
  * On query failure we return false (escalate anyway — a double alert beats a missed one).
  */
+/**
+ * Any recent unreviewed flag of a category on this conversation, regardless of
+ * severity. The tripwire needs it (I3.5's flags are moderate), and it is what
+ * makes the SECOND time somebody raises an irreversible decision get a shorter,
+ * firmer reply instead of the same speech again — repeating a script teaches a
+ * person that the machine is stuck and they should work around it.
+ */
+async function hasRecentFlag(
+  supabase: ReturnType<typeof createSupabaseClient>,
+  userId: string,
+  conversationId: string | null,
+  category: CrisisCategory,
+): Promise<boolean> {
+  try {
+    const since = new Date(Date.now() - ESCALATION_DEDUP_MS).toISOString();
+    let q = supabase
+      .from("crisis_flags")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("category", category)
+      .gte("created_at", since);
+    q = conversationId
+      ? q.eq("conversation_id", conversationId)
+      : q.is("conversation_id", null);
+    const { data } = await q.limit(1).maybeSingle();
+    return !!data;
+  } catch (e) {
+    // Not knowing means give the full reply — the longer one is the safer one.
+    console.warn("[crisis] repeat check failed:", (e as Error).message);
+    return false;
+  }
+}
+
 async function hasRecentHighFlag(
   supabase: ReturnType<typeof createSupabaseClient>,
   userId: string,
@@ -385,6 +422,49 @@ export async function runCrisisDetection(
   const keywords = detectCrisisKeywords(message, ctx.program);
 
   if (!keywords.isCrisis) {
+    // I3.5 — the irreversible-decision tripwire, LAST, so an explicit self-harm
+    // or violence disclosure always outranks it. Integration only, and never a
+    // reason to skip the tiers above.
+    if (ctx.program === "integration") {
+      const tripwire = detectIrreversibleDecision(message);
+      if (tripwire.fired) {
+        const conversationId = ctx.conversationId ?? null;
+        const repeat = await hasRecentFlag(
+          supabase,
+          userId,
+          conversationId,
+          "irreversible_decision",
+        );
+        await logCrisisFlag(
+          supabase,
+          userId,
+          "moderate",
+          tripwire.matched,
+          true,
+          message,
+          "irreversible_decision",
+          {
+            source: "keyword",
+            subjectScope: "self",
+            coachHandled: true,
+            conversationId,
+            engagementId: ctx.engagementId ?? null,
+            program: ctx.program ?? null,
+          },
+        );
+        // The state change I11.4 requires: the turn is replaced rather than
+        // coached, because continuation after detection is the harm theory in
+        // Garcia and Raine.
+        return {
+          isCrisis: true,
+          response: buildTripwireResponse(tripwire, repeat),
+          severity: "moderate",
+          category: "irreversible_decision",
+          matchedKeywords: tripwire.matched,
+          escalate: false,
+        };
+      }
+    }
     return { isCrisis: false };
   }
 

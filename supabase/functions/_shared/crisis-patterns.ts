@@ -164,6 +164,10 @@ export type CrisisCategory =
   | "desire_to_return"
   | "command_content"
   | "medication_stopping"
+  // I3.5's tripwire. Not produced by this file — the detector is
+  // `irreversible-decisions.ts`, which stays program-agnostic — but the logged
+  // category belongs in the same union so the crisis queue has one vocabulary.
+  | "irreversible_decision"
   | "none";
 
 export interface CrisisResult {
