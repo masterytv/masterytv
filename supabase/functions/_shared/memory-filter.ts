@@ -119,7 +119,7 @@ function distinctiveTokens(text: string): Set<string> {
  * name. The user's text is the authority on what is a name in their account,
  * which is the same principle the rest of this vertical runs on.
  */
-function properNouns(text: string, known: Set<string> = new Set()): string[] {
+export function properNouns(text: string, known: Set<string> = new Set()): string[] {
   const out: string[] = [];
   const sentenceStart = new Set<number>();
   // Index of the first word after start-of-string or a terminator.
