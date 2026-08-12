@@ -66,6 +66,25 @@ describe("renderMarkdown", () => {
       expect(html).toContain('href="https://youtu.be/abc"');
     });
 
+    // 17.6% of the corpus's titles carry one ("Yvonne's Story"), and two of the
+    // three links in the first live reveal did.
+    it("keeps a hover title containing its own apostrophe", () => {
+      const html = renderMarkdown(
+        "[the recording](https://youtu.be/abc 'Allergy Shot - Near Death Experience - Yvonne's Story')",
+      );
+      expect(html).toContain("title=\"Allergy Shot - Near Death Experience - Yvonne&#039;s Story\"");
+    });
+
+    // The greedy title body must not swallow the gap between two links.
+    it("does not merge two links into one", () => {
+      const html = renderMarkdown(
+        "[one](https://a.test 'First') and then [two](https://b.test 'Second')",
+      );
+      expect((html.match(/<a /g) ?? []).length).toBe(2);
+      expect(html).toContain('title="First"');
+      expect(html).toContain('title="Second"');
+    });
+
     it("still links when no title is given", () => {
       expect(renderMarkdown("[x](https://e.com)")).not.toContain("title=");
     });

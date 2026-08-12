@@ -1444,10 +1444,13 @@ export function renderCorpusReveal(payload: unknown): string | null {
     // excerpts, and blocks the reveal for misquoting somebody — the auditor
     // catching the renderer, measured on the first battery run after this
     // landed. That check treats single quotes as apostrophes and never as
-    // delimiters, so this form is invisible to it. A title carrying its own
-    // apostrophe would close the delimiter early, and loses the hover rather
-    // than being edited into shape.
-    const hover = title && !/['\n]/.test(title) ? ` '${title}'` : "";
+    // delimiters, so this form is invisible to it.
+    //
+    // A title with an apostrophe of its own is fine: the client's title body
+    // runs to the LAST delimiter. Square brackets are not, because that is what
+    // keeps a greedy body from merging two links, so such a title loses the
+    // hover rather than being edited into shape.
+    const hover = title && !/[[\]\n]/.test(title) ? ` '${title}'` : "";
     return `${quoted}\n[the recording](${url}${hover})`;
   });
 

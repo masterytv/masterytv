@@ -46,12 +46,21 @@ const SAFE_HREF = String.raw`https?:\/\/[^\s)]+|\/[^\s)]*`;
  * as a quotation and blocks for misquoting a source. `&#039;` rather than `'`
  * because `sanitizeHtml` has already run.
  *
- * The title body is matched lazily to its closing delimiter rather than to the
- * first `)`, so a title carrying parentheses — "(NDE)" is in half of them —
- * keeps its hover.
+ * The title body runs to the LAST delimiter before the closing paren, not the
+ * first, and it may not contain a square bracket. Both halves are load-bearing
+ * and both were measured against the real corpus:
+ *
+ *   - GREEDY, because 17.6% of these titles carry an apostrophe of their own
+ *     ("Yvonne's Story", "Agnostic's Near-Death Experience") — two of the three
+ *     links in the first live reveal — and a lazy body ends the title at the
+ *     possessive and loses the hover.
+ *   - NO BRACKETS, because that is what stops a greedy body from swallowing the
+ *     text between two links and merging them: every following link starts with
+ *     `[`. Parentheses are deliberately allowed, since "(NDE)" is in half the
+ *     titles in this corpus.
  */
 const LINK = new RegExp(
-  String.raw`\[([^\]]+)\]\((` + SAFE_HREF + String.raw`)(?:\s+&#039;([\s\S]*?)&#039;)?\)`,
+  String.raw`\[([^\]]+)\]\((` + SAFE_HREF + String.raw`)(?:\s+&#039;([^\][]*)&#039;)?\)`,
   "g",
 );
 

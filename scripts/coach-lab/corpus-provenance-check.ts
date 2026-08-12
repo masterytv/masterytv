@@ -654,8 +654,12 @@ ok(
     }],
   })!.includes("javascript:"),
 );
+// 17.6% of this corpus's titles carry an apostrophe, and two of the three links
+// in the first live reveal did ("Yvonne's Story"), so the hover has to survive
+// one. A square bracket is the case that cannot: it is what stops the client's
+// greedy title body from swallowing the gap between two links.
 ok(
-  "a title carrying an apostrophe drops the HOVER rather than breaking the link",
+  "a title carrying its own apostrophe KEEPS the hover",
   renderCorpusReveal({
     matched_count: 2,
     accounts: [{
@@ -664,7 +668,24 @@ ok(
         provenance: "verbatim_excerpt",
         source: {
           video_id: "X",
-          video_title: "NDE Full Interview, Sara's account",
+          video_title: "Allergy Shot - Near Death Experience - Yvonne's Story",
+          video_url: "https://www.youtube.com/watch?v=X",
+        },
+      },
+    }],
+  })!.includes("'Allergy Shot - Near Death Experience - Yvonne's Story')"),
+);
+ok(
+  "a title carrying a SQUARE BRACKET drops the HOVER rather than breaking the link",
+  renderCorpusReveal({
+    matched_count: 2,
+    accounts: [{
+      excerpt: {
+        text: "an excerpt long enough to be quoted back to somebody",
+        provenance: "verbatim_excerpt",
+        source: {
+          video_id: "X",
+          video_title: "NDE [Full Interview]",
           video_url: "https://www.youtube.com/watch?v=X",
         },
       },
