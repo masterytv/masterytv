@@ -82,10 +82,26 @@ export interface DraftAuditOutcome {
   blocked: BannedMoveClass[];
   /** Blocking classes that survived the regeneration, if any. */
   stillBlocked: BannedMoveClass[];
-  /** True when both attempts failed and `AUDIT_FALLBACK_REPLY` went out. */
+  /** True when both attempts failed and a fallback went out. */
   fellBack: boolean;
+  /**
+   * WHICH fallback. `reveal` means I6.2's deterministic corpus rendering went
+   * out instead of the fixed line — the person got the excerpts they asked for,
+   * composed in code, and the turn is a success rather than a degradation. The
+   * two outcomes are worth telling apart in the data: one is the product
+   * working around a model, the other is the product having nothing to say.
+   */
+  fallbackKind: "fixed" | "reveal";
   /** Labels the second pass raised on the FIRST draft, blocking or not. */
   judged: JudgeLabel[];
+  /**
+   * Labels that blocked the REGENERATION, if the judge is what stopped it.
+   * 🔥 Without this the trail lies: a rewrite that passes the deterministic
+   * layer and is then judge-blocked used to record the first draft's
+   * deterministic classes in `stillBlocked`, so the live run of August 12 read
+   * `quote_infidelity` where the truth was three judge labels.
+   */
+  stillJudged: JudgeLabel[];
   /** Judge findings dropped for pointing at text that is not in the draft. */
   judgeDiscarded: number;
   /** Tokens spent on the regeneration AND the judging calls, for the cost row. */
@@ -297,17 +313,33 @@ export async function auditAndFinalizeDraft(opts: {
   judgeFn?: typeof callClaudeJson;
   /** Set false to run the deterministic layer only (the second pass costs a call). */
   secondPass?: boolean;
+  /**
+   * What to send when both attempts fail, if this turn has something better
+   * than the fixed line. I6.2 passes the deterministically rendered corpus
+   * reveal here: on the reveal turn the fallback can be the actual answer,
+   * composed in code from data, rather than an apology for not having one.
+   *
+   * 🔑 It is passed in rather than built here on purpose. This module knows
+   * about drafts and blocking classes; it knows nothing about verticals, and a
+   * corpus import in it would make the shared audit path own one vertical's
+   * payoff surface.
+   */
+  fallback?: string | null;
 }): Promise<DraftAuditOutcome> {
   const usage = { input: 0, output: 0 };
   let judged: JudgeLabel[] = [];
   let judgeDiscarded = 0;
+  const fallbackText = opts.fallback?.trim() || AUDIT_FALLBACK_REPLY;
+  const fallbackKind: "fixed" | "reveal" = fallbackText === AUDIT_FALLBACK_REPLY ? "fixed" : "reveal";
 
   const outcome = (over: Partial<DraftAuditOutcome> & { text: string }): DraftAuditOutcome => ({
     attempts: 1,
     blocked: [],
     stillBlocked: [],
     fellBack: false,
+    fallbackKind: "fixed",
     judged,
+    stillJudged: [],
     judgeDiscarded,
     extraUsage: usage,
     ...over,
@@ -396,13 +428,14 @@ export async function auditAndFinalizeDraft(opts: {
 
     const redraft = extractText(retry).trim();
     if (!redraft) {
-      console.error("[draft-audit] regeneration returned no text — falling back");
+      console.error(`[draft-audit] regeneration returned no text — falling back (${fallbackKind})`);
       return outcome({
-        text: AUDIT_FALLBACK_REPLY,
+        text: fallbackText,
         attempts: 2,
         blocked: first.classes,
         stillBlocked: first.classes,
         fellBack: true,
+        fallbackKind,
       });
     }
 
@@ -414,15 +447,24 @@ export async function auditAndFinalizeDraft(opts: {
 
     console.error(
       `[draft-audit] regeneration STILL blocked (${[...second.classes, ...second.labels].join(", ")}) — ` +
-        "sending the fixed reply. Two drafts in a row on the same move means the prompt is asking for " +
-        "it; read the pack, not the model.",
+        (fallbackKind === "reveal"
+          // The reveal turn is the one place a second block is not a dead end:
+          // what the model kept getting wrong is a rendering of data we hold.
+          ? "sending the DETERMINISTIC corpus reveal instead (I6.2). The person gets the excerpts."
+          : "sending the fixed reply. Two drafts in a row on the same move means the prompt is asking " +
+            "for it; read the pack, not the model."),
     );
     return outcome({
-      text: AUDIT_FALLBACK_REPLY,
+      text: fallbackText,
       attempts: 2,
       blocked: first.classes,
-      stillBlocked: second.classes.length > 0 ? second.classes : first.classes,
+      // Only the deterministic classes go here, and the judge's labels go in
+      // their own field. Collapsing them lost the truth: a rewrite blocked
+      // purely by the judge used to report the FIRST draft's classes.
+      stillBlocked: second.classes,
+      stillJudged: second.labels.filter((l) => JUDGE_BLOCKS.has(l)),
       fellBack: true,
+      fallbackKind,
     });
   } catch (e) {
     // Fail OPEN, and say so. The alternative is a vertical whose coach goes dark

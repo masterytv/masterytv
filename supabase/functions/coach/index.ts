@@ -22,7 +22,7 @@ import { generateEmbedding, logEmbeddingCost } from "../_shared/embeddings.ts";
 import { handleSearchFacts } from "../_shared/search-facts.ts";
 import { handleLookupAssessment } from "../_shared/lookup-assessment.ts";
 import { handleLookupRelationship } from "../_shared/lookup-relationship.ts";
-import { handleFindSimilarAccounts } from "../_shared/corpus.ts";
+import { handleFindSimilarAccounts, renderCorpusReveal } from "../_shared/corpus.ts";
 import { handleLookupFooting } from "../_shared/lookup-footing.ts";
 import {
   auditAndFinalizeDraft,
@@ -440,6 +440,11 @@ Deno.serve(async (req: Request) => {
       // Their attribution — quotable never, nameable always. See the collection
       // site below and `AuditContext.corpusAttribution`.
       const corpusAttributionSeen: string[] = [];
+      // The last corpus payload itself, for I6.2's deterministic reveal. Kept
+      // whole rather than flattened: the renderer reads the provenance tag on
+      // each excerpt, which is what makes it unable to print anything the model
+      // wrote.
+      let corpusPayload: Record<string, unknown> | null = null;
       let draftAudit: DraftAuditOutcome | null = null;
 
       try {
@@ -634,6 +639,11 @@ Deno.serve(async (req: Request) => {
                 // payload at all (founder only — INTEGRATION_SPRINT.md I1).
                 const result = await handleFindSimilarAccounts(toolInput, { email: user.email });
                 toolResult = JSON.stringify(result);
+                // I6.2: the same payload the model was handed is what the
+                // deterministic reveal renders from, so what the person reads
+                // when the draft cannot be trusted is the same data the draft
+                // was written against.
+                corpusPayload = result;
                 // Keep the excerpts for the draft audit's quotation-fidelity
                 // class: anything the reply puts in quotation marks has to be a
                 // contiguous run of one of these. Measured necessary — the model
@@ -747,6 +757,9 @@ Deno.serve(async (req: Request) => {
               // They never type their own name; the coach says it constantly.
               userName: metadata.userName,
             },
+            // I6.2. Null on every turn that did not use the corpus, which is
+            // almost all of them, and the fixed line still covers those.
+            fallback: corpusPayload ? renderCorpusReveal(corpusPayload) : null,
           });
           fullContent = draftAudit.text;
           inputTokens += draftAudit.extraUsage.input;
@@ -790,7 +803,15 @@ Deno.serve(async (req: Request) => {
                 attempts: draftAudit.attempts,
                 blocked: draftAudit.blocked,
                 still_blocked: draftAudit.stillBlocked,
+                // The judge's labels, separately — a rewrite it blocked used to
+                // be recorded as the FIRST draft's deterministic classes, which
+                // is how the live run read `quote_infidelity` where the truth
+                // was three judge labels.
+                still_judged: draftAudit.stillJudged,
                 fell_back: draftAudit.fellBack,
+                // "fixed" = the careful line. "reveal" = I6.2 rendered the
+                // corpus in code and the person got the excerpts anyway.
+                fallback: draftAudit.fallbackKind,
               },
             }
             : {}),

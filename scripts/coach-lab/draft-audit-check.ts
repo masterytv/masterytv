@@ -156,6 +156,73 @@ const fallbackAudited = await auditAndFinalizeDraft({
 });
 ok("the fixed reply passes its own audit", fallbackAudited.attempts === 1 && !fallbackAudited.fellBack);
 ok("the fixed reply asks exactly one question", (AUDIT_FALLBACK_REPLY.match(/\?/g) ?? []).length <= 1);
+ok("and it is recorded AS the fixed line, not as a reveal", fellBack.fallbackKind === "fixed");
+
+// ─── 3.5 I6.2 — on the reveal turn, the fallback is the answer ────────────
+//
+// The corpus reveal is the one turn where a double block need not cost the
+// person anything: what the model kept getting wrong is a rendering of data we
+// already hold, so the caller passes the deterministic rendering in and it goes
+// out instead of the careful line. `renderCorpusReveal` is proved separately in
+// check:provenance; what is proved here is that it actually reaches the person.
+console.log("\n─── the reveal fallback (I6.2) ───\n");
+
+const CORPUS_EXCERPT =
+  "the first half of the excerpt and then, after a while longer, the second half of it, whole";
+const REVEAL = "Two accounts in the collection describe something close to what you told me.\n\n" +
+  `"${CORPUS_EXCERPT}"\n[Account AAA](https://www.youtube.com/watch?v=AAA)`;
+// It splices again on the rewrite, which is the 3-of-3 measurement.
+const splicer = stub('One of them: "the first half of the excerpt... the second half of it, whole"');
+const revealed = await auditAndFinalizeDraft({
+  ...base,
+  ctx: { userText: USER_TEXT, corpusExcerpts: [CORPUS_EXCERPT] },
+  // The measured failure: two non-contiguous parts of ONE excerpt, bridged.
+  draft: 'One of them: "the first half of the excerpt... the second half of it, whole"',
+  callFn: splicer.fn,
+  judgeFn: clear(),
+  fallback: REVEAL,
+});
+ok("the person gets the excerpts, not the careful line", revealed.text === REVEAL);
+ok("…which is not the fixed reply", revealed.text !== AUDIT_FALLBACK_REPLY);
+ok("it is recorded as a reveal, so the two outcomes are countable", revealed.fallbackKind === "reveal");
+ok("it still says it fell back — the model's draft was unusable", revealed.fellBack);
+ok(
+  "a turn with nothing to render keeps the fixed line",
+  (await auditAndFinalizeDraft({
+    ...base,
+    draft: "You were chosen for this, and what you met was real.",
+    callFn: stub("What you met was real, and you were chosen to carry it.").fn,
+    judgeFn: clear(),
+    fallback: null,
+  })).text === AUDIT_FALLBACK_REPLY,
+);
+
+// 🔥 The live failure of 2026-08-12: the rewrite passed the deterministic layer
+// and the JUDGE blocked it. The row then recorded the FIRST draft's classes as
+// what survived, so the trail said `quote_infidelity` when the truth was three
+// judge labels.
+const judgeBlocked = await auditAndFinalizeDraft({
+  ...base,
+  ctx: { userText: USER_TEXT, corpusExcerpts: [CORPUS_EXCERPT] },
+  // The measured failure: two non-contiguous parts of ONE excerpt, bridged.
+  draft: 'One of them: "the first half of the excerpt... the second half of it, whole"',
+  callFn: stub("A clean-looking rewrite that the judge does not like.").fn,
+  // The first draft is blocked deterministically, so the judge only ever sees
+  // the rewrite — which is exactly the live shape.
+  judgeFn: judge([{
+    label: "narrative_escalation",
+    span: "A clean-looking rewrite",
+    why: "bigger than they made it",
+  }]).fn,
+  fallback: REVEAL,
+});
+ok("a judge-blocked rewrite names the JUDGE's labels", judgeBlocked.stillJudged.includes("narrative_escalation"));
+ok(
+  "…and does not misreport the first draft's classes as what survived",
+  judgeBlocked.stillBlocked.length === 0,
+  JSON.stringify(judgeBlocked.stillBlocked),
+);
+ok("the reveal still goes out on that path", judgeBlocked.text === REVEAL);
 
 // ─── 4. an empty rewrite falls back rather than sending nothing ───────────
 console.log("\n─── the rewrite comes back empty ───\n");

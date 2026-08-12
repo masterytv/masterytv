@@ -1308,3 +1308,142 @@ export function assertNoAuthoredText(
     });
   });
 }
+
+// ─── THE DETERMINISTIC RENDERING (I6.2) ───────────────────────────────────
+
+/**
+ * Compose the reveal in code, for the turn where the model could not be trusted
+ * to compose it in prose.
+ *
+ * ─── WHY THIS EXISTS ──────────────────────────────────────────────────────
+ *
+ * 🔥 MEASURED, three times, and then live. Handed three real excerpts and told
+ * character for character in BOTH the tool payload and the pack persona to copy
+ * them exactly, Sonnet joins two non-contiguous parts of one transcript with an
+ * ellipsis. `quoteFidelity` catches it and the draft is regenerated once; the
+ * regeneration splices too. On 3 of 3 battery runs and on the live run of
+ * August 12 the person therefore got `AUDIT_FALLBACK_REPLY` — a careful line
+ * that says nothing — on the exact turn they had asked whether anybody else had
+ * ever been through this. The one surface built to prove they are not alone
+ * failed closed, every time.
+ *
+ * Three prompt hardenings did not move it, which is the whole thesis of I3.4:
+ * the primary model's restraint is not a control. So the last attempt stops
+ * asking. **The reveal is data — a count, three excerpts, three links — and code
+ * may render data.** The model still writes every other turn in this vertical;
+ * it just no longer gets the final say on the one turn that quotes strangers.
+ *
+ * ─── WHAT MAKES IT SAFE TO SEND UNREVIEWED ────────────────────────────────
+ *
+ * Every string below is one of exactly two things: a constant authored in this
+ * file, or a value the corpus returned. There is no third category, which is
+ * I6.2's done criterion — *the renderer cannot display model-authored text*.
+ *
+ * 🔑 THE ENFORCEMENT IS THE PROVENANCE TAG, not a promise in this comment. An
+ * excerpt is rendered only when it is tagged `verbatim_excerpt`, and
+ * `assertNoAuthoredText` has already proved that every tagged string is
+ * byte-identical to something the corpus sent this request. Model-authored text
+ * has no valid tag by design, so a payload somebody poisoned renders as fewer
+ * accounts rather than as a lie. `corpus_analysis` is skipped for a second
+ * reason as well: analyst prose is not something anybody said, and this surface
+ * quotes people.
+ *
+ * ⚠️ AND WHAT IS DELIBERATELY LEFT OUT. `claims[].text` is tempting — EXPERIENCE
+ * §5.4 wants the reveal to name "not the general shape of it, the specific
+ * thing", and the claims carry exactly that. They are spans of the `description`
+ * the MODEL passed to the tool, provable against that string and not against
+ * anything the person typed. Putting them here would smuggle model-authored
+ * text into the one surface that must not contain any. The count and the
+ * excerpts carry the payload instead.
+ *
+ * ─── THE COPY ─────────────────────────────────────────────────────────────
+ *
+ * Attribution is to the RECORDING, never to a named person as something they
+ * personally said: these transcripts are interviews with no speaker labels, so
+ * an excerpt can contain the host's question as well as the experiencer's
+ * answer (I1's August 11 note). "Word for word from the recordings" is true of
+ * every excerpt; "in her own words", the phrasing §5.4 drafted, is not.
+ *
+ * It ends without a question. Every other reply in this pack asks one, and this
+ * is the turn not to: somebody who has just been handed three strangers saying
+ * their thing back to them should not also be handed homework. §5.4's amendment
+ * calls silence this surface's hardest requirement.
+ *
+ * ⚠️ THE EXCERPTS GO OUT WHOLE, and they are long — 100+ words, with the
+ * disfluencies of real speech in them. §5.4's amendment asks for short, and
+ * this deliberately does not comply, because the obvious way to comply is the
+ * thing that broke the surface in the first place: "keep them short" is exactly
+ * the instruction the model was obeying when it bridged two halves of a
+ * transcript with an ellipsis.
+ *
+ * Trimming to a contiguous run of whole sentences WOULD be provable — the same
+ * reasoning `expandToSentence` runs on — and it was written and then taken out
+ * again for a better reason. `expandToSentence` grew each excerpt outward from
+ * the chunk that actually matched, and the payload does not carry that chunk's
+ * offsets, so a prefix trim can cut the matching part clean off. A short
+ * excerpt that no longer contains the thing the person described is worse than
+ * a long one: it quietly turns "somebody described your exact thing" into
+ * "here is a stranger talking". Shortening honestly needs the offsets carried
+ * through the payload, which is a corpus change and I6.1's, not this one's.
+ */
+export function renderCorpusReveal(payload: unknown): string | null {
+  const root = payload as {
+    matched_count?: unknown;
+    accounts?: unknown;
+  } | null;
+  if (!root || typeof root !== "object") return null;
+
+  const rows = Array.isArray(root.accounts) ? root.accounts : [];
+  const quotable: { text: string; title: string | null; url: string | null }[] = [];
+
+  for (const row of rows.slice(0, TOOL_MAX_ACCOUNTS)) {
+    const excerpt = (row as { excerpt?: AttributedText | null })?.excerpt;
+    // The tag is the whole check. Anything else — a missing tag, an analysis
+    // tag, a string somebody wrote into the payload — is simply not rendered.
+    if (!excerpt || excerpt.provenance !== "verbatim_excerpt") continue;
+    const text = typeof excerpt.text === "string" ? excerpt.text.trim() : "";
+    if (!text) continue;
+    const source = excerpt.source ?? (row as { source?: CorpusSource }).source;
+    quotable.push({
+      text,
+      title: typeof source?.video_title === "string" ? source.video_title : null,
+      url: typeof source?.video_url === "string" ? source.video_url : null,
+    });
+  }
+
+  if (quotable.length === 0) return null;
+
+  const count = root.matched_count;
+  const matched = typeof count === "number" && Number.isFinite(count) && count >= quotable.length
+    ? Math.floor(count)
+    : quotable.length;
+
+  const WORD = ["", "one", "two", "three"];
+  const opener = matched === 1
+    ? "One account in the collection describes something close to what you told me."
+    : `${matched} accounts in the collection describe something close to what you told me.`;
+  const framing = quotable.length === 1
+    ? "Here is one of them, word for word from the recording."
+    : `Here are ${WORD[quotable.length] ?? quotable.length} of them, word for word from the recordings.`;
+
+  const blocks = quotable.map(({ text, title, url }) => {
+    const quoted = `"${text}"`;
+    if (!url || !/^https:\/\//i.test(url)) return quoted;
+    // A link label must survive the chat client's markdown, which reads to the
+    // first `]`. A title carrying one would render as broken syntax on the
+    // payoff surface, so that title steps aside for a constant rather than
+    // being edited into shape.
+    const label = title && !/[[\]]/.test(title) ? title : "the recording";
+    return `${quoted}\n[${label}](${url})`;
+  });
+
+  return [
+    opener,
+    framing,
+    ...blocks,
+    // I6.4, and it is load-bearing rather than a disclaimer: on von Lucadou's
+    // model attention and attempted verification prolong the phenomena, so the
+    // one thing this surface must never become is evidence.
+    "This does not tell us what caused it. It does tell you that you are not an outlier, and that you are not making it up.",
+  ].join("\n\n");
+}

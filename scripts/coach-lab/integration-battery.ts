@@ -53,9 +53,9 @@
  */
 
 import { integrationPack, integrationStage } from "../../supabase/functions/_shared/packs/integration-pack.ts";
-import { handleFindSimilarAccounts } from "../../supabase/functions/_shared/corpus.ts";
+import { handleFindSimilarAccounts, renderCorpusReveal } from "../../supabase/functions/_shared/corpus.ts";
 import { auditDraft, quoteFidelity } from "../../supabase/functions/_shared/output-auditor.ts";
-import { auditAndFinalizeDraft, judgeDraft } from "../../supabase/functions/_shared/draft-audit.ts";
+import { AUDIT_FALLBACK_REPLY, auditAndFinalizeDraft, judgeDraft } from "../../supabase/functions/_shared/draft-audit.ts";
 import { detectConversationSignals } from "../../supabase/functions/_shared/conversation-signals.ts";
 import { confirmConversationSignals } from "../../supabase/functions/_shared/safety-sweep.ts";
 import type { MemoryFact, Message } from "../../supabase/functions/_shared/prompt-layers.ts";
@@ -753,26 +753,42 @@ async function runTimingSuite(): Promise<void> {
         // They never type their own name; the coach opens with it.
         userName: USER?.name ?? null,
       },
+      // I6.2, mirrored from the coach's own call site. Without it the battery
+      // measures a path production no longer has.
+      fallback: renderCorpusReveal(result),
     });
     // The CLASSES, not just the outcome. "fell_back=true" alone cost a live
     // session's worth of guessing on 2026-08-12: the cause was `titling` on
     // corpus source names, and nothing printed here would have said so.
     console.log(
-      `\n  after the auditor (attempts=${finalized.attempts}, fell_back=${finalized.fellBack}, ` +
-        `blocked=[${finalized.blocked.join(",")}], still=[${finalized.stillBlocked.join(",")}]):\n${finalized.text}\n`,
+      `\n  after the auditor (attempts=${finalized.attempts}, fell_back=${finalized.fellBack}→${finalized.fallbackKind}, ` +
+        `blocked=[${finalized.blocked.join(",")}], still=[${finalized.stillBlocked.join(",")}], ` +
+        `judged=[${finalized.stillJudged.join(",")}]):\n${finalized.text}\n`,
     );
     check(
       "the audited reply carries no unfaithful quotation",
       quoteFidelity(finalized.text, excerpts).unfaithful.length === 0,
       quoteFidelity(finalized.text, excerpts).unfaithful.map((q) => JSON.stringify(q.slice(0, 80))).join(" · "),
     );
-    advisory(
-      "the person is not left with the fixed fallback line",
-      !finalized.fellBack,
-      "two drafts in a row spliced a quote, so the fallback went out instead of other people's words. " +
-        "Documented residual, ~1 run in 3; the fix is a deterministic corpus rendering (I6.2), not a " +
-        "looser auditor. Advisory so a known degradation does not sit red in a battery nobody then runs.",
+    // 🔥 This was the advisory that measured the whole gap: 3 of 3 runs and the
+    // live run ended on the fixed line, on the exact turn somebody had asked
+    // whether anybody else had been through this. I6.2 makes it a hard check —
+    // NOT by loosening the auditor, but because the reveal is data, so a
+    // blocked draft no longer costs the person the excerpts. A splice may still
+    // happen; ending on the careful line may not.
+    check(
+      "the person is never left with the fixed fallback line on a corpus turn",
+      finalized.text !== AUDIT_FALLBACK_REPLY,
+      `fell_back=${finalized.fellBack} kind=${finalized.fallbackKind} — the deterministic reveal ` +
+        "should have gone out. Check renderCorpusReveal against this payload.",
     );
+    if (finalized.fallbackKind === "reveal") {
+      check(
+        "…and what went out is the corpus, byte-identical, with its links",
+        excerpts.slice(0, 3).every((e) => finalized.text.includes(e)) &&
+          finalized.text.includes("https://"),
+      );
+    }
   }
 }
 
