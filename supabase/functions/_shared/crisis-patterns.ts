@@ -168,6 +168,13 @@ export type CrisisCategory =
   // `irreversible-decisions.ts`, which stays program-agnostic — but the logged
   // category belongs in the same union so the crisis queue has one vocabulary.
   | "irreversible_decision"
+  // I3.2's Tier 2 half. Also not produced here: these three are conversation-
+  // level and cannot be seen in one message, so `conversation-signals.ts`
+  // raises them and `safety-sweep.ts` logs them. Same reason they are in this
+  // union — one vocabulary for the queue.
+  | "election_narrative"
+  | "certainty_ratchet"
+  | "ai_centrality"
   | "none";
 
 export interface CrisisResult {

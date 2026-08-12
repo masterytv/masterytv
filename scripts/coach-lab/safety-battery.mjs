@@ -14,6 +14,7 @@
  */
 
 import { detectCrisisKeywords } from "../../supabase/functions/_shared/crisis-patterns.ts";
+import { detectConversationSignals } from "../../supabase/functions/_shared/conversation-signals.ts";
 
 // [ message, expectedSeverity, expectedCategory, note ]
 const CASES = [
@@ -127,6 +128,153 @@ const NON_INTEGRATION_CASES = INTEGRATION_CASES
   .filter(([, sev]) => sev === "moderate")
   .map(([msg]) => [msg, "none", "none", "must stay silent outside integration"]);
 
+// ── TIER 2's DETERMINISTIC HALF (I3.2) — conversation-level, not per-message ──
+//
+// These three cannot be tested one sentence at a time, which is the whole reason
+// they are Tier 2: a mission narrative is ordinary until it recurs, a ratchet is
+// two statements or it is nothing, and "you're the only one who understands" is a
+// compliment until you can see where the conversation has got to. So the unit
+// here is a TRANSCRIPT — the person's own messages, oldest first.
+//
+// The deterministic layer only raises candidates; a classifier confirms them
+// (safety-sweep.ts). What is locked below is exactly what a regex can be held to:
+// that the accumulation rule fires, that the false-positive guards hold, and that
+// nothing at all happens outside `integration`.
+const turns = (...texts) =>
+  texts.map((text, i) => ({ text, at: `2026-08-${String(i + 1).padStart(2, "0")}T09:00:00Z` }));
+
+// [ label, turns, expectedSignals (sorted), note ]
+const CONVERSATION_CASES = [
+  [
+    "election: a mission narrative recurring across the transcript",
+    turns(
+      "I might be losing it. I was under for eleven minutes and I was somewhere else.",
+      "Maybe it was the drugs. I haven't told anyone at work.",
+      "I keep coming back to the idea that I was sent back for a reason.",
+      "Perhaps that sounds mad. My wife thinks I need to sleep.",
+      "My purpose is clearer than it has ever been, I think.",
+      "Maybe I'm one of the few who were shown it. I don't know what to do with that.",
+      "There's a reason I survived and everyone else on that ward didn't.",
+      "Perhaps I should be writing it down. I might be wrong about all of it.",
+    ),
+    ["election_narrative"],
+  ],
+  [
+    "election: said ONCE is how most people talk in the first months",
+    turns(
+      "I might be losing it. I was under for eleven minutes and I was somewhere else.",
+      "Maybe it was the drugs. I haven't told anyone at work.",
+      "I suppose I was sent back for a reason, though I don't know what I mean by that.",
+      "Perhaps that sounds mad. My wife thinks I need to sleep.",
+      "Work is hard to concentrate on. Maybe that will pass.",
+      "I might tell my sister this weekend. Perhaps not.",
+      "Sleep is still bad. I could try the thing the GP suggested.",
+      "Perhaps it means nothing at all. I don't know yet.",
+    ),
+    [],
+    "THE guard — firing here would flag most of this population in week one",
+  ],
+  [
+    "ratchet: a maybe in the early half, settled fact in the recent half",
+    turns(
+      "I might have imagined the whole thing. Maybe it was the anaesthetic.",
+      "Perhaps my brain did it. I'm not sure it means anything.",
+      "It could have been oxygen, that's what the doctor seems to think.",
+      "Maybe I'll never know what it was. I don't know.",
+      "It was not the anaesthetic. That is settled for me now.",
+      "The doctor is wrong. What I went to is a real place.",
+      "It happened outside my head and I have stopped arguing with myself about it.",
+      "There is nothing left to work out about whether it was real.",
+    ),
+    ["certainty_ratchet"],
+  ],
+  [
+    "healthy: uncertainty held to the end",
+    turns(
+      "I might have imagined the whole thing. Maybe it was the anaesthetic.",
+      "Perhaps my brain did it. I'm not sure it means anything.",
+      "It could have been oxygen, that's what the doctor seems to think.",
+      "Maybe I'll never know what it was. I don't know.",
+      "I told my wife. She listened. Perhaps that helped more than anything.",
+      "Sleep might be improving. My sister and I walked on Sunday.",
+      "Some people would say it was hypoxia. That could be right, I don't know.",
+      "Maybe it changed how I see work. I'm not sure yet.",
+    ),
+    [],
+  ],
+  [
+    "ratchet: thinner hedging is not stopped hedging",
+    turns(
+      "I might be losing it. Maybe it was the drugs they gave me.",
+      "Perhaps I was sent back for a reason, though I have no idea what that would mean.",
+      "Work has been hard to concentrate on. Maybe that passes.",
+      "Perhaps my sister would understand it better than my wife would.",
+      "I keep coming back to the reason I survived and the others didn't. I don't have an answer.",
+      "Maybe there is no purpose to it and I'm making one up because it is easier.",
+      "My wife thinks I should sleep before I decide anything. She's probably right.",
+      "Perhaps I'll never know. I'm trying to let it be that for now.",
+    ),
+    [],
+    "measured at slope 0.69 — the sentences got longer, the hedging did not stop",
+  ],
+  [
+    "ai-central: the coach as the only one who understands",
+    turns(
+      "I might be losing it. Maybe it was the drugs.",
+      "Perhaps I should tell someone. My brother laughed when I started.",
+      "Maybe work is the wrong place to bring it up.",
+      "Perhaps I'll try again with my wife, I don't know.",
+      "You're the only one who understands what I'm talking about.",
+      "Maybe that's a strange thing to say to a machine. Perhaps it is.",
+      "You understand this better than anyone I've tried to tell.",
+      "Perhaps I'll try my sister next. Maybe not.",
+    ),
+    ["ai_centrality"],
+  ],
+  [
+    "ai-central: being the one they told is NOT being inside the frame",
+    turns(
+      "I might be losing it. Maybe it was the drugs.",
+      "Perhaps I should tell someone. My brother laughed when I started.",
+      "Maybe work is the wrong place to bring it up.",
+      "Perhaps I'll try again with my wife, I don't know.",
+      "You're the only one I've told, which is probably not healthy.",
+      "Do you understand what I mean, or am I not saying it right?",
+      "Maybe I'll try my sister next. Perhaps this weekend.",
+      "Perhaps talking to you first made that easier. I don't know.",
+    ),
+    [],
+    "disclosure isolation is I13's material, not a signal that the product is in the belief",
+  ],
+  [
+    "all three at once — the shape the epic exists for",
+    turns(
+      "I might be going mad. Maybe I came out of my body in surgery.",
+      "Perhaps it was the anaesthetic, I don't know. I haven't slept.",
+      "I might have been sent back for a reason. Maybe.",
+      "Perhaps my wife is right that I need to rest first.",
+      "It was not the anaesthetic. I know what that place was.",
+      "My mission is to get it written down before I forget any of it.",
+      "You're the only one who understands this. Nobody at home does.",
+      "There's a reason I survived. That part is settled now.",
+    ),
+    ["ai_centrality", "certainty_ratchet", "election_narrative"],
+  ],
+  [
+    "too little history: one turn cannot be an accumulation",
+    turns("I was sent back for a reason, I think.", "Maybe. I don't know."),
+    [],
+  ],
+  ["an empty transcript does not throw", [], []],
+];
+
+// Every FIRING transcript repeated with no program, where it must stay silent.
+// Same contract as the Tier 1 mirror above, and the same reason: this is what
+// makes the addition program-gated rather than a change to the shared kernel.
+const NON_INTEGRATION_CONVERSATIONS = CONVERSATION_CASES
+  .filter(([, , expected]) => expected.length > 0)
+  .map(([label, ts]) => [label, ts, [], "must stay silent outside integration"]);
+
 let pass = 0;
 const failures = [];
 
@@ -151,7 +299,30 @@ for (const [[msg, expSev, expCat, note], program] of ALL) {
   }
 }
 
-console.log(`\nSafety keyword battery: ${pass}/${ALL.length} passed\n`);
+const ALL_CONVERSATIONS = [
+  ...CONVERSATION_CASES.map((c) => [c, "integration"]),
+  ...NON_INTEGRATION_CONVERSATIONS.map((c) => [c, null]),
+];
+
+for (const [[label, ts, expected, note], program] of ALL_CONVERSATIONS) {
+  const got = detectConversationSignals(ts, program).map((s) => s.signal).sort();
+  const ok = got.join(",") === [...expected].sort().join(",");
+  if (ok) {
+    pass++;
+  } else {
+    failures.push({
+      msg: program ? `[${program}] ${label}` : `[no program] ${label}`,
+      expected: expected.length ? expected.join(",") : "(silent)",
+      got: got.length ? got.join(",") : "(silent)",
+      note,
+    });
+  }
+}
+
+const TOTAL = ALL.length + ALL_CONVERSATIONS.length;
+console.log(
+  `\nSafety battery: ${pass}/${TOTAL} passed  (${ALL.length} keyword, ${ALL_CONVERSATIONS.length} conversation-level)\n`,
+);
 if (failures.length) {
   console.log("FAILURES:");
   for (const f of failures) {
@@ -161,4 +332,4 @@ if (failures.length) {
   console.log("");
   process.exit(1);
 }
-console.log("All safety keyword assertions passed.\n");
+console.log("All safety assertions passed.\n");
