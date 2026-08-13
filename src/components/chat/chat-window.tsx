@@ -17,6 +17,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { UserStar, Heart, Clock, Compass, AudioLines } from "lucide-react";
 import { useBrand } from "@/hooks/useBrand";
+import { byBrand } from "@/lib/platform/brand";
 import type { ChatMessage } from "@/lib/chat";
 import { parseChips, stripStreamingChips } from "@/lib/chat-chips";
 // Moved to @/lib/chat-markdown so the one place model output becomes HTML
@@ -268,6 +269,17 @@ export default function ChatWindow({
   remainingToday = null,
   topCard = null,
 }: ChatWindowProps) {
+  const composerBrand = useBrand();
+  // Composer ceiling — the client half of the coach's per-program cap
+  // (⚠️ LOCKSTEP TWIN: `maxChars` in supabase/functions/coach/index.ts).
+  // HEARD's whole first surface is "take as long as you want"; §5.2 says some
+  // people write four thousand WORDS, and a 5,000-CHAR maxLength silently
+  // truncates that mid-sentence with no error, on the one turn that matters
+  // most. Everything else keeps the shipped limit.
+  const composerMaxChars = byBrand(
+    { masterytv: 5000, relatti: 5000, money: 5000, heard: 25000 },
+    composerBrand.id,
+  );
   const [input, setInput] = useState("");
   const [draftRestored, setDraftRestored] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -458,7 +470,7 @@ export default function ChatWindow({
             className="chat-input"
             rows={1}
             disabled={isLoading || atLimit}
-            maxLength={5000}
+            maxLength={composerMaxChars}
           />
           <button
             type="submit"

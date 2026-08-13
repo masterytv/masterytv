@@ -156,3 +156,17 @@ export function brandPageMetadata(brandId: BrandId, page: BrandPageMeta): Metada
 export function relattiPageMetadata(page: BrandPageMeta): Metadata {
   return brandPageMetadata("relatti", page);
 }
+
+/**
+ * HEARD-only static pages (the doors, the pre-account box).
+ *
+ * ⚠️ These default to `noindex` and that is deliberate, not a copy of the
+ * Relatti helper with a flag flipped. The vertical is dark: youheard.org is not
+ * pointed here, and I11 has not published the Privacy Policy, Terms or
+ * Disclaimer, so an indexed HEARD page would be a live public service whose
+ * legal documents say "not published yet". Pass `noindex: false` per page when
+ * I11 lands, and add the path to the sitemap in the same change.
+ */
+export function heardPageMetadata(page: BrandPageMeta): Metadata {
+  return brandPageMetadata("heard", { noindex: true, ...page });
+}

@@ -29,7 +29,7 @@ import {
   buildUserTextForAudit,
   type DraftAuditOutcome,
 } from "../_shared/draft-audit.ts";
-import { resolvePack, programScope } from "../_shared/packs/index.ts";
+import { resolvePack, programScope, type ProgramId } from "../_shared/packs/index.ts";
 import { resolveProgram } from "../_shared/resolve-program.ts";
 import { hasLiveConsent } from "../_shared/consent.ts";
 import {
@@ -95,8 +95,45 @@ Deno.serve(async (req: Request) => {
       return errorResponse("BAD_REQUEST", "Message is required", 400, corsHeaders);
     }
 
-    if (message.length > 5000) {
-      return errorResponse("BAD_REQUEST", "Message too long (max 5000 chars)", 400, corsHeaders);
+    // Per-program input ceiling.
+    //
+    // 🔑 The flat 5,000 (~800 words) silently broke I5.1's central promise.
+    // EXPERIENCE §5.2 puts a single free-text box in front of somebody with
+    // "take as long as you want", and says in as many words that "some people
+    // will write four words and some will write four thousand" — four thousand
+    // WORDS is ~25,000 chars, so the account this vertical exists to receive
+    // would have been rejected with "Message too long" on the one turn the
+    // evidence says decides the trajectory.
+    //
+    // The hint is untrusted here (the program is resolved server-side in §2.4
+    // below), and that is acceptable for THIS check specifically: forging
+    // `integration` buys a longer prompt, i.e. tokens, and nothing else. Every
+    // safety control — the crisis kernel, the tripwire, the memory filter, the
+    // draft auditor, the consent gate — runs downstream on the RESOLVED
+    // program and is unaffected by what the client claimed here.
+    // Record<ProgramId,…>, not a ternary: check:ternaries caught the ternary
+    // form here, and it was right to — an else-branch would hand the NEXT
+    // vertical 5,000 silently. The lookup is membership-tested rather than
+    // normalized because `normalizeProgram` THROWS on an unregistered slug, and
+    // a garbage hint from a client must not 500 the coach.
+    const INPUT_CEILING: Record<ProgramId, number> = {
+      general: 5000,
+      relationship: 5000,
+      money: 5000,
+      integration: 25000,
+    };
+    const hintedProgram = clientProgram?.toLowerCase() ?? "";
+    const maxChars =
+      hintedProgram in INPUT_CEILING
+        ? INPUT_CEILING[hintedProgram as ProgramId]
+        : INPUT_CEILING.general;
+    if (message.length > maxChars) {
+      return errorResponse(
+        "BAD_REQUEST",
+        `Message too long (max ${maxChars} chars)`,
+        400,
+        corsHeaders,
+      );
     }
 
     // ── 2.3 Debug mode — admin-only, verified server-side ──
