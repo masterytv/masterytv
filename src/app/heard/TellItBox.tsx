@@ -47,6 +47,7 @@ import {
   clearHeldAccount,
   HELD_ACCOUNT_DESTINATION,
 } from "@/lib/heard/pending-account";
+import { ANONYMOUS_RETENTION_DAYS } from "@/lib/heard/retention";
 
 /** Matches the coach's per-program ceiling for this vertical. */
 const MAX_CHARS = 25000;
@@ -126,9 +127,14 @@ export default function TellItBox() {
         className="input-surface mt-6 w-full resize-y rounded-xl p-4 text-base text-text-primary outline-none transition-shadow placeholder:text-text-placeholder"
       />
 
+      {/* The retention window, said out loud. Somebody who never comes back has
+          given us no way to tell them their words are going, so the only honest
+          place to say it is before they write them. Founder call, 2026-08-13;
+          the sweep that enforces it is `sweep_stale_anonymous_users`. */}
       <p className="mt-3 text-sm text-text-muted">
         You can start typing now. We will ask for an email later, only if you
-        want to keep this.
+        want to keep this. Without one, this is deleted{" "}
+        {ANONYMOUS_RETENTION_DAYS} days after your last message.
       </p>
 
       <button

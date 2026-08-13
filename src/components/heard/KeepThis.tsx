@@ -27,6 +27,7 @@ import { useEffect, useState } from "react";
 import { Loader2, Check } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useBrand } from "@/hooks/useBrand";
+import { ANONYMOUS_RETENTION_DAYS } from "@/lib/heard/retention";
 
 export default function KeepThis() {
   const brand = useBrand();
@@ -98,7 +99,8 @@ export default function KeepThis() {
     <form onSubmit={save} className="mx-auto mb-3 max-w-3xl px-4">
       <p className="text-sm text-text-secondary">
         An email and a password, and this is here when you come back. Nothing
-        else changes.
+        else changes. Without them, this conversation is deleted{" "}
+        {ANONYMOUS_RETENTION_DAYS} days after your last message.
       </p>
       <div className="mt-2 flex flex-wrap gap-2">
         <input
