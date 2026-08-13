@@ -48,9 +48,8 @@ import {
   HELD_ACCOUNT_DESTINATION,
 } from "@/lib/heard/pending-account";
 import { ANONYMOUS_RETENTION_DAYS } from "@/lib/heard/retention";
-
-/** Matches the coach's per-program ceiling for this vertical. */
-const MAX_CHARS = 25000;
+import { appendDictated, ACCOUNT_MAX_CHARS } from "@/lib/heard/dictation";
+import Dictate from "./Dictate";
 
 export default function TellItBox() {
   const router = useRouter();
@@ -114,7 +113,7 @@ export default function TellItBox() {
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
-        maxLength={MAX_CHARS}
+        maxLength={ACCOUNT_MAX_CHARS}
         rows={10}
         autoFocus
         // No placeholder. The two lines above are the whole instruction, and a
@@ -125,6 +124,18 @@ export default function TellItBox() {
         // requires white-with-a-ghost-border in light and surface-100 in dark,
         // and the shared --input-bg token is the invisible pair §8.3 warns about.
         className="input-surface mt-6 w-full resize-y rounded-xl p-4 text-base text-text-primary outline-none transition-shadow placeholder:text-text-placeholder"
+      />
+
+      {/* I5.4. Dictated phrases append rather than replace, so somebody can
+          type a line, say the rest, and fix it afterwards. The join is in
+          `appendDictated` with its own tests: browsers send leading spaces and
+          whitespace-only results, and `maxLength` does not police a write that
+          did not come from the keyboard. */}
+      <Dictate
+        disabled={sending}
+        onText={(chunk) =>
+          setText((current) => appendDictated(current, chunk, ACCOUNT_MAX_CHARS))
+        }
       />
 
       {/* The retention window, said out loud. Somebody who never comes back has
