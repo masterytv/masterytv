@@ -397,6 +397,12 @@ ok(
 console.log("\n─── who buffers ───\n");
 
 ok("integration buffers its drafts", integrationPack.auditDrafts === true);
+// I5.5 — the same seam, one field along. It gates the DERIVED memory, so a pack
+// that turned it on without a consent surface would simply stop remembering.
+ok("integration requires consent before it remembers anything", integrationPack.requiresConsent === true);
+ok("the executive pack does not", executivePack.requiresConsent === false);
+ok("the relationship pack does not", relationshipPack.requiresConsent === false);
+ok("the money pack does not", moneyPack.requiresConsent === false);
 ok("the executive pack does not", executivePack.auditDrafts === false);
 ok("the relationship pack does not", relationshipPack.auditDrafts === false);
 ok("the money pack does not", moneyPack.auditDrafts === false);

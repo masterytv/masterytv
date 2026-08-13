@@ -416,6 +416,9 @@ OUTPUT FORMAT: Just the briefing text, no labels or headers.`;
   // path is opt-in per pack).
   auditDrafts: false,
 
+  // I5.5 — this vertical's consent surface is its own; nothing here changes.
+  requiresConsent: false,
+
   buildLayers(ctx: PackPromptContext): string[] {
     return [
       buildExecutivePersona(),                                 // Layer 1

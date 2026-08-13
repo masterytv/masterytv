@@ -163,6 +163,24 @@ export interface CoachPack {
   auditDrafts: boolean;
 
   /**
+   * This vertical may not store anything DERIVED about somebody until they have
+   * agreed to be remembered (I5.5, `coaching_consents`).
+   *
+   * A pack decision for the same reason `auditDrafts` is one: what is being
+   * consented to is this vertical's material. Somebody describing a near-death
+   * experience to an AI is not in the position of somebody describing a pricing
+   * problem to one, and the statutory framing differs by vertical too — a ToS
+   * checkbox is not consent in Illinois.
+   *
+   * 🔑 It gates the DERIVED memory, not the message. Their own message is a
+   * message they chose to send and it is stored as one. What waits for consent
+   * is everything this product concludes from it and keeps for months.
+   *
+   * false for the three shipped packs, whose write path is untouched.
+   */
+  requiresConsent: boolean;
+
+  /**
    * The ordered layer stack. Return "" for a slot that shouldn't render — the
    * assembler filters empties and joins with the standard separator. Order and
    * content are golden-locked (PC4.1): one byte of drift fails the gate.

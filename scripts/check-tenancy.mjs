@@ -54,6 +54,14 @@ const PROGRAM_SCOPED = [
                           // program because a spiral is a property of ONE
                           // vertical's conversation, and the money coach must
                           // never inherit an integration user's score
+  "coaching_consents",    // 2026-08-13 I5.5 — consent is per VERTICAL, not per
+                          // account: what somebody agreed to when they told an
+                          // AI about a near-death experience is not what they
+                          // agreed to about a pricing problem, and the statutes
+                          // differ by vertical too. A dual-brand person consents
+                          // to each one separately, and the gate reads
+                          // (user_id, program) so a money consent can never
+                          // satisfy an integration turn
   "feedback",             // 2026-07-20 — the feedback widget went ALL-brands
                           // (was the Relatti-only beta harness); /api/feedback
                           // stamps program, the beta cockpit filters by it

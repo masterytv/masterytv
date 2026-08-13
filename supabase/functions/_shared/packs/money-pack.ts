@@ -191,6 +191,9 @@ OUTPUT FORMAT: Just the note text, no labels or headers.`;
   // path is opt-in per pack).
   auditDrafts: false,
 
+  // I5.5 — this vertical's consent surface is its own; nothing here changes.
+  requiresConsent: false,
+
   buildLayers(ctx: PackPromptContext): string[] {
     return [
       buildMoneyCoachPersona(),                                        // Layer 1

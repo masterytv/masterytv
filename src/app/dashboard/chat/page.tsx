@@ -16,6 +16,7 @@ import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams, useRouter } from "next/navigation";
 import ChatWindow from "@/components/chat/chat-window";
+import ConsentGate from "@/components/integration/ConsentGate";
 import CoachVoiceSelector from "@/components/chat/CoachVoiceSelector";
 import {
   sendMessageStream,
@@ -306,6 +307,11 @@ function ChatPageInner() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isInitialLoad, searchParams]);
 
+  // I5.5 — set when the coach refuses turn 2 for want of a consent record.
+  // `heldMessage` is what they were trying to say when it happened.
+  const [consentRequired, setConsentRequired] = useState(false);
+  const [heldMessage, setHeldMessage] = useState<string | null>(null);
+
   const handleSendMessage = useCallback(
     async (message: string) => {
       // Optimistic update: show user message immediately
@@ -386,6 +392,19 @@ function ChatPageInner() {
               streamedTextRef.current = "";
               setIsLoading(false);
 
+              // I5.5 — the consent gate, which lands before turn 2 and never
+              // before turn 1. The server refused BEFORE storing the message, so
+              // the optimistic bubble is taken back off and held: after they
+              // accept, it is sent again exactly once rather than lost or
+              // duplicated. No error bubble either — being told "something went
+              // wrong" for reaching a consent screen is its own small insult.
+              if ((error as Error & { code?: string }).code === "CONSENT_REQUIRED") {
+                setMessages((prev) => prev.filter((m) => m.id !== tempId));
+                setHeldMessage(message);
+                setConsentRequired(true);
+                return;
+              }
+
               const errorMessage: ChatMessage = {
                 id: `error-${Date.now()}`,
                 role: "system",
@@ -458,6 +477,21 @@ function ChatPageInner() {
   const showDebugPanel = isAdmin && debugMode;
   const moneyCard = moneyMap ? <MoneyMapCard map={moneyMap} /> : null;
 
+  // I5.5 — it takes the whole slot when it is up. On accept, the message they
+  // were trying to send goes exactly once, through the normal path.
+  const consentGate = consentRequired
+    ? (
+      <ConsentGate
+        onAccepted={() => {
+          setConsentRequired(false);
+          const held = heldMessage;
+          setHeldMessage(null);
+          if (held) void handleSendMessage(held);
+        }}
+      />
+    )
+    : null;
+
   return (
     <div style={{ position: "relative", height: "100%" }}>
       {/* Chat header bar — de-escalation mode + dyad indicator + voice */}
@@ -508,7 +542,7 @@ function ChatPageInner() {
               userId={user?.id}
               limitInfo={limitInfo}
               remainingToday={remainingToday}
-              topCard={moneyCard}
+              topCard={consentGate ?? moneyCard}
             />
           </div>
           <DebugPanel debugData={debugData} traceHistory={traceHistory} />
@@ -523,7 +557,7 @@ function ChatPageInner() {
           userId={user?.id}
           limitInfo={limitInfo}
           remainingToday={remainingToday}
-          topCard={moneyCard}
+          topCard={consentGate ?? moneyCard}
         />
       )}
     </div>

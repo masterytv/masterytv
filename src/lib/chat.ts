@@ -105,7 +105,13 @@ export async function sendMessageStream(
       const contentType = response.headers.get("content-type") ?? "";
       if (contentType.includes("application/json")) {
         const error = await response.json().catch(() => ({ message: "Unknown error" }));
-        callbacks.onError(new Error(error.message || `HTTP ${response.status}`));
+        // Carry the CODE, not just the sentence. A caller that has to
+        // string-match an error message to tell "you are out of messages" from
+        // "this vertical needs consent first" (I5.5) will get it wrong the
+        // first time somebody rewords the copy.
+        const err = new Error(error.message || `HTTP ${response.status}`) as Error & { code?: string };
+        if (typeof error.error === "string") err.code = error.error;
+        callbacks.onError(err);
         return;
       }
 

@@ -31,6 +31,7 @@ import {
 } from "../_shared/draft-audit.ts";
 import { resolvePack, programScope } from "../_shared/packs/index.ts";
 import { resolveProgram } from "../_shared/resolve-program.ts";
+import { hasLiveConsent } from "../_shared/consent.ts";
 import {
   resolveConversation,
   COACHING_DISCLAIMER,
@@ -217,6 +218,36 @@ Deno.serve(async (req: Request) => {
       engagementId
     );
     const convMs = debugMode ? performance.now() - convStart : 0;
+
+    // ── 3.5 The consent gate (I5.5) ──
+    //
+    // BEFORE TURN 2, NEVER BEFORE TURN 1. §5.2 is explicit that nothing stands
+    // between a person and the box the first time: no account, no email, no age
+    // gate. So the test is whether this conversation has already been answered,
+    // and the person who has just typed the hardest thing they have ever
+    // written gets a reply to it rather than a form.
+    //
+    // The message they just sent is already stored below and stays stored. What
+    // this gate protects is the SECOND turn and, in `post-processor.ts`, every
+    // derived fact — the two things that turn a conversation into a record.
+    if (pack.requiresConsent) {
+      const { count: answeredAlready } = await supabase
+        .from("messages")
+        .select("id", { count: "exact", head: true })
+        .eq("conversation_id", conversationId)
+        .eq("role", "coach");
+
+      if ((answeredAlready ?? 0) > 0 && !(await hasLiveConsent(supabase, userId, program))) {
+        return new Response(
+          JSON.stringify({
+            error: "CONSENT_REQUIRED",
+            message: "This conversation needs consent before it can continue.",
+            program,
+          }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    }
 
     // ── 4. Store user message ──
     const { data: userMsg, error: insertError } = await supabase

@@ -16,6 +16,7 @@ import { resolvePack, programScope } from "./packs/index.ts";
 import type { PackExtraction } from "./packs/types.ts";
 import { filterMemoryWrites } from "./memory-filter.ts";
 import { mergeMessageMetadata } from "./message-metadata.ts";
+import { hasLiveConsent } from "./consent.ts";
 
 // ─── FRAMEWORK ASSIGNMENT ──────────────────────────────────────────────
 
@@ -240,6 +241,28 @@ export async function postProcess(
   // side-effect gates (framework challenges, AI-tool harvesting).
   const pack = resolvePack(program);
   try {
+    // ── I5.5: nothing DERIVED is stored until they have agreed to be remembered ──
+    //
+    // Placed here, before the extraction call, rather than at the insert: an
+    // extraction that will never be written is a model call nobody needs, and
+    // more to the point the facts would exist in memory on a machine for the
+    // length of this function. The gate is the pack's (`requiresConsent`), so
+    // the three shipped verticals reach none of this.
+    //
+    // 🔑 What it costs, stated: the account arrives on turn 1 and the consent
+    // screen lands before turn 2, so the account fact from that first turn is
+    // NOT written. The message itself is stored — they chose to send it — and
+    // the person is still at stage 1 afterwards, which is the more restrained
+    // state and the safe direction to fail in. Anything they say once consent
+    // exists is remembered normally.
+    if (pack.requiresConsent && !(await hasLiveConsent(supabase, userId, program))) {
+      console.log(
+        `[post-process] No live consent for user ${userId} on program ${program} — ` +
+          "storing nothing derived from this turn (I5.5).",
+      );
+      return;
+    }
+
     const openaiKey = Deno.env.get("OPENAI_API_KEY");
     if (!openaiKey) {
       console.warn(

@@ -351,6 +351,10 @@ OUTPUT FORMAT: just the note text.`;
   // fidelity on other people's accounts, measured failing under prompt alone.
   auditDrafts: true,
 
+  // I5.5 — nothing derived from what they say is stored until they have agreed
+  // to be remembered. The screen lands before turn 2, never before turn 1.
+  requiresConsent: true,
+
   buildLayers(ctx: PackPromptContext): string[] {
     return [
       buildIntegrationPersona(),                                       // Layer 1
