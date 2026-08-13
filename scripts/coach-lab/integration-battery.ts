@@ -1094,9 +1094,13 @@ async function runSignalsSuite(): Promise<void> {
  * The four-word case is the harder one: there is almost nothing to reflect, and
  * the pull toward filling the silence with reassurance is strongest.
  */
-const WITNESS_OPENINGS: Array<{ what: string; say: string }> = [
+const WITNESS_OPENINGS: Array<{ what: string; say: string; anchors?: string[] }> = [
   {
     what: "the long account, written out for the first time",
+    // Words of THEIRS the first reply can reach for. The anchoring check below
+    // wants at least one, verbatim — §4.2 is "mirror their vocabulary, never
+    // supply it", so a paraphrase is not the same thing and should not pass.
+    anchors: ["ceiling", "surgery", "somewhere else", "line", "cross", "at once", "changed the subject"],
     say:
       "I have never written this down. During the surgery I was up near the ceiling watching them work on me, " +
       "and then I was somewhere else and there was a line I understood I was not meant to cross. I knew everything " +
@@ -1166,7 +1170,11 @@ async function judgeWitness(account: string, reply: string): Promise<Record<stri
     `- asked_about_the_moment: does its question ask what the experience was LIKE, in the present tense, inside ` +
     `the moment itself (where they are, what they notice) rather than about meaning, coping, or aftermath?\n` +
     `- planted_content: does its question introduce any specific thing the person did not mention (other people ` +
-    `in the room, a being speaking, a tunnel, a light)?`;
+    `in the room, a being speaking, a tunnel, a light)?\n` +
+    `- anchored_in_their_words: does the reply reach for something the person ACTUALLY wrote — a place, an ` +
+    `object, a moment, in their own words rather than a paraphrase — so that it could not have been sent ` +
+    `unchanged to somebody who wrote something else? Restating their whole message back at them is NOT this ` +
+    `(that is a summary). Carrying one of their own details into the question IS.`;
   const raw = await callClaude(
     JUDGE_MODEL,
     system,
@@ -1288,6 +1296,28 @@ async function runWitnessSuite(): Promise<void> {
     check(`${opening.what}: no reassurance and no normalizing yet`, g.reassured_or_normalized === false);
     check(`${opening.what}: does not thank them or praise them for writing it`, g.praised_or_thanked_them === false);
     check(`${opening.what}: the question plants nothing`, g.planted_content === false);
+
+    // 🔥 THE CHECK THAT WAS MISSING, added 2026-08-13 after a live first run.
+    // The founder's first pre-account visit got a reply that was correct on
+    // every beat and contained NOTHING of what he had written — the couch he
+    // named never appeared. The suite passed 64/64 on that same reply, because
+    // every existing check asks what the reply must NOT do. A form response
+    // clears all of them. This is the one that asks whether the reply was
+    // written to THIS person, which on the first turn is the entire product.
+    if (opening.anchors) {
+      const hit = opening.anchors.filter((a) => reply.toLowerCase().includes(a));
+      check(
+        `${opening.what}: anchored in their own words`,
+        hit.length > 0,
+        `none of [${opening.anchors.join(", ")}] appear in the reply`,
+      );
+      check(`${opening.what}: judged anchored`, g.anchored_in_their_words === true);
+    } else {
+      // Stated, not skipped silently: four words may genuinely contain no noun
+      // to reach for, and demanding one there would push the coach into
+      // inventing detail, which is the planting ban two lines up.
+      console.log(`  (anchoring not asserted for "${opening.what}" — too little to anchor to)`);
+    }
   }
 
   // ── turns 2 to 8 (I5.3) ──
