@@ -1,9 +1,14 @@
 -- I5.1 — let `handle_new_user` survive an ANONYMOUS signup.
 --
--- ⚠️ NOT YET APPLIED. This rewrites the trigger that every brand's signup runs
--- through, so it wants a founder read before it goes to prod. Until it is
--- applied, `supabase.auth.signInAnonymously()` fails at the trigger and the
--- pre-account box falls back to the signup card with the person's text held.
+-- ✅ APPLIED to prod 2026-08-13 on the founder's go, and verified by minting a
+-- real anonymous user: `users.email` = `<uuid>@anonymous.invalid`, `name` = '',
+-- `signup_brand` = 'heard' (the metadata rode through), `contact_id` NULL,
+-- **0 rows in `contacts`**, and one row each in `coach_profiles` and
+-- `onboarding_state`. The probe user was deleted afterwards and the cascade
+-- took `public.users` with it.
+--
+-- Filename version matches the recorded one (20260813155832); it was applied
+-- through the management API rather than `db push`, which timestamps at apply.
 --
 -- ─── WHY THE TRIGGER BREAKS TODAY ────────────────────────────────────────
 --
