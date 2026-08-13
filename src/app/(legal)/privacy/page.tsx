@@ -6,6 +6,7 @@ import { LEGAL_CONTACT } from "@/lib/platform/legal";
 import MasteryPrivacy from "../_content/MasteryPrivacy";
 import RelattiPrivacy from "../_content/RelattiPrivacy";
 import MoneyPrivacy from "../_content/MoneyPrivacy";
+import HeardUnpublished from "../_content/heard/Unpublished";
 
 interface PageProps {
   searchParams: Promise<{ brand?: string }>;
@@ -33,5 +34,5 @@ export default async function PrivacyPage({ searchParams }: PageProps) {
   // byBrand, not a ternary: serving another brand's PRIVACY POLICY silently is
   // the worst version of the fallback bug — a new brand must fail the build
   // here until its own legal text exists.
-  return byBrand({ relatti: <RelattiPrivacy />, masterytv: <MasteryPrivacy />, money: <MoneyPrivacy /> }, brand.id);
+  return byBrand({ relatti: <RelattiPrivacy />, masterytv: <MasteryPrivacy />, money: <MoneyPrivacy />, heard: <HeardUnpublished doc="Privacy Policy" /> }, brand.id);
 }

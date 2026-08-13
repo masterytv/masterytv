@@ -6,6 +6,7 @@ import { LEGAL_CONTACT } from "@/lib/platform/legal";
 import MasteryTerms from "../_content/MasteryTerms";
 import RelattiTerms from "../_content/RelattiTerms";
 import MoneyTerms from "../_content/MoneyTerms";
+import HeardUnpublished from "../_content/heard/Unpublished";
 
 interface PageProps {
   searchParams: Promise<{ brand?: string }>;
@@ -29,5 +30,5 @@ export async function generateMetadata({
 
 export default async function TermsPage({ searchParams }: PageProps) {
   const brand = await getBrandFromRequest((await searchParams).brand);
-  return byBrand({ relatti: <RelattiTerms />, masterytv: <MasteryTerms />, money: <MoneyTerms /> }, brand.id);
+  return byBrand({ relatti: <RelattiTerms />, masterytv: <MasteryTerms />, money: <MoneyTerms />, heard: <HeardUnpublished doc="Terms of Service" /> }, brand.id);
 }

@@ -34,6 +34,7 @@ function senderFor(brandId: BrandId): Sender {
       ? { apiKey: relattiKey, from: "Relatti Beta <donotreply@mail.relatti.com>" }
       : { apiKey: shared, from: "Relatti Beta <donotreply@mail.masterytv.com>" },
     money: { apiKey: shared, from: "MoneyTraits <donotreply@mail.masterytv.com>" },
+    heard: { apiKey: shared, from: "HEARD <donotreply@mail.masterytv.com>" },
   };
   return senders[brandId];
 }

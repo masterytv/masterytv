@@ -247,6 +247,81 @@
   --cta-to: oklch(0.52 0.12 162);
 }
 
+/* HEARD (integration vertical) — quiet slate blue, hue 240, LOW chroma.
+   The hue is a positioning decision, not a preference. INTEGRATION_EXPERIENCE
+   §5.1 bans BOTH registers this category defaults to: the woo one (cosmic
+   violet/indigo) and the clinical one (medical teal/cyan). A desaturated
+   night-blue is neither. It also stays clear of --accent-gold, which §14
+   reserves for the single conversion CTA per page — a warm brand primary would
+   have muddied that rule on every surface.
+   OKLCH throughout, same reasoning as money: check-colors derives its ban-set
+   from #hex / rgb() token VALUES, so OKLCH adds nothing to ban. Declares the
+   FULL identity set (brand-tokens gate); --relatti-mark-* is gate coverage only
+   (HEARD renders a wordmark, not the mark tokens) — slate so nothing silently
+   falls back to Relatti rose. */
+[data-brand="heard"] {
+  --color-brand-50: oklch(0.95 0.02 240);
+  --color-brand-100: oklch(0.90 0.04 240);
+  --color-brand-200: oklch(0.83 0.06 240);
+  --color-brand-300: oklch(0.74 0.08 240);
+  --color-brand-400: oklch(0.66 0.09 240);
+  --color-brand-500: oklch(0.58 0.09 240);
+  --color-brand-600: oklch(0.50 0.09 240);
+  --color-brand-700: oklch(0.42 0.08 240);
+  --color-brand-800: oklch(0.34 0.07 240);
+  --color-brand-900: oklch(0.27 0.05 240);
+  --color-brand-950: oklch(0.19 0.03 240);
+
+  --color-primary: oklch(0.83 0.07 240);
+  --color-primary-container: oklch(0.62 0.09 240);
+  --color-primary-deep: oklch(0.83 0.07 240);
+  --color-primary-darker: oklch(0.50 0.09 240);
+  --color-primary-dim: oklch(0.62 0.09 240);
+
+  --color-info: oklch(0.83 0.07 240);
+  --shadow-glow: 0 0 20px oklch(0.62 0.09 240 / 0.15);
+
+  --primary-glow-ring: oklch(0.62 0.09 240 / 0.12);
+  --primary-tint-10: oklch(0.62 0.09 240 / 0.10);
+  --primary-tint-20: oklch(0.62 0.09 240 / 0.20);
+
+  --accent-primary: oklch(0.83 0.07 240);
+  --accent-primary-bg: oklch(0.62 0.09 240 / 0.10);
+  --accent-primary-bg-hover: oklch(0.62 0.09 240 / 0.15);
+  --accent-primary-ring: oklch(0.62 0.09 240 / 0.12);
+  --cta-from: oklch(0.83 0.07 240);
+  --cta-to: oklch(0.62 0.09 240);
+
+  --relatti-mark-left: oklch(0.83 0.07 240);
+  --relatti-mark-right: oklch(0.62 0.09 240);
+}
+
+/* Light-mode HEARD primaries — darkened slate for WCAG contrast on light
+   surfaces (same cascade reason as the Relatti and money light blocks). */
+[data-brand="heard"][data-theme="light"] {
+  --relatti-mark-left: oklch(0.56 0.09 240);
+  --relatti-mark-right: oklch(0.44 0.08 240);
+
+  --color-primary: oklch(0.50 0.09 240);
+  --color-primary-container: oklch(0.56 0.09 240);
+  --color-primary-deep: oklch(0.44 0.08 240);
+  --color-primary-darker: oklch(0.38 0.07 240);
+  --color-primary-dim: oklch(0.56 0.09 240);
+  --color-info: oklch(0.50 0.09 240);
+
+  --accent-primary: oklch(0.50 0.09 240);
+  --accent-primary-bg: oklch(0.50 0.09 240 / 0.06);
+  --accent-primary-bg-hover: oklch(0.50 0.09 240 / 0.10);
+  --accent-primary-ring: oklch(0.50 0.09 240 / 0.08);
+
+  --primary-glow-ring: oklch(0.50 0.09 240 / 0.08);
+  --primary-tint-10: oklch(0.50 0.09 240 / 0.06);
+  --primary-tint-20: oklch(0.50 0.09 240 / 0.12);
+
+  --cta-from: oklch(0.56 0.09 240);
+  --cta-to: oklch(0.50 0.09 240);
+}
+
 /* ===========================================================
    Semantic CSS Custom Properties (non-@theme)
    Dark mode defaults — "Midnight Executive"
@@ -499,6 +574,23 @@ body {
   --accent-primary-ring: oklch(0.62 0.14 162 / 0.12);
   --cta-from: oklch(0.82 0.14 162);
   --cta-to: oklch(0.62 0.14 162);
+}
+
+/* HEARD dark accent/CTA/tint — the same 9 tokens, for the same cascade reason
+   as the money block directly above. The brand-tokens gate cannot see this
+   class of bug (the earlier block DOES declare them, so coverage looks
+   complete); only source order decides the value, and the two late :root
+   blocks re-declare all 9 in indigo. */
+[data-brand="heard"] {
+  --primary-glow-ring: oklch(0.62 0.09 240 / 0.12);
+  --primary-tint-10: oklch(0.62 0.09 240 / 0.10);
+  --primary-tint-20: oklch(0.62 0.09 240 / 0.20);
+  --accent-primary: oklch(0.83 0.07 240);
+  --accent-primary-bg: oklch(0.62 0.09 240 / 0.10);
+  --accent-primary-bg-hover: oklch(0.62 0.09 240 / 0.15);
+  --accent-primary-ring: oklch(0.62 0.09 240 / 0.12);
+  --cta-from: oklch(0.83 0.07 240);
+  --cta-to: oklch(0.62 0.09 240);
 }
 
 /* ── Light mode: Override hardcoded inline rgba/hex patterns ──

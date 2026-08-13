@@ -42,6 +42,19 @@ const BRAND_ICONS: Record<BrandId, Metadata["icons"]> = {
     ],
     apple: "/money/apple-touch-icon.png",
   },
+  // HEARD assets under /public/heard/ (slate wordmark tile, generated from
+  // icon.svg with sharp, same shape as the Relatti and money sets). The tab
+  // icon is one of this brand's privacy surfaces, not just chrome: it sits in
+  // the tab strip and the bookmark bar of somebody who has not told the people
+  // they live with, so it carries the wordmark and no imagery of what the
+  // vertical is about.
+  heard: {
+    icon: [
+      { url: "/heard/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/heard/favicon-16.png", sizes: "16x16", type: "image/png" },
+    ],
+    apple: "/heard/apple-touch-icon.png",
+  },
 };
 
 const SITE_NAME: Record<BrandId, string> = {
@@ -49,6 +62,11 @@ const SITE_NAME: Record<BrandId, string> = {
   relatti: "Relatti",
   // Public brand locked 2026-07-20: MoneyTraits on moneytraits.com.
   money: "MoneyTraits",
+  // Public brand locked 2026-08-13: HEARD on youheard.org. The wordmark is
+  // all-caps (BRAND.md §1.1) and the domain carries the "you"; the site name
+  // never does, so a preview card reads "HEARD" and not a sentence about the
+  // reader.
+  heard: "HEARD",
 };
 
 // Tab-title suffix — shorter than SITE_NAME so titles survive tab truncation
@@ -57,6 +75,7 @@ const TITLE_SUFFIX: Record<BrandId, string> = {
   masterytv: "Mastery",
   relatti: "Relatti",
   money: "MoneyTraits",
+  heard: "HEARD",
 };
 
 /** "{Page} — {Brand}" tab title, e.g. brandTitle("relatti", "Coach") → "Coach — Relatti". */
@@ -72,6 +91,7 @@ export const BRAND_ORIGINS: Record<BrandId, string> = {
   masterytv: "https://masterytv.com",
   relatti: "https://relatti.com",
   money: "https://moneytraits.com",
+  heard: "https://youheard.org",
 };
 
 export interface BrandPageMeta {

@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { useState } from "react";
-import { Loader2, ArrowRight, Eye, EyeOff, User, Mail, Check, Fingerprint, Compass } from "lucide-react";
+import { Loader2, ArrowRight, Eye, EyeOff, User, Mail, Check, Fingerprint, Compass, AudioLines } from "lucide-react";
 import { RelattiMark } from "@/components/relatti/RelattiMark";
 import { FloatingThemeToggle } from "@/components/floating-theme-toggle";
 import { byBrand, BRANDS, type BrandId } from "@/lib/platform/brand";
@@ -31,6 +31,14 @@ const COPY: Record<BrandId, { tagline: string; signinSubtitle: string }> = {
   money: {
     tagline: "The psychology under your money decisions.",
     signinSubtitle: "Sign in to your money coach.",
+  },
+  // HEARD. Deliberately says nothing about what the person went through: this
+  // screen renders on a shared laptop as often as anywhere else. It also makes
+  // no offer to explain, interpret or resolve, which is the neutrality pledge
+  // (INTEGRATION_EXPERIENCE §5.1) in two lines instead of a paragraph.
+  heard: {
+    tagline: "Say the thing you have not been able to say.",
+    signinSubtitle: "Sign in to pick up where you left off.",
   },
 };
 
@@ -243,6 +251,7 @@ export default function LoginPanel({
                 relatti: <RelattiMark className="h-6 w-6" />,
                 masterytv: <Fingerprint className="h-6 w-6" style={{ color: "var(--color-primary)" }} strokeWidth={1.5} />,
                 money: <Compass className="h-6 w-6" style={{ color: "var(--color-primary)" }} strokeWidth={1.5} />,
+                heard: <AudioLines className="h-6 w-6" style={{ color: "var(--color-primary)" }} strokeWidth={1.5} />,
               },
               brandId,
             )}

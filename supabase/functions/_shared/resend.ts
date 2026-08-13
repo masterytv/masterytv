@@ -56,6 +56,18 @@ const COACH_IDENTITY: Record<BrandId, CoachIdentity> = {
     preferredFrom: "MoneyTraits Coach <coach@mail.masterytv.com>",
     sharedFrom: "MoneyTraits Coach <coach@mail.masterytv.com>",
   },
+  heard: {
+    // Founder decision 2026-08-13: HEARD sends from the shared MasteryTV
+    // domain until mail.youheard.org is verified in Resend. Then set
+    // preferredFrom to "HEARD <coach@mail.youheard.org>" and nothing else
+    // changes.
+    //
+    // No "Coach" in the display name, unlike every other brand here. On a lock
+    // screen the sender is the disclosure, and "HEARD Coach" invites the
+    // question this person is least able to answer in front of other people.
+    preferredFrom: "HEARD <coach@mail.masterytv.com>",
+    sharedFrom: "HEARD <coach@mail.masterytv.com>",
+  },
 };
 
 // ─── SEND EMAIL ─────────────────────────────────────────────────────────
@@ -313,6 +325,22 @@ const EMAIL_BRANDS: Record<
     link: "#059669",
     footerLine:
       "MoneyTraits by MasteryTV · You're receiving this because you enabled email coaching.",
+  },
+  // Slate palette from the HEARD favicon tile (public/heard/icon.svg).
+  //
+  // ⚠️ The footer line says less than the other three on purpose. Every other
+  // vertical names itself and its parent in the footer, which is ordinary
+  // brand hygiene; here the email may be read over somebody's shoulder, so the
+  // chrome carries the wordmark, the opt-out reason and nothing that describes
+  // what the service is for (INTEGRATION_EXPERIENCE §1.1, the 🔴 proactive row).
+  heard: {
+    name: "HEARD",
+    origin: "https://youheard.org",
+    gradient: "linear-gradient(135deg, #2b6991, #14415c)",
+    darkGradient: "linear-gradient(135deg, #061520, #1b5274)",
+    accent: "#1b5274",
+    link: "#2b6991",
+    footerLine: "HEARD · You asked for these. Reply STOP and they end.",
   },
 };
 

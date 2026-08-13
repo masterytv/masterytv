@@ -10,7 +10,7 @@ import { byBrand } from "@/lib/platform/brand";
 export async function generateMetadata(): Promise<Metadata> {
   const brand = await getBrand();
   return brandPageMetadata(brand.id, {
-    title: byBrand({ relatti: "Sign in — Relatti", masterytv: "Sign in — Mastery Coach", money: "Sign in — MoneyTraits" }, brand.id),
+    title: byBrand({ relatti: "Sign in — Relatti", masterytv: "Sign in — Mastery Coach", money: "Sign in — MoneyTraits", heard: "Sign in — HEARD" }, brand.id),
     noindex: true,
   });
 }

@@ -84,8 +84,17 @@ const WARN_ONLY = process.argv.includes("--warn");
  *
  * **Add the brand slug here the moment the name is chosen** — before any copy
  * is written, not after. §6.1 carries the checklist item.
+ *
+ * ✅ FILLED August 13, 2026: the public name is HEARD (youheard.org), brand id
+ * `heard`. The internal slug stays `integration`.
+ *
+ * ⚠️ Naming discipline this buys, and it has a sharp edge: the path scope
+ * matches a whole SEGMENT (`heard/`, `heard.tsx`, `heard-door.tsx`), so a
+ * PascalCase `HeardLanding.tsx` sitting in a shared folder is NOT scanned.
+ * Put HEARD's own files under a `heard/` directory. `_content/heard/` is the
+ * first one.
  */
-const ALSO_OWNED = [];
+const ALSO_OWNED = ["heard"];
 
 /** Every token that opens scope. Ordinary English "integration" is not one of them. */
 function ownedPatterns(tokens) {

@@ -16,7 +16,7 @@
 
 import { normalizeProgram, type ProgramId } from "./packs/index.ts";
 
-export type BrandId = "masterytv" | "relatti" | "money";
+export type BrandId = "masterytv" | "relatti" | "money" | "heard";
 
 export interface EdgeBrand {
   id: BrandId;
@@ -63,10 +63,33 @@ export const EDGE_BRANDS: Record<BrandId, EdgeBrand> = {
     coachName: "MoneyTraits",
     replyToOverride: "MoneyTraits Coach <coach@mail.masterytv.com>",
   },
+  // Integration vertical — public brand "HEARD" on youheard.org (founder
+  // decision 2026-08-13). Internal slug stays `integration`.
+  //
+  // 🔑 `coachName` is the BRAND, not a coach persona, and deliberately so: this
+  // vertical's coach has no name (INTEGRATION_EXPERIENCE §4.2 — the coach
+  // introduces no proper noun the person did not introduce first, and giving
+  // the thing on the other side a name is the co-authoring failure the whole
+  // pack is built to avoid). "HEARD" is a product, not an entity.
+  //
+  // ⚠️ Proactive email is a DISCLOSURE EVENT for this population
+  // (INTEGRATION_EXPERIENCE §1.1, 🔴): a subject line about somebody's
+  // near-death experience on a lock screen, in a house with a spouse who
+  // thinks they have lost it, is an outing the product caused. The from- and
+  // reply-identities below carry the bare wordmark and nothing about the
+  // vertical, which is the same reason the domain is youheard.org. The
+  // proactive layer itself stays OFF for this program until I8.
+  heard: {
+    id: "heard",
+    programSlug: "integration",
+    origin: "https://youheard.org",
+    coachName: "HEARD",
+    replyToOverride: "HEARD <coach@mail.masterytv.com>",
+  },
 };
 
 export function isBrandId(x: unknown): x is BrandId {
-  return x === "masterytv" || x === "relatti" || x === "money";
+  return x === "masterytv" || x === "relatti" || x === "money" || x === "heard";
 }
 
 /**

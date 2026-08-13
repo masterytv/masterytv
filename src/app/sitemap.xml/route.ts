@@ -38,6 +38,17 @@ const PUBLIC_PATHS: Record<BrandId, { path: string; priority: number }[]> = {
   // robots isProductionHost). Nothing public to advertise yet — add the landing +
   // legal paths here when the money surfaces + domain go live (launch task).
   money: [],
+  // HEARD is DARK (pre-launch): youheard.org is not pointed here yet and the
+  // vertical is gated behind INTEGRATION_ENGINE.
+  //
+  // ⚠️ When the doors ship (I9), this list is NOT the whole job. The doors are
+  // per-population entry pages in mutually repellent vocabularies
+  // (INTEGRATION_EXPERIENCE §5.1: /after, /nobody-believes-me, /after-the-trip,
+  // /meditation-made-it-worse, /leaving-faith, /i-saw-something,
+  // /they-came-back), and a sitemap that lists them all together on one host is
+  // the one surface where a visitor sees the other five populations named. Ship
+  // the doors that are live and nothing else.
+  heard: [],
 };
 
 export async function GET(request: Request) {

@@ -226,6 +226,8 @@ function brandProgramFilter(): string {
       relatti: "program.eq.relationship",
       masterytv: "program.eq.general,program.is.null",
       money: "program.eq.money",
+      // The integration vertical stores conversations under program='integration'.
+      heard: "program.eq.integration",
     },
     resolveBrandClient().id,
   );

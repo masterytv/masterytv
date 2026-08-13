@@ -2,6 +2,7 @@
 
 import { useUser } from "@/hooks/useUser";
 import { useBrand, resolveBrandClient } from "@/hooks/useBrand";
+import { byBrand } from "@/lib/platform/brand";
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -929,7 +930,22 @@ function SettingsContent() {
                 <li>• All messages and conversation history</li>
                 <li>• Memory facts and knowledge graph</li>
                 <li>• Coach profile and personalization</li>
-                <li>• {isRelatti ? "Your assessment and reports" : "Commitments and progress tracking"}</li>
+                <li>
+                  •{" "}
+                  {byBrand(
+                    {
+                      masterytv: "Commitments and progress tracking",
+                      money: "Commitments and progress tracking",
+                      relatti: "Your assessment and reports",
+                      // HEARD runs neither of those modules. What it actually
+                      // holds beyond the messages is the DERIVED layer that
+                      // `coaching_consents` gates, so that is what the deletion
+                      // notice has to name.
+                      heard: "Anything the coach worked out from what you said",
+                    },
+                    brand.id,
+                  )}
+                </li>
                 <li>• Your account and login credentials</li>
               </ul>
 

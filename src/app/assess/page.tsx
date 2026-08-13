@@ -11,7 +11,7 @@ import { claimPendingInvites, isUserInvitee } from "@/lib/decoded/claim-invites"
 export async function generateMetadata(): Promise<Metadata> {
   const brand = await getBrand();
   return brandPageMetadata(brand.id, {
-    title: byBrand({ relatti: "Your Assessment — Relatti", masterytv: "Decoded — Assessment", money: "MoneyTraits — Assessment" }, brand.id),
+    title: byBrand({ relatti: "Your Assessment — Relatti", masterytv: "Decoded — Assessment", money: "MoneyTraits — Assessment", heard: "Assessment — HEARD" }, brand.id),
     description:
       brand.id === "relatti"
         ? "Complete your Relatti relationship assessment."

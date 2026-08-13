@@ -125,6 +125,11 @@ export async function updateSession(request: NextRequest) {
   const ROOT_LANDING: Partial<Record<BrandId, string>> = {
     relatti: "/relatti",
     money: "/money",
+    // `heard` is deliberately ABSENT, not forgotten. Partial<> means a missing
+    // entry is legal, so youheard.org/ currently serves the MasteryTV root
+    // rather than 500ing on a rewrite to a route that does not exist. The
+    // pre-account box (I5.1) and the doors (I9) are what land here; add
+    // `heard: "/heard"` in the SAME commit that creates that page, not before.
   };
   const landingPath = ROOT_LANDING[brandId];
   if (pathname === "/" && landingPath) {

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="hg" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2b6991"/>
+      <stop offset="1" stop-color="#14415c"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#hg)"/>
+  <!-- The wordmark's initial, drawn as geometry rather than text: sharp
+       rasterizes through fontconfig and a missing font would silently ship a
+       blank tile. Three rects, no font dependency, no clipart (BRAND.md §14). -->
+  <g fill="#ffffff">
+    <rect x="20" y="18" width="6" height="28" rx="1.5"/>
+    <rect x="38" y="18" width="6" height="28" rx="1.5"/>
+    <rect x="20" y="29" width="24" height="6" rx="1.5"/>
+  </g>
+</svg>

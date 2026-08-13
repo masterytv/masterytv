@@ -156,6 +156,11 @@ export default function DashboardLayoutClient({
           // comparison) is a leaf; nothing to share until it ships. `null` keeps
           // money off the Decoded/partner share modals rather than inheriting one.
           money: null,
+          // HEARD has no share surface and will not get one. Its population is
+          // defined by not being able to tell people (INTEGRATION_EXPERIENCE
+          // §1.1: a social-share gate is "the injury, productized"), which is
+          // the same call as `INVITE_BRANDS.heard = null`.
+          heard: null,
         },
         brand.id,
       )}

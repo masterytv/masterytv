@@ -24,6 +24,7 @@ import {
   X,
   Fingerprint,
   Compass,
+  AudioLines,
   Lock,
   ShieldCheck,
   BookOpen,
@@ -96,6 +97,14 @@ export function Sidebar({ open, onClose, assessmentCompleted = false, reportId =
         label: "MoneyTraits",
         mark: <Compass className="h-4 w-4" style={{ color: "var(--color-primary)" }} />,
       },
+      // HEARD = AudioLines: the most abstract Lucide option that reads as a
+      // voice being registered (§14.1.1's "prefer the geometrically neutral
+      // one"). Deliberately not Ear, which is literal, and not Waves, which
+      // reads as water and energy on a brand that must never look new-age.
+      heard: {
+        label: "HEARD",
+        mark: <AudioLines className="h-4 w-4" style={{ color: "var(--color-primary)" }} />,
+      },
     },
     brand.id,
   );
@@ -109,9 +118,37 @@ export function Sidebar({ open, onClose, assessmentCompleted = false, reportId =
     growth: 'Growth Plan',
     mastery: 'Mastery Plan',
   };
-  const tierLabel = isRelatti
-    ? 'Relatti Beta'
-    : tierLabels[user?.decoded_tier ?? 'free'] ?? 'Free Plan';
+  // byBrand, not `isRelatti ? … : …`: hoisting the comparison into a boolean is
+  // the one shape check:ternaries cannot see, so the else-branch was quietly
+  // handing every future brand MasteryTV's plan names. That is the I2.3 seam.
+  // Does this brand gate its nav behind a completed assessment?
+  //
+  // 🔑 HEARD does not, and it is the seam that would have bitten hardest.
+  // Its battery is deliberately EMPTY until I7.1 (I2 chose empty over
+  // inheriting CORE's 66 executive items), so `assessmentCompleted` is false
+  // forever — which locked the Coach item permanently on the one vertical
+  // whose entire product IS the conversation. Same fact removes the report
+  // link, since there is no report kind that renders for this program.
+  const gatesOnAssessment = byBrand(
+    { masterytv: true, relatti: true, money: true, heard: false },
+    brand.id,
+  );
+
+  const decodedTier = tierLabels[user?.decoded_tier ?? 'free'] ?? 'Free Plan';
+  const tierLabel = byBrand(
+    {
+      masterytv: decodedTier,
+      relatti: 'Relatti Beta',
+      // Pre-existing behaviour, made explicit rather than changed here: money
+      // still shows the Decoded tier names because it has no tiers of its own.
+      money: decodedTier,
+      // HEARD has no paid tier and its pricing shape is still open
+      // (INTEGRATION_EXPERIENCE §8 Q4). "Free" is true and belongs to nobody
+      // else's product line.
+      heard: 'Free',
+    },
+    brand.id,
+  );
 
   return (
     <>
@@ -160,11 +197,21 @@ export function Sidebar({ open, onClose, assessmentCompleted = false, reportId =
         <nav className="mt-2 flex-1 space-y-1 px-3">
           {getNavItems(reportId)
             .filter((item) => !item.module || enabledModules.has(item.module))
+            // On an ungated brand, an assessment-dependent item has nothing to
+            // point at, so it is dropped rather than shown locked. The coach is
+            // the exception: it needs no assessment there, it needs no report,
+            // and it is the whole surface.
+            .filter(
+              (item) =>
+                gatesOnAssessment ||
+                !item.requiresAssessment ||
+                item.href.startsWith("/dashboard/chat"),
+            )
             .map((item) => {
             const isActive = item.exact
               ? pathname === item.href
               : pathname.startsWith(item.href);
-            const isLocked = item.requiresAssessment && !assessmentCompleted;
+            const isLocked = gatesOnAssessment && item.requiresAssessment && !assessmentCompleted;
 
             if (isLocked) {
               return (

@@ -4,7 +4,7 @@
 > **Date:** August 11, 2026
 > **Status:** 🟢 **APPROVED — founder signed off on the §0 reframe, August 11, 2026** ("approved, the reframe is right"). [VERTICAL_PLAYBOOK.md](VERTICAL_PLAYBOOK.md) Gate 0.5 is cleared. Build sequencing moves to [INTEGRATION_SPRINT.md](INTEGRATION_SPRINT.md) (Phase 3), which needs its own Gate 3 approval before code.
 > **Reads on:** [INTEGRATION_DISCOVERY.md](INTEGRATION_DISCOVERY.md) (Phase 0 — the research and the evidence citations; this doc does not repeat them).
-> **Program slug:** `integration` (internal identifier, locked once rows exist). **Public brand undecided** — see §8.2.
+> **Program slug:** `integration` (internal identifier, locked once rows exist). **Public brand: HEARD, on youheard.org** — founder decision August 13, 2026; naming contract in [BRAND.md](BRAND.md) §1.1, `BrandId` is `heard`, the slug above does not change.
 > **Modelled on:** [RELATTI_EXPERIENCE.md](RELATTI_EXPERIENCE.md) and [MONEY_EXPERIENCE.md](MONEY_EXPERIENCE.md).
 
 ---
@@ -436,7 +436,7 @@ Then:
 ## 8. Open founder questions
 
 1. **Go / no-go on the vertical**, given that the entire organized field earns ~$1.0–1.3M/year and ACISTE has produced 21 certified practitioners in 14 years. This is a smaller and slower market than money or relationship. *(Recommend: run step 0 of §7 first and decide after.)*
-2. **The name.** Recommend a plain functional-English orientation noun ("Ground," "Bearings," "Footing"). Trademark-clear before it enters a string. Approve or replace §0's reframe at the same time.
+2. ~~**The name.**~~ ✅ **DECIDED August 13, 2026: HEARD, on youheard.org.** The recommendation here was an orientation noun ("Ground," "Bearings," "Footing"); the founder took a different and better axis. Orientation names describe the state the person wants to reach, which is a claim about an outcome. HEARD names what the product does on the turn that the evidence says decides the trajectory (§2.2, the first listener), and it claims nothing about where they end up. It also drops "Footing," which would have collided with the §4.1 dial of the same name. The domain carries the "you" and the wordmark never does — `youheard.org` reads as both "you are heard" and "you heard about this," and it says nothing on a lock screen. `BrandId` `heard` is live in the codebase; the `integration` slug is unchanged.
 3. **Which two or three doors launch first?** *(Recommend: bereavement / after-death communication — the widest and least stigmatized door, and one the research nearly missed; near-death — the flagship and the population that actually pays; and meditation — the secular side door, 3.4M-subscriber adjacent community, and the one a scientist walks through. **Hold the contact door** until the safety architecture and the trajectory job are proven live.)*
 4. **Pricing shape.** The NDE population pays for **membership and identity** ($49–$149/yr, 88% earned revenue at IANDS), not for hours. Free first conversation is non-negotiable — nobody in this field charges at first contact and the communities enforce that norm socially. Membership tier, sliding scale as a published grid, or both?
 5. **Community: build it, partner for it, or skip it?** It is the highest-value V2 feature and it carries a moderation cost this team has never paid.

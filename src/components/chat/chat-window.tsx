@@ -15,7 +15,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { UserStar, Heart, Clock, Compass } from "lucide-react";
+import { UserStar, Heart, Clock, Compass, AudioLines } from "lucide-react";
 import { useBrand } from "@/hooks/useBrand";
 import type { ChatMessage } from "@/lib/chat";
 import { parseChips, stripStreamingChips } from "@/lib/chat-chips";
@@ -193,6 +193,21 @@ const EMPTY_STATE = {
       "Help me think through a big money decision",
       "The goalposts keep moving no matter how much I make",
     ],
+  },
+  // HEARD. The heading and intro are INTEGRATION_EXPERIENCE §5.2's specified
+  // first-surface copy, not a variation on it.
+  //
+  // 🔑 `starters: []` is the design, not a gap. §1.1 rates a scaffolded opening
+  // 🔴 for this vertical: handing three canned prompts to somebody who came
+  // here to say the strangest thing that has ever happened to them tells them
+  // which answers are expected, on the one turn where the evidence says the
+  // first response decides the trajectory. The empty box IS the product.
+  heard: {
+    icon: AudioLines,
+    heading: "What happened?",
+    intro:
+      "Take as long as you want. Nothing here is graded, and nobody is going to tell you what it was.",
+    starters: [],
   },
 } as const;
 
