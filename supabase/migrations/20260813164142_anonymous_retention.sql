@@ -3,6 +3,16 @@
 -- INTEGRATION_SPRINT.md §6.1, the open ⚠️ item under I5.1. Window is **14 days
 -- since last activity** (founder call, 2026-08-13).
 --
+-- ✅ APPLIED to prod 2026-08-13 and verified live rather than from this file:
+-- ACL `postgres=X/postgres` (owner only, after the sibling below), cron job 18
+-- `sweep-stale-anonymous-users` active as `postgres`, and one real invocation
+-- returning **0** with the only anonymous session and its 4 messages intact.
+-- Security advisors name the function nowhere; the 7 SECURITY DEFINER findings are
+-- the known baseline from 20260709000000_lock_internal_rpcs.
+--
+-- The filename matches the version the management API recorded at apply time
+-- (`db push` would have timestamped it differently) — same as its predecessor.
+--
 -- 🔑 The number is stated to the user in `src/lib/heard/retention.ts`, which the
 -- /heard box and the "Keep this conversation" strip both render. A TS constant
 -- cannot reach SQL and no gate can see across that boundary, so the two are held
@@ -115,8 +125,12 @@ $function$;
 -- grants EXECUTE to PUBLIC by default and anon/authenticated inherit it, so
 -- without this an unauthenticated caller could POST /rest/v1/rpc/
 -- sweep_stale_anonymous_users with retention_days = 1 and delete every anonymous
--- session in the product. NOT granted to service_role either: pg_cron runs it as
--- the owner, and nothing else should ever call it.
+-- session in the product.
+--
+-- ⚠️ This line is NOT sufficient on its own, measured rather than assumed: the
+-- live ACL afterwards still read `service_role=X/postgres`, granted by the
+-- project's ALTER DEFAULT PRIVILEGES at CREATE time. Closed by its sibling,
+-- 20260813164227_lock_sweep_fn_from_service_role.sql. Keep the pair together.
 REVOKE ALL ON FUNCTION public.sweep_stale_anonymous_users(integer) FROM PUBLIC, anon, authenticated;
 
 -- Daily at 04:20 UTC. `cron.schedule` upserts by job name, so re-running this
