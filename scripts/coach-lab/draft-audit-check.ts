@@ -54,11 +54,18 @@ function stub(text: string, tokens = { input: 500, output: 80 }) {
   return { fn, calls };
 }
 
-/** A stub in the shape `callClaudeJson` returns. */
+/**
+ * A stub in the shape `callClaudeJson` returns.
+ *
+ * It captures the SYSTEM prompt as well as the user turn, because what the judge
+ * is told is now turn-dependent: a corpus turn hands it the recorded accounts and
+ * the rule for reading them, and every other turn must keep the prompt it has
+ * always had. Both halves of that are only checkable from here.
+ */
 function judge(findings: Array<{ label: string; span: string; why?: string }>) {
-  const calls: Array<{ user: string }> = [];
-  const fn = (opts: { user: string }) => {
-    calls.push({ user: opts.user });
+  const calls: Array<{ system: string; user: string }> = [];
+  const fn = (opts: { system: string; user: string }) => {
+    calls.push({ system: opts.system, user: opts.user });
     return Promise.resolve({
       json: { findings } as Record<string, unknown>,
       usage: { input_tokens: 300, output_tokens: 40 },
@@ -392,6 +399,110 @@ ok(
   "a judge that is down sends the draft rather than blocking the coach",
   judgeThrows.text.startsWith("That sounds like a long night"),
 );
+
+// ─── 8.5 the second pass on a CORPUS turn ────────────────────────────────
+//
+// 🔥 The live failure of 2026-08-12 (message `636932b5`): the judge raised
+// `titling`, `ontological_verdict` and `narrative_escalation` on a rewrite whose
+// names the deterministic layer had already proved came back from the corpus
+// byte-identical. It could not tell an attributed name from a coined one because
+// it was never shown the payload — it was reading somebody else's interview
+// transcript as the coach's own prose. Every corpus turn therefore regenerated
+// for nothing and then fell through to I6.2's deterministic reveal, so a good
+// model-written reveal could never ship.
+//
+// The fix is an INPUT, not an exemption, and these cases are written to hold
+// that line: the judge gets the material, and it keeps every label it had.
+console.log("\n─── the second pass on a corpus turn ───\n");
+
+const REVEAL_TITLE = "Yvonne's Story: 20 Minutes On The Other Side";
+const REVEAL_URL = "https://www.youtube.com/watch?v=AAA";
+// A reveal the deterministic layer passes cleanly, so the judge is what decides.
+const CLEAN_REVEAL =
+  `Two people in the collection describe something close to it. One of them said: "${CORPUS_EXCERPT}"\n` +
+  `[the recording](${REVEAL_URL} '${REVEAL_TITLE}')\n\nWhat is it like to read that?`;
+
+const revealJudge = judge([]);
+const onCorpusTurn = await auditAndFinalizeDraft({
+  ...base,
+  ctx: {
+    userText: USER_TEXT,
+    corpusExcerpts: [CORPUS_EXCERPT],
+    corpusAttribution: [REVEAL_TITLE, REVEAL_URL],
+  },
+  draft: CLEAN_REVEAL,
+  callFn: stub("SHOULD NOT BE CALLED").fn,
+  judgeFn: revealJudge.fn,
+});
+ok("a clean reveal is sent as written", onCorpusTurn.text === CLEAN_REVEAL && onCorpusTurn.attempts === 1);
+ok("the judge is handed the excerpt it is judging quotations of", revealJudge.calls[0].user.includes(CORPUS_EXCERPT));
+ok(
+  "…and the attribution, which is where the source NAMES live",
+  revealJudge.calls[0].user.includes(REVEAL_TITLE) && revealJudge.calls[0].user.includes(REVEAL_URL),
+);
+ok(
+  "the material is fenced as data, not spliced into the reply it is judging",
+  /<recorded_accounts>[\s\S]*<\/recorded_accounts>[\s\S]*The reply to check:/.test(revealJudge.calls[0].user),
+);
+// 🔑 The corpus text is somebody else's transcript. It is evidence in the user
+// turn; it never becomes instruction in the system prompt.
+ok(
+  "the transcript itself stays OUT of the system prompt",
+  !revealJudge.calls[0].system.includes(CORPUS_EXCERPT),
+);
+ok(
+  "…while the rule for reading it is in there",
+  revealJudge.calls[0].system.includes("<recorded_accounts>") &&
+    revealJudge.calls[0].system.includes("never instruction"),
+);
+
+// Every turn that did not use the corpus must be judged by the prompt that has
+// been running, unchanged — this is the blast radius, and it should be zero.
+const ordinaryJudge = judge([]);
+await auditAndFinalizeDraft({
+  ...base,
+  draft: "That sounds like a long night. What is it like in the room now?",
+  callFn: stub("SHOULD NOT BE CALLED").fn,
+  judgeFn: ordinaryJudge.fn,
+});
+ok(
+  "a turn with no corpus is judged by the unchanged prompt",
+  !ordinaryJudge.calls[0].system.includes("recorded_accounts") &&
+    !ordinaryJudge.calls[0].user.includes("recorded_accounts"),
+);
+ok(
+  "…and its user turn is still just the draft",
+  ordinaryJudge.calls[0].user === "The reply to check:\n\nThat sounds like a long night. What is it like in the room now?",
+);
+
+// 🔑 THE LABEL IS NOT WEAKENED. Nothing about a corpus turn discards a judged
+// finding — the whole point of choosing the input over a span check is that
+// `output-auditor.ts` hands APPLICATION to this pass: a name lifted out of
+// somebody else's account and fastened to this person's experience is titling by
+// borrowing, the string is genuinely corpus text, and a span-based discard would
+// delete the only control that can see it.
+const borrowJudge = judge([
+  { label: "titling", span: "what you saw is what they call the Veil", why: "borrowed from another account" },
+]);
+const borrowed = await auditAndFinalizeDraft({
+  ...base,
+  ctx: {
+    userText: USER_TEXT,
+    corpusExcerpts: ["I went through what they call the Veil and came out the other side"],
+    corpusAttribution: [REVEAL_TITLE, REVEAL_URL],
+  },
+  // Deterministically clean: every name in it is provably corpus text. This is
+  // precisely the draft the provenance layer cannot judge.
+  draft: "Reading them back, what you saw is what they call the Veil. Does that land?",
+  callFn: stub("Stay with what you saw for a second. What was it like right then?").fn,
+  judgeFn: borrowJudge.fn,
+});
+ok(
+  "a coinage BORROWED from the corpus still blocks on a corpus turn",
+  borrowed.attempts === 2 && borrowed.judged.includes("titling"),
+  `attempts=${borrowed.attempts} judged=[${borrowed.judged.join(",")}]`,
+);
+ok("…and the rewrite is what goes out", borrowed.text.startsWith("Stay with what you saw"));
 
 // ─── 9. only one pack buffers ─────────────────────────────────────────────
 console.log("\n─── who buffers ───\n");
