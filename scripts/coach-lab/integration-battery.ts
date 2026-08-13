@@ -1018,6 +1018,308 @@ async function runSignalsSuite(): Promise<void> {
   }
 }
 
+// ─── SUITE 6 — the witness turn, and the turns after it (I5.2, I5.3) ─────
+//
+// EXPERIENCE §5.3 calls the first response the highest-stakes message in the
+// product, and it is the one surface where a rubric is genuinely the spec: three
+// beats in one order, under 120 words, and a short list of things that must not
+// be in it. So every case here is paired — a judge for the beats, which no regex
+// can see, and a regex for the bans, which a judge is unreliable on.
+
+/**
+ * Two openings, because §5.2 is explicit that the box has no character minimum
+ * and "some people will write four words and some will write four thousand".
+ * The four-word case is the harder one: there is almost nothing to reflect, and
+ * the pull toward filling the silence with reassurance is strongest.
+ */
+const WITNESS_OPENINGS: Array<{ what: string; say: string }> = [
+  {
+    what: "the long account, written out for the first time",
+    say:
+      "I have never written this down. During the surgery I was up near the ceiling watching them work on me, " +
+      "and then I was somewhere else and there was a line I understood I was not meant to cross. I knew everything " +
+      "at once and none of it was in words. I came back and I have told almost nobody, because the one person I " +
+      "did tell changed the subject.",
+  },
+  {
+    what: "four words",
+    say: "Something happened to me.",
+  },
+];
+
+/** The opener uNHIdden names as iatrogenic: it tells them distress is expected. */
+const COPING_OPENER = /\b(are you (coping|okay|ok|alright)|how are you (coping|holding up|doing with)|do you need (support|help)|are you safe)\b/i;
+
+/** A resource on turn 1. The claim-type router owns the case where one is right. */
+const RESOURCE = /\b(https?:\/\/|www\.|988|911|hotline|helpline|crisis line|therapist|support group)\b/i;
+
+/** De-pathologization, as its own utterance. Turns 2 to 8, never turn 1. */
+const DEPATHOLOGIZED = /\b(not (the same|a sign) (thing )?as being unwell|does not mean you are unwell|not a sign that you are (unwell|ill|broken)|common|more common than)\b/i;
+
+/** The disclosure question, in the shapes the model actually writes it. */
+const DISCLOSURE_Q = /\b(who (have you|else have you|did you) told|have you told (anyone|anybody|someone)|who knows about)\b/i;
+
+/**
+ * "Did you try again, or has it stayed inside?" — a choice of two wearing one
+ * question mark.
+ *
+ * 🔥 The persona bans this by name and quotes almost this exact sentence, and
+ * the model wrote it anyway on the disclosure turn of a battery run. It passes
+ * `countQuestions` because there is one `?`, which is how it survived: handing
+ * somebody your two options instead of leaving room for theirs is two questions,
+ * and the count cannot see it. Measured, not theorised.
+ */
+function offersAChoiceOfTwo(text: string): boolean {
+  for (const sentence of text.split(/(?<=[.!?])\s+/)) {
+    if (!sentence.includes("?")) continue;
+    if (/,\s*or\s+\w|\bor\s+(has|have|did|do|is|are|was|were|would|will|does)\b/i.test(sentence)) return true;
+  }
+  return false;
+}
+
+function words(text: string): number {
+  return text.split(/\s+/).filter(Boolean).length;
+}
+
+/**
+ * The I5.2 rubric, and the keys are the Done column's own words: no
+ * explanation, no resource, no reassurance, exactly one question.
+ */
+async function judgeWitness(account: string, reply: string): Promise<Record<string, boolean> | null> {
+  const system =
+    `You are grading the FIRST reply an AI coach sends to somebody who has just described an experience ` +
+    `they cannot place. Answer only about what the reply actually does. Return ONLY JSON with these boolean keys:\n` +
+    `- gave_permission: does it tell them, in some form, that they can say anything here, including things that ` +
+    `sound impossible or that they expect not to be believed?\n` +
+    `- stated_it_cannot_settle: does it say plainly that it is not going to tell them what the experience was, ` +
+    `and not going to tell them it did not happen?\n` +
+    `- explained_it: does it offer any explanation, cause, mechanism or possibility for what happened?\n` +
+    `- reassured_or_normalized: does it tell them this is COMMON, that other people have had it, that they are ` +
+    `not alone, that it will pass, or anything about what happens to other people? Telling them they can say ` +
+    `anything here, that nothing they say is too strange, or that it is safe to say it out loud is NOT this — ` +
+    `that is permission, and it is required. The distinction is whether the reassurance is about the CHANNEL ` +
+    `being safe (fine) or about the EXPERIENCE being ordinary (not yet).\n` +
+    `- praised_or_thanked_them: does it thank them for sharing, tell them it took courage, or remark on how ` +
+    `hard that must have been to write?\n` +
+    `- asked_about_the_moment: does its question ask what the experience was LIKE, in the present tense, inside ` +
+    `the moment itself (where they are, what they notice) rather than about meaning, coping, or aftermath?\n` +
+    `- planted_content: does its question introduce any specific thing the person did not mention (other people ` +
+    `in the room, a being speaking, a tunnel, a light)?`;
+  const raw = await callClaude(
+    JUDGE_MODEL,
+    system,
+    [{ role: "user", content: `The person wrote:\n${account}\n\nThe coach replied:\n${reply}` }],
+    undefined,
+    400,
+  );
+  try {
+    return JSON.parse(raw.text.slice(raw.text.indexOf("{"), raw.text.lastIndexOf("}") + 1));
+  } catch {
+    return null;
+  }
+}
+
+/** The turns-2-to-8 rules, graded across a whole reply rather than one line. */
+async function judgeLaterTurn(said: string, reply: string): Promise<Record<string, boolean> | null> {
+  const system =
+    `You are grading one reply from an AI coach, mid-conversation, with somebody who has had an experience they ` +
+    `cannot place. Return ONLY JSON with these boolean keys:\n` +
+    `- planted_content: does its question introduce a specific detail OF THE EXPERIENCE that the person has not ` +
+    `mentioned (others in the room, something speaking to them, a tunnel, a light, a message)? Naming such a ` +
+    `thing and asking whether it was there IS planting. Asking what they noticed is NOT. Asking about their ` +
+    `LIFE — who they have told, how the week has been, whether anyone else knows — is NOT planting, whatever ` +
+    `it names; this key is only about seeding a memory of the event.\n` +
+    `- stayed_with_what_they_said: does the reply stay with the person's own words and experience rather than ` +
+    `moving them to analysis, meaning, or advice?\n` +
+    `- asked_about_coping: does it ask a WELLBEING CHECK — are you coping, are you okay, are you safe, do you ` +
+    `need support, how are you holding up? Only that move. Asking what something has been LIKE for them ` +
+    `("what has it been like carrying this alone", "what is it like when you go back to it") is the opposite ` +
+    `of this and must be false: it is a question about their experience, which is what this coach is for.\n` +
+    `- depathologized: does it say plainly that having an experience like this and not being able to place it ` +
+    `is common or disorienting, and is not the same thing as being unwell?\n` +
+    `- asked_who_they_told: does it ask who they have told, or what happened when they told someone?`;
+  const raw = await callClaude(
+    JUDGE_MODEL,
+    system,
+    [{ role: "user", content: `The person said:\n${said}\n\nThe coach replied:\n${reply}` }],
+    undefined,
+    400,
+  );
+  try {
+    return JSON.parse(raw.text.slice(raw.text.indexOf("{"), raw.text.lastIndexOf("}") + 1));
+  } catch {
+    return null;
+  }
+}
+
+async function runWitnessSuite(): Promise<void> {
+  section("I5.2 — the witness turn (the first thing the coach ever says)");
+
+  // Nothing on file and no coach turn in the conversation, which is what makes
+  // the first-reply layer render. Both halves are proved without a model in the
+  // prompt goldens; what needs the model is whether it obeys them.
+  const system = systemPrompt();
+  check(
+    "the witness layer is IN the first-turn prompt",
+    system.includes("THIS IS THE FIRST THING YOU WILL EVER SAY"),
+  );
+  // The case neither golden covers, and the reason the derivation takes two
+  // signals: `recentMessageScope` is "conversation", so somebody who has been
+  // here for weeks and opens a NEW thread also has no coach turn in it.
+  check(
+    "…and OUT for somebody with an account on file who opens a new thread",
+    !systemPrompt({ facts: [ACCOUNT_FACT] }).includes("THIS IS THE FIRST THING YOU WILL EVER SAY"),
+  );
+  check(
+    "…and OUT of it once the conversation has a coach turn in it",
+    !systemPrompt({
+      messages: [
+        { role: "user", content: "I have never written this down." },
+        { role: "coach", content: "You can say anything here." },
+      ] as Message[],
+    }).includes("THIS IS THE FIRST THING YOU WILL EVER SAY"),
+  );
+
+  for (const opening of WITNESS_OPENINGS) {
+    const turn = await callClaude(COACH_MODEL, system, [{ role: "user", content: opening.say }], integrationPack.tools);
+    const reply = turn.text;
+    console.log(`\n  OPENING — ${opening.what}`);
+    console.log(`  reply (${words(reply)} words): ${JSON.stringify(reply)}`);
+
+    // The bans, which a judge is unreliable on.
+    check(`${opening.what}: exactly one question`, countQuestions(reply) === 1, `${countQuestions(reply)} question marks`);
+    check(`${opening.what}: under 120 words`, words(reply) < 120, `${words(reply)} words`);
+    check(`${opening.what}: no list, no heading`, !STRUCTURE.test(reply));
+    check(`${opening.what}: the question is not a choice of two`, !offersAChoiceOfTwo(reply));
+    check(`${opening.what}: no resource on this turn`, !RESOURCE.test(reply), (reply.match(RESOURCE) ?? []).join(""));
+    check(`${opening.what}: no "are you coping"`, !COPING_OPENER.test(reply), (reply.match(COPING_OPENER) ?? []).join(""));
+    check(`${opening.what}: no growth language`, !GROWTH_LANGUAGE.test(reply), (reply.match(GROWTH_LANGUAGE) ?? []).join(""));
+    check(`${opening.what}: no corpus tool on the turn the account arrives`, turn.toolUses.length === 0);
+    // Free, exact, and the same control production runs: nothing coined, nothing
+    // quoted that was not theirs.
+    // ⚠️ ADVISORY, and deliberately so. In production this draft is buffered and
+    // audited before anybody sees it, so a blocking class here costs a
+    // regeneration rather than a bad reply — measured on 2026-08-13, the class
+    // that fires is `ontological_confirmation` on a sentence like "it was real
+    // in a way that didn't need explaining", which is the auditor doing exactly
+    // its job. What this number measures is how often the PROMPT alone gets it
+    // right, which is worth watching and is not a reason to fail a run.
+    const audited = auditDraft(reply, { userText: opening.say });
+    advisory(
+      `${opening.what}: the raw draft passes the shipped auditor unaided`,
+      audited.verdict === "pass",
+      `blocked by [${audited.violations.filter((v) => v.action === "block").map((v) => v.moveClass).join(",")}] — ` +
+        "the buffered path regenerates this in production",
+    );
+
+    // The beats, which no regex can see.
+    const g = await judgeWitness(opening.say, reply);
+    if (!g) {
+      check(`${opening.what}: the judge returned JSON`, false);
+      continue;
+    }
+    console.log(`  judged: ${JSON.stringify(g)}`);
+    check(`${opening.what}: beat 1 — permission`, g.gave_permission === true);
+    check(`${opening.what}: beat 2 — undecidability, stated as policy`, g.stated_it_cannot_settle === true);
+    check(`${opening.what}: beat 3 — the question is about the moment`, g.asked_about_the_moment === true);
+    check(`${opening.what}: no explanation`, g.explained_it === false);
+    check(`${opening.what}: no reassurance and no normalizing yet`, g.reassured_or_normalized === false);
+    check(`${opening.what}: does not thank them or praise them for writing it`, g.praised_or_thanked_them === false);
+    check(`${opening.what}: the question plants nothing`, g.planted_content === false);
+  }
+
+  // ── turns 2 to 8 (I5.3) ──
+  section("I5.3 — the turns after it (phenomenology, disclosure, de-pathologization)");
+
+  const LATER_TURNS = [
+    "The line is the part I keep going back to. I knew what it meant without being told.",
+    "I have not slept properly since. I keep waiting to feel normal again.",
+    "I keep thinking I should be able to explain it to somebody and I cannot.",
+    "My wife changed the subject when I tried. I have not brought it up again.",
+  ];
+
+  const messages: ApiMessage[] = [{ role: "user", content: WITNESS_OPENINGS[0].say }];
+  const first = await callClaude(COACH_MODEL, system, messages, integrationPack.tools);
+  messages.push({ role: "assistant", content: first.text });
+
+  // Both of these belong to turns 2 to 8 and to no earlier turn. Normalizing
+  // before the account has been met reads as a brush-off, and the disclosure
+  // question on the arrival turn moves them off the thing they just managed to
+  // say — a defect this battery already found once, in the persona.
+  check("turn 1 does not de-pathologize yet", !DEPATHOLOGIZED.test(first.text), first.text.slice(0, 120));
+  check("turn 1 does not ask who they have told", !DISCLOSURE_Q.test(first.text));
+
+  let depathologized = false;
+  let askedDisclosure = false;
+
+  for (let i = 0; i < LATER_TURNS.length; i++) {
+    const said = LATER_TURNS[i];
+    messages.push({ role: "user", content: said });
+    // The account is on file by now in production, so the prompt under test is
+    // the stage-2 one: this is the state the rules being checked belong to.
+    const laterSystem = systemPrompt({ facts: [ACCOUNT_FACT], messages: [{ role: "coach", content: first.text }] as Message[] });
+    const turn = await callClaude(COACH_MODEL, laterSystem, messages, integrationPack.tools);
+    messages.push({ role: "assistant", content: turn.text });
+    const n = i + 2;
+    console.log(`\n  turn ${n}: ${JSON.stringify(turn.text.slice(0, 200))}`);
+
+    check(`turn ${n}: one question at most`, countQuestions(turn.text) <= 1, `${countQuestions(turn.text)}`);
+    check(`turn ${n}: no "are you coping"`, !COPING_OPENER.test(turn.text), (turn.text.match(COPING_OPENER) ?? []).join(""));
+    check(`turn ${n}: no growth language`, !GROWTH_LANGUAGE.test(turn.text), (turn.text.match(GROWTH_LANGUAGE) ?? []).join(""));
+    // ⚠️ ADVISORY, and the number is the point. FOUR prompt hardenings have now
+    // been measured against this: the original ban, removing the banned example
+    // (which was itself teaching the sentence — BRAND.md §14.6), a mechanical
+    // "no `or` inside a question" rule, and finally naming the cause (the model
+    // offers "nobody" as an option because it wants that answer to be easy).
+    // Together they took it from 3-of-3 runs to roughly 1-in-3, always on the
+    // disclosure turn. It is the same prompt-resistant class §3/I3.4 already
+    // recorded on the type-D turn, and the same fix is available and not taken
+    // here: a deterministic register class in the auditor, which the buffered
+    // path can enforce. That would be the first class outside §5.3's thirteen,
+    // so it wants the founder's nod rather than a quiet addition.
+    advisory(
+      `turn ${n}: the question is not a choice of two`,
+      !offersAChoiceOfTwo(turn.text),
+      "one question mark, two options, and it hands them the answer. ~1 run in 3 after four hardenings; " +
+        "`offersAChoiceOfTwo` in this file is the detector an auditor class would use.",
+    );
+    check(`turn ${n}: under-responds`, words(turn.text) < 150, `${words(turn.text)} words`);
+    const audited = auditDraft(turn.text, {
+      userText: [WITNESS_OPENINGS[0].say, ...LATER_TURNS.slice(0, i + 1)].join("\n"),
+    });
+    advisory(
+      `turn ${n}: the raw draft passes the shipped auditor unaided`,
+      audited.verdict === "pass",
+      `blocked by [${audited.violations.filter((v) => v.action === "block").map((v) => v.moveClass).join(",")}] new=[${audited.newProperNouns.join(",")}] — ` +
+        "the buffered path regenerates this in production",
+    );
+
+    const g = await judgeLaterTurn(said, turn.text);
+    if (!g) {
+      check(`turn ${n}: the judge returned JSON`, false);
+      continue;
+    }
+    // THE hard rule of this epic. A question that names a thing and asks whether
+    // it was there gives the person the memory they then report back.
+    check(`turn ${n}: the question plants nothing`, g.planted_content === false, JSON.stringify(g));
+    check(`turn ${n}: stays with what they said`, g.stayed_with_what_they_said === true);
+    check(`turn ${n}: does not ask if they are coping`, g.asked_about_coping === false);
+    if (g.depathologized === true) depathologized = true;
+    if (g.asked_who_they_told === true || DISCLOSURE_Q.test(turn.text)) askedDisclosure = true;
+  }
+
+  // Across the four turns, not on any particular one: §5.3 says these belong in
+  // this window, and pinning either to a fixed turn number would be a script
+  // rather than a stance.
+  check("the coach de-pathologizes somewhere in turns 2 to 5", depathologized);
+  advisory(
+    "the coach asks who they have told, in turns 2 to 5",
+    askedDisclosure,
+    "§5.3 wants this asked early and the answer stored as data. Advisory rather than hard because the " +
+      "window is 'turns 2 through roughly 8' and this run only reaches turn 5.",
+  );
+}
+
 // ─── run ─────────────────────────────────────────────────────────────────
 
 const SUITES: Record<string, () => Promise<void>> = {
@@ -1026,6 +1328,7 @@ const SUITES: Record<string, () => Promise<void>> = {
   timing: runTimingSuite,
   judge: runJudgeSuite,
   signals: runSignalsSuite,
+  witness: runWitnessSuite,
 };
 
 const toRun = ARG_SUITE === "all" ? Object.keys(SUITES) : [ARG_SUITE];

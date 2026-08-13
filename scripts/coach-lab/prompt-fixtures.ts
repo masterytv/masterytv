@@ -894,6 +894,9 @@ export const SCENARIOS: Scenario[] = [
       "THE AGENCY EXCEPTION", // the invariant that outranks undecidability
       "STAGE 1, STEADY", // I4.6 derived stage — nothing on file yet
       "may be arriving in this very message", // the listen-only instruction
+      "THIS IS THE FIRST THING YOU WILL EVER SAY", // I5.2 the witness turn, first reply only
+      "PERMISSION, first, before anything else", // beat 1
+      "NOT YET the line about this being common", // the persona conflict this layer resolves
       "NO GROWTH LANGUAGE", // the non-optional sequencing rule
       "SAFETY RULES:", // the SHARED crisis kernel, never forked
     ],
@@ -946,6 +949,9 @@ export const SCENARIOS: Scenario[] = [
       // The other half of the derived-stage proof.
       "STAGE 1, STEADY",
       "may be arriving in this very message",
+      // The other half of the witness-turn proof: this conversation already has
+      // coach turns in it, so the first-reply layer must not render.
+      "THIS IS THE FIRST THING YOU WILL EVER SAY",
     ],
     tables: INTEGRATION_SEEN_TABLES,
   },
