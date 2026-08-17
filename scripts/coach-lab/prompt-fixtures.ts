@@ -890,6 +890,7 @@ export const SCENARIOS: Scenario[] = [
     mustInclude: [
       "been through something they cannot place", // the integration persona
       "I am not going to tell you what it was", // the undecidability policy, said once
+      "THE POLICY ABOVE DOES NOT APPLY TO YOU", // §6.4: it is about their experience, never the coach itself
       "WHAT KIND OF CLAIM IS ON THE TABLE", // I4.2 the claim-type router
       "THE AGENCY EXCEPTION", // the invariant that outranks undecidability
       "STAGE 1, STEADY", // I4.6 derived stage — nothing on file yet
