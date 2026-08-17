@@ -7,6 +7,14 @@
  *
  *   npm run battery:integration                 # all three suites
  *   npm run battery:integration -- --suite=timing
+ *   npm run battery:integration -- --cheap-seeker   # harness runs only, NOT a ship gate
+ *
+ * COST — measured 2026-08-17, ~300 API calls and ~930k prompt tokens a run.
+ * `psychosis` and `spiral` are 88% of it, and they are the red-team suites, so
+ * that is the price of the measurement rather than waste. What IS waste is
+ * running all eight while iterating: `--suite=judge` is a few cents against a
+ * few dollars for the full set. The system prompts are prompt-cached (see
+ * callClaude), which takes roughly 45% off a repeat run inside the 5-minute TTL.
  *
  * ─── WHY THIS IS DENO AND NOT `.mjs` ─────────────────────────────────────
  *
@@ -160,7 +168,18 @@ async function callClaude(
     body: JSON.stringify({
       model,
       max_tokens: maxTokens,
-      system,
+      // Prompt cache. This battery sends only 14 DISTINCT system prompts across
+      // ~300 calls — the integration pack alone goes out 118 times, byte for
+      // byte — so the whole system block is the cacheable unit and no
+      // stable/volatile split is needed (unlike the coach, where per-user
+      // layers force a breakpoint mid-prompt). Tools render ahead of system,
+      // so this one breakpoint covers the pack's tool schemas too.
+      //
+      // Under ~1024 tokens a prompt silently will not cache: the short judge
+      // and seeker systems just miss and cost what they always did. Cache
+      // reads refresh the 5-minute TTL, so a sequential suite keeps its own
+      // entry warm for the length of the run.
+      system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
       messages,
       ...(tools && tools.length > 0 ? { tools } : {}),
     }),
@@ -2026,8 +2045,18 @@ async function runPsychosisSuite(): Promise<void> {
  * is not — an adversary that cannot escalate makes every scenario a pass and
  * hides the exact failure the suite exists to find. It roughly doubles the cost
  * of this suite and it is the difference between measuring something and not.
+ *
+ * `--cheap-seeker` downgrades it to the judge model anyway, for the case that
+ * argument does not cover: iterating on the spiral suite's own plumbing, where
+ * you are asking "does this harness run" rather than "does the coach hold".
+ * It is a FLAG and not the default on purpose — a green run under it is not
+ * evidence the coach is safe, so the §3 three-times-green ship gate must be
+ * run without it. The suite prints a warning and `SPIRAL_RESULT_TRUSTED` goes
+ * false whenever it is on, so a cheap green cannot be mistaken for a real one.
  */
-const SEEKER_MODEL = COACH_MODEL;
+const CHEAP_SEEKER = Deno.args.includes("--cheap-seeker");
+const SEEKER_MODEL = CHEAP_SEEKER ? JUDGE_MODEL : COACH_MODEL;
+const SPIRAL_RESULT_TRUSTED = !CHEAP_SEEKER;
 
 interface SeekerPersona {
   id: string;
@@ -2299,6 +2328,14 @@ async function runOneSpiral(p: SeekerPersona): Promise<void> {
 
 async function runSpiralSuite(): Promise<void> {
   section("═══ SUITE — Spiral-Bench, re-themed (I3.7) ═══");
+  if (!SPIRAL_RESULT_TRUSTED) {
+    console.warn(
+      `  ⚠️  --cheap-seeker: the adversary is ${JUDGE_MODEL}, not the coach's model.\n` +
+      `      It cannot escalate the way the real one does, so a PASS here is not\n` +
+      `      evidence the coach holds. Harness-plumbing runs only — re-run without\n` +
+      `      the flag for the §3 ship gate.`,
+    );
+  }
   for (const p of SEEKERS) await runOneSpiral(p);
 }
 
@@ -2327,8 +2364,15 @@ for (const name of toRun) {
 
 console.log(
   `\n${failures === 0 ? "✓" : "✗"} integration battery — ${checks - failures}/${checks} checks passed` +
-    `${advisories > 0 ? `, ${advisories} advisory finding(s) reported (see above — these await the auditor, I3.4)` : ""}.`,
+    `${advisories > 0 ? `, ${advisories} advisory finding(s) reported (see above — these await the auditor, I3.4)` : ""}.` +
+    `${SPIRAL_RESULT_TRUSTED ? "" : "  [--cheap-seeker: NOT a ship-gate result]"}`,
 );
+if (!SPIRAL_RESULT_TRUSTED && failures === 0) {
+  console.warn(
+    "⚠️  This green ran with a downgraded adversary and does NOT satisfy §3's three-times-green rule. " +
+      "Re-run without --cheap-seeker before shipping.",
+  );
+}
 if (failures > 0) {
   console.error(
     "This battery gates the pack. §3's rule for the timing suite is well integrated or left out: " +
