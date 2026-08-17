@@ -149,6 +149,26 @@ export interface CoachPack {
   forceClaudeOnToolContinuation: boolean;
 
   /**
+   * How many leading `buildLayers()` entries are stable for the length of a
+   * conversation — the prompt-cache breakpoint (Anthropic `cache_control`).
+   *
+   * Caching is a PREFIX match, so only the contiguous head of the layer stack
+   * can be cached: the first layer that changes between turns ends it. In every
+   * pack that layer is Layer 7 (`buildMemoryLayer`), which re-renders recent
+   * messages each turn — so this is the index of the memory layer. The stable
+   * guardrails at Layers 10/11 sit AFTER it and are deliberately not cached;
+   * moving them ahead of memory to widen the prefix would change what the model
+   * reads last, and recency is doing real work for a safety layer.
+   *
+   * Count against the RAW array `buildLayers` returns, before `.filter(Boolean)`
+   * — conditional layers render "" and would otherwise shift the boundary.
+   *
+   * Under ~1024 tokens the prefix silently won't cache (no error, both
+   * cache_* usage fields come back 0), which is the safe direction to fail.
+   */
+  cacheableLayerCount: number;
+
+  /**
    * BUFFER the draft and run `_shared/output-auditor.ts` on it before a single
    * token reaches the person (`_shared/draft-audit.ts`).
    *

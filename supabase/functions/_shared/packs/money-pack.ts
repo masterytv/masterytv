@@ -187,6 +187,10 @@ OUTPUT FORMAT: Just the note text, no labels or headers.`;
   // Fable/Claude-class response) — never fall back mid-conversation.
   forceClaudeOnToolContinuation: true,
 
+  // Layers 1 → 5 (persona, profile, trait profile, entities). Index 4 is
+  // buildMemoryLayer — the first layer that re-renders every turn.
+  cacheableLayerCount: 4,
+
   // Streams token by token, exactly as it always has (I3.4's buffered draft
   // path is opt-in per pack).
   auditDrafts: false,

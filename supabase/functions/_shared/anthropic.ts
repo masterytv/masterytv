@@ -50,7 +50,20 @@ export interface AnthropicResponse {
   }>;
   model: string;
   stop_reason: string;
-  usage: { input_tokens: number; output_tokens: number };
+  usage: {
+    input_tokens: number;
+    output_tokens: number;
+    /**
+     * Prompt-cache accounting. Anthropic subtracts a cached prefix from
+     * `input_tokens` and reports it here instead. So a caller that keeps
+     * summing `input_tokens` alone after caching is switched on records a
+     * spend drop far bigger than the real one, because most of the prompt
+     * stopped being counted anywhere. `calculateCost` prices all three
+     * buckets; keep passing all three.
+     */
+    cache_creation_input_tokens?: number;
+    cache_read_input_tokens?: number;
+  };
   _fallback?: boolean;
 }
 
@@ -125,6 +138,12 @@ function openAIBatchToAnthropic(data: Record<string, unknown>): AnthropicRespons
  */
 export async function callClaude(opts: {
   system: string;
+  /**
+   * A byte-exact leading slice of `system` that is stable across calls, sent as
+   * an Anthropic prompt-cache block. Ignored on the GPT-4o path (OpenAI caches
+   * automatically) and ignored entirely if it is not actually a prefix.
+   */
+  systemPrefix?: string;
   messages: AnthropicMessage[];
   tools?: AnthropicTool[];
   maxTokens?: number;
@@ -191,6 +210,8 @@ export async function callClaude(opts: {
  */
 export async function callClaudeStreaming(opts: {
   system: string;
+  /** See `callClaude` — a stable leading slice of `system`, cached on the Claude path. */
+  systemPrefix?: string;
   messages: AnthropicMessage[];
   tools?: AnthropicTool[];
   maxTokens?: number;
@@ -425,10 +446,42 @@ function transformOpenAIStreamToAnthropicSSE(openAIResponse: Response): Response
   });
 }
 
+// ─── PROMPT CACHING ───────────────────────────────────────────────────────
+
+/**
+ * Renders the `system` request field, adding an Anthropic prompt-cache
+ * breakpoint when the caller supplied a stable prefix.
+ *
+ * Caching is a PREFIX match over `tools` → `system` → `messages`, so the one
+ * breakpoint here also caches the tool definitions ahead of it for free. The
+ * two blocks concatenate back to exactly the string a caller would have sent
+ * without caching, which is the property that keeps this invisible to the
+ * model.
+ *
+ * Fails open on every doubt: no prefix, an empty prefix, or a prefix that
+ * isn't actually the head of `system` (a caller assembled them out of order)
+ * all fall back to the plain string. A prompt under ~1024 tokens also silently
+ * won't cache — the API returns no error and both cache_* usage fields come
+ * back 0, so watch those rather than assuming a hit.
+ */
+function buildSystemParam(
+  system: string,
+  systemPrefix?: string
+): string | Array<Record<string, unknown>> {
+  if (!systemPrefix || !system.startsWith(systemPrefix) || systemPrefix.length === system.length) {
+    return system;
+  }
+  return [
+    { type: "text", text: systemPrefix, cache_control: { type: "ephemeral" } },
+    { type: "text", text: system.slice(systemPrefix.length) },
+  ];
+}
+
 // ─── CLAUDE FALLBACK ──────────────────────────────────────────────────────
 
 async function callClaudeDirectly(opts: {
   system: string;
+  systemPrefix?: string;
   messages: AnthropicMessage[];
   tools?: AnthropicTool[];
   maxTokens?: number;
@@ -439,7 +492,7 @@ async function callClaudeDirectly(opts: {
   const body: Record<string, unknown> = {
     model: CLAUDE_MODEL,
     max_tokens: opts.maxTokens ?? DEFAULT_MAX_TOKENS,
-    system: opts.system,
+    system: buildSystemParam(opts.system, opts.systemPrefix),
     messages: opts.messages,
   };
   if (opts.tools?.length) body.tools = opts.tools;
@@ -467,6 +520,7 @@ async function callClaudeDirectly(opts: {
 
 async function callClaudeStreamingDirectly(opts: {
   system: string;
+  systemPrefix?: string;
   messages: AnthropicMessage[];
   tools?: AnthropicTool[];
   maxTokens?: number;
@@ -477,7 +531,7 @@ async function callClaudeStreamingDirectly(opts: {
   const body: Record<string, unknown> = {
     model: CLAUDE_MODEL,
     max_tokens: opts.maxTokens ?? DEFAULT_MAX_TOKENS,
-    system: opts.system,
+    system: buildSystemParam(opts.system, opts.systemPrefix),
     messages: opts.messages,
     stream: true,
   };
@@ -599,8 +653,17 @@ export function calculateCost(
   isFallback = false
 ): number {
   if (isFallback) {
-    // Claude Sonnet rates
-    return (usage.input_tokens / 1_000_000) * 3 + (usage.output_tokens / 1_000_000) * 15;
+    // Claude Sonnet rates, plus the two prompt-cache multipliers: a 5-minute
+    // cache WRITE bills at 1.25x base input, a cache READ at 0.1x. Both are
+    // priced here rather than ignored, because ignoring them reports a saving
+    // that did not happen — cached tokens leave `input_tokens` entirely.
+    const base = 3 / 1_000_000;
+    return (
+      usage.input_tokens * base +
+      (usage.cache_creation_input_tokens ?? 0) * base * 1.25 +
+      (usage.cache_read_input_tokens ?? 0) * base * 0.1 +
+      (usage.output_tokens / 1_000_000) * 15
+    );
   }
   // GPT-4o-mini rates
   return (usage.input_tokens / 1_000_000) * 0.15 + (usage.output_tokens / 1_000_000) * 0.60;

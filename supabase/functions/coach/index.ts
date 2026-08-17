@@ -392,7 +392,7 @@ Deno.serve(async (req: Request) => {
 
     // ── 5. Assemble prompt (11-layer architecture) ──
     const promptStart = debugMode ? performance.now() : 0;
-    const { system, conversationHistory, metadata, debugTrace } = await assemblePrompt(userId, message, debugMode, engagementId, mode, program, conversationId);
+    const { system, systemCachePrefix, conversationHistory, metadata, debugTrace } = await assemblePrompt(userId, message, debugMode, engagementId, mode, program, conversationId);
     const promptMs = debugMode ? performance.now() - promptStart : 0;
 
     // Sprint 0.4: Inject deep link context instruction
@@ -477,6 +477,12 @@ Deno.serve(async (req: Request) => {
     const claudeStart = debugMode ? performance.now() : 0;
     const anthropicResponse = await callClaudeStreaming({
       system: contextualSystem,
+      // Prompt cache breakpoint. The pack's stable layers are a byte-exact
+      // prefix of `system`, and every CONTEXT INSTRUCTION appended above lands
+      // after it — so the deep-link, Decision Room, and compatibility branches
+      // vary the tail while the cached head stays put. The tool definitions
+      // render ahead of `system`, so this one breakpoint covers them too.
+      systemPrefix: systemCachePrefix,
       messages: claudeMessages,
       tools: coachTools,
       maxTokens: coachMaxTokens,
@@ -500,6 +506,8 @@ Deno.serve(async (req: Request) => {
       let fullContent = "";
       let model = "";
       let inputTokens = 0;
+      let cacheWriteTokens = 0;
+      let cacheReadTokens = 0;
       let outputTokens = 0;
       let stopReason = "";
       const toolCallsDebug: Array<{ name: string; query: string; result_confidence: string; cached: boolean; duration_ms: number }> = [];
@@ -573,6 +581,12 @@ Deno.serve(async (req: Request) => {
                   case "message_start":
                     model = event.message?.model ?? "";
                     inputTokens += event.message?.usage?.input_tokens ?? 0;
+                    // Cached prompt tokens are reported separately and are NOT
+                    // part of input_tokens — without these two lines the cache
+                    // would look like a ~60% traffic drop instead of the real
+                    // (and smaller) cost drop.
+                    cacheWriteTokens += event.message?.usage?.cache_creation_input_tokens ?? 0;
+                    cacheReadTokens += event.message?.usage?.cache_read_input_tokens ?? 0;
                     break;
 
                   case "content_block_start":
@@ -786,6 +800,12 @@ Deno.serve(async (req: Request) => {
               : coachTools;
             currentResponse = await callClaudeStreaming({
               system: contextualSystem,
+              // Same prefix as the opening call, so a tool continuation reads
+              // the cache the first turn wrote. Note the `nextTools = []` case
+              // above changes the tools array, which sits AHEAD of system in
+              // the cache prefix and therefore misses on purpose — it only
+              // happens once per conversation, at the tool-call cap.
+              systemPrefix: systemCachePrefix,
               messages: toolUseMessages,
               tools: nextTools,
               maxTokens: coachMaxTokens,
@@ -844,13 +864,24 @@ Deno.serve(async (req: Request) => {
         // which billed GPT traffic at Sonnet rates and ALL Relatti traffic
         // (forceClaude) at gpt-4o-mini rates (~20x under). Fixed 2026-07-02.
         const isFallback = !model.startsWith("gpt-");
-        const usage = { input_tokens: inputTokens, output_tokens: outputTokens };
+        const usage = {
+          input_tokens: inputTokens,
+          output_tokens: outputTokens,
+          cache_creation_input_tokens: cacheWriteTokens,
+          cache_read_input_tokens: cacheReadTokens,
+        };
         const costUsd = calculateCost(usage, isFallback);
+        // What every `tokens_in` below records. Cached tokens are still prompt
+        // tokens the model read — they are just billed at a different rate —
+        // so the logged figure has to include them, or turning caching on
+        // reads as a drop in usage rather than a drop in price. `costUsd`
+        // above already prices the three buckets separately.
+        const totalInputTokens = inputTokens + cacheWriteTokens + cacheReadTokens;
 
         const coachMetadata: Record<string, unknown> = {
           model,
           stop_reason: stopReason,
-          tokens_in: inputTokens,
+          tokens_in: totalInputTokens,
           tokens_out: outputTokens,
           // PC5-family write-path stamp: persist the RESOLVED program so
           // downstream consumers (accountability check-ins, cost/brand
@@ -902,7 +933,7 @@ Deno.serve(async (req: Request) => {
             claude_streaming_ms: Math.round(claudeMs),
             model_used: model,
             is_fallback: isFallback,
-            tokens_in: inputTokens,
+            tokens_in: totalInputTokens,
             tokens_out: outputTokens,
             cost_usd: costUsd,
             tool_calls: toolCallsDebug,
@@ -933,7 +964,7 @@ Deno.serve(async (req: Request) => {
           user_id: streamUserId,
           purpose: FUNCTION_NAME,
           model,
-          tokens_in: inputTokens,
+          tokens_in: totalInputTokens,
           tokens_out: outputTokens,
           cost_usd: costUsd,
           // PC5.5: per-brand cost attribution at write time.

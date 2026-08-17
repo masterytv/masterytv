@@ -344,6 +344,11 @@ OUTPUT FORMAT: just the note text.`;
   // which is what everyone who came here has already had.
   forceClaudeOnToolContinuation: true,
 
+  // Layers 1 → 4.5 (persona, profile, Footing check). Index 3 is
+  // buildMemoryLayer; the derived-stage and witness-turn layers after it also
+  // move between turns, so the boundary is the memory layer either way.
+  cacheableLayerCount: 3,
+
   // 🔑 The ONE pack that buffers (I3.4, wired August 12, 2026). §3 requires "hard
   // block + regenerate" on the fourteen banned move classes, and a streamed delta
   // cannot be un-sent — so this vertical's replies are assembled in full, audited,

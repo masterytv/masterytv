@@ -136,6 +136,8 @@ for (const scenario of SCENARIOS) {
 
   const restore = silenceConsole();
   let text: string;
+  let cachePrefix = "";
+  let fullSystem = "";
   try {
     const out = await assemblePrompt(
       scenario.userId,
@@ -147,6 +149,8 @@ for (const scenario of SCENARIOS) {
       scenario.conversationId,
     );
     text = render(out);
+    cachePrefix = out.systemCachePrefix;
+    fullSystem = out.system;
   } catch (e) {
     restore();
     console.error(`✗ [${scenario.name}] assemblePrompt threw: ${(e as Error).message}`);
@@ -160,6 +164,35 @@ for (const scenario of SCENARIOS) {
     console.error(`✗ [${scenario.name}] fixture gap — the assembler queried tables with no fixture:`);
     for (const gap of [...new Set(fixtureGaps)]) console.error(`    ${gap}`);
     failed = true;
+  }
+
+  // ── Prompt-cache prefix guard ──
+  //
+  // The `cache_control` breakpoint (_shared/anthropic.ts) needs two things the
+  // goldens above cannot see, because BOTH failure modes leave the prompt
+  // byte-identical and silently stop the caching instead of erroring:
+  //
+  //   1. The prefix must really be the head of `system`. If a pack reorders its
+  //      layers so a volatile one lands inside `cacheableLayerCount`, the
+  //      prompt still renders fine — the cache just never hits.
+  //   2. It must clear Claude Sonnet 4.6's ~1024-token minimum. Under it, the
+  //      API returns no error and both cache_* usage fields come back 0.
+  //
+  // Same char/4 token estimate the assembler's debug trace uses.
+  const CACHE_MIN_TOKENS = 1024;
+  if (!fullSystem.startsWith(cachePrefix) || cachePrefix.length === 0) {
+    console.error(`✗ [${scenario.name}] cache prefix is not a leading slice of the system prompt — caching would silently no-op.`);
+    failed = true;
+  } else {
+    const prefixTokens = Math.ceil(cachePrefix.length / 4);
+    const totalTokens = Math.ceil(fullSystem.length / 4);
+    const share = Math.round((prefixTokens / totalTokens) * 100);
+    if (prefixTokens < CACHE_MIN_TOKENS) {
+      console.error(`✗ [${scenario.name}] cache prefix ~${prefixTokens} tok is under the ~${CACHE_MIN_TOKENS} minimum — caching would silently no-op.`);
+      failed = true;
+    } else {
+      console.log(`   [${scenario.name}] cache prefix ~${prefixTokens}/${totalTokens} tok (${share}% of system)`);
+    }
   }
 
   // Coverage guards: a golden full of accidentally-empty layers protects nothing.

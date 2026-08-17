@@ -68,6 +68,12 @@ export async function assemblePrompt(
   conversationId: string | null = null
 ): Promise<{
   system: string;
+  /**
+   * The leading slice of `system` that holds still for the conversation, as
+   * declared by the pack's `cacheableLayerCount`. Always a byte-exact prefix of
+   * `system` — the caller sends it as a cached block and the remainder plain.
+   */
+  systemCachePrefix: string;
   conversationHistory: { role: "user" | "assistant"; content: string }[];
   metadata: {
     activeChallenges: ActiveChallenge[];
@@ -528,25 +534,38 @@ IMPORTANT ACCESS RULES:
   }
 
   // ── Assemble system prompt — the pack owns the layer stack ──
-  const layers: string[] = pack
-    .buildLayers({
-      mode,
-      user,
-      profile,
-      challenges,
-      messages,
-      facts,
-      sessionSummaries,
-      agenda,
-      userTools,
-      availableAITools,
-      decodedLayer,
-      relationshipLayer,
-      mediatorPersona,
-    })
-    .filter(Boolean);
+  const rawLayers: string[] = pack.buildLayers({
+    mode,
+    user,
+    profile,
+    challenges,
+    messages,
+    facts,
+    sessionSummaries,
+    agenda,
+    userTools,
+    availableAITools,
+    decodedLayer,
+    relationshipLayer,
+    mediatorPersona,
+  });
 
-  const system = layers.join("\n\n---\n\n");
+  // Prompt-cache split. The pack declares how many leading layers hold still
+  // for the length of a conversation (`cacheableLayerCount`); those become an
+  // Anthropic `cache_control` block in _shared/anthropic.ts, and the rest is
+  // sent uncached. `.filter(Boolean)` runs on each half separately so empty
+  // conditional layers drop out exactly as they did before — which is what
+  // keeps `system` byte-identical to the pre-caching prompt. That byte
+  // equality is the whole safety argument for this change: the model reads the
+  // same prompt it read yesterday, so no golden moves and no coach voice
+  // shifts. If you edit this, re-run the goldens rather than eyeballing it.
+  const LAYER_SEP = "\n\n---\n\n";
+  const layers = rawLayers.filter(Boolean);
+  const systemCachePrefix = rawLayers
+    .slice(0, pack.cacheableLayerCount)
+    .filter(Boolean)
+    .join(LAYER_SEP);
+  const system = layers.join(LAYER_SEP);
 
   // ── Build conversation history (reversed to chronological) ──
   const conversationHistory = messages
@@ -641,6 +660,7 @@ IMPORTANT ACCESS RULES:
 
   return {
     system,
+    systemCachePrefix,
     conversationHistory,
     metadata: {
       activeChallenges: challenges,
