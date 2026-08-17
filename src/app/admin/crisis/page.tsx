@@ -20,11 +20,11 @@ interface CrisisFlag {
 }
 
 type FilterTab = "all" | "unresolved" | "resolved";
-type BrandTab = "all" | "relatti" | "masterytv" | "money" | "unattributed";
+type BrandTab = "all" | "relatti" | "masterytv" | "money" | "heard" | "unattributed";
 
 // program → brand via the registry (brandForProgram); unstamped flags are
 // deliberately "unattributed", never guessed.
-function brandOfFlag(f: CrisisFlag): "relatti" | "masterytv" | "money" | "unattributed" {
+function brandOfFlag(f: CrisisFlag): "relatti" | "masterytv" | "money" | "heard" | "unattributed" {
   if (!f.program) return "unattributed";
   return brandForProgram(f.program).id;
 }
@@ -34,6 +34,7 @@ const BRAND_TAB_LABELS: Record<BrandTab, string> = {
   relatti: "Relatti",
   masterytv: "MasteryTV",
   money: "MoneyTraits",
+  heard: "HEARD",
   unattributed: "Unattributed",
 };
 

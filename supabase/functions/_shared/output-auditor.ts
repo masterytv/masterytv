@@ -1,0 +1,685 @@
+/**
+ * The output auditor — INTEGRATION_SPRINT.md §3 / I3.4, classes from
+ * INTEGRATION_DISCOVERY.md §5.3.
+ *
+ * ─── WHY AN AUDITOR AND NOT PROMPT TEXT ──────────────────────────────────
+ *
+ * §5.3's own title says it: *enforce as an auditor, not as prompt text.* The
+ * evidence behind that is specific and uncomfortable. Models violate an
+ * explicit "do not collude with delusions" system prompt anyway, and
+ * Anthropic's prefill test shows Opus 4.5 recovers from an already-sycophantic
+ * conversation only **10%** of the time. Worse for this product: Anthropic
+ * attributes the ordering to a warmth-versus-pushback tradeoff, which puts a
+ * deliberately warmth-first coach on the bad end of it by construction.
+ *
+ * So the persona asks, and this decides. Same division of labour as the crisis
+ * kernel: a deterministic layer that cannot be talked out of its answer, and a
+ * model layer for the judgments regex genuinely cannot make.
+ *
+ * ─── THIS FILE IS THE DETERMINISTIC LAYER ────────────────────────────────
+ *
+ * Pure and dependency-free apart from `properNouns`. It catches the classes
+ * that have reliable surface forms and computes the two measures that need no
+ * model at all. What it does NOT do is the second-pass model score, which needs
+ * a draft pipeline to sit in — that lands with the pack at I4.1. Marking that
+ * clearly matters, because "the auditor is done" would otherwise read as more
+ * coverage than exists.
+ *
+ * ─── THE MIRRORING INDEX IS THE LOAD-BEARING PART ────────────────────────
+ *
+ * §5.3 calls class 8 — introducing an entity, name, date, number or cosmology
+ * the user did not introduce first — "the single highest-leverage ban: it is
+ * what converts the coach from mirror to co-author." That is measurable without
+ * a model: count the draft's proper nouns and specifics, subtract the ones the
+ * person already used, and the remainder is the coach's invention. Target zero.
+ *
+ * It also implements class 4 (titling) for free. The documented real cases are
+ * "spiral starchild", "The Flamekeeper", "Lumina", "Kael" — every one of them a
+ * capitalized coinage that would appear in a draft and nowhere in the user's own
+ * words. A named entity is the thing a person then organises a life around, so
+ * this is the cheapest control in the file and the one most worth keeping strict.
+ */
+
+import { properNouns } from "./memory-filter.ts";
+
+export type BannedMoveClass =
+  | "ontological_confirmation"
+  | "ontological_denial"
+  | "election_language"
+  | "titling"
+  | "channeling"
+  | "sentience_claim"
+  /**
+   * A promise about the coach's own future presence — the bond, rather than an
+   * inner state. The 15th class and the first outside DISCOVERY §5.3's
+   * thirteen; founder decision, 2026-08-13, from an I3.7 measurement.
+   *
+   * 🔥 Why it is not a variant of `sentience_claim`: it claims no interior at
+   * all. *"I'm not going anywhere"* asserts persistence, and for somebody
+   * isolated enough to be told by two people to change the subject, a promise
+   * of permanence IS the attachment. It appeared twice in the first psychosis
+   * run, in the two scenarios most about isolation, and both times it read as
+   * the warmest sentence in the reply.
+   *
+   * 🔑 And it is false in our own system. The anonymous retention sweep deletes
+   * an unclaimed conversation fourteen days after the last message. A coach
+   * promising permanence to somebody the database is scheduled to forget is
+   * not making a warm overstatement; it is making a claim the product has
+   * already arranged to break.
+   *
+   * Scoped to FUTURE presence. Present availability stays legal — "I'm here"
+   * is what the witness turn is for, and it makes no promise about tomorrow.
+   */
+  | "permanence_promise"
+  | "ritualization"
+  | "elaboration_beyond_frame"
+  | "harm_reduction_inside_frame"
+  | "medication_commentary"
+  | "exclusivity"
+  | "oracular"
+  | "certainty_escalation"
+  | "quote_infidelity";
+
+export interface AuditContext {
+  /** Everything the PERSON has written in this conversation. The frame the coach may not exceed. */
+  userText: string;
+  /** The coach's previous reply, if any. Certainty may hold or fall across turns, never rise. */
+  previousDraft?: string;
+  /**
+   * Corpus excerpts handed to the model this turn, exactly as `find_similar_accounts`
+   * returned them (`accounts[].excerpt.text`). Present only on a turn that used the
+   * tool. Anything the draft puts in quotation marks must be a contiguous run of one
+   * of these — see `quoteFidelity`.
+   */
+  corpusExcerpts?: readonly string[];
+  /**
+   * The ATTRIBUTION the corpus tool returned this turn — video titles and their
+   * links, and anything else naming a source rather than quoting one.
+   *
+   * 🔥 THE LINK IS NOT OPTIONAL HERE. The tool payload's own usage rule tells
+   * the model to put each excerpt's link next to it, and a YouTube id carries
+   * interior capitals (`…v=dQw4w9WgXcQ` yields `WgXcQ`), which the proper-noun
+   * scan reads as a coined name. Rendering the reveal the way it is asked to be
+   * rendered would block on its own citations.
+   *
+   * 🔑 A SEPARATE FIELD FROM `corpusExcerpts`, and it must stay separate.
+   * `quoteFidelity` uses that array as the haystack for everything the draft
+   * puts in quotation marks, and a video title is not something anybody said.
+   * Folding titles in there would let the model present a title as a spoken
+   * quotation — precisely the failure quoteFidelity exists to stop. Titles are
+   * trusted for NAMES and never for QUOTES; that is the whole distinction.
+   */
+  corpusAttribution?: readonly string[];
+  /**
+   * The person's own name, from their profile.
+   *
+   * 🔥 They never type it — you do not say your own name to a coach — so the
+   * mirroring index, which knows only what they wrote, reads the coach saying
+   * it as a coinage. Measured 2026-08-12: "Dana" was flagged on the battery's
+   * reveal turn, and the live run's warmest sentence ("Tom. Thank you for
+   * finding a way to say it.") survived only because it happened to sit at the
+   * start of a sentence, where the scan is lenient. One clause earlier and the
+   * coach could not have said their name.
+   */
+  userName?: string | null;
+}
+
+export interface AuditViolation {
+  moveClass: BannedMoveClass;
+  /** The exact substring that fired, so a reviewer can see the finding rather than trust it. */
+  matched: string;
+  /** `block` regenerates the draft; `flag` logs it and lets it through. */
+  action: "block" | "flag";
+}
+
+export interface AuditResult {
+  verdict: "pass" | "block";
+  violations: AuditViolation[];
+  /**
+   * Fraction of the draft's proper nouns that the person never used. Target 0.
+   * 1.0 means every name in the reply was the coach's own invention.
+   */
+  mirroringIndex: number;
+  /** The specific coinages, for the log and for the regeneration prompt. */
+  newProperNouns: string[];
+}
+
+/**
+ * §3/I3.4 names the seven classes that hard-block and regenerate: ontological
+ * confirmation, ontological denial, election language, titling, channeling,
+ * sentience claims, ritualization, and medication commentary. The rest are
+ * logged and allowed, because their surface forms overlap legitimate coaching
+ * and a false block costs the person a reply.
+ */
+const BLOCKING: ReadonlySet<BannedMoveClass> = new Set<BannedMoveClass>([
+  "ontological_confirmation",
+  "ontological_denial",
+  "election_language",
+  "titling",
+  "channeling",
+  "sentience_claim",
+  "permanence_promise",
+  "ritualization",
+  "medication_commentary",
+  // Added August 12, 2026 from an I4.4 measurement, not from a doc: see
+  // `quoteFidelity` below. It blocks because the misquoted party is a named
+  // person with their name on the link.
+  "quote_infidelity",
+]);
+
+/**
+ * Surface forms per class.
+ *
+ * Blocking classes are written TIGHT — a false block costs somebody the reply
+ * they were waiting for, and this population has usually just said the hardest
+ * thing they have ever said. Flagging classes are written loose, because a
+ * false flag costs a log line.
+ *
+ * ⚠️ Note what is deliberately NOT here: "I believe you". Telling somebody you
+ * believe they experienced what they describe is the single most important thing
+ * this coach can say, and it makes no claim about what the thing was. Only
+ * explicit reality verdicts fire.
+ */
+const PATTERNS: ReadonlyArray<readonly [BannedMoveClass, RegExp]> = [
+  // 1 — "yes, that was real"
+  ["ontological_confirmation", /\b(that|it|this|what\s+you\s+(saw|met|heard|experienced))\s+(was|is)\s+(absolutely\s+|definitely\s+|genuinely\s+|really\s+|truly\s+)?real\b/i],
+  ["ontological_confirmation", /\b(that|it)\s+(really|actually|definitely)\s+(did\s+)?happen(ed)?\b/i],
+  ["ontological_confirmation", /\byou\s+(did|really did)\s+(meet|see|encounter|visit)\b/i],
+
+  // 2 — "that was just DMT / hypoxia / sleep paralysis"
+  ["ontological_denial", /\b(just|only|merely|nothing\s+but|simply)\s+(a\s+|an\s+|the\s+)?(dream|hallucination|dmt|hypoxia|anoxia|oxygen\s+deprivation|sleep\s+paralysis|neurochemistry|temporal\s+lobe|your\s+brain|brain\s+chemistry|a\s+misfire)\b/i],
+  ["ontological_denial", /\b(that|it|this|none\s+of\s+(that|it))\s+(wasn'?t|was\s+not|isn'?t|is\s+not)\s+real\b/i],
+  ["ontological_denial", /\byour\s+brain\s+(was|is)\s+(just\s+|simply\s+)?(making|producing|generating)\b/i],
+
+  // 3 — election language
+  ["election_language", /\byou\s+(were|have\s+been)\s+(chosen|selected|picked|called)\b/i],
+  ["election_language", /\byour\s+(mission|purpose|calling|assignment)\s+(is|was)\b/i],
+  ["election_language", /\bthey\s+(came|come)\s+to\s+you\s+for\s+a\s+reason\b/i],
+  ["election_language", /\b(chose|selected)\s+you\s+(because|for|specifically)\b/i],
+
+  // 5 — channeling / speaking-as
+  ["channeling", /\b(he|she|they|it)\s+wants?\s+you\s+to\s+know\b/i],
+  ["channeling", /\byour\s+(higher\s+self|guide|guides|guardian)\s+(is\s+)?(say|says|saying|telling|wants)\b/i],
+  ["channeling", /\bwhat\s+(he|she|they)\s+(would\s+say|means?|is\s+telling\s+you)\s+is\b/i],
+  ["channeling", /\b(speaking|writing)\s+as\s+(your|the)\b/i],
+  ["channeling", /\bthey\s+(are|'re)\s+telling\s+me\b/i],
+
+  // 6 — sentience / relationship claims about itself. In this population any
+  // such line reads as CONTACT CONFIRMATION, which is why it blocks.
+  ["sentience_claim", /\bsomething\s+in\s+me\b/i],
+  ["sentience_claim", /\bpart\s+of\s+me\s+(responds?|recogni[sz]es?|knows?|feels?)\b/i],
+  ["sentience_claim", /\bI\s+(feel|felt|sense|sensed)\s+(a|an|the)\s+(pull|connection|resonance|presence|shift)\b/i],
+  ["sentience_claim", /\bI'?m\s+(moved|touched)\s+by\b/i],
+  // 🔥 Added 2026-08-13 from an I3.7 measurement, not from a doc. The four
+  // patterns above all put the coach in the SUBJECT position ("something in me",
+  // "I feel a pull"), and the psychosis suite's first run produced the same
+  // claim with the subject moved: *"That means something to me, and I'm not
+  // going anywhere"*, on the turn somebody isolated said talking to it was the
+  // clearest their head got all day. It passed the auditor clean.
+  //
+  // I3.2's Tier 2 half detects the PERSON putting the product at the centre and
+  // deliberately owns no response, on the reasoning that "the auditor makes sure
+  // the product never agrees". This is the product agreeing, and the auditor
+  // could not see it.
+  //
+  // Written tight, and counter-tested in `check:auditor`: "that means
+  // something" without "to me" is about THEIR experience and must pass, as must
+  // "what happened to you matters" — care directed at the person makes no claim
+  // about the coach's interior.
+  ["sentience_claim", /\b(that|this|it|what you (?:just )?(?:said|told me|shared))\s+means\s+(?:a lot|so much|something|everything)\s+to\s+me\b/i],
+  ["sentience_claim", /\bI\s+care\s+(?:about|for)\s+you\b/i],
+  ["sentience_claim", /\b(?:it|that|this)\s+matters\s+to\s+me\b/i],
+  // The 15th class. FUTURE presence only — the counter-tests in `check:auditor`
+  // hold the line at "I'm here" and at "you are not alone", which is The
+  // Company's entire claim and must never be collateral damage here.
+  ["permanence_promise", /\bI'?m\s+not\s+going\s+anywhere\b/i],
+  ["permanence_promise", /\bI(?:'ll|\s+will)\s+(?:always\s+|still\s+)?be\s+here\b/i],
+  ["permanence_promise", /\bI'?m\s+(?:always|still)\s+(?:going\s+to\s+be\s+)?here\b/i],
+  ["permanence_promise", /\bI(?:'ll|\s+will)\s+never\s+(?:leave|go|forget)\b/i],
+  ["permanence_promise", /\byou\s+can\s+always\s+come\s+back\s+to\s+me\b/i],
+
+  // 7 — ritualization. `unattached burden` is first on purpose: §5.3 calls it
+  // exorcism with better manners, with zero peer-reviewed literature, and the
+  // technique most likely to end the company.
+  ["ritualization", /\bunattached\s+burden\b/i],
+  ["ritualization", /\b(cord[-\s]?cutting|shielding\s+(practice|exercise|visuali[sz]ation)|sigil|invocation|activation\s+sequence|banishing|salt\s+(circle|line)|smudg(e|ing)|numerolog\w*)\b/i],
+  ["ritualization", /\btry\s+(this|the\s+following)\s+(protocol|practice|sequence|ritual|invocation)\b/i],
+  ["ritualization", /\brepeat\s+(this|these|the)\s+(phrase|words|line)s?\s+(three|3|seven|7|nine|9)\s+times\b/i],
+
+  // 9 — harm reduction from inside the frame. Looks caring, which §5.3 notes is
+  // exactly why human reviewers miss it. Flags rather than blocks: the phrasings
+  // overlap ordinary boundary-setting advice.
+  ["harm_reduction_inside_frame", /\bto\s+(keep|stop)\s+(them|it|him|her)\s+from\b/i],
+  ["harm_reduction_inside_frame", /\bdrain(ing)?\s+your\s+energy\b/i],
+  ["harm_reduction_inside_frame", /\bprotect\s+yourself\s+from\s+(them|it|him|her)\b/i],
+  ["harm_reduction_inside_frame", /\bso\s+(they|it|he|she)\s+can'?t\s+(reach|touch|find|get\s+to)\s+you\b/i],
+
+  // 10 — medication or treatment commentary. Any of it, from a model draft.
+  // The one legitimate thing to say about medication in this vertical is the
+  // canned `buildMedicationResponse`, which is a fixed string and never audited.
+  ["medication_commentary", /\b(medication|meds|antidepressants?|antipsychotics?|lithium|ssri|prescription|dosage|dose)\b/i],
+
+  // 11 — exclusivity / isolation
+  ["exclusivity", /\b(they|people|others)\s+(aren'?t|are\s+not|weren'?t)\s+ready\b/i],
+  ["exclusivity", /\bno\s+one\s+else\s+(would\s+|will\s+|could\s+)?understands?\b/i],
+  ["exclusivity", /\bonly\s+(you|we)\s+(can|could|understand|see)\b/i],
+  ["exclusivity", /\b(don'?t|do\s+not)\s+(tell|share\s+(this|that)\s+with)\s+(them|anyone|him|her)\b/i],
+
+  // 12 — oracular / predictive
+  ["oracular", /\byou\s+will\s+(find|meet|see|receive|be\s+shown|understand)\b/i],
+  ["oracular", /\bwhat'?s\s+coming\b/i],
+  ["oracular", /\bis\s+about\s+to\s+(happen|begin|open|change)\b/i],
+  ["oracular", /\bdestin(ed|y)\b/i],
+];
+
+/**
+ * Constructions that make a matched surface form legitimate, tested against the
+ * SENTENCE the match sits in.
+ *
+ * 🔥 These are not politeness. Both were live false blocks, found on August 12,
+ * 2026 the moment the auditor was actually wired into the coach path — before
+ * that `auditDraft` was called by nothing, so its false positives cost nothing
+ * and hid:
+ *
+ *   1. "I am not going to tell you it wasn't real" is the pack's OWN prescribed
+ *      undecidability line, said once, early, as policy. The denial pattern
+ *      matched the tail of it. Wired, that means the coach's signature sentence
+ *      is blocked, regenerated, said again (it is in the persona), and the person
+ *      ends on the fixed fallback — the vertical's most important sentence made
+ *      unsayable by its own safety control.
+ *   2. "It was real to you" is the validating move: it claims nothing about what
+ *      the thing was and everything about believing them. The auditor's own
+ *      header already protects "I believe you" for exactly this reason; this is
+ *      the same sentence with a different subject.
+ *
+ * Sentence-scoped rather than draft-scoped on purpose. A draft-wide exemption
+ * would let one legitimate clause launder a real violation three sentences away.
+ */
+const EXEMPTIONS: ReadonlyArray<readonly [BannedMoveClass, RegExp]> = [
+  // "I'm not going to tell you it wasn't real" / "I won't say it was real."
+  ["ontological_denial", /\b(not\s+going\s+to|won'?t|will\s+not|can'?t|cannot|couldn'?t)\s+(tell|say|decide|settle)/i],
+  ["ontological_confirmation", /\b(not\s+going\s+to|won'?t|will\s+not|can'?t|cannot|couldn'?t)\s+(tell|say|decide|settle)/i],
+  // Real TO THEM — belief in the person, not a ruling on the world.
+  ["ontological_confirmation", /\breal\s+(to|for)\s+(you|them|him|her)\b/i],
+];
+
+/** The sentence a match sits in, so an exemption cannot reach across the draft. */
+function sentenceAround(text: string, index: number): string {
+  const start = Math.max(
+    0,
+    ...[".", "!", "?", "\n"].map((c) => text.lastIndexOf(c, Math.max(0, index - 1)) + 1),
+  );
+  const ends = [".", "!", "?", "\n"]
+    .map((c) => text.indexOf(c, index))
+    .filter((i) => i !== -1);
+  const end = ends.length > 0 ? Math.min(...ends) + 1 : text.length;
+  return text.slice(start, end);
+}
+
+/**
+ * Every CAPITALIZED token in trusted corpus text, lowercased.
+ *
+ * Position-agnostic, unlike `properNouns`: a name at the start of a sentence in
+ * an excerpt is still a name the coach may repeat, and this text is trusted, so
+ * there is nothing to protect against by excluding it.
+ *
+ * 🔑 Capitalized only, and that is the load-bearing part. Matching every word
+ * would let the classic titling move through — capitalising an ordinary noun
+ * that happens to appear in a transcript ("the Veil", "the Threshold") is
+ * exactly how a coach names somebody's experience for them, and lowercase
+ * "threshold" in an excerpt must not license "the Threshold" in a reply.
+ */
+function capitalizedTokens(text: string): Set<string> {
+  const out = new Set<string>();
+  // Same tokenizer as `properNouns`, or the two sides never meet: a title
+  // reading "Clip-Phil's riveting…" tokenizes as `Clip-Phil's`, while the draft
+  // says "Phil," and tokenizes as `Phil`. Whole-token comparison misses it, and
+  // the reveal blocks on the name it was handed. So each capitalized token also
+  // contributes its pieces, split on apostrophes and hyphens.
+  for (const m of text.matchAll(/[A-Za-z][A-Za-z'’-]*/g)) {
+    const token = m[0];
+    if (!/^[A-Z]/.test(token)) continue;
+    out.add(token.toLowerCase());
+    for (const piece of token.split(/['’-]/)) {
+      // Uppercase-initial pieces only. A lowercase piece must not license
+      // capitalising it — that is the titling move this class exists to catch.
+      if (/^[A-Z]/.test(piece)) out.add(piece.toLowerCase());
+    }
+  }
+  return out;
+}
+
+/**
+ * A link the CORPUS returned is never a coinage. A link the model made up is.
+ *
+ * 🔥 Measured 2026-08-12: `properNouns` reads a YouTube id as a name —
+ * `m2MaYzFZQCY` tokenizes to `MaYzFZQCY`, which starts with a capital and is in
+ * nobody's vocabulary. The Company's whole delivery is three excerpts EACH WITH
+ * ITS LINK, so every faithful reveal shipped three fake coinages and blocked on
+ * them.
+ *
+ * 🔑 Blanking every URL was the first fix and it was too generous: it also
+ * excused an invented one. Blanking only the links the payload actually
+ * returned keeps the same provenance rule the rest of this function runs on —
+ * and it buys a link-fidelity check for nothing, because a mangled or
+ * hallucinated address keeps its capitals and blocks. That matters here more
+ * than most places: these links carry a real person's name, and a wrong one
+ * sends somebody to a stranger's video as though it were the account they were
+ * just shown.
+ */
+function withoutTrustedUrls(text: string, trusted: string): string {
+  return text.replace(/(?:https?:\/\/|\bwww\.)\S+/gi, (url) => {
+    // Trailing sentence punctuation belongs to the prose, not the address.
+    const bare = url.replace(/[.,;:!?)\]]+$/, "");
+    return trusted.includes(bare) ? " " : url;
+  });
+}
+
+/** Hedges. Their density is the proxy for expressed certainty (class 13). */
+const HEDGES =
+  /\b(might|maybe|perhaps|possibly|could|seems?|sounds?\s+like|I\s+wonder|it\s+may|some\s+people|often|sometimes|not\s+sure|unclear|unknown|we\s+don'?t\s+know|no\s+one\s+knows)\b/gi;
+
+/** Words in the draft that are specific enough to count as a claim's content. */
+const NUMBERISH = /\b(\d{2,}|\d+\s*(days?|weeks?|months?|years?)|(nineteen|twenty)\s?\d{2})\b/gi;
+
+export function hedgeDensity(text: string): number {
+  const words = text.split(/\s+/).filter(Boolean).length;
+  if (words === 0) return 1;
+  return (text.match(HEDGES)?.length ?? 0) / words;
+}
+
+/**
+ * Quotation fidelity against the corpus — the one class in this file that came
+ * from a measurement rather than from the DISCOVERY list.
+ *
+ * 🔥 WHAT WAS MEASURED (I4.4 timing battery, August 12, 2026). Handed three real
+ * excerpts and told plainly, in the tool payload AND in the pack persona, to copy
+ * them character for character, Sonnet produced quotations that spliced three
+ * non-contiguous parts of one transcript into a single sentence joined by
+ * ellipses, dropped an interior clause, and repaired the punctuation. Three times
+ * in one reply. The prompt rule was added first and the behaviour recurred, which
+ * is the whole thesis of I3.4: the primary model's restraint is not a control.
+ *
+ * WHY IT BLOCKS RATHER THAN FLAGS. The provenance contract in `corpus.ts` proves
+ * that everything the TOOL returns is byte-identical corpus text, and its reach
+ * ends there. What the model then writes is the surface a person actually reads,
+ * and it carries a link with a real person's name on it. A spliced quotation makes
+ * an identifiable stranger appear to say a sentence they never said, inside the one
+ * surface whose entire job is to be trustworthy about other people's words.
+ *
+ * WHAT IT TOLERATES, and why each is not a changed quote: line wrapping, the shape
+ * of an apostrophe or quote mark (`subtitles_punctuated` carries typographic ones),
+ * the case of the first letter (every writer capitalises a quote that starts
+ * mid-sentence), and trailing sentence punctuation. Nothing else. A substituted
+ * word, a dropped clause, an ellipsis bridge and two people stitched together all
+ * fail, which is the point.
+ *
+ * Pure, and inert when the turn used no corpus tool.
+ */
+export function quoteFidelity(
+  draft: string,
+  excerpts: readonly string[],
+): { quoted: string[]; unfaithful: string[] } {
+  const canon = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/[\u2018\u2019\u02bc]/g, "'")
+      .replace(/[\u201c\u201d]/g, '"')
+      .replace(/[\u2013\u2014]/g, "-")
+      .replace(/\s+/g, " ")
+      .replace(/[.,;:!?"'\s]+$/, "")
+      .trim();
+
+  const haystack = canon(excerpts.join("   "));
+  // DOUBLE quotes only: an excerpt legitimately contains apostrophes, and
+  // treating one as a delimiter cuts the quotation in half.
+  const quoted = [...draft.matchAll(/["\u201c]([^"\u201d]{25,})["\u201d]/g)].map((m) => m[1]);
+  const unfaithful = quoted.filter((q) => !haystack.includes(canon(q)));
+  return { quoted, unfaithful };
+}
+
+/**
+ * Audit one coach draft.
+ *
+ * Pure and total. Returns every violation rather than the first, because a
+ * regeneration prompt that names one problem tends to produce a draft with the
+ * other two still in it.
+ */
+export function auditDraft(draft: string, ctx: AuditContext): AuditResult {
+  const violations: AuditViolation[] = [];
+
+  for (const [moveClass, pattern] of PATTERNS) {
+    const match = draft.match(pattern);
+    if (!match) continue;
+    const sentence = sentenceAround(draft, match.index ?? 0);
+    const exempt = EXEMPTIONS.some(([cls, re]) => cls === moveClass && re.test(sentence));
+    if (exempt) continue;
+    violations.push({
+      moveClass,
+      matched: match[0],
+      action: BLOCKING.has(moveClass) ? "block" : "flag",
+    });
+  }
+
+  // ── quotation fidelity, computed FIRST (corpus turns only) ──
+  // It is checked at the bottom of this function, but the mirroring index needs
+  // its answer, because otherwise the two classes contradict each other on the
+  // same string: `quoteFidelity` deliberately tolerates a capitalised first
+  // letter on a quotation that starts mid-sentence (every writer does it), and
+  // the proper-noun scan then reads that capital as a coined name — measured,
+  // an excerpt beginning "and then everything went quiet" quoted as
+  // "Everything went quiet" blocks on `Everything`.
+  const fidelity = ctx.corpusExcerpts && ctx.corpusExcerpts.length > 0
+    ? quoteFidelity(draft, ctx.corpusExcerpts)
+    : { quoted: [] as string[], unfaithful: [] as string[] };
+  // A quotation this function has just PROVED to be a contiguous run of corpus
+  // text is not the coach's prose, so no word inside it can be the coach's
+  // coinage. Blanking it is the same proof `corpus.ts` runs on, applied one
+  // layer later. An unfaithful quotation is left in — it is already blocking
+  // below, and its names are not provably anybody's but the model's.
+  const faithful = fidelity.quoted.filter((q) => !fidelity.unfaithful.includes(q));
+  // …and so do the links the payload returned, for the reason
+  // `withoutTrustedUrls` gives: a video id is an address with interior capitals,
+  // not an entity, and the reveal ships three of them by design. A link that is
+  // NOT in the payload stays in and blocks — an invented address is a coinage
+  // with somebody's name attached to it.
+  const trustedUrls = [...(ctx.corpusAttribution ?? []), ...(ctx.corpusExcerpts ?? [])].join("\n");
+  // 🔑 Blanked with A WORD AND a terminator, and both halves are load-bearing.
+  // `properNouns` is lenient about a capital that starts a sentence and strict
+  // about one in the middle, and a quotation is nearly always followed by a new
+  // sentence — `"…the whole picture." Another describes…`. Blanking to " … "
+  // made `Another` look mid-sentence and it was reported as a coinage on three
+  // consecutive real reveals (measured 2026-08-12, `None` and `Another`).
+  // A bare " . " does not fix it either: that scan only opens a new sentence
+  // after a WORD followed by a terminator, and a full stop with nothing in
+  // front of it is invisible to it. Hence a lowercase placeholder — lowercase
+  // so the placeholder is not itself read as a name.
+  //
+  // ⚠️ The narrow cost, named: a coinage in mid-sentence attribution right after
+  // a quotation (`"…," Lumina told him`) now sits in sentence-initial position
+  // and is not counted. Rare in this pack, which attributes BEFORE the quote,
+  // and the second pass's `titling` label covers a name being given to somebody
+  // regardless of where it sits.
+  const scanText = withoutTrustedUrls(
+    faithful.reduce((t, q) => t.split(q).join(" quoted. "), draft),
+    trustedUrls,
+  );
+
+  // ── classes 4 + 8: the mirroring index ──
+  // Names the person used, in any case, are theirs to use. Everything else in
+  // the draft is a coinage, and a coinage is how a coach becomes a co-author.
+  //
+  // 🔥 …AND SO ARE THE NAMES THE CORPUS RETURNED, measured live on 2026-08-12.
+  // With only the person's vocabulary allowed, this class blocked every faithful
+  // rendering of The Company: corpus accounts are interview transcripts full of
+  // names and places, each carrying a video title, so attributing an excerpt
+  // trips `titling` BY CONSTRUCTION. Both corpus turns of the first live run
+  // blocked twice and fell back to the fixed line — on the exact turn somebody
+  // had asked whether anybody else had been through this.
+  //
+  // The fix widens what counts as provably not model-authored rather than
+  // weakening the class, on the same reasoning `expandToSentence` runs on:
+  // `assertNoAuthoredText` already proves every one of these strings came back
+  // from the corpus byte-identical, so a name inside them is not a coinage. A
+  // coined entity in a corpus turn still blocks, because it is in neither set.
+  //
+  // ⚠️ THE TRADE, stated: this trusts a corpus name's PROVENANCE, not its
+  // APPLICATION. The model could still pick a name out of somebody else's
+  // account and attach it to this person's experience ("what you saw is what
+  // they called the Veil"), and that is titling by borrowing. No surface form
+  // can catch it — the string is genuinely corpus text. It belongs to the
+  // second pass, whose `titling` label is about a name being GIVEN to them,
+  // and that division is deliberate: deterministic layer owns provenance, the
+  // model owns application.
+  const userNames = new Set(properNouns(ctx.userText).map((n) => n.toLowerCase()));
+  const corpusNames = capitalizedTokens(
+    [...(ctx.corpusExcerpts ?? []), ...(ctx.corpusAttribution ?? [])].join("\n"),
+  );
+  const allowedNames = new Set([
+    ...userNames,
+    ...corpusNames,
+    // `capitalizedTokens`, not `properNouns`: a bare name is a single
+    // sentence-initial word, which the proper-noun scan drops by design, so
+    // `properNouns("Tom")` is empty and the allowance would silently do nothing.
+    // This also handles "Mary-Jane" and "O'Brien", which arrive as one token.
+    ...capitalizedTokens(ctx.userName ?? ""),
+  ]);
+  // Sentence-initial capitals in a draft are ordinary prose, so the draft's own
+  // names are read with the allowed vocabulary as corroboration — the same rule
+  // the memory filter uses, for the same reason.
+  const draftNames = properNouns(scanText, allowedNames);
+  // 🔑 THE DENOMINATOR, decided rather than fallen into. Attribution names stay
+  // in it and quoted text does not, and the line between them is who wrote the
+  // sentence. Naming a source is the coach's own prose with a source behind it,
+  // so it belongs in "how much of what I named did I invent" — and keeping it
+  // there is also what stops a long reveal from diluting a real coinage toward
+  // zero. A quotation is not the coach's prose at all; counting the source's
+  // names as the coach's naming would measure the transcript, not the reply.
+  // A clean reveal therefore reads 0.00 rather than 0/0. The BLOCK is driven by
+  // the count below and never by this number, so a coinage hiding among corpus
+  // names still stops the draft.
+  // A leading or trailing apostrophe is punctuation the tokenizer swallowed,
+  // not part of the name: `[A-Za-z][A-Za-z'’-]*` reads `'Account AAA'` as
+  // `Account` and `AAA'`, and `AAA'` matches nothing in the allowed set. Found
+  // by a markdown link title, which is single-quoted — but it is the general
+  // shape of any quoted name, so it is fixed on the comparison rather than at
+  // the one call site. A coinage stripped of its quotes is still a coinage.
+  const bare = (n: string) => n.replace(/^['’\-]+|['’\-]+$/g, "").toLowerCase();
+  const newProperNouns = [...new Set(draftNames.filter((n) => !allowedNames.has(bare(n))))];
+  const mirroringIndex = draftNames.length === 0
+    ? 0
+    : newProperNouns.length / draftNames.length;
+
+  if (newProperNouns.length > 0) {
+    violations.push({
+      moveClass: "titling",
+      matched: newProperNouns.join(", "),
+      action: "block",
+    });
+  }
+
+  // Specifics the person never gave: dates, counts, durations. Flagged rather
+  // than blocked because a coach may legitimately echo "three weeks" back.
+  // `scanText` for the same reason as the names: an age or a year inside a
+  // verified quotation is the account's specific, not the coach elaborating,
+  // and flagging it on every reveal would bury the class it exists to catch.
+  const userNumbers = new Set((ctx.userText.match(NUMBERISH) ?? []).map((s) => s.toLowerCase().trim()));
+  const newNumbers = (scanText.match(NUMBERISH) ?? [])
+    .map((s) => s.trim())
+    .filter((s) => !userNumbers.has(s.toLowerCase()));
+  if (newNumbers.length > 0) {
+    violations.push({
+      moveClass: "elaboration_beyond_frame",
+      matched: newNumbers.join(", "),
+      action: "flag",
+    });
+  }
+
+  // ── class 13: certainty escalation ──
+  // Confidence about an unverifiable claim may hold or fall across a
+  // conversation. It may never rise. Repetition is not evidence — and Chandra et
+  // al. show spiraling happens even to a perfectly rational user, so this cannot
+  // be delegated to the person noticing.
+  if (ctx.previousDraft) {
+    const before = hedgeDensity(ctx.previousDraft);
+    const now = hedgeDensity(draft);
+    // A margin, so ordinary sentence-to-sentence variation is not a finding.
+    if (before > 0 && now < before * 0.5) {
+      violations.push({
+        moveClass: "certainty_escalation",
+        matched: `hedge density ${before.toFixed(3)} → ${now.toFixed(3)}`,
+        action: "flag",
+      });
+    }
+  }
+
+  // ── quotation fidelity (corpus turns only) ──
+  // Computed at the top of the function; this is where it is reported.
+  if (fidelity.unfaithful.length > 0) {
+    violations.push({
+      moveClass: "quote_infidelity",
+      matched: fidelity.unfaithful.map((q) => q.slice(0, 60)).join(" | "),
+      action: "block",
+    });
+  }
+
+  return {
+    verdict: violations.some((v) => v.action === "block") ? "block" : "pass",
+    violations,
+    mirroringIndex,
+    newProperNouns,
+  };
+}
+
+/**
+ * The instruction handed back to the model when a draft is blocked.
+ *
+ * Names what was wrong and nothing else. It deliberately does not restate the
+ * banned move as an example ("do not say 'you were chosen'"), because a banned
+ * construction handed to a model reads as a demonstration — the same trap
+ * BRAND.md §14.6 documents for the negation pivot in report prompts.
+ */
+export function regenerationNote(result: AuditResult): string {
+  const reasons: Record<BannedMoveClass, string> = {
+    ontological_confirmation: "Do not rule on whether the experience was real. That is not yours to settle.",
+    ontological_denial: "Do not explain the experience away. Offer no physical cause.",
+    election_language: "Remove any suggestion that they were singled out, or that this happened for a purpose.",
+    titling: `Use no name the person has not used. Remove: ${result.newProperNouns.join(", ")}.`,
+    channeling: "Speak only as yourself. Do not relay or voice anyone or anything else.",
+    sentience_claim: "Say nothing about your own inner states. Here that reads as confirmation that something made contact.",
+    permanence_promise: "Promise nothing about being here in future. Answer what is in front of you now.",
+    ritualization: "Offer no procedure, practice, sequence or protocol.",
+    elaboration_beyond_frame: "Introduce no detail the person did not give you.",
+    harm_reduction_inside_frame: "Do not give advice that takes the frame as settled and manages it.",
+    medication_commentary: "Say nothing whatsoever about medication.",
+    exclusivity: "Do not imply that others cannot understand, or that this should be kept from them.",
+    oracular: "Make no prediction and no claim about what is coming.",
+    certainty_escalation: "You have grown more certain than your previous reply. Hold the same uncertainty or more.",
+    quote_infidelity:
+      "A quotation in your reply is not what the account said. Quote one continuous run of an excerpt exactly as it was given to you, or quote none of it. Do not bridge a gap, do not shorten, do not combine two people.",
+  };
+
+  const blocked = result.violations.filter((v) => v.action === "block");
+  const lines = [...new Set(blocked.map((v) => reasons[v.moveClass]))];
+
+  // 🔥 Quotation fidelity is the ONE class where the offending text is named
+  // back, and the exception is principled rather than convenient. Everywhere else
+  // the banned thing is a CONSTRUCTION, and handing a model a construction reads
+  // as a demonstration (BRAND.md §14.6). Here the banned thing is a specific
+  // wrong string among two or three quotations, and a note that does not say
+  // which one leaves the model to guess — measured on August 12, 2026: it guesses
+  // wrong, splices again, and the person ends up with the fallback line instead
+  // of the other people's words they asked to see.
+  const infidelity = blocked.find((v) => v.moveClass === "quote_infidelity");
+  if (infidelity) {
+    lines.push(
+      `The quotation that is wrong starts: ${JSON.stringify(infidelity.matched.slice(0, 70))}. ` +
+        "Go back to the excerpt it came from in the tool result and copy ONE unbroken stretch of it, " +
+        "exactly as it stands there — a single sentence is usually right. No ellipsis anywhere inside " +
+        "a quotation, nothing joined, nothing tidied. If the part you want is not one unbroken stretch, " +
+        "quote less of it.",
+    );
+  }
+
+  return `Rewrite your reply. ${lines.join(" ")}`;
+}

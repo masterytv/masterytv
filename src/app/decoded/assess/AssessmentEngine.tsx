@@ -208,6 +208,41 @@ const ASSESS_ONBOARDING: Record<ProgramId, AssessOnboarding> = {
       ],
     },
   },
+  // Integration — a DIAGNOSTIC screen, not product copy, and deliberately so
+  // (INTEGRATION_SPRINT.md §3 / I7 replaces this block wholesale).
+  //
+  // The Footing check's instruments do not exist in this repo yet and its
+  // battery is empty, so nothing can be administered here. Writing plausible
+  // welcome copy would make an unbuilt surface look finished; saying plainly
+  // that it is unbuilt makes a wrong route obvious the moment anyone hits it.
+  // Nothing reaches this today — `integration` has no brand, no host and no
+  // signup path — and the vertical's real flow never opens with questions
+  // anyway: the Footing check is administered mid-stream, after The Company.
+  integration: {
+    welcome: {
+      icon: Compass,
+      title: "This part isn't built yet",
+      body: () => (
+        <>The Footing check comes later in the build, and its questions do not
+        exist yet. Nothing on this screen records anything.</>
+      ),
+    },
+    invite: {
+      title: "Not open yet",
+      subtitle: "Sharing here goes to one named person at a time, and it is not built yet.",
+      showRecipientChips: false,
+      valueProp: null,
+    },
+    primer: {
+      title: "Nothing to answer yet",
+      dimensions: null,
+      startLabel: "Go back",
+      consentIntro: "There is nothing to agree to here, because there is nothing to answer.",
+      consentItems: [
+        <>I confirm I am <strong>18 years or older</strong></>,
+      ],
+    },
+  },
 };
 
 export default function AssessmentEngine({

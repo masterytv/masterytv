@@ -23,6 +23,7 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createSupabaseClient, createSupabaseClientWithAuth } from "../_shared/supabase.ts";
+import { logLlmCost } from "../_shared/llm-cost.ts";
 import { handleCors, getCorsHeaders } from "../_shared/cors.ts";
 import { errorResponse, jsonResponse, logError, withRetry, isRetryableError } from "../_shared/errors.ts";
 
@@ -280,6 +281,7 @@ async function generateSections(
             archetypeResult,
             originalSection?.content_markdown ?? '{}',
             originalSection?.title ?? sectionId,
+            { supabase, userId: userId ?? null },
           ),
           {
             maxRetries: 2,
@@ -297,6 +299,7 @@ async function generateSections(
             voiceId,
             scoreRows,
             archetypeResult,
+            { supabase, userId: userId ?? null },
           ),
           {
             maxRetries: 2,
@@ -368,6 +371,7 @@ async function generateSingleSection(
   voiceId: VoiceId,
   scoreRows: Array<Record<string, unknown>>,
   archetypeResult: { primary: { name: string } },
+  cost?: { supabase: ReturnType<typeof createSupabaseClient>; userId: string | null },
 ): Promise<Record<string, unknown>> {
   // Build the voice instruction block based on voiceId
   const voiceInstruction = getVoiceInstruction(voiceId);
@@ -436,6 +440,18 @@ Write section ${sectionId} in the ${voiceId} voice.`;
   }
 
   const data = await response.json();
+  if (cost) {
+    await logLlmCost(cost.supabase, {
+      userId: cost.userId,
+      purpose: "decoded-rewrite-voice",
+      model: MODEL,
+      usage: {
+        input_tokens: data.usage?.prompt_tokens ?? 0,
+        output_tokens: data.usage?.completion_tokens ?? 0,
+      },
+      metadata: { section_id: sectionId, voice_id: voiceId },
+    });
+  }
   const content = data.choices[0]?.message?.content;
 
   if (!content) {
@@ -472,6 +488,7 @@ async function generateV2Section(
   archetypeResult: { primary: { name: string } },
   originalContentJson: string,
   originalTitle: string,
+  cost?: { supabase: ReturnType<typeof createSupabaseClient>; userId: string | null },
 ): Promise<Record<string, unknown>> {
   const voiceInstruction = getVoiceInstruction(voiceId);
 
@@ -540,6 +557,18 @@ Rewrite this section in the ${voiceId} voice. Return the same JSON structure wit
   }
 
   const data = await response.json();
+  if (cost) {
+    await logLlmCost(cost.supabase, {
+      userId: cost.userId,
+      purpose: "decoded-rewrite-voice",
+      model: MODEL,
+      usage: {
+        input_tokens: data.usage?.prompt_tokens ?? 0,
+        output_tokens: data.usage?.completion_tokens ?? 0,
+      },
+      metadata: { section_id: sectionId, voice_id: voiceId },
+    });
+  }
   const content = data.choices[0]?.message?.content;
 
   if (!content) {

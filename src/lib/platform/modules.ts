@@ -81,6 +81,16 @@ export const PROGRAM_MODULES: Record<ProgramId, ModuleId[]> = {
     // relationship dyad set stays OFF (money is solo). "cofounder edge comparison"
     // (dyad reused) is a later vertical feature, not V1 core.
   ],
+  // Integration — CORE only, and that is the decided set rather than a
+  // placeholder (INTEGRATION_SPRINT.md §3 / I12.3). Every piece of executive
+  // machinery is deliberately off: no streaks, no commitments-as-checkboxes,
+  // no wins, no goals, no coach_voices, no AI-tools. The reasoning is in
+  // INTEGRATION_EXPERIENCE.md — this vertical's users are people whose lives
+  // have been interrupted, and a productivity surface counting their days is
+  // the wrong instrument pointed at the wrong problem. `partner_invite` stays
+  // off too: I14's family explainer reuses that machinery, but one person at a
+  // time and never as a social loop, so it arrives as its own module.
+  integration: [...CORE],
 };
 
 /**

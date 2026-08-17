@@ -21,11 +21,12 @@ import type { CoachPack, PackPromptContext } from "./types.ts";
 import { executivePack } from "./executive-pack.ts";
 import { relationshipPack } from "./relationship-pack.ts";
 import { moneyPack } from "./money-pack.ts";
+import { integrationPack } from "./integration-pack.ts";
 
 export type { CoachPack, PackPromptContext };
-export { executivePack, relationshipPack, moneyPack };
+export { executivePack, integrationPack, moneyPack, relationshipPack };
 
-export type ProgramId = "general" | "relationship" | "money";
+export type ProgramId = "general" | "relationship" | "money" | "integration";
 
 /**
  * Adding a program to the union makes this Record a COMPILE ERROR until the
@@ -33,10 +34,20 @@ export type ProgramId = "general" | "relationship" | "money";
  * brand axis already had (11 Record<BrandId,…> maps) applied to the program
  * axis, where a new vertical actually arrives.
  */
-const PACKS: Record<ProgramId, CoachPack> = {
+const PACKS: Record<ProgramId, CoachPack | null> = {
   general: executivePack,
   relationship: relationshipPack,
   money: moneyPack,
+  // Integration — BUILT at I4.1 (August 12, 2026), and it arrived in the order
+  // §3 insists on: I3's memory-write filter, crisis patterns, output auditor and
+  // irreversible-decision tripwire all landed BEFORE this line stopped being
+  // `null`. A narrative that has ratcheted through months of stored facts cannot
+  // be un-ratcheted, which is why the pack was not allowed to speak first.
+  //
+  // Still DARK: reaching this pack needs `integrationEngineEnabled(userId)`
+  // (resolve-program.ts step 3), so an unflagged client sending
+  // program:'integration' does not get an unlaunched coach.
+  integration: integrationPack,
 };
 
 /**
@@ -56,7 +67,14 @@ export function normalizeProgram(program: string | null | undefined): ProgramId 
 }
 
 export function resolvePack(program: string | null | undefined): CoachPack {
-  return PACKS[normalizeProgram(program)];
+  const id = normalizeProgram(program);
+  const pack = PACKS[id];
+  if (!pack) {
+    throw new Error(
+      `Program '${id}' is registered on the program axis but has no Coach Pack yet — build it before routing anyone to this vertical's coach (_shared/packs/${id}-pack.ts)`,
+    );
+  }
+  return pack;
 }
 
 /**

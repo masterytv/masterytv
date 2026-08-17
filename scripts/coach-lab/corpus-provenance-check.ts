@@ -47,8 +47,10 @@ import {
   expandToSentence,
   type FindSimilarAccountsResult,
   mergeClaimMatches,
+  renderCorpusReveal,
   splitIntoClaims,
 } from "../../supabase/functions/_shared/corpus.ts";
+import { auditDraft, quoteFidelity } from "../../supabase/functions/_shared/output-auditor.ts";
 
 // ─── harness ──────────────────────────────────────────────────────────────
 
@@ -547,6 +549,186 @@ function refuses(name: string, url: string, key: string): void {
     console.log(`✓ ${name}`);
   }
 }
+
+// ─── 6. the deterministic rendering (I6.2) ────────────────────────────────
+//
+// The done criterion is one sentence: *the renderer cannot display
+// model-authored text.* So these cases are mostly attempts to make it.
+//
+// It exists because the model could not be made to render this turn faithfully.
+// Told character for character in two places, it bridges two parts of one
+// transcript with an ellipsis; `quoteFidelity` blocks the draft, the
+// regeneration splices too, and on 3 of 3 battery runs and live on 2026-08-12
+// the person got the fixed line on the exact turn they asked whether anybody
+// else had been through this.
+
+console.log("\n─── the deterministic reveal (I6.2) ───\n");
+
+const projected = projectForCoach(assembled, { email: "tom@masterytv.com" });
+const reveal = renderCorpusReveal(projected)!;
+
+const shown = assembled.accounts.slice(0, 3);
+const attributionLines = reveal.split("\n").filter((l) => l.startsWith("["));
+
+ok("a real payload renders", typeof reveal === "string" && reveal.length > 0);
+ok(
+  "every excerpt reaches the person, byte-identical",
+  shown.every((a) => reveal.includes(a.excerpt.text)),
+);
+ok(
+  "each one carries its link",
+  shown.every((a) => reveal.includes(a.excerpt.source.video_url!)),
+);
+ok(
+  "the count is the payload's, never a recount",
+  reveal.includes(`${assembled.matched_count} accounts`),
+  reveal.split("\n")[0],
+);
+ok("the no-proof line is there (I6.4)", reveal.includes("not making it up"));
+// The excerpts are somebody else's speech and may contain anything, and a
+// YouTube link carries `?v=`. What must ask nothing is the copy this file
+// wrote, so that is what is measured: the reveal minus the quotes and links.
+const ourWords = reveal.replace(/"[\s\S]*?"/g, "").replace(/\[[^\]]*\]\([^)]*\)/g, "");
+ok("it asks nothing — this is the turn not to", !ourWords.includes("?"), ourWords);
+ok(
+  "attribution is a link to the RECORDING — never 'X said', since these transcripts carry no speaker labels",
+  attributionLines.length === shown.length &&
+    attributionLines.every((l) => /^\[the recording\]\(https:\/\/\S+( '.*')?\)$/.test(l)),
+  attributionLines.join(" | "),
+);
+// Founder call, 2026-08-12, made after reading a real one. These are YouTube
+// headlines — "Woman DIES! What happens next is the MOST PROFOUND Near Death
+// Experience EVER!" — and they were landing directly under somebody's account
+// of the worst hour of their life. The title is not hidden: it rides the hover,
+// and the link still goes exactly where it says it does.
+ok(
+  "the source's own title rides the HOVER rather than the label",
+  shown.every((a) => reveal.includes(`'${a.source.video_title}')`)),
+  attributionLines.join(" | "),
+);
+
+// …and the half that matters. Every one of these is a way authored text could
+// reach the person if the tag were treated as decoration.
+const poison = (over: Record<string, unknown>) =>
+  renderCorpusReveal({
+    matched_count: 9,
+    accounts: [
+      {
+        excerpt: {
+          text: "a sentence this product wrote",
+          provenance: "verbatim_excerpt",
+          source: { video_id: "X", video_title: "T", video_url: "https://www.youtube.com/watch?v=X" },
+          ...over,
+        },
+      },
+    ],
+  });
+
+ok(
+  "an excerpt tagged as ANALYSIS is not quotable — analyst prose is nobody's speech",
+  poison({ provenance: "corpus_analysis" }) === null,
+);
+ok(
+  "an UNTAGGED excerpt renders nothing, which is what model-authored text looks like",
+  poison({ provenance: undefined }) === null,
+);
+ok(
+  "a forged tag renders nothing",
+  poison({ provenance: "verbatim" }) === null,
+);
+ok(
+  "an empty payload renders nothing, so the caller keeps the fixed line",
+  renderCorpusReveal({ matched_count: 40, accounts: [] }) === null &&
+    renderCorpusReveal(null) === null && renderCorpusReveal("nonsense") === null,
+);
+ok(
+  "a javascript: URL is never linked",
+  !renderCorpusReveal({
+    matched_count: 2,
+    accounts: [{
+      excerpt: {
+        text: "the corpus text is still shown, only the address is dropped",
+        provenance: "verbatim_excerpt",
+        source: { video_id: "X", video_title: "T", video_url: "javascript:alert(1)" },
+      },
+    }],
+  })!.includes("javascript:"),
+);
+// 17.6% of this corpus's titles carry an apostrophe, and two of the three links
+// in the first live reveal did ("Yvonne's Story"), so the hover has to survive
+// one. A square bracket is the case that cannot: it is what stops the client's
+// greedy title body from swallowing the gap between two links.
+ok(
+  "a title carrying its own apostrophe KEEPS the hover",
+  renderCorpusReveal({
+    matched_count: 2,
+    accounts: [{
+      excerpt: {
+        text: "an excerpt long enough to be quoted back to somebody",
+        provenance: "verbatim_excerpt",
+        source: {
+          video_id: "X",
+          video_title: "Allergy Shot - Near Death Experience - Yvonne's Story",
+          video_url: "https://www.youtube.com/watch?v=X",
+        },
+      },
+    }],
+  })!.includes("'Allergy Shot - Near Death Experience - Yvonne's Story')"),
+);
+ok(
+  "a title carrying a SQUARE BRACKET drops the HOVER rather than breaking the link",
+  renderCorpusReveal({
+    matched_count: 2,
+    accounts: [{
+      excerpt: {
+        text: "an excerpt long enough to be quoted back to somebody",
+        provenance: "verbatim_excerpt",
+        source: {
+          video_id: "X",
+          video_title: "NDE [Full Interview]",
+          video_url: "https://www.youtube.com/watch?v=X",
+        },
+      },
+    }],
+  })!.includes("[the recording](https://www.youtube.com/watch?v=X)"),
+);
+ok(
+  "never more than three accounts, whatever the payload says",
+  (renderCorpusReveal({
+    matched_count: 99,
+    accounts: Array.from({ length: 9 }, (_, i) => ({
+      excerpt: {
+        text: `excerpt number ${i}, long enough to be quoted back to somebody`,
+        provenance: "verbatim_excerpt",
+        source: { video_id: `V${i}`, video_title: `T${i}`, video_url: `https://youtu.be/V${i}` },
+      },
+    })),
+  })!.match(/https:\/\//g) ?? []).length === 3,
+);
+
+// 🔑 THE ONE THAT KEEPS IT SENDABLE. This text goes out unreviewed, so it must
+// pass the same auditor the model's drafts face — a fallback that fails the
+// audit is a defect with a longer fuse. Audited here rather than at runtime on
+// purpose: it is deterministic, so proving it once is worth more than a check
+// that could false-block the last line of defence.
+const auditCtx = {
+  userText: "I came out of my body during surgery and I have not told anybody.",
+  corpusExcerpts: assembled.accounts.map((a) => a.excerpt.text),
+  corpusAttribution: assembled.accounts.flatMap((a) =>
+    [a.source.video_title, a.source.video_url].filter(Boolean) as string[]
+  ),
+};
+const audited = auditDraft(reveal, auditCtx);
+ok(
+  "the rendered reveal passes the output auditor it is a fallback for",
+  audited.verdict === "pass",
+  `blocked by [${audited.violations.filter((v) => v.action === "block").map((v) => v.moveClass).join(",")}] ` +
+    `new=[${audited.newProperNouns.join(",")}] index=${audited.mirroringIndex}`,
+);
+ok(
+  "…and its quotations are, by construction, faithful",
+  quoteFidelity(reveal, auditCtx.corpusExcerpts).unfaithful.length === 0,
+);
 
 refuses(
   "refuses the engine's own service key",

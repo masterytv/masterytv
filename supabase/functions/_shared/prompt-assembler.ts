@@ -68,11 +68,21 @@ export async function assemblePrompt(
   conversationId: string | null = null
 ): Promise<{
   system: string;
+  /**
+   * The leading slice of `system` that holds still for the conversation, as
+   * declared by the pack's `cacheableLayerCount`. Always a byte-exact prefix of
+   * `system` — the caller sends it as a cached block and the remainder plain.
+   */
+  systemCachePrefix: string;
   conversationHistory: { role: "user" | "assistant"; content: string }[];
   metadata: {
     activeChallenges: ActiveChallenge[];
     factCount: number;
     messageCount: number;
+    /** Retrieved facts as `subject: content` — see the note at the return. */
+    factTexts: string[];
+    /** The person's own name, for the draft audit — see the note at the return. */
+    userName: string | null;
   };
   debugTrace: PromptDebugTrace | null;
 }> {
@@ -524,25 +534,38 @@ IMPORTANT ACCESS RULES:
   }
 
   // ── Assemble system prompt — the pack owns the layer stack ──
-  const layers: string[] = pack
-    .buildLayers({
-      mode,
-      user,
-      profile,
-      challenges,
-      messages,
-      facts,
-      sessionSummaries,
-      agenda,
-      userTools,
-      availableAITools,
-      decodedLayer,
-      relationshipLayer,
-      mediatorPersona,
-    })
-    .filter(Boolean);
+  const rawLayers: string[] = pack.buildLayers({
+    mode,
+    user,
+    profile,
+    challenges,
+    messages,
+    facts,
+    sessionSummaries,
+    agenda,
+    userTools,
+    availableAITools,
+    decodedLayer,
+    relationshipLayer,
+    mediatorPersona,
+  });
 
-  const system = layers.join("\n\n---\n\n");
+  // Prompt-cache split. The pack declares how many leading layers hold still
+  // for the length of a conversation (`cacheableLayerCount`); those become an
+  // Anthropic `cache_control` block in _shared/anthropic.ts, and the rest is
+  // sent uncached. `.filter(Boolean)` runs on each half separately so empty
+  // conditional layers drop out exactly as they did before — which is what
+  // keeps `system` byte-identical to the pre-caching prompt. That byte
+  // equality is the whole safety argument for this change: the model reads the
+  // same prompt it read yesterday, so no golden moves and no coach voice
+  // shifts. If you edit this, re-run the goldens rather than eyeballing it.
+  const LAYER_SEP = "\n\n---\n\n";
+  const layers = rawLayers.filter(Boolean);
+  const systemCachePrefix = rawLayers
+    .slice(0, pack.cacheableLayerCount)
+    .filter(Boolean)
+    .join(LAYER_SEP);
+  const system = layers.join(LAYER_SEP);
 
   // ── Build conversation history (reversed to chronological) ──
   const conversationHistory = messages
@@ -637,11 +660,33 @@ IMPORTANT ACCESS RULES:
 
   return {
     system,
+    systemCachePrefix,
     conversationHistory,
     metadata: {
       activeChallenges: challenges,
       factCount: facts.length,
       messageCount: messages.length,
+      /**
+       * The person's own name, for the same audit. 🔥 Measured 2026-08-12: the
+       * mirroring index counted "Dana" as a coinage, because a person does not
+       * type their own name at the coach and the index only knows what they
+       * wrote. Addressing somebody by name is the most ordinary thing this
+       * coach does — the live run's very first reply opened with it — so
+       * without this the auditor blocks the warmest sentence in the vertical.
+       * Additive, like `factTexts`: nothing renders it, so no golden moves.
+       */
+      userName: user?.name ?? null,
+      /**
+       * The retrieved facts as `subject: content`, for the buffered draft audit
+       * (`_shared/draft-audit.ts` → `buildUserTextForAudit`). 🔥 The mirroring
+       * index treats any proper noun the person has not used as a coach coinage
+       * and blocks it, so a name they gave weeks ago — which lives in
+       * `memory_facts`, quoted, and not in this conversation's window — would
+       * make the coach unable to say their own word for their own experience.
+       * Additive: nothing renders it, so no prompt golden moves, and no caller
+       * writes it to a row.
+       */
+      factTexts: facts.map((f) => `${f.subject}: ${f.content}`),
     },
     debugTrace,
   };

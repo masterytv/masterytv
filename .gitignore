@@ -29,6 +29,11 @@ yarn-error.log*
 .env*.local
 # `supabase functions serve` reads this one; it is NOT covered by .env*.local
 supabase/functions/.env
+# Anything ending .env, wherever it sits: `.env`, and the `one.env` / `two.env`
+# shape that sat untracked in the repo root for weeks. Named as a pattern
+# rather than as those two files, because the next one will be called
+# something else and a `git add -A` does not ask.
+*.env
 
 # vercel
 .vercel

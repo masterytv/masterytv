@@ -3,7 +3,7 @@
 > **Creative North Star: "The Kinetic Curator"**
 > An AI coaching interface that bridges high-velocity SaaS functionality with premium editorial storytelling. The system rejects clinical coldness — opting for **kinetic energy**, where elements feel captured in a moment of purposeful movement. Intentional asymmetry, tonal depth, and authoritative typography create a curated narrative, not a static grid.
 
-> **Last Updated:** July 20, 2026 (§1.1 — the brand-name registry across verticals + the MoneyTraits rename and the gate-enforced "Money Maps" ban)  
+> **Last Updated:** August 13, 2026 (§1.1 — HEARD added to the brand-name registry; the integration vertical's public name)  
 > **Sources:** Stitch Design System (Light + Dark), Existing Codebase (`globals.css`, `onboarding.css`, `chat.css`)  
 > **Status:** Canonical — All Sprint 6+ UI must conform to this guide
 
@@ -21,6 +21,7 @@
 | Executive (`masterytv`) | **Mastery Coach** | masterytv.com | Two words, capitalized. Family name for footers: **MasteryTV** (one word). |
 | Relationship (`relatti`) | **Relatti** | relatti.com | One word. |
 | Money (`money`) | **MoneyTraits** | moneytraits.com | **One word** (house style with MasteryTV/Relatti — never "Money Traits" spaced). "MoneyTraits™" on product artifacts (card chip, report masthead) is fine. |
+| Integration (`heard`) | **HEARD** | youheard.org | **All caps, always** — the wordmark is the bare word. Never "Heard", never "You Heard", never "YouHeard". The "you" lives in the DOMAIN only, where it reads both ways the vertical needs ("you are heard" / "you heard about this"); the moment it enters the wordmark the brand starts addressing the reader, which is the register this vertical avoids. Internal slug stays `integration` (§ below). |
 
 > [!CAUTION]
 > **🚫 BANNED IN ALL USER-FACING AND MODEL-FACING TEXT: "Money Maps", "MoneyMaps", "Money Map".** The money vertical's interim name turned out to be a **third party's registered trademark** — renamed to MoneyTraits by founder decision 2026-07-20 (full record + naming contract: [`MONEY_TRAITS_RENAME.md`](MONEY_TRAITS_RENAME.md)). Reintroducing it — in UI copy, an email, an LLM prompt, an OG card — is **legal exposure**, not just stale branding.
@@ -28,6 +29,14 @@
 > - **Gate-enforced, not convention:** `npm run gate` / CI runs **`check:brand-terms`** (`scripts/check-banned-brand-terms.mjs`) — any spaced form in any case ("Money Maps", "money map", "MONEY MAP PROFILE") or the standalone camel word "MoneyMaps" anywhere in `src/`, `supabase/functions/`, or `scripts/` **fails the build**.
 > - **Locked internal identifiers are exempt and must NEVER be renamed** (storage contracts, invisible to users — renaming them destroys stored assessments): instrument id `money_maps`, JSONB keys `sections.money_map` / `sections.money_narrative`, TS names `MoneyMap`/`StoredMoneyMap`/`scoreMoneyMaps`/`MoneyMapsRadar`, file names `money-maps.ts` / `money-map-*`, the `money_decisions` table, and the transition alias host `moneymaps.masterytv.com` (301s away post-cutover). Never surface any of them in copy.
 > - **Money vocabulary (exact):** the four dimensions are **traits** — GUARD / DRIVE / MIRROR / SHADOW (never "Maps"); the assessment artifact is **"your trait profile"** (never "your Money Map"); the overclocked strength's cost is **"the Challenge"** (never "leak" — founder call 2026-07-20); the fifth measure is **"the Fear"** (never "the Leap"/"LEAP"). The Money Tell LP (`/tell`) is a campaign door under the same MoneyTraits brand.
+
+> [!NOTE]
+> **HEARD's naming contract, written before the first string (founder decision, August 13, 2026).** MoneyTraits cost ~60 files because the display name and the storage identifier were never separated. HEARD separates them on day one:
+>
+> - **Changeable:** the wordmark `HEARD`, the `heard` **BrandId**, the domain `youheard.org`, every user-facing string.
+> - **LOCKED, never renamed:** the program slug `integration` (`program.slug`, `ProgramId`, pack id, `conversations.program`, `crisis_flags.category`, `coaching_consents.program`, the memory taxonomy), and any JSONB section keys the vertical later writes. These are storage contracts and invisible to users.
+> - **Deny-list scope:** `heard` is registered in `ALSO_OWNED` (`scripts/check-integration-deny-list.mjs`), so HEARD's own copy is scanned for the clinical vocabulary I11.1 bans. The path scope matches a whole **segment**, so HEARD's files belong in a `heard/` **directory** — a PascalCase `HeardThing.tsx` in a shared folder is NOT scanned. First one is `src/app/(legal)/_content/heard/`.
+> - **Discretion is a brand rule here, not a preference.** The sender identity, the footer line, the tab icon and the OG card text all appear on a lock screen belonging to somebody who has not told the people they live with. They carry the wordmark and nothing describing what the service is for ([INTEGRATION_EXPERIENCE.md](INTEGRATION_EXPERIENCE.md) §1.1, the 🔴 proactive-email row).
 
 ### Voice & Personality
 | Dimension | Direction |

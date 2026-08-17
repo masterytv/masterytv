@@ -15,54 +15,15 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { UserStar, Heart, Clock, Compass } from "lucide-react";
+import { UserStar, Heart, Clock, Compass, AudioLines } from "lucide-react";
 import { useBrand } from "@/hooks/useBrand";
+import { byBrand } from "@/lib/platform/brand";
 import type { ChatMessage } from "@/lib/chat";
 import { parseChips, stripStreamingChips } from "@/lib/chat-chips";
-
-// ─── MARKDOWN RENDERER ─────────────────────────────────────────────────
-// Lightweight markdown → HTML for coach messages (bold, italic, bullets, emoji)
-
-/**
- * Sanitize raw text by escaping HTML entities.
- * Must run BEFORE markdown transforms to prevent XSS via dangerouslySetInnerHTML.
- * Without this, a compromised LLM response could inject <script> tags.
- */
-function sanitizeHtml(text: string): string {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
-function renderMarkdown(text: string): string {
-  // Sanitize first — escape all HTML, THEN apply known-safe transforms
-  return sanitizeHtml(text)
-    // Code blocks (```...```)
-    .replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre class="chat-code-block"><code>$2</code></pre>')
-    // Inline code (`...`)
-    .replace(/`([^`]+)`/g, '<code class="chat-inline-code">$1</code>')
-    // Headings (#, ##, ### …) → bold line. The coach is instructed not to emit
-    // headings (E14 conversational stance), but never render a raw "### " if it does.
-    .replace(/^#{1,6}\s+(.+?)\s*$/gm, "<strong>$1</strong>")
-    // Bold (**text**)
-    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
-    // Italic (*text*)
-    .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, "<em>$1</em>")
-    // Links [text](url) — only allow safe protocols (relative, http, https)
-    .replace(/\[([^\]]+)\]\((\/?[^\)]+)\)/g, '<a href="$2" class="chat-link">$1</a>')
-    // Bullet lists
-    .replace(/^- (.+)$/gm, '<li class="chat-li">$1</li>')
-    .replace(new RegExp('(<li class="chat-li">.*?<\\/li>\\n?)+', 'g'), '<ul class="chat-ul">$&</ul>')
-    // Numbered lists
-    .replace(/^\d+\. (.+)$/gm, '<li class="chat-li-num">$1</li>')
-    .replace(new RegExp('(<li class="chat-li-num">.*?<\\/li>\\n?)+', 'g'), '<ol class="chat-ol">$&</ol>')
-    // Line breaks
-    .replace(/\n\n/g, "</p><p>")
-    .replace(/\n/g, "<br/>");
-}
+// Moved to @/lib/chat-markdown so the one place model output becomes HTML
+// can be tested: link schemes are restricted there, and `[text](url "title")`
+// carries the hover the corpus reveal needs (INTEGRATION_SPRINT.md I6.2).
+import { renderMarkdown } from "@/lib/chat-markdown";
 
 // ─── COACH AVATAR ───────────────────────────────────────────────────────
 // Brand-aware initial for the coach bubble: "R" for Relatti, "M" for MasteryTV.
@@ -234,6 +195,21 @@ const EMPTY_STATE = {
       "The goalposts keep moving no matter how much I make",
     ],
   },
+  // HEARD. The heading and intro are INTEGRATION_EXPERIENCE §5.2's specified
+  // first-surface copy, not a variation on it.
+  //
+  // 🔑 `starters: []` is the design, not a gap. §1.1 rates a scaffolded opening
+  // 🔴 for this vertical: handing three canned prompts to somebody who came
+  // here to say the strangest thing that has ever happened to them tells them
+  // which answers are expected, on the one turn where the evidence says the
+  // first response decides the trajectory. The empty box IS the product.
+  heard: {
+    icon: AudioLines,
+    heading: "What happened?",
+    intro:
+      "Take as long as you want. Nothing here is graded, and nobody is going to tell you what it was.",
+    starters: [],
+  },
 } as const;
 
 function EmptyState() {
@@ -293,6 +269,17 @@ export default function ChatWindow({
   remainingToday = null,
   topCard = null,
 }: ChatWindowProps) {
+  const composerBrand = useBrand();
+  // Composer ceiling — the client half of the coach's per-program cap
+  // (⚠️ LOCKSTEP TWIN: `maxChars` in supabase/functions/coach/index.ts).
+  // HEARD's whole first surface is "take as long as you want"; §5.2 says some
+  // people write four thousand WORDS, and a 5,000-CHAR maxLength silently
+  // truncates that mid-sentence with no error, on the one turn that matters
+  // most. Everything else keeps the shipped limit.
+  const composerMaxChars = byBrand(
+    { masterytv: 5000, relatti: 5000, money: 5000, heard: 25000 },
+    composerBrand.id,
+  );
   const [input, setInput] = useState("");
   const [draftRestored, setDraftRestored] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -483,7 +470,7 @@ export default function ChatWindow({
             className="chat-input"
             rows={1}
             disabled={isLoading || atLimit}
-            maxLength={5000}
+            maxLength={composerMaxChars}
           />
           <button
             type="submit"

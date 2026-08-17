@@ -16,6 +16,8 @@ import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams, useRouter } from "next/navigation";
 import ChatWindow from "@/components/chat/chat-window";
+import ConsentGate from "@/components/integration/ConsentGate";
+import KeepThis from "@/components/heard/KeepThis";
 import CoachVoiceSelector from "@/components/chat/CoachVoiceSelector";
 import {
   sendMessageStream,
@@ -26,6 +28,7 @@ import {
 } from "@/lib/chat";
 import { useUser } from "@/hooks/useUser";
 import { createClient } from "@/lib/supabase/client";
+import { takeHeldAccount, HELD_ACCOUNT_CONTEXT } from "@/lib/heard/pending-account";
 import type { CoachVoiceId } from "@/lib/coach/voice-config";
 import { getActiveDyad, type DashboardDyad } from "@/lib/relatti/dashboard-dyad";
 import { resolveBrandClient } from "@/hooks/useBrand";
@@ -209,7 +212,7 @@ function ChatPageInner() {
       // Build a natural opening message from the deep link context. Brand-aware:
       // Relatti users read a "relationship profile," not a "Decoded report."
       const profileLabel = byBrand(
-        { relatti: "relationship profile", masterytv: "report", money: "MoneyTraits profile" },
+        { relatti: "relationship profile", masterytv: "report", money: "MoneyTraits profile", heard: "notes" },
         resolveBrandClient().id,
       );
       const openingMessage = topic
@@ -285,6 +288,34 @@ function ChatPageInner() {
         setTimeout(() => handleSendMessage(q.trim()), 300);
       }
       router.replace('/dashboard/chat', { scroll: false });
+    } else if (contextType === HELD_ACCOUNT_CONTEXT) {
+      // I5.1 — the pre-account box handed us an account (EXPERIENCE §5.2).
+      //
+      // It arrives via sessionStorage rather than a param because it can be
+      // four thousand words. `takeHeldAccount` reads and CLEARS, so a refresh
+      // cannot re-send somebody's account as a second turn.
+      //
+      // 🔑 No `deepLinkContext` is set on purpose. The witness turn is DERIVED
+      // (no coach turn in this conversation AND stage 1, per I5.2), not
+      // triggered by a context flag, so handing the coach a context type here
+      // would add a second, forgeable way to reach the most constrained turn
+      // in the product.
+      //
+      // ⚠️ NOT guarded on `messages.length === 0`, unlike the money deep links
+      // above, and the difference matters. youheard.org/ serves this box to
+      // everyone, signed in or not, so a returning person with a live thread
+      // can absolutely walk back through it — and a fresh-thread guard would
+      // read their words out of storage and silently drop them. Losing what
+      // somebody just wrote here is the worst failure this surface has. It
+      // lands in whatever thread is open instead, where the derived stage is
+      // already correct: they have been met, so they get an ordinary turn
+      // rather than a second introduction.
+      deepLinkProcessed.current = true;
+      const heldAccount = takeHeldAccount();
+      if (heldAccount) {
+        setTimeout(() => handleSendMessage(heldAccount), 300);
+      }
+      router.replace('/dashboard/chat', { scroll: false });
     } else if (contextType === 'money_decision' && topic) {
       // Money Decision Room (MONEY_EXPERIENCE.md §8, the money V1 spine). The user
       // named a live decision in the Decision Room and we deep-linked into its
@@ -305,6 +336,11 @@ function ChatPageInner() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isInitialLoad, searchParams]);
+
+  // I5.5 — set when the coach refuses turn 2 for want of a consent record.
+  // `heldMessage` is what they were trying to say when it happened.
+  const [consentRequired, setConsentRequired] = useState(false);
+  const [heldMessage, setHeldMessage] = useState<string | null>(null);
 
   const handleSendMessage = useCallback(
     async (message: string) => {
@@ -386,6 +422,19 @@ function ChatPageInner() {
               streamedTextRef.current = "";
               setIsLoading(false);
 
+              // I5.5 — the consent gate, which lands before turn 2 and never
+              // before turn 1. The server refused BEFORE storing the message, so
+              // the optimistic bubble is taken back off and held: after they
+              // accept, it is sent again exactly once rather than lost or
+              // duplicated. No error bubble either — being told "something went
+              // wrong" for reaching a consent screen is its own small insult.
+              if ((error as Error & { code?: string }).code === "CONSENT_REQUIRED") {
+                setMessages((prev) => prev.filter((m) => m.id !== tempId));
+                setHeldMessage(message);
+                setConsentRequired(true);
+                return;
+              }
+
               const errorMessage: ChatMessage = {
                 id: `error-${Date.now()}`,
                 role: "system",
@@ -458,6 +507,28 @@ function ChatPageInner() {
   const showDebugPanel = isAdmin && debugMode;
   const moneyCard = moneyMap ? <MoneyMapCard map={moneyMap} /> : null;
 
+  // I5.5 — it takes the whole slot when it is up. On accept, the message they
+  // were trying to send goes exactly once, through the normal path.
+  // I5.1's other half. Renders only for an anonymous HEARD session and only
+  // after a real exchange, so the ask can never land on the turn the account
+  // arrived. `KeepThis` returns null for every other brand and every signed-in
+  // user, so this is a no-op everywhere else. Consent outranks it: two asks
+  // stacked on one screen is the form this vertical exists to avoid.
+  const keepThis = messages.length >= 2 ? <KeepThis /> : null;
+
+  const consentGate = consentRequired
+    ? (
+      <ConsentGate
+        onAccepted={() => {
+          setConsentRequired(false);
+          const held = heldMessage;
+          setHeldMessage(null);
+          if (held) void handleSendMessage(held);
+        }}
+      />
+    )
+    : null;
+
   return (
     <div style={{ position: "relative", height: "100%" }}>
       {/* Chat header bar — de-escalation mode + dyad indicator + voice */}
@@ -508,7 +579,7 @@ function ChatPageInner() {
               userId={user?.id}
               limitInfo={limitInfo}
               remainingToday={remainingToday}
-              topCard={moneyCard}
+              topCard={consentGate ?? keepThis ?? moneyCard}
             />
           </div>
           <DebugPanel debugData={debugData} traceHistory={traceHistory} />
@@ -523,7 +594,7 @@ function ChatPageInner() {
           userId={user?.id}
           limitInfo={limitInfo}
           remainingToday={remainingToday}
-          topCard={moneyCard}
+          topCard={consentGate ?? keepThis ?? moneyCard}
         />
       )}
     </div>

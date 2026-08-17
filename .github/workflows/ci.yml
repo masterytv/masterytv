@@ -65,6 +65,9 @@ jobs:
       - name: Program-resolution precedence (PC4.4 — spine outranks the client hint)
         run: npm run check:resolve
 
+      - name: Cost-logging gate (every LLM caller writes to cost_tracking)
+        run: npm run check:cost-logging
+
       - name: Prompt snapshot goldens (PC4.1 — byte-identical per vertical)
         run: npm run snapshot:prompts
 

@@ -22,10 +22,16 @@ import { generateEmbedding, logEmbeddingCost } from "../_shared/embeddings.ts";
 import { handleSearchFacts } from "../_shared/search-facts.ts";
 import { handleLookupAssessment } from "../_shared/lookup-assessment.ts";
 import { handleLookupRelationship } from "../_shared/lookup-relationship.ts";
-import { FIND_SIMILAR_ACCOUNTS_TOOL, handleFindSimilarAccounts } from "../_shared/corpus.ts";
-import { integrationEngineEnabled } from "../_shared/flags.ts";
-import { resolvePack, programScope } from "../_shared/packs/index.ts";
+import { handleFindSimilarAccounts, renderCorpusReveal } from "../_shared/corpus.ts";
+import { handleLookupFooting } from "../_shared/lookup-footing.ts";
+import {
+  auditAndFinalizeDraft,
+  buildUserTextForAudit,
+  type DraftAuditOutcome,
+} from "../_shared/draft-audit.ts";
+import { resolvePack, programScope, type ProgramId } from "../_shared/packs/index.ts";
 import { resolveProgram } from "../_shared/resolve-program.ts";
+import { hasLiveConsent } from "../_shared/consent.ts";
 import {
   resolveConversation,
   COACHING_DISCLAIMER,
@@ -89,8 +95,45 @@ Deno.serve(async (req: Request) => {
       return errorResponse("BAD_REQUEST", "Message is required", 400, corsHeaders);
     }
 
-    if (message.length > 5000) {
-      return errorResponse("BAD_REQUEST", "Message too long (max 5000 chars)", 400, corsHeaders);
+    // Per-program input ceiling.
+    //
+    // 🔑 The flat 5,000 (~800 words) silently broke I5.1's central promise.
+    // EXPERIENCE §5.2 puts a single free-text box in front of somebody with
+    // "take as long as you want", and says in as many words that "some people
+    // will write four words and some will write four thousand" — four thousand
+    // WORDS is ~25,000 chars, so the account this vertical exists to receive
+    // would have been rejected with "Message too long" on the one turn the
+    // evidence says decides the trajectory.
+    //
+    // The hint is untrusted here (the program is resolved server-side in §2.4
+    // below), and that is acceptable for THIS check specifically: forging
+    // `integration` buys a longer prompt, i.e. tokens, and nothing else. Every
+    // safety control — the crisis kernel, the tripwire, the memory filter, the
+    // draft auditor, the consent gate — runs downstream on the RESOLVED
+    // program and is unaffected by what the client claimed here.
+    // Record<ProgramId,…>, not a ternary: check:ternaries caught the ternary
+    // form here, and it was right to — an else-branch would hand the NEXT
+    // vertical 5,000 silently. The lookup is membership-tested rather than
+    // normalized because `normalizeProgram` THROWS on an unregistered slug, and
+    // a garbage hint from a client must not 500 the coach.
+    const INPUT_CEILING: Record<ProgramId, number> = {
+      general: 5000,
+      relationship: 5000,
+      money: 5000,
+      integration: 25000,
+    };
+    const hintedProgram = clientProgram?.toLowerCase() ?? "";
+    const maxChars =
+      hintedProgram in INPUT_CEILING
+        ? INPUT_CEILING[hintedProgram as ProgramId]
+        : INPUT_CEILING.general;
+    if (message.length > maxChars) {
+      return errorResponse(
+        "BAD_REQUEST",
+        `Message too long (max ${maxChars} chars)`,
+        400,
+        corsHeaders,
+      );
     }
 
     // ── 2.3 Debug mode — admin-only, verified server-side ──
@@ -138,23 +181,14 @@ Deno.serve(async (req: Request) => {
     // 1024 executive budget left room for the 5-step framework dumps.
     const coachMaxTokens = 700;
 
-    // ── Sprint 0 / I1: the corpus bridge rides the EXISTING coach ──
-    // The integration vertical has no ProgramId, no brand and no pack yet, on
-    // purpose: I1 is a kill gate, and nothing downstream of it should exist
-    // until the founder's go/no-go. So the tool is appended here rather than
-    // declared by a pack, gated on INTEGRATION_ENGINE (global) or on the
-    // per-user allow-list that carries the I1.5 testers.
-    //
-    // ⚠️ TEMPORARY BY DESIGN. This block moves into `integration-pack.ts`
-    // `tools` at I4.4 and comes back out of the orchestrator — a vertical
-    // behaviour living here is exactly the smell PC4.2 exists to prevent.
-    const corpusBridgeOn = integrationEngineEnabled(userId);
-    const coachTools = corpusBridgeOn
-      ? [...pack.tools, FIND_SIMILAR_ACCOUNTS_TOOL]
-      : pack.tools;
-    if (corpusBridgeOn) {
-      console.log(`[${FUNCTION_NAME}] Corpus bridge ON for ${userId} (I1, flagged)`);
-    }
+    // I4.4 (August 12, 2026): `find_similar_accounts` now belongs to
+    // `integration-pack.ts` `tools`, so the Sprint-0 block that appended it here
+    // behind INTEGRATION_ENGINE is gone. The orchestrator is vertical-blind
+    // again — it sends whatever the pack declares and dispatches by tool name.
+    // The vertical stays dark upstream instead: resolve-program only honours the
+    // 'integration' hint for a flagged account, so an unflagged client cannot
+    // reach the pack at all.
+    const coachTools = pack.tools;
 
     // ── 2.5 Free tier message limit check (S5.9) ──
     // Sprint 0.4: Deep link messages from report CTAs get bonus allowance
@@ -221,6 +255,36 @@ Deno.serve(async (req: Request) => {
       engagementId
     );
     const convMs = debugMode ? performance.now() - convStart : 0;
+
+    // ── 3.5 The consent gate (I5.5) ──
+    //
+    // BEFORE TURN 2, NEVER BEFORE TURN 1. §5.2 is explicit that nothing stands
+    // between a person and the box the first time: no account, no email, no age
+    // gate. So the test is whether this conversation has already been answered,
+    // and the person who has just typed the hardest thing they have ever
+    // written gets a reply to it rather than a form.
+    //
+    // The message they just sent is already stored below and stays stored. What
+    // this gate protects is the SECOND turn and, in `post-processor.ts`, every
+    // derived fact — the two things that turn a conversation into a record.
+    if (pack.requiresConsent) {
+      const { count: answeredAlready } = await supabase
+        .from("messages")
+        .select("id", { count: "exact", head: true })
+        .eq("conversation_id", conversationId)
+        .eq("role", "coach");
+
+      if ((answeredAlready ?? 0) > 0 && !(await hasLiveConsent(supabase, userId, program))) {
+        return new Response(
+          JSON.stringify({
+            error: "CONSENT_REQUIRED",
+            message: "This conversation needs consent before it can continue.",
+            program,
+          }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    }
 
     // ── 4. Store user message ──
     const { data: userMsg, error: insertError } = await supabase
@@ -328,7 +392,7 @@ Deno.serve(async (req: Request) => {
 
     // ── 5. Assemble prompt (11-layer architecture) ──
     const promptStart = debugMode ? performance.now() : 0;
-    const { system, conversationHistory, metadata, debugTrace } = await assemblePrompt(userId, message, debugMode, engagementId, mode, program, conversationId);
+    const { system, systemCachePrefix, conversationHistory, metadata, debugTrace } = await assemblePrompt(userId, message, debugMode, engagementId, mode, program, conversationId);
     const promptMs = debugMode ? performance.now() - promptStart : 0;
 
     // Sprint 0.4: Inject deep link context instruction
@@ -413,6 +477,12 @@ Deno.serve(async (req: Request) => {
     const claudeStart = debugMode ? performance.now() : 0;
     const anthropicResponse = await callClaudeStreaming({
       system: contextualSystem,
+      // Prompt cache breakpoint. The pack's stable layers are a byte-exact
+      // prefix of `system`, and every CONTEXT INSTRUCTION appended above lands
+      // after it — so the deep-link, Decision Room, and compatibility branches
+      // vary the tail while the cached head stays put. The tool definitions
+      // render ahead of `system`, so this one breakpoint covers them too.
+      systemPrefix: systemCachePrefix,
       messages: claudeMessages,
       tools: coachTools,
       maxTokens: coachMaxTokens,
@@ -436,9 +506,22 @@ Deno.serve(async (req: Request) => {
       let fullContent = "";
       let model = "";
       let inputTokens = 0;
+      let cacheWriteTokens = 0;
+      let cacheReadTokens = 0;
       let outputTokens = 0;
       let stopReason = "";
       const toolCallsDebug: Array<{ name: string; query: string; result_confidence: string; cached: boolean; duration_ms: number }> = [];
+      // Corpus excerpts handed to the model this turn, for the draft audit.
+      const corpusExcerptsSeen: string[] = [];
+      // Their attribution — quotable never, nameable always. See the collection
+      // site below and `AuditContext.corpusAttribution`.
+      const corpusAttributionSeen: string[] = [];
+      // The last corpus payload itself, for I6.2's deterministic reveal. Kept
+      // whole rather than flattened: the renderer reads the provenance tag on
+      // each excerpt, which is what makes it unable to print anything the model
+      // wrote.
+      let corpusPayload: Record<string, unknown> | null = null;
+      let draftAudit: DraftAuditOutcome | null = null;
 
       try {
         await writer.write(
@@ -498,6 +581,12 @@ Deno.serve(async (req: Request) => {
                   case "message_start":
                     model = event.message?.model ?? "";
                     inputTokens += event.message?.usage?.input_tokens ?? 0;
+                    // Cached prompt tokens are reported separately and are NOT
+                    // part of input_tokens — without these two lines the cache
+                    // would look like a ~60% traffic drop instead of the real
+                    // (and smaller) cost drop.
+                    cacheWriteTokens += event.message?.usage?.cache_creation_input_tokens ?? 0;
+                    cacheReadTokens += event.message?.usage?.cache_read_input_tokens ?? 0;
                     break;
 
                   case "content_block_start":
@@ -514,9 +603,15 @@ Deno.serve(async (req: Request) => {
                   case "content_block_delta":
                     if (event.delta?.type === "text_delta" && event.delta.text) {
                       fullContent += event.delta.text;
-                      await writer.write(
-                        encoder.encode(sseEvent("delta", { text: event.delta.text }))
-                      );
+                      // I3.4: a pack that audits its drafts sends NOTHING here.
+                      // The whole reply is emitted after the audit below, because
+                      // a delta that has left the server cannot be un-sent and
+                      // "hard block + regenerate" is meaningless without that.
+                      if (!pack.auditDrafts) {
+                        await writer.write(
+                          encoder.encode(sseEvent("delta", { text: event.delta.text }))
+                        );
+                      }
                     } else if (event.delta?.type === "input_json_delta" && event.delta.partial_json) {
                       toolInputBuffer += event.delta.partial_json;
                     }
@@ -608,12 +703,58 @@ Deno.serve(async (req: Request) => {
                     duration_ms: Math.round(performance.now() - toolCallStart),
                   });
                 }
-              } else if (pendingToolUse.name === "find_similar_accounts" && corpusBridgeOn) {
+              } else if (pendingToolUse.name === "lookup_footing") {
+                const result = await handleLookupFooting(streamUserId);
+                toolResult = JSON.stringify(result);
+                if (debugMode) {
+                  toolCallsDebug.push({
+                    name: pendingToolUse.name,
+                    query: "",
+                    result_confidence: result.found ? "high" : "low",
+                    cached: false,
+                    duration_ms: Math.round(performance.now() - toolCallStart),
+                  });
+                }
+              } else if (pendingToolUse.name === "find_similar_accounts") {
                 // The email comes from the verified JWT, never from the model:
                 // it gates whether Project Profound's ANALYST prose is in the
                 // payload at all (founder only — INTEGRATION_SPRINT.md I1).
                 const result = await handleFindSimilarAccounts(toolInput, { email: user.email });
                 toolResult = JSON.stringify(result);
+                // I6.2: the same payload the model was handed is what the
+                // deterministic reveal renders from, so what the person reads
+                // when the draft cannot be trusted is the same data the draft
+                // was written against.
+                corpusPayload = result;
+                // Keep the excerpts for the draft audit's quotation-fidelity
+                // class: anything the reply puts in quotation marks has to be a
+                // contiguous run of one of these. Measured necessary — the model
+                // splices them with ellipses however plainly it is told not to.
+                // …and the ATTRIBUTION separately (video titles). The mirroring
+                // index needs it or every faithful reveal reads as a coinage —
+                // measured live 2026-08-12, when naming a source blocked the
+                // draft twice and the person got the fixed line instead of the
+                // company they had just asked for. It stays out of the excerpt
+                // array on purpose: a title is not something anybody said, and
+                // quoteFidelity treats that array as the quotable haystack.
+                for (
+                  const account of (result.accounts ?? []) as Array<
+                    {
+                      excerpt?: { text?: string };
+                      source?: { video_title?: string | null; video_url?: string | null };
+                    }
+                  >
+                ) {
+                  const text = account.excerpt?.text;
+                  if (text) corpusExcerptsSeen.push(text);
+                  // Title AND link. The payload's usage rule tells the model to
+                  // put each excerpt's link next to it, and a YouTube id carries
+                  // interior capitals — so the reveal would block on its own
+                  // citations if the URL were left out of the allowed names.
+                  const { video_title: title, video_url: url } = account.source ?? {};
+                  if (title) corpusAttributionSeen.push(title);
+                  if (url) corpusAttributionSeen.push(url);
+                }
                 if (debugMode) {
                   toolCallsDebug.push({
                     name: pendingToolUse.name,
@@ -659,6 +800,12 @@ Deno.serve(async (req: Request) => {
               : coachTools;
             currentResponse = await callClaudeStreaming({
               system: contextualSystem,
+              // Same prefix as the opening call, so a tool continuation reads
+              // the cache the first turn wrote. Note the `nextTools = []` case
+              // above changes the tools array, which sits AHEAD of system in
+              // the cache prefix and therefore misses on purpose — it only
+              // happens once per conversation, at the tool-call cap.
+              systemPrefix: systemCachePrefix,
               messages: toolUseMessages,
               tools: nextTools,
               maxTokens: coachMaxTokens,
@@ -673,6 +820,43 @@ Deno.serve(async (req: Request) => {
           break;
         }
 
+        // ── 6.5 The buffered draft audit (I3.4) ──
+        // Only for a pack that asked for it. Nothing has been sent to the client
+        // yet in that case, so a blocking move class can still be regenerated —
+        // which is the whole reason the draft was buffered. Runs before the cost
+        // block so the regeneration's tokens land in the same row.
+        if (pack.auditDrafts && fullContent.trim()) {
+          draftAudit = await auditAndFinalizeDraft({
+            draft: fullContent,
+            system: contextualSystem,
+            messages: toolUseMessages,
+            maxTokens: coachMaxTokens,
+            ctx: {
+              userText: buildUserTextForAudit({
+                currentMessage: message,
+                history: conversationHistory,
+                factTexts: metadata.factTexts,
+              }),
+              // Certainty may hold or fall across turns, never rise (class 13).
+              previousDraft: [...conversationHistory].reverse()
+                .find((m) => m.role === "assistant")?.content,
+              corpusExcerpts: corpusExcerptsSeen,
+              corpusAttribution: corpusAttributionSeen,
+              // They never type their own name; the coach says it constantly.
+              userName: metadata.userName,
+            },
+            // I6.2. Null on every turn that did not use the corpus, which is
+            // almost all of them, and the fixed line still covers those.
+            fallback: corpusPayload ? renderCorpusReveal(corpusPayload) : null,
+          });
+          fullContent = draftAudit.text;
+          inputTokens += draftAudit.extraUsage.input;
+          outputTokens += draftAudit.extraUsage.output;
+          // The reply goes out whole, as one delta — the event the web client
+          // already renders, so no client change is needed for this vertical.
+          await writer.write(encoder.encode(sseEvent("delta", { text: fullContent })));
+        }
+
         // ── 7. Stream complete — store, log, post-process ──
         const claudeMs = debugMode ? performance.now() - claudeStart : 0;
         // calculateCost's second arg means "Claude (Sonnet) rates". This used to
@@ -680,13 +864,24 @@ Deno.serve(async (req: Request) => {
         // which billed GPT traffic at Sonnet rates and ALL Relatti traffic
         // (forceClaude) at gpt-4o-mini rates (~20x under). Fixed 2026-07-02.
         const isFallback = !model.startsWith("gpt-");
-        const usage = { input_tokens: inputTokens, output_tokens: outputTokens };
+        const usage = {
+          input_tokens: inputTokens,
+          output_tokens: outputTokens,
+          cache_creation_input_tokens: cacheWriteTokens,
+          cache_read_input_tokens: cacheReadTokens,
+        };
         const costUsd = calculateCost(usage, isFallback);
+        // What every `tokens_in` below records. Cached tokens are still prompt
+        // tokens the model read — they are just billed at a different rate —
+        // so the logged figure has to include them, or turning caching on
+        // reads as a drop in usage rather than a drop in price. `costUsd`
+        // above already prices the three buckets separately.
+        const totalInputTokens = inputTokens + cacheWriteTokens + cacheReadTokens;
 
         const coachMetadata: Record<string, unknown> = {
           model,
           stop_reason: stopReason,
-          tokens_in: inputTokens,
+          tokens_in: totalInputTokens,
           tokens_out: outputTokens,
           // PC5-family write-path stamp: persist the RESOLVED program so
           // downstream consumers (accountability check-ins, cost/brand
@@ -698,6 +893,27 @@ Deno.serve(async (req: Request) => {
             framework: c.framework,
             phase: c.framework_phase,
           })),
+          // I3.4: class names and counts only, never the blocked draft text. It
+          // is coach prose but it quotes the person, and a stored copy of a reply
+          // that was judged unsafe to send is a copy of it (I11.9's rule).
+          ...(draftAudit
+            ? {
+              draft_audit: {
+                attempts: draftAudit.attempts,
+                blocked: draftAudit.blocked,
+                still_blocked: draftAudit.stillBlocked,
+                // The judge's labels, separately — a rewrite it blocked used to
+                // be recorded as the FIRST draft's deterministic classes, which
+                // is how the live run read `quote_infidelity` where the truth
+                // was three judge labels.
+                still_judged: draftAudit.stillJudged,
+                fell_back: draftAudit.fellBack,
+                // "fixed" = the careful line. "reveal" = I6.2 rendered the
+                // corpus in code and the person got the excerpts anyway.
+                fallback: draftAudit.fallbackKind,
+              },
+            }
+            : {}),
         };
 
         // Store debug trace in message metadata (only for admin debug mode)
@@ -717,7 +933,7 @@ Deno.serve(async (req: Request) => {
             claude_streaming_ms: Math.round(claudeMs),
             model_used: model,
             is_fallback: isFallback,
-            tokens_in: inputTokens,
+            tokens_in: totalInputTokens,
             tokens_out: outputTokens,
             cost_usd: costUsd,
             tool_calls: toolCallsDebug,
@@ -748,11 +964,24 @@ Deno.serve(async (req: Request) => {
           user_id: streamUserId,
           purpose: FUNCTION_NAME,
           model,
-          tokens_in: inputTokens,
+          tokens_in: totalInputTokens,
           tokens_out: outputTokens,
           cost_usd: costUsd,
           // PC5.5: per-brand cost attribution at write time.
-          metadata: { program },
+          //
+          // The cache split rides along because `tokens_in` alone cannot show
+          // it: a cache write and a cache read of the same prefix look
+          // identical there, and only the cost separates them. The first live
+          // check of this row had to solve for the cached count from cost_usd
+          // to answer "did caching actually happen", which is not a question
+          // anyone should have to do algebra for. Same two fields
+          // `logLlmCost` records, so both write paths read alike.
+          metadata: {
+            program,
+            ...(cacheWriteTokens || cacheReadTokens
+              ? { cache_write_tokens: cacheWriteTokens, cache_read_tokens: cacheReadTokens }
+              : {}),
+          },
         });
 
         // Safety net: never persist a blank coach turn. If the agentic loop ended

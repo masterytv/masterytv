@@ -14,6 +14,9 @@ import { updateCoachProfile } from "./profile-updater.ts";
 import type { ProfileSignals } from "./debug-types.ts";
 import { resolvePack, programScope } from "./packs/index.ts";
 import type { PackExtraction } from "./packs/types.ts";
+import { filterMemoryWrites } from "./memory-filter.ts";
+import { mergeMessageMetadata } from "./message-metadata.ts";
+import { hasLiveConsent } from "./consent.ts";
 
 // ─── FRAMEWORK ASSIGNMENT ──────────────────────────────────────────────
 
@@ -238,6 +241,28 @@ export async function postProcess(
   // side-effect gates (framework challenges, AI-tool harvesting).
   const pack = resolvePack(program);
   try {
+    // ── I5.5: nothing DERIVED is stored until they have agreed to be remembered ──
+    //
+    // Placed here, before the extraction call, rather than at the insert: an
+    // extraction that will never be written is a model call nobody needs, and
+    // more to the point the facts would exist in memory on a machine for the
+    // length of this function. The gate is the pack's (`requiresConsent`), so
+    // the three shipped verticals reach none of this.
+    //
+    // 🔑 What it costs, stated: the account arrives on turn 1 and the consent
+    // screen lands before turn 2, so the account fact from that first turn is
+    // NOT written. The message itself is stored — they chose to send it — and
+    // the person is still at stage 1 afterwards, which is the more restrained
+    // state and the safe direction to fail in. Anything they say once consent
+    // exists is remembered normally.
+    if (pack.requiresConsent && !(await hasLiveConsent(supabase, userId, program))) {
+      console.log(
+        `[post-process] No live consent for user ${userId} on program ${program} — ` +
+          "storing nothing derived from this turn (I5.5).",
+      );
+      return;
+    }
+
     const openaiKey = Deno.env.get("OPENAI_API_KEY");
     if (!openaiKey) {
       console.warn(
@@ -323,6 +348,42 @@ export async function postProcess(
 
     const data = await response.json();
     const extracted = JSON.parse(data.choices[0].message.content);
+
+    // I3.1 — THE MEMORY-WRITE FILTER, before anything is embedded or stored.
+    //
+    // Runs here rather than in the prompt because the prompt is a request and
+    // this is a guarantee. §3/I3.4 is explicit that the primary model's
+    // restraint is not a control, and memory is the one surface where a single
+    // bad write compounds: a fact stored today is read back into the prompt for
+    // months, and the model treats its own stored facts as settled background.
+    //
+    // Ordering matters twice over. It runs BEFORE the embedding call so the
+    // `factEmbeddings[i]` mapping below stays aligned with the surviving facts
+    // (filtering afterwards would silently pair each fact with its neighbour's
+    // vector), and it runs before the insert so a dropped fact costs an OpenAI
+    // call rather than a row.
+    //
+    // Integration only. The shipped verticals' extraction is untouched.
+    if (programScope(program) === "integration" && extracted.facts?.length > 0) {
+      const filtered = filterMemoryWrites(extracted.facts, {
+        userMessage,
+        coachResponse,
+      });
+      if (filtered.dropped.length > 0) {
+        // Logged as counts by reason, never content — an internal log carrying
+        // somebody's account of their experience is the same disclosure the
+        // 92d221d rule bans from internal email (I11.9).
+        const byReason = filtered.dropped.reduce<Record<string, number>>((acc, d) => {
+          acc[d.reason] = (acc[d.reason] ?? 0) + 1;
+          return acc;
+        }, {});
+        console.log(
+          `[post-process] memory filter dropped ${filtered.dropped.length} fact(s):`,
+          JSON.stringify(byReason),
+        );
+      }
+      extracted.facts = filtered.kept;
+    }
 
     // Store facts + generate embeddings
     if (extracted.facts?.length > 0) {
@@ -467,17 +528,42 @@ export async function postProcess(
       }
     }
 
-    // Update message metadata with sentiment + topics
+    // Update message metadata with sentiment + topics.
+    //
+    // 🔥 MERGE, NEVER REPLACE. This used to write the whole object and so
+    // deleted everything the coach had just stamped on the row — `program`,
+    // token counts, and integration's `draft_audit`, which survived 0 of 5 live
+    // turns. See `message-metadata.ts` for the measurement.
+    //
+    // Read-then-write rather than a jsonb `||` in SQL, deliberately: the coach
+    // INSERTS this row and awaits it before triggering post-processing, so this
+    // is the only writer left by the time it runs, and an RPC would cost a
+    // migration plus the SECURITY DEFINER grant dance for no property this
+    // ordering does not already give.
     if (extracted.sentiment || extracted.topics) {
-      await supabase
+      const { data: existing, error: readErr } = await supabase
         .from("messages")
-        .update({
-          metadata: {
-            sentiment: extracted.sentiment,
-            topics: extracted.topics,
-          },
-        })
-        .eq("id", coachMessageId);
+        .select("metadata")
+        .eq("id", coachMessageId)
+        .maybeSingle();
+
+      if (readErr) {
+        // Skipping is the safe direction: sentiment and topics are analytics,
+        // and the coach's object is the audit trail.
+        console.warn(
+          `[post-process] Could not read message metadata to merge into (${readErr.message}) — leaving it alone rather than overwriting it.`,
+        );
+      } else {
+        await supabase
+          .from("messages")
+          .update({
+            metadata: mergeMessageMetadata(existing?.metadata, {
+              sentiment: extracted.sentiment,
+              topics: extracted.topics,
+            }),
+          })
+          .eq("id", coachMessageId);
+      }
     }
 
     // Log post-processor cost

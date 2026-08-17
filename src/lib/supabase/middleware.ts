@@ -125,6 +125,9 @@ export async function updateSession(request: NextRequest) {
   const ROOT_LANDING: Partial<Record<BrandId, string>> = {
     relatti: "/relatti",
     money: "/money",
+    // I5.1 landed the page, so the entry lands with it (this was deliberately
+    // absent until the route existed, so the root could never rewrite to a 404).
+    heard: "/heard",
   };
   const landingPath = ROOT_LANDING[brandId];
   if (pathname === "/" && landingPath) {

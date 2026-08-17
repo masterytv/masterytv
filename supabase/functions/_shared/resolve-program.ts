@@ -19,6 +19,7 @@
  */
 
 import type { createSupabaseClient } from "./supabase.ts";
+import { integrationEngineEnabled } from "./flags.ts";
 
 type SupabaseClient = ReturnType<typeof createSupabaseClient>;
 
@@ -29,6 +30,25 @@ type SupabaseClient = ReturnType<typeof createSupabaseClient>;
 // hint — falls through to the spine check, so a stripped/forged body can't
 // silently select the executive persona for a spine-known Relatti user.
 export const KNOWN_PROGRAM_HINTS = new Set(["relationship", "general", "money"]);
+
+/**
+ * I4.5 — the integration hint, and the reason it is not in the set above.
+ *
+ * The vertical is DARK. Every other program in `KNOWN_PROGRAM_HINTS` is live, so
+ * honouring its hint is honouring a shipped product; 'integration' would mean
+ * any request body could select an unlaunched coach for anyone. So the hint
+ * exists only for accounts the founder has flagged — the same gate that carries
+ * the I1.5 cohort — and it disappears again the day the flag goes off.
+ *
+ * ⛔ `users.signup_brand` is NOT wired for this vertical, and it cannot be: the
+ * column stores BRAND slugs ("relatti", "money", "masterytv") and this vertical
+ * has no public name yet. Same blocker as I2.3, same fix (the name). Until then
+ * the routes in are this hint and spine membership, and there are no integration
+ * engagements, so the hint is the only one that fires.
+ */
+function integrationHintAllowed(hint: string, userId: string): boolean {
+  return hint === "integration" && integrationEngineEnabled(userId);
+}
 
 /**
  * True when the user holds a completed report in `program` — an un-forgeable
@@ -108,7 +128,18 @@ export async function resolveProgram(
     // gate fails and we fall through to memberProgram). The gate sits behind the
     // cross-program-hint condition, so the extra count query never fires for a
     // normal same-vertical member or a hint-less (email/Telegram) call.
+    //
+    // I4.5: the integration hint takes the same branch on stronger evidence. Its
+    // proof is the per-user FLAG rather than a stored report — server-side, not
+    // forgeable from a request body, and the only proof available while the
+    // vertical writes no reports (I2's `'not-built'` report kind refuses). This
+    // branch is load-bearing for the founder specifically: he is a Relatti dyad
+    // member, so without it every integration turn of his would resolve to the
+    // relationship pack. That is the dual-brand trap money hit on 2026-07-18.
     const hint = (clientProgram ?? "").toLowerCase();
+    if (hint !== memberProgram && integrationHintAllowed(hint, userId)) {
+      return { ok: true, program: hint };
+    }
     if (
       hint !== memberProgram &&
       KNOWN_PROGRAM_HINTS.has(hint) &&
@@ -121,7 +152,7 @@ export async function resolveProgram(
 
   // 3. A recognized client hint is honored when the spine is silent.
   const hint = (clientProgram ?? "").toLowerCase();
-  if (KNOWN_PROGRAM_HINTS.has(hint)) {
+  if (KNOWN_PROGRAM_HINTS.has(hint) || integrationHintAllowed(hint, userId)) {
     return { ok: true, program: hint };
   }
 

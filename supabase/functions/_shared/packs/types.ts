@@ -121,7 +121,7 @@ export interface PackBriefing {
 }
 
 export interface CoachPack {
-  key: "executive" | "relationship" | "money";
+  key: "executive" | "relationship" | "money" | "integration";
 
   /** PC4.3 — post-processing extraction schema + memory taxonomy. */
   extraction: PackExtraction;
@@ -147,6 +147,58 @@ export interface CoachPack {
    * pack; this governs the continuations after tool use.
    */
   forceClaudeOnToolContinuation: boolean;
+
+  /**
+   * How many leading `buildLayers()` entries are stable for the length of a
+   * conversation — the prompt-cache breakpoint (Anthropic `cache_control`).
+   *
+   * Caching is a PREFIX match, so only the contiguous head of the layer stack
+   * can be cached: the first layer that changes between turns ends it. In every
+   * pack that layer is Layer 7 (`buildMemoryLayer`), which re-renders recent
+   * messages each turn — so this is the index of the memory layer. The stable
+   * guardrails at Layers 10/11 sit AFTER it and are deliberately not cached;
+   * moving them ahead of memory to widen the prefix would change what the model
+   * reads last, and recency is doing real work for a safety layer.
+   *
+   * Count against the RAW array `buildLayers` returns, before `.filter(Boolean)`
+   * — conditional layers render "" and would otherwise shift the boundary.
+   *
+   * Under ~1024 tokens the prefix silently won't cache (no error, both
+   * cache_* usage fields come back 0), which is the safe direction to fail.
+   */
+  cacheableLayerCount: number;
+
+  /**
+   * BUFFER the draft and run `_shared/output-auditor.ts` on it before a single
+   * token reaches the person (`_shared/draft-audit.ts`).
+   *
+   * A pack decision rather than an orchestrator one, for both of its reasons.
+   * The audited move classes are this vertical's (DISCOVERY §5.3), and the cost
+   * is this vertical's to accept: buffering trades the typing effect for the
+   * guarantee, which is close to free for a coach that answers in under 120
+   * words and expensive for one that writes long.
+   *
+   * false for the three shipped packs, whose streaming path is untouched.
+   */
+  auditDrafts: boolean;
+
+  /**
+   * This vertical may not store anything DERIVED about somebody until they have
+   * agreed to be remembered (I5.5, `coaching_consents`).
+   *
+   * A pack decision for the same reason `auditDrafts` is one: what is being
+   * consented to is this vertical's material. Somebody describing a near-death
+   * experience to an AI is not in the position of somebody describing a pricing
+   * problem to one, and the statutory framing differs by vertical too — a ToS
+   * checkbox is not consent in Illinois.
+   *
+   * 🔑 It gates the DERIVED memory, not the message. Their own message is a
+   * message they chose to send and it is stored as one. What waits for consent
+   * is everything this product concludes from it and keeps for months.
+   *
+   * false for the three shipped packs, whose write path is untouched.
+   */
+  requiresConsent: boolean;
 
   /**
    * The ordered layer stack. Return "" for a slot that shouldn't render — the

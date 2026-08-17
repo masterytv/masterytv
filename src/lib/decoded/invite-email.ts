@@ -53,7 +53,20 @@ export interface InviteBrand {
   notify: NotifyCopy;
 }
 
-export const INVITE_BRANDS: Record<BrandId, InviteBrand> = {
+/**
+ * Per-brand invite email. `null` = this vertical has NO invite surface, and the
+ * senders below refuse rather than dressing another brand's copy in its name.
+ *
+ * 🔑 Why null and not plausible copy (the `PACKS.integration = null` precedent):
+ * a filled-in entry is a working send path. INTEGRATION_EXPERIENCE §1.1 rates
+ * the share loop 🔴 for HEARD's population — "this population is defined by not
+ * being able to tell people, [so] a social-share gate is the injury,
+ * productized" — and `partner_invite` is deliberately absent from that
+ * program's module set. Copy here would be the one line of code standing
+ * between that decision and an email that asks somebody to forward their
+ * near-death experience to a friend.
+ */
+export const INVITE_BRANDS: Record<BrandId, InviteBrand | null> = {
   masterytv: {
     keyEnv: "RESEND_API_KEY",
     from: "Decoded by MasteryTV <donotreply@mail.masterytv.com>",
@@ -189,6 +202,8 @@ export const INVITE_BRANDS: Record<BrandId, InviteBrand> = {
       timeNote: "Nothing is shared until you accept their request after finishing.",
     },
   },
+  // HEARD (integration). No invite surface by design — see the note above.
+  heard: null,
 };
 
 function variantCopy(brand: InviteBrand, variant: InviteEmailVariant): VariantCopy {
@@ -253,6 +268,10 @@ export async function sendBrandInviteEmail(
   variant: InviteEmailVariant = "assessment",
 ): Promise<{ ok: boolean; error?: string }> {
   const brand = INVITE_BRANDS[brandId];
+  if (!brand) {
+    console.error(`[invite] ${brandId} has no invite surface — refusing to send`);
+    return { ok: false, error: "This brand does not send invites." };
+  }
   const ownKey = process.env[brand.keyEnv];
   const sharedKey = process.env.RESEND_API_KEY;
   if (!ownKey && !sharedKey) {
@@ -343,6 +362,10 @@ export async function sendBrandInviteNotifyEmail(
   opts: { recipientName: string; inviterName: string; inviterEmail: string; archetypeLine?: string; ctaUrl: string },
 ): Promise<{ ok: boolean; error?: string }> {
   const brand = INVITE_BRANDS[brandId];
+  if (!brand) {
+    console.error(`[invite-notify] ${brandId} has no invite surface — refusing to send`);
+    return { ok: false, error: "This brand does not send invites." };
+  }
   const ownKey = process.env[brand.keyEnv];
   const sharedKey = process.env.RESEND_API_KEY;
   if (!ownKey && !sharedKey) {

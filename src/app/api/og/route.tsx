@@ -7,6 +7,12 @@
  * its OG_BRANDS entry below exists + its mark file lands in ./assets/ —
  * zero design work per customer.
  *
+ * ⚠️ Keep mark SVGs free of XML comments. satori parses a `<!-- … -->` inside
+ * the data URI as a failure and drops the image SILENTLY: the card still
+ * renders, still returns 200, and simply has no logo on it. Cost 20 minutes on
+ * the HEARD mark, 2026-08-13. The public/ copy of the same file may carry
+ * comments; sharp handles them.
+ *
  * Marks are BUNDLED with the route (fetch(new URL(...), import.meta.url) —
  * the documented ImageResponse asset pattern) because the edge runtime has
  * no filesystem and public/ is CDN-served, not function-bundled. Keep the
@@ -66,6 +72,24 @@ const OG_BRANDS: Record<BrandId, OgPalette> = {
     accent: "#6ee7b7",
     domain: "moneytraits.com",
   },
+  // HEARD — the globals.css slate ramp (hue 240) converted to hex, which the
+  // edge ImageResponse needs because satori resolves no CSS vars. The mark is
+  // a slate tile, and the card's top-left corner is the dark end of the
+  // gradient, so it separates without a markBadge.
+  //
+  // ⚠️ Card TEXT is the exposure here, not the palette. This is the image that
+  // renders in an iMessage thread and a Slack unfurl, so whatever a door page
+  // passes as its title is what appears on somebody's lock screen when they
+  // send the link to one person they trust. Keep door titles free of the
+  // population's name (INTEGRATION_EXPERIENCE §1.1, the proactive-email row) —
+  // "HEARD" plus the domain is the whole safe lockup.
+  heard: {
+    name: "HEARD",
+    gradientFrom: "#061520",
+    gradientTo: "#1b5274",
+    accent: "#9ecef1",
+    domain: "youheard.org",
+  },
 };
 
 // Brand marks, loaded once per isolate. PNGs go to satori as ArrayBuffers;
@@ -78,6 +102,9 @@ const MARKS: Record<BrandId, Promise<string | ArrayBuffer>> = {
     .then((r) => r.text())
     .then((svg) => `data:image/svg+xml;base64,${btoa(svg)}`),
   money: fetch(new URL("./assets/money-mark.svg", import.meta.url))
+    .then((r) => r.text())
+    .then((svg) => `data:image/svg+xml;base64,${btoa(svg)}`),
+  heard: fetch(new URL("./assets/heard-mark.svg", import.meta.url))
     .then((r) => r.text())
     .then((svg) => `data:image/svg+xml;base64,${btoa(svg)}`),
 };

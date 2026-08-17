@@ -73,6 +73,77 @@ async function stampSignupBrand(
 }
 
 /**
+ * I5.1 — finish an anonymous account's promotion to a real one.
+ *
+ * The pre-account box mints an anonymous user so somebody can be answered
+ * before they are asked for anything (EXPERIENCE §5.2), and the signup trigger
+ * gives that row a reserved `@anonymous.invalid` address and an EMPTY name so
+ * nothing in the app has to cope with a null and the coach is never told the
+ * person is called Guest. When they later choose to keep the conversation,
+ * Supabase links a real email to the SAME `auth.users` row — but nothing
+ * updates `public.users`, so without this the account would keep an
+ * unroutable address forever and never enter the CRM.
+ *
+ * Runs here rather than in the claim route because the link only completes
+ * when they click the confirmation link, and this is where that lands.
+ *
+ * Best-effort and idempotent: the `.invalid` suffix is the guard, so a second
+ * pass over an already-promoted account matches nothing.
+ */
+async function promoteClaimedAnonymousUser(supabase: SupabaseClient): Promise<void> {
+  try {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !key) return;
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    // A still-anonymous user has nothing to promote; a user without a real
+    // address cannot be promoted to one.
+    if (!user?.email || user.email.endsWith("@anonymous.invalid")) return;
+
+    const admin = createServiceClient(url, key, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+
+    const { data: row } = await admin
+      .from("users")
+      .select("email")
+      .eq("id", user.id)
+      .single();
+    if (!row?.email?.endsWith("@anonymous.invalid")) return;
+
+    const name =
+      (user.user_metadata?.full_name as string | undefined) ??
+      (user.user_metadata?.name as string | undefined) ??
+      user.email.split("@")[0];
+
+    // The CRM row is created HERE, at the moment they chose to be reachable,
+    // rather than at signup. That ordering is the point: somebody who typed one
+    // thing into a box and gave no email is not a lead.
+    const { data: contact } = await admin
+      .from("contacts")
+      .upsert(
+        { email: user.email, name, source: "coachapp", status: "free_member" },
+        { onConflict: "email" },
+      )
+      .select("id")
+      .single();
+
+    await admin
+      .from("users")
+      .update({ email: user.email, name, contact_id: contact?.id ?? null })
+      .eq("id", user.id);
+
+    if (contact?.id) {
+      await admin.from("contacts").update({ converted_user_id: user.id }).eq("id", contact.id);
+    }
+  } catch {
+    // Never fail a sign-in over CRM bookkeeping.
+  }
+}
+
+/**
  * Unified auth callback — handles Google OAuth, email confirmation,
  * password recovery, and magic link redirects for all products.
  * 
@@ -101,6 +172,7 @@ export async function GET(request: Request) {
         return NextResponse.redirect(`${origin}/auth/reset-password`);
       }
       await stampSignupBrand(supabase, request.url);
+      await promoteClaimedAnonymousUser(supabase);
       return NextResponse.redirect(`${origin}${next}`);
     }
   }
@@ -115,6 +187,7 @@ export async function GET(request: Request) {
       const res = NextResponse.redirect(`${origin}${next}`);
       await recordLegalAck(supabase, res);
       await stampSignupBrand(supabase, request.url);
+      await promoteClaimedAnonymousUser(supabase);
       return res;
     }
   }

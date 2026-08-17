@@ -278,8 +278,11 @@ function LegacyLetterDocument({ firstName, letterText, protocolText }: PDFInput)
  * Called from the webhook route after AI generation.
  */
 export async function renderLegacyPDF(input: PDFInput): Promise<Buffer> {
-    const buffer = await renderToBuffer(
-        <LegacyLetterDocument {...input} />
-    );
-    return Buffer.from(buffer);
+    // renderToBuffer already returns a Buffer. The Buffer.from() re-wrap that
+    // used to sit here was always a no-op copy, and it stopped typechecking
+    // when @types/node made Buffer generic over its backing ArrayBufferLike:
+    // a Buffer matches none of Buffer.from's overloads, so tsc fell through to
+    // the string one and reported that. Nothing in this file changed — the
+    // types under it did.
+    return await renderToBuffer(<LegacyLetterDocument {...input} />);
 }

@@ -1,0 +1,29 @@
+-- The sibling of 20260813164142, and it exists because the ACL was READ rather
+-- than assumed. Applied to prod 2026-08-13, minutes after it.
+--
+-- 🔥 The finding, one level deeper than the PUBLIC-grant class in ORIENT §7.
+-- That rule says a SECURITY DEFINER function needs `REVOKE … FROM PUBLIC`, not
+-- just anon/authenticated. This one did exactly that, and the live ACL still
+-- came back:
+--
+--     postgres=X/postgres | service_role=X/postgres
+--
+-- `service_role` had never been granted EXECUTE here. It comes from this
+-- project's ALTER DEFAULT PRIVILEGES on the public schema, which applies at
+-- CREATE time and is invisible in the migration that creates the function. So
+-- naming PUBLIC, anon and authenticated is NOT the same as granting nobody, and
+-- the only way to know which one you got is to read `proacl` afterwards.
+--
+-- Not an escalation on its own — anybody holding the service key can already
+-- DELETE FROM auth.users directly. It matters here because the sweep takes its
+-- window as a PARAMETER: left granted, `sweep_stale_anonymous_users(1)` is a
+-- reachable RPC that deletes every anonymous session in the product, including
+-- the one somebody is typing into. pg_cron runs the job as the function's OWNER,
+-- so closing it costs nothing that legitimately calls it.
+--
+-- After this the ACL reads `postgres=X/postgres` — owner only.
+--
+-- ⚠️ Replay note: 20260813164142 alone does not reach that state, because
+-- CREATE OR REPLACE re-applies the default privilege. This file is what makes
+-- the pair replayable, so keep them together.
+REVOKE ALL ON FUNCTION public.sweep_stale_anonymous_users(integer) FROM service_role;

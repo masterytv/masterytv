@@ -186,6 +186,18 @@ OUTPUT FORMAT: Just the note text, no labels or headers.`;
   // stance is tuned against Claude.
   forceClaudeOnToolContinuation: true,
 
+  // Layers 1 → 5 (persona, mediator, de-escalation, profile, Decoded, shared
+  // profiles, entities). Index 7 is buildMemoryLayer — the first layer that
+  // re-renders every turn.
+  cacheableLayerCount: 7,
+
+  // Streams token by token, exactly as it always has (I3.4's buffered draft
+  // path is opt-in per pack).
+  auditDrafts: false,
+
+  // I5.5 — this vertical's consent surface is its own; nothing here changes.
+  requiresConsent: false,
+
   buildLayers(ctx: PackPromptContext): string[] {
     return [
       buildRelationshipCoachPersona(),                         // Layer 1

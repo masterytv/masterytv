@@ -96,11 +96,18 @@ export default function RootLayout({
                   // whole script 06-22→07-02.
                   var moneyHost = (host === 'moneytraits.com' || host === 'www.moneytraits.com' || host === 'staging.moneytraits.com' || host === 'moneymaps.masterytv.com' || host === 'staging.moneymaps.masterytv.com');
                   var moneyPath = (path === '/money' || path.indexOf('/money/') === 0 || path === '/tell' || path.indexOf('/tell/') === 0 || path === '/land2' || path.indexOf('/land2/') === 0);
+                  // HEARD (integration). Plain string checks, same reason as
+                  // money. ADD EACH NEW DOOR PATH HERE as I9 ships them
+                  // (/after, /nobody-believes-me, …) or they render in
+                  // MasteryTV indigo for the first paint.
+                  var heardHost = (host === 'youheard.org' || host === 'www.youheard.org' || host === 'staging.youheard.org');
+                  var heardPath = (path === '/heard' || path.indexOf('/heard/') === 0);
                   var hostBrand = (relattiHost || relattiPath) ? 'relatti' : 'masterytv';
-                  var brand = (urlBrand === 'relatti' || urlBrand === 'masterytv' || urlBrand === 'money') ? urlBrand
+                  var brand = (urlBrand === 'relatti' || urlBrand === 'masterytv' || urlBrand === 'money' || urlBrand === 'heard') ? urlBrand
                     : (relattiHost || relattiPath) ? 'relatti'
                     : (moneyHost || moneyPath) ? 'money'
-                    : (cookieBrand === 'relatti' || cookieBrand === 'masterytv' || cookieBrand === 'money') ? cookieBrand
+                    : (heardHost || heardPath) ? 'heard'
+                    : (cookieBrand === 'relatti' || cookieBrand === 'masterytv' || cookieBrand === 'money' || cookieBrand === 'heard') ? cookieBrand
                     : 'masterytv';
                   document.documentElement.setAttribute('data-brand', brand);
                   // Brand-aware favicon/touch icon, same FOUC-free client-side
@@ -111,7 +118,8 @@ export default function RootLayout({
                   // masterytv keeps the metadata default (no entry → no swap).
                   var ICON_SETS = {
                     relatti: { dir: '/relatti/', fav: '/relatti/favicon-32.png', svg: '/relatti/icon.svg', apple: '/relatti/apple-touch-icon.png', flag: 'data-relatti-icon' },
-                    money: { dir: '/money/', fav: '/money/favicon-32.png', svg: '/money/icon.svg', apple: '/money/apple-touch-icon.png', flag: 'data-money-icon' }
+                    money: { dir: '/money/', fav: '/money/favicon-32.png', svg: '/money/icon.svg', apple: '/money/apple-touch-icon.png', flag: 'data-money-icon' },
+                    heard: { dir: '/heard/', fav: '/heard/favicon-32.png', svg: '/heard/icon.svg', apple: '/heard/apple-touch-icon.png', flag: 'data-heard-icon' }
                   };
                   var iconSet = ICON_SETS[brand];
                   if (iconSet) {

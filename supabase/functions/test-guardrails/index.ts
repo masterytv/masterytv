@@ -258,6 +258,9 @@ async function runTest(
       messages: [{ role: "user", content: testCase.prompt }],
       tools: [SEARCH_FACTS_TOOL],
       maxTokens: 512,
+      // A test harness that calls the real API spends real money. It ran
+      // unlogged, so guardrail runs were invisible in cost_tracking.
+      cost: { supabase: createSupabaseClient(), userId: testUserId, purpose: "test-guardrails" },
     });
 
     // Check if tool was used
@@ -274,6 +277,11 @@ async function runTest(
           // Follow-up call with tool result
           const followUp = await callClaude({
             system,
+            cost: {
+              supabase: createSupabaseClient(),
+              userId: testUserId,
+              purpose: "test-guardrails-toolcall",
+            },
             messages: [
               { role: "user", content: testCase.prompt },
               {

@@ -92,6 +92,12 @@ interface Case {
   engagementId: string | null;
   tables: Record<string, Row[]>;
   expect: { ok: false } | { ok: true; program: string | null };
+  /**
+   * I4.5 — whether INTEGRATION_ENGINE_USERS carries this user for the case. The
+   * integration hint is the only one gated on a server-side flag rather than on
+   * data, so the flag is part of the fixture.
+   */
+  flagged?: boolean;
 }
 
 const CASES: Case[] = [
@@ -217,6 +223,67 @@ const CASES: Case[] = [
     },
     expect: { ok: true, program: "relationship" },
   },
+  // ── I4.5: integration resolution (the hint is FLAG-gated, not data-gated) ──
+  {
+    // The whole route in, while the vertical is dark and has no brand slug for
+    // signup_brand to carry.
+    name: "flagged account + 'integration' hint, spine silent → integration",
+    clientProgram: "integration",
+    engagementId: null,
+    flagged: true,
+    tables: {
+      participant: [],
+      users: [{ id: USER, signup_brand: null }],
+      decoded_invites: [],
+    },
+    expect: { ok: true, program: "integration" },
+  },
+  {
+    // The dark-vertical invariant. An unflagged client naming the program gets
+    // the ordinary default, never an unlaunched coach.
+    name: "UNflagged account + 'integration' hint → null (the vertical stays dark)",
+    clientProgram: "integration",
+    engagementId: null,
+    flagged: false,
+    tables: {
+      participant: [],
+      users: [{ id: USER, signup_brand: null }],
+      decoded_invites: [],
+    },
+    expect: { ok: true, program: null },
+  },
+  {
+    // The founder's own shape, and the reason this branch exists at all: he is a
+    // Relatti dyad member, so without the step-2 exception every integration turn
+    // of his would resolve to the relationship pack. Money hit this exact trap on
+    // 2026-07-18; there the proof was a real report, here it is the flag.
+    name: "flagged dyad member + 'integration' hint → integration (dual-brand)",
+    clientProgram: "integration",
+    engagementId: null,
+    flagged: true,
+    tables: { participant: [DYAD_MEMBERSHIP] },
+    expect: { ok: true, program: "integration" },
+  },
+  {
+    // Same member, same hint, no flag: membership wins, as it does for any
+    // unproven cross-program hint.
+    name: "UNflagged dyad member + 'integration' hint → relationship",
+    clientProgram: "integration",
+    engagementId: null,
+    flagged: false,
+    tables: { participant: [DYAD_MEMBERSHIP] },
+    expect: { ok: true, program: "relationship" },
+  },
+  {
+    // The flag grants the integration hint and nothing else. It must not become a
+    // general-purpose bypass of the anti-forgery ladder.
+    name: "flagged dyad member + forged 'money' hint → relationship (flag grants only its own hint)",
+    clientProgram: "money",
+    engagementId: null,
+    flagged: true,
+    tables: { participant: [DYAD_MEMBERSHIP] },
+    expect: { ok: true, program: "relationship" },
+  },
   {
     name: "junk client string, no spine signals → null, never the raw string",
     clientProgram: "'; drop table users; --",
@@ -233,6 +300,11 @@ const CASES: Case[] = [
 let failures = 0;
 for (const c of CASES) {
   activeTables = c.tables;
+  // The integration hint is gated on a server-side flag, so the flag is fixture
+  // state like any table. Set per case (never globally) so a stray `on` cannot
+  // make the dark-vertical cases pass for the wrong reason.
+  Deno.env.set("INTEGRATION_ENGINE", "off");
+  Deno.env.set("INTEGRATION_ENGINE_USERS", c.flagged ? USER : "");
   const result = await resolveProgram(
     supabase,
     USER,

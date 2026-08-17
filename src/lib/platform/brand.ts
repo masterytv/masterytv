@@ -16,7 +16,7 @@
  * middleware. The server-only getBrand() helper lives in ./brand.server.ts.
  */
 
-export type BrandId = "masterytv" | "relatti" | "money";
+export type BrandId = "masterytv" | "relatti" | "money" | "heard";
 
 /**
  * The program (vertical) axis, typed like BrandId (TENANCY_AUDIT.md T1).
@@ -32,11 +32,11 @@ export type BrandId = "masterytv" | "relatti" | "money";
  * ⚠️ LOCKSTEP TWIN: supabase/functions/_shared/packs/index.ts declares the same
  * union (edge functions can't import from src/). Add new programs in BOTH.
  */
-export type ProgramId = "general" | "relationship" | "money";
+export type ProgramId = "general" | "relationship" | "money" | "integration";
 
 /** Type guard for a known program slug (raw DB strings, client hints). */
 export function isProgramId(x?: string | null): x is ProgramId {
-  return x === "general" || x === "relationship" || x === "money";
+  return x === "general" || x === "relationship" || x === "money" || x === "integration";
 }
 
 export interface Brand {
@@ -103,6 +103,30 @@ export const BRANDS: Record<BrandId, Brand> = {
       "moneymaps.masterytv.com",
       "staging.moneymaps.masterytv.com",
     ],
+    familyName: "MasteryTV",
+  },
+  // Integration vertical — public brand "HEARD" on youheard.org (FOUNDER
+  // DECISION 2026-08-13, unblocking I2.3 / I5.1 / I5.4 / I9 / I10). The
+  // wordmark is the bare word HEARD; the domain carries the "you" because it
+  // reads two ways the vertical needs at once ("you are heard" and "you heard
+  // about this"). youheard.com was priced at $18k and was NOT bought.
+  //
+  // 🔑 The internal slug stays `integration` EVERYWHERE — program.slug, pack
+  // id, JSONB section keys, `crisis_flags.category`, the deny-list scope. Only
+  // the BRAND axis is named. This is the naming contract INTEGRATION_SPRINT.md
+  // §2 asked for on day one, and the MoneyTraits rename is why it exists.
+  //
+  // ⚠️ The vertical is DARK: no domain is pointed at Vercel yet and the coach
+  // is still behind INTEGRATION_ENGINE. Reach it with ?brand=heard on
+  // localhost. The domains below are declared ahead of DNS on purpose so
+  // resolveBrand() is right the moment the record lands.
+  heard: {
+    id: "heard",
+    name: "HEARD",
+    workspaceSlug: "masterytv",
+    programSlug: "integration",
+    themeId: "heard",
+    domains: ["youheard.org", "www.youheard.org", "staging.youheard.org"],
     familyName: "MasteryTV",
   },
 };

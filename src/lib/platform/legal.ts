@@ -68,4 +68,24 @@ export const LEGAL_CONTACT: Record<BrandId, LegalContact> = {
     supportEmail: "support@masterytv.com",
     governingLaw: "State of Florida, United States",
   },
+  // Integration vertical. Same operating entity. Public brand locked
+  // 2026-08-13: HEARD on youheard.org. INTERIM emails route to the operating
+  // entity's live inbox until youheard.org inboxes exist — a bouncing address
+  // in a privacy policy is itself a compliance problem.
+  //
+  // ⚠️ These documents are NOT the Relatti/Mastery ones with a different
+  // product name in them. This vertical carries obligations the others do not:
+  // the Illinois WOPR geofence, the 18+ gate, the standalone versioned consent
+  // screen (a ToS checkbox is statutorily not consent in Illinois — which is
+  // why `coaching_consents` exists and fails closed), and the Utah §58-60-118
+  // licensed-involvement requirement. See INTEGRATION_SPRINT.md I11 — the docs
+  // themselves are owed there, and this row only names where they publish.
+  heard: {
+    entity: "MasteryTV LLC",
+    product: "HEARD",
+    site: "youheard.org",
+    privacyEmail: "support@masterytv.com",
+    supportEmail: "support@masterytv.com",
+    governingLaw: "State of Florida, United States",
+  },
 };

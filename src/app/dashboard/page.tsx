@@ -21,7 +21,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const brand = await getBrand();
   return brandPageMetadata(brand.id, {
     title: byBrand(
-      { relatti: "Dashboard — Relatti", masterytv: "Dashboard — Mastery", money: "Dashboard — MoneyTraits" },
+      { relatti: "Dashboard — Relatti", masterytv: "Dashboard — Mastery", money: "Dashboard — MoneyTraits", heard: "Dashboard — HEARD" },
       brand.id,
     ),
     description: byBrand(
@@ -29,6 +29,7 @@ export async function generateMetadata(): Promise<Metadata> {
         relatti: "Your relationship dashboard. Assessment, blueprint, and coaching in one place.",
         masterytv: "Your personal mastery dashboard. Assessment, report, and coaching in one place.",
         money: "Your money dashboard. Your trait profile, decisions, and coaching in one place.",
+        heard: "Your account.",
       },
       brand.id,
     ),
@@ -284,6 +285,18 @@ export default async function DashboardPage({
         programSlug={program}
       />
     );
+  }
+
+  // HEARD has no dashboard, and that is the design rather than a stub.
+  // INTEGRATION_EXPERIENCE §0 inverts the engine's assess → report → coach into
+  // tell → be met → be placed → then measure, so the conversation IS the
+  // product: the program's module set is bare CORE, its battery is empty until
+  // I7.1, and its report kind is the one that refuses to render. A landing
+  // surface here would have to summarize somebody's account back at them in
+  // cards, which is the "experience as the protagonist" failure the whole
+  // vertical is designed against. Send them to the conversation instead.
+  if (brandId === "heard") {
+    redirect("/dashboard/chat");
   }
 
   return (

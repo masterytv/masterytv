@@ -412,6 +412,21 @@ OUTPUT FORMAT: Just the briefing text, no labels or headers.`;
   // Tool-loop continuations may fall back to the secondary provider.
   forceClaudeOnToolContinuation: false,
 
+  // Layers 1 → 2 only (persona, mediator, de-escalation, challenges). Shorter
+  // than the other packs on purpose: index 4 is buildRapportStage, which reads
+  // ctx.messages.length and therefore changes on EVERY turn — it would break
+  // the prefix for the eight stable layers behind it. Widening this means
+  // moving rapport-stage after the memory layer, which is a prompt change, not
+  // a caching one.
+  cacheableLayerCount: 4,
+
+  // Streams token by token, exactly as it always has (I3.4's buffered draft
+  // path is opt-in per pack).
+  auditDrafts: false,
+
+  // I5.5 — this vertical's consent surface is its own; nothing here changes.
+  requiresConsent: false,
+
   buildLayers(ctx: PackPromptContext): string[] {
     return [
       buildExecutivePersona(),                                 // Layer 1

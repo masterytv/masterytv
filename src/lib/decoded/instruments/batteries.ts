@@ -59,10 +59,35 @@ export const MONEY_MAPS_BATTERY: BatteryConfig = {
  * new vertical fails the typecheck here until its battery is declared, instead
  * of silently administering the 66-item Core battery.
  */
+/**
+ * Integration — DELIBERATELY EMPTY until I7.1 (INTEGRATION_SPRINT.md §3).
+ *
+ * The Footing check is 15 shown items: Core Beliefs Inventory (9) + ISLES-SF (6),
+ * with PHQ-4 (4) carried privately as a routing signal and never displayed. None
+ * of those instruments exist in this directory yet, and each is gated on written
+ * permission from its rights-holder (§2 — the founder is sending the requests in
+ * INTEGRATION_INSTRUMENT_PERMISSIONS.md; the working assumption is that they land,
+ * and any that does not gets dropped here).
+ *
+ * Empty rather than borrowed. An unreachable battery that administers nothing is
+ * visibly incomplete; inheriting CORE_BATTERY would silently walk this vertical's
+ * users through 66 items of executive screening, which is the exact class of
+ * silent-inheritance failure the exhaustive Record exists to prevent.
+ *
+ * ⚠️ Nothing reaches this today: `integration` has no brand, no host, no signup
+ * path and no resolve-program case. I7.4 fills it and sets estimatedMinutes "3".
+ */
+export const FOOTING_BATTERY: BatteryConfig = {
+  instruments: [],
+  enableAddons: false,
+  estimatedMinutes: "3",
+};
+
 const BATTERIES: Record<ProgramId, BatteryConfig> = {
   general: CORE_BATTERY,
   relationship: RELATIONSHIP_BATTERY,
   money: MONEY_MAPS_BATTERY,
+  integration: FOOTING_BATTERY,
 };
 
 /** Resolve the battery for a program slug (brand.programSlug). */

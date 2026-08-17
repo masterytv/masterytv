@@ -15,10 +15,42 @@
  * between Anthropic and OpenAI formats transparently.
  */
 
+import { logLlmCost, priceLlmCall } from "./llm-cost.ts";
+import type { createSupabaseClient } from "./supabase.ts";
+
 // ─── MODELS ──────────────────────────────────────────────────────────────
 
 const GPT4O_MODEL = "gpt-4o-mini";
 const CLAUDE_MODEL = "claude-sonnet-4-6";
+
+/**
+ * Cost attribution for a call. Optional on every entry point, because a few
+ * callers (channel-router, the report generators) already write their own
+ * `cost_tracking` row and passing this too would double-count them.
+ *
+ * "Optional" is not "forgettable": scripts/check-cost-logging.mjs fails the
+ * gate when a module reaches an LLM and neither passes this nor logs for
+ * itself. That check is the actual guarantee — this parameter is just the
+ * cheap way to satisfy it.
+ */
+export interface CostContext {
+  supabase: ReturnType<typeof createSupabaseClient>;
+  userId?: string | null;
+  purpose: string;
+  metadata?: Record<string, unknown>;
+}
+
+/** Logs whichever model actually served the call — GPT primary or Claude fallback. */
+async function maybeLogCost(cost: CostContext | undefined, res: AnthropicResponse): Promise<void> {
+  if (!cost) return;
+  await logLlmCost(cost.supabase, {
+    userId: cost.userId ?? null,
+    purpose: cost.purpose,
+    model: res.model || (res._fallback ? CLAUDE_MODEL : GPT4O_MODEL),
+    usage: res.usage,
+    metadata: cost.metadata,
+  });
+}
 
 const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
 const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
@@ -50,7 +82,20 @@ export interface AnthropicResponse {
   }>;
   model: string;
   stop_reason: string;
-  usage: { input_tokens: number; output_tokens: number };
+  usage: {
+    input_tokens: number;
+    output_tokens: number;
+    /**
+     * Prompt-cache accounting. Anthropic subtracts a cached prefix from
+     * `input_tokens` and reports it here instead. So a caller that keeps
+     * summing `input_tokens` alone after caching is switched on records a
+     * spend drop far bigger than the real one, because most of the prompt
+     * stopped being counted anywhere. `calculateCost` prices all three
+     * buckets; keep passing all three.
+     */
+    cache_creation_input_tokens?: number;
+    cache_read_input_tokens?: number;
+  };
   _fallback?: boolean;
 }
 
@@ -125,15 +170,41 @@ function openAIBatchToAnthropic(data: Record<string, unknown>): AnthropicRespons
  */
 export async function callClaude(opts: {
   system: string;
+  /**
+   * A byte-exact leading slice of `system` that is stable across calls, sent as
+   * an Anthropic prompt-cache block. Ignored on the GPT-4o path (OpenAI caches
+   * automatically) and ignored entirely if it is not actually a prefix.
+   */
+  systemPrefix?: string;
   messages: AnthropicMessage[];
   tools?: AnthropicTool[];
   maxTokens?: number;
+  /**
+   * Skip the GPT-4o primary and go straight to Claude, mirroring
+   * `callClaudeStreaming`'s option of the same name. Added for the integration
+   * coach's regeneration call (I3.4): a regenerated draft has to come from the
+   * same model that produced the first one, or the rewrite arrives in a
+   * different voice than the conversation — and this pack's whole register is
+   * the thing being protected. Defaults to false, so every existing caller
+   * keeps the GPT-4o-primary behaviour byte for byte.
+   */
+  forceClaude?: boolean;
+  /** See `CostContext`. When passed, this call is written to `cost_tracking`. */
+  cost?: CostContext;
 }): Promise<AnthropicResponse> {
   const openaiKey = Deno.env.get("OPENAI_API_KEY");
 
+  if (opts.forceClaude) {
+    const r = await callClaudeDirectly(opts);
+    await maybeLogCost(opts.cost, r);
+    return r;
+  }
+
   if (!openaiKey) {
     console.warn("[llm] OPENAI_API_KEY not set — using Claude directly");
-    return await callClaudeDirectly(opts);
+    const r = await callClaudeDirectly(opts);
+    await maybeLogCost(opts.cost, r);
+    return r;
   }
 
   const body: Record<string, unknown> = {
@@ -154,15 +225,21 @@ export async function callClaude(opts: {
     if (!response.ok) {
       const err = await response.text();
       console.warn(`[llm] GPT-4o batch error (${response.status}), falling back to Claude: ${err.slice(0, 200)}`);
-      return await callClaudeDirectly(opts);
+      const r = await callClaudeDirectly(opts);
+      await maybeLogCost(opts.cost, r);
+      return r;
     }
 
-    return openAIBatchToAnthropic(await response.json());
+    const ok = openAIBatchToAnthropic(await response.json());
+    await maybeLogCost(opts.cost, ok);
+    return ok;
   } catch (error) {
     const err = error as Error;
     if (err.name === "TimeoutError" || err.name === "AbortError" || err.message.includes("fetch failed")) {
       console.warn(`[llm] GPT-4o unreachable (${err.name}), falling back to Claude`);
-      return await callClaudeDirectly(opts);
+      const r = await callClaudeDirectly(opts);
+      await maybeLogCost(opts.cost, r);
+      return r;
     }
     throw error;
   }
@@ -177,6 +254,8 @@ export async function callClaude(opts: {
  */
 export async function callClaudeStreaming(opts: {
   system: string;
+  /** See `callClaude` — a stable leading slice of `system`, cached on the Claude path. */
+  systemPrefix?: string;
   messages: AnthropicMessage[];
   tools?: AnthropicTool[];
   maxTokens?: number;
@@ -411,10 +490,42 @@ function transformOpenAIStreamToAnthropicSSE(openAIResponse: Response): Response
   });
 }
 
+// ─── PROMPT CACHING ───────────────────────────────────────────────────────
+
+/**
+ * Renders the `system` request field, adding an Anthropic prompt-cache
+ * breakpoint when the caller supplied a stable prefix.
+ *
+ * Caching is a PREFIX match over `tools` → `system` → `messages`, so the one
+ * breakpoint here also caches the tool definitions ahead of it for free. The
+ * two blocks concatenate back to exactly the string a caller would have sent
+ * without caching, which is the property that keeps this invisible to the
+ * model.
+ *
+ * Fails open on every doubt: no prefix, an empty prefix, or a prefix that
+ * isn't actually the head of `system` (a caller assembled them out of order)
+ * all fall back to the plain string. A prompt under ~1024 tokens also silently
+ * won't cache — the API returns no error and both cache_* usage fields come
+ * back 0, so watch those rather than assuming a hit.
+ */
+function buildSystemParam(
+  system: string,
+  systemPrefix?: string
+): string | Array<Record<string, unknown>> {
+  if (!systemPrefix || !system.startsWith(systemPrefix) || systemPrefix.length === system.length) {
+    return system;
+  }
+  return [
+    { type: "text", text: systemPrefix, cache_control: { type: "ephemeral" } },
+    { type: "text", text: system.slice(systemPrefix.length) },
+  ];
+}
+
 // ─── CLAUDE FALLBACK ──────────────────────────────────────────────────────
 
 async function callClaudeDirectly(opts: {
   system: string;
+  systemPrefix?: string;
   messages: AnthropicMessage[];
   tools?: AnthropicTool[];
   maxTokens?: number;
@@ -425,7 +536,7 @@ async function callClaudeDirectly(opts: {
   const body: Record<string, unknown> = {
     model: CLAUDE_MODEL,
     max_tokens: opts.maxTokens ?? DEFAULT_MAX_TOKENS,
-    system: opts.system,
+    system: buildSystemParam(opts.system, opts.systemPrefix),
     messages: opts.messages,
   };
   if (opts.tools?.length) body.tools = opts.tools;
@@ -453,6 +564,7 @@ async function callClaudeDirectly(opts: {
 
 async function callClaudeStreamingDirectly(opts: {
   system: string;
+  systemPrefix?: string;
   messages: AnthropicMessage[];
   tools?: AnthropicTool[];
   maxTokens?: number;
@@ -463,7 +575,7 @@ async function callClaudeStreamingDirectly(opts: {
   const body: Record<string, unknown> = {
     model: CLAUDE_MODEL,
     max_tokens: opts.maxTokens ?? DEFAULT_MAX_TOKENS,
-    system: opts.system,
+    system: buildSystemParam(opts.system, opts.systemPrefix),
     messages: opts.messages,
     stream: true,
   };
@@ -506,6 +618,8 @@ export async function callClaudeJson(opts: {
   maxTokens?: number;
   temperature?: number;
   timeoutMs?: number;
+  /** See `CostContext`. When passed, this call is written to `cost_tracking`. */
+  cost?: CostContext;
 }): Promise<{
   json: Record<string, unknown>;
   usage: { input_tokens: number; output_tokens: number };
@@ -555,12 +669,25 @@ export async function callClaudeJson(opts: {
     throw new Error("Claude returned no emit_json tool call");
   }
 
+  const usage = {
+    input_tokens: data.usage?.input_tokens ?? 0,
+    output_tokens: data.usage?.output_tokens ?? 0,
+    cache_creation_input_tokens: data.usage?.cache_creation_input_tokens ?? 0,
+    cache_read_input_tokens: data.usage?.cache_read_input_tokens ?? 0,
+  };
+  if (opts.cost) {
+    await logLlmCost(opts.cost.supabase, {
+      userId: opts.cost.userId ?? null,
+      purpose: opts.cost.purpose,
+      model: data.model ?? CLAUDE_MODEL,
+      usage,
+      metadata: opts.cost.metadata,
+    });
+  }
+
   return {
     json: toolUse.input as Record<string, unknown>,
-    usage: {
-      input_tokens: data.usage?.input_tokens ?? 0,
-      output_tokens: data.usage?.output_tokens ?? 0,
-    },
+    usage,
     model: data.model ?? CLAUDE_MODEL,
   };
 }
@@ -584,10 +711,10 @@ export function calculateCost(
   usage: AnthropicResponse["usage"],
   isFallback = false
 ): number {
-  if (isFallback) {
-    // Claude Sonnet rates
-    return (usage.input_tokens / 1_000_000) * 3 + (usage.output_tokens / 1_000_000) * 15;
-  }
-  // GPT-4o-mini rates
-  return (usage.input_tokens / 1_000_000) * 0.15 + (usage.output_tokens / 1_000_000) * 0.60;
+  // Rates and the two prompt-cache multipliers (write 1.25x, read 0.1x) live in
+  // _shared/llm-cost.ts. They used to be inline here, and the inline copy is
+  // how ALL Relatti traffic got billed at gpt-4o-mini rates for months — ~20x
+  // under — while a stale `model.startsWith("gpt-")` test decided which branch
+  // ran. One table, one place to be wrong.
+  return priceLlmCall(isFallback ? CLAUDE_MODEL : GPT4O_MODEL, usage);
 }
