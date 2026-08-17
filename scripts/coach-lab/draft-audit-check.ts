@@ -470,9 +470,30 @@ ok(
   !ordinaryJudge.calls[0].system.includes("recorded_accounts") &&
     !ordinaryJudge.calls[0].user.includes("recorded_accounts"),
 );
+// 🔥 The user turn is no longer just the draft, and that is the fix rather than
+// drift. `judgeDraft` was being PASSED `userText` and narrowing it away in its
+// own signature, so the judge read every reply as a standalone assertion. Cost
+// measured live on 2026-08-17: two `ontological_verdict` findings against "It
+// did happen", where the "it" the person had just named was the conversation.
+// Four of the judge's own rules were unenforceable for the same reason.
 ok(
-  "…and its user turn is still just the draft",
-  ordinaryJudge.calls[0].user === "The reply to check:\n\nThat sounds like a long night. What is it like in the room now?",
+  "…and its user turn carries the person's words AHEAD of the draft",
+  ordinaryJudge.calls[0].user.startsWith("<what_the_person_has_written>") &&
+    ordinaryJudge.calls[0].user.includes(USER_TEXT) &&
+    ordinaryJudge.calls[0].user.endsWith(
+      "The reply to check:\n\nThat sounds like a long night. What is it like in the room now?",
+    ),
+);
+// Same discipline as the corpus: the person's words are EVIDENCE in the user
+// turn and never become instruction in the system prompt.
+ok(
+  "the person's own words stay OUT of the system prompt",
+  !ordinaryJudge.calls[0].system.includes(USER_TEXT),
+);
+ok(
+  "…while the rule for reading them is in there",
+  ordinaryJudge.calls[0].system.includes("<what_the_person_has_written>") &&
+    ordinaryJudge.calls[0].system.includes("take the innocent reading"),
 );
 
 // 🔑 THE LABEL IS NOT WEAKENED. Nothing about a corpus turn discards a judged
