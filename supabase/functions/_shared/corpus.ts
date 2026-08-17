@@ -69,6 +69,7 @@
  */
 
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
+import { logLlmCost } from "./llm-cost.ts";
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────
 
@@ -647,7 +648,11 @@ export async function embedForCorpus(text: string): Promise<number[]> {
  * Every claim in one request. The API takes an array, so splitting the account
  * costs one round trip regardless of how many claims come out of it.
  */
-export async function embedManyForCorpus(texts: string[]): Promise<number[][]> {
+export async function embedManyForCorpus(
+  texts: string[],
+  /** Optional cost attribution — this batch is one OpenAI embeddings round trip. */
+  cost?: { supabase: SupabaseClient; userId?: string | null },
+): Promise<number[][]> {
   const apiKey = Deno.env.get("OPENAI_API_KEY");
   if (!apiKey) throw new Error("OPENAI_API_KEY not set");
 
@@ -664,6 +669,15 @@ export async function embedManyForCorpus(texts: string[]): Promise<number[][]> {
     throw new Error(`OpenAI Embeddings API error: ${response.status} — ${await response.text()}`);
   }
   const data = await response.json();
+  if (cost) {
+    await logLlmCost(cost.supabase, {
+      userId: cost.userId ?? null,
+      purpose: "corpus-embed",
+      model: CORPUS_EMBEDDING_MODEL,
+      usage: { input_tokens: data.usage?.prompt_tokens ?? 0, output_tokens: 0 },
+      metadata: { batch_size: texts.length },
+    });
+  }
   // The API does not promise input order back; `index` does.
   const vectors: number[][] = [];
   for (const row of data.data as { index: number; embedding: number[] }[]) {

@@ -15,10 +15,42 @@
  * between Anthropic and OpenAI formats transparently.
  */
 
+import { logLlmCost, priceLlmCall } from "./llm-cost.ts";
+import type { createSupabaseClient } from "./supabase.ts";
+
 // ─── MODELS ──────────────────────────────────────────────────────────────
 
 const GPT4O_MODEL = "gpt-4o-mini";
 const CLAUDE_MODEL = "claude-sonnet-4-6";
+
+/**
+ * Cost attribution for a call. Optional on every entry point, because a few
+ * callers (channel-router, the report generators) already write their own
+ * `cost_tracking` row and passing this too would double-count them.
+ *
+ * "Optional" is not "forgettable": scripts/check-cost-logging.mjs fails the
+ * gate when a module reaches an LLM and neither passes this nor logs for
+ * itself. That check is the actual guarantee — this parameter is just the
+ * cheap way to satisfy it.
+ */
+export interface CostContext {
+  supabase: ReturnType<typeof createSupabaseClient>;
+  userId?: string | null;
+  purpose: string;
+  metadata?: Record<string, unknown>;
+}
+
+/** Logs whichever model actually served the call — GPT primary or Claude fallback. */
+async function maybeLogCost(cost: CostContext | undefined, res: AnthropicResponse): Promise<void> {
+  if (!cost) return;
+  await logLlmCost(cost.supabase, {
+    userId: cost.userId ?? null,
+    purpose: cost.purpose,
+    model: res.model || (res._fallback ? CLAUDE_MODEL : GPT4O_MODEL),
+    usage: res.usage,
+    metadata: cost.metadata,
+  });
+}
 
 const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
 const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
@@ -157,16 +189,22 @@ export async function callClaude(opts: {
    * keeps the GPT-4o-primary behaviour byte for byte.
    */
   forceClaude?: boolean;
+  /** See `CostContext`. When passed, this call is written to `cost_tracking`. */
+  cost?: CostContext;
 }): Promise<AnthropicResponse> {
   const openaiKey = Deno.env.get("OPENAI_API_KEY");
 
   if (opts.forceClaude) {
-    return await callClaudeDirectly(opts);
+    const r = await callClaudeDirectly(opts);
+    await maybeLogCost(opts.cost, r);
+    return r;
   }
 
   if (!openaiKey) {
     console.warn("[llm] OPENAI_API_KEY not set — using Claude directly");
-    return await callClaudeDirectly(opts);
+    const r = await callClaudeDirectly(opts);
+    await maybeLogCost(opts.cost, r);
+    return r;
   }
 
   const body: Record<string, unknown> = {
@@ -187,15 +225,21 @@ export async function callClaude(opts: {
     if (!response.ok) {
       const err = await response.text();
       console.warn(`[llm] GPT-4o batch error (${response.status}), falling back to Claude: ${err.slice(0, 200)}`);
-      return await callClaudeDirectly(opts);
+      const r = await callClaudeDirectly(opts);
+      await maybeLogCost(opts.cost, r);
+      return r;
     }
 
-    return openAIBatchToAnthropic(await response.json());
+    const ok = openAIBatchToAnthropic(await response.json());
+    await maybeLogCost(opts.cost, ok);
+    return ok;
   } catch (error) {
     const err = error as Error;
     if (err.name === "TimeoutError" || err.name === "AbortError" || err.message.includes("fetch failed")) {
       console.warn(`[llm] GPT-4o unreachable (${err.name}), falling back to Claude`);
-      return await callClaudeDirectly(opts);
+      const r = await callClaudeDirectly(opts);
+      await maybeLogCost(opts.cost, r);
+      return r;
     }
     throw error;
   }
@@ -574,6 +618,8 @@ export async function callClaudeJson(opts: {
   maxTokens?: number;
   temperature?: number;
   timeoutMs?: number;
+  /** See `CostContext`. When passed, this call is written to `cost_tracking`. */
+  cost?: CostContext;
 }): Promise<{
   json: Record<string, unknown>;
   usage: { input_tokens: number; output_tokens: number };
@@ -623,12 +669,25 @@ export async function callClaudeJson(opts: {
     throw new Error("Claude returned no emit_json tool call");
   }
 
+  const usage = {
+    input_tokens: data.usage?.input_tokens ?? 0,
+    output_tokens: data.usage?.output_tokens ?? 0,
+    cache_creation_input_tokens: data.usage?.cache_creation_input_tokens ?? 0,
+    cache_read_input_tokens: data.usage?.cache_read_input_tokens ?? 0,
+  };
+  if (opts.cost) {
+    await logLlmCost(opts.cost.supabase, {
+      userId: opts.cost.userId ?? null,
+      purpose: opts.cost.purpose,
+      model: data.model ?? CLAUDE_MODEL,
+      usage,
+      metadata: opts.cost.metadata,
+    });
+  }
+
   return {
     json: toolUse.input as Record<string, unknown>,
-    usage: {
-      input_tokens: data.usage?.input_tokens ?? 0,
-      output_tokens: data.usage?.output_tokens ?? 0,
-    },
+    usage,
     model: data.model ?? CLAUDE_MODEL,
   };
 }
@@ -652,19 +711,10 @@ export function calculateCost(
   usage: AnthropicResponse["usage"],
   isFallback = false
 ): number {
-  if (isFallback) {
-    // Claude Sonnet rates, plus the two prompt-cache multipliers: a 5-minute
-    // cache WRITE bills at 1.25x base input, a cache READ at 0.1x. Both are
-    // priced here rather than ignored, because ignoring them reports a saving
-    // that did not happen — cached tokens leave `input_tokens` entirely.
-    const base = 3 / 1_000_000;
-    return (
-      usage.input_tokens * base +
-      (usage.cache_creation_input_tokens ?? 0) * base * 1.25 +
-      (usage.cache_read_input_tokens ?? 0) * base * 0.1 +
-      (usage.output_tokens / 1_000_000) * 15
-    );
-  }
-  // GPT-4o-mini rates
-  return (usage.input_tokens / 1_000_000) * 0.15 + (usage.output_tokens / 1_000_000) * 0.60;
+  // Rates and the two prompt-cache multipliers (write 1.25x, read 0.1x) live in
+  // _shared/llm-cost.ts. They used to be inline here, and the inline copy is
+  // how ALL Relatti traffic got billed at gpt-4o-mini rates for months — ~20x
+  // under — while a stale `model.startsWith("gpt-")` test decided which branch
+  // ran. One table, one place to be wrong.
+  return priceLlmCall(isFallback ? CLAUDE_MODEL : GPT4O_MODEL, usage);
 }

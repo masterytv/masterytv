@@ -21,6 +21,7 @@
  */
 
 import { createSupabaseClient } from "./supabase.ts";
+import { logLlmCost } from "./llm-cost.ts";
 import { logError } from "./errors.ts";
 import {
   detectConversationSignals,
@@ -101,7 +102,11 @@ async function kernelSweep(
       .map((m) => `${m.role === "coach" ? "COACH" : "USER"}: ${m.content}`)
       .join("\n");
 
-    const c = await classify(apiKey, transcript);
+    const c = await classify(apiKey, transcript, {
+      supabase,
+      userId,
+      purpose: "safety-sweep-kernel",
+    });
     if (!c) return;
 
     // Focus the admin queue on genuine safety risk (avoid flag-flooding on ordinary
@@ -186,7 +191,11 @@ async function kernelSweep(
   }
 }
 
-async function classify(apiKey: string, transcript: string): Promise<Classification | null> {
+async function classify(
+  apiKey: string,
+  transcript: string,
+  log?: { supabase: ReturnType<typeof createSupabaseClient>; userId: string | null; purpose: string },
+): Promise<Classification | null> {
   const system = `You are a safety classifier for an AI coaching product (often relationship coaching). You read the recent conversation and flag risk the coach must not miss — INCLUDING risk about a THIRD PERSON the user describes (e.g. "my husband hinted at ending his life", "she said she doesn't want to be here").
 
 Return ONLY a JSON object, no prose:
@@ -206,6 +215,7 @@ Definitions:
     system,
     `Recent conversation (oldest to newest):\n\n${transcript.slice(0, 6000)}`,
     300,
+    log,
   );
   return text === null ? null : parseClassification(text);
 }
@@ -221,6 +231,14 @@ async function haiku(
   system: string,
   user: string,
   maxTokens: number,
+  /**
+   * Cost attribution. Optional only so a caller without a client can still
+   * sweep — the safety call must never depend on the bookkeeping. When it is
+   * passed the call lands in `cost_tracking`, which for months it did not:
+   * every Tier 2 sweep was invisible to the one table anyone reads to size the
+   * Anthropic bill.
+   */
+  log?: { supabase: ReturnType<typeof createSupabaseClient>; userId: string | null; purpose: string },
 ): Promise<string | null> {
   try {
     const resp = await fetch(ANTHROPIC_API_URL, {
@@ -243,6 +261,17 @@ async function haiku(
       return null;
     }
     const data = await resp.json();
+    if (log) {
+      await logLlmCost(log.supabase, {
+        userId: log.userId,
+        purpose: log.purpose,
+        model: HAIKU_MODEL,
+        usage: {
+          input_tokens: data.usage?.input_tokens ?? 0,
+          output_tokens: data.usage?.output_tokens ?? 0,
+        },
+      });
+    }
     return ((data.content ?? []) as Array<{ type: string; text?: string }>)
       .filter((b) => b.type === "text")
       .map((b) => b.text ?? "")
@@ -350,7 +379,11 @@ async function integrationSweep(
       return;
     }
 
-    const confirmed = await confirmConversationSignals(apiKey, candidates, turns);
+    const confirmed = await confirmConversationSignals(apiKey, candidates, turns, {
+      supabase,
+      userId,
+      purpose: "safety-sweep-integration",
+    });
     if (confirmed.length === 0) {
       console.log(
         `[safety-sweep:integration] ${candidates.map((c) => c.signal).join(",")} raised, none confirmed`,
@@ -473,6 +506,8 @@ export async function confirmConversationSignals(
   apiKey: string,
   candidates: SignalCandidate[],
   turns: TranscriptTurn[],
+  /** Optional so the battery can call this without a database. See `haiku`. */
+  log?: { supabase: ReturnType<typeof createSupabaseClient>; userId: string | null; purpose: string },
 ): Promise<ConfirmedSignal[]> {
   const { early, recent } = splitHalves(turns);
   const block = (ts: TranscriptTurn[]) => ts.map((t) => t.text).join("\n");
@@ -486,7 +521,7 @@ export async function confirmConversationSignals(
     block(recent).slice(0, 4000),
   ].join("\n");
 
-  const text = await haiku(apiKey, CONFIRM_SYSTEM, user, 600);
+  const text = await haiku(apiKey, CONFIRM_SYSTEM, user, 600, log);
   if (text === null) {
     // Silence is NOT a finding here. The kernel's safety-first fallback exists
     // because a missed suicide cue is unrecoverable; a missed narrowing trend is

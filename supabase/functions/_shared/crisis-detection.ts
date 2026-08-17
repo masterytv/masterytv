@@ -7,7 +7,7 @@
  * Architecture: ARCHITECTURE.md §5.9, SPRINT.md S3.7
  */
 
-import { callClaude } from "./anthropic.ts";
+import { callClaude, type CostContext } from "./anthropic.ts";
 import { createSupabaseClient } from "./supabase.ts";
 import {
   detectCrisisKeywords,
@@ -32,7 +32,9 @@ export type { CrisisCategory, CrisisResult };
  */
 export async function confirmCrisisWithLLM(
   message: string,
-  matchedKeywords: string[]
+  matchedKeywords: string[],
+  /** Optional cost attribution — see CostContext in anthropic.ts. */
+  cost?: CostContext
 ): Promise<boolean> {
   try {
     const response = await callClaude({
@@ -49,6 +51,7 @@ Is this a genuine expression of suicidal ideation, self-harm, or intent to harm 
         },
       ],
       maxTokens: 10,
+      cost,
     });
 
     const text = response.content
@@ -98,6 +101,8 @@ export async function confirmIntegrationRiskWithLLM(
   message: string,
   matchedKeywords: string[],
   category: CrisisCategory,
+  /** Optional cost attribution — see CostContext in anthropic.ts. */
+  cost?: CostContext,
 ): Promise<boolean> {
   const question: Record<string, string> = {
     desire_to_return:
@@ -128,6 +133,7 @@ ${question[category] ?? question.desire_to_return}`,
         },
       ],
       maxTokens: 10,
+      cost,
     });
 
     const text = response.content
@@ -155,7 +161,9 @@ ${question[category] ?? question.desire_to_return}`,
  */
 export async function confirmAbuseWithLLM(
   message: string,
-  matchedKeywords: string[]
+  matchedKeywords: string[],
+  /** Optional cost attribution — see CostContext in anthropic.ts. */
+  cost?: CostContext
 ): Promise<boolean> {
   try {
     const response = await callClaude({
@@ -172,6 +180,7 @@ Does this disclose intimate-partner abuse or coercive control?`,
         },
       ],
       maxTokens: 10,
+      cost,
     });
 
     const text = response.content
@@ -475,8 +484,17 @@ export async function runCrisisDetection(
   // Abuse + moderate self-harm get an LLM context check (false-positive prone).
   // High-severity self-harm responds immediately.
   let confirmed = true;
+  // One context for all three confirmers. These classifiers ran unlogged for
+  // months: cheap per call, but they fire on the keyword layer, so a noisy day
+  // is a real line on the Anthropic bill that `cost_tracking` could not see.
+  const cost = {
+    supabase,
+    userId,
+    purpose: `crisis-confirm-${keywords.category}`,
+    metadata: { program: ctx.program ?? null, severity: keywords.severity },
+  };
   if (keywords.category === "abuse") {
-    confirmed = await confirmAbuseWithLLM(message, keywords.matchedKeywords);
+    confirmed = await confirmAbuseWithLLM(message, keywords.matchedKeywords, cost);
   } else if (INTEGRATION_CATEGORIES.has(keywords.category)) {
     // NOT confirmCrisisWithLLM. That classifier is tuned to separate genuine
     // ideation from figurative speech ("killing it", "dead tired"), and it would
@@ -486,9 +504,10 @@ export async function runCrisisDetection(
       message,
       keywords.matchedKeywords,
       keywords.category,
+      cost,
     );
   } else if (keywords.severity === "moderate") {
-    confirmed = await confirmCrisisWithLLM(message, keywords.matchedKeywords);
+    confirmed = await confirmCrisisWithLLM(message, keywords.matchedKeywords, cost);
   }
 
   const conversationId = ctx.conversationId ?? null;
