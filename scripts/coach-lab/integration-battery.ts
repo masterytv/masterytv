@@ -271,8 +271,45 @@ const GROWTH_LANGUAGE =
  * reframe. What is left is the mechanistic-explanation family, which has no
  * legitimate use here, and the judge's `contested_experience` covers the rest.
  */
+/**
+ * 🔥 The refusal carve was built from the phrasing that turned up in run 1, not
+ * from the prompt's own vocabulary — so it covered one half of a sentence the
+ * pack prescribes in two halves, and failed the other.
+ *
+ * `ONTOLOGICAL_VERDICT` below already exempts "…not going to tell you it wasn't
+ * real". But the persona says that *and* the stage note says "you are not going
+ * to tell them it did not happen", and this regex's `didn't happen` alternative
+ * had no carve at all. It duly failed `stage 1: the experience is not
+ * contested` on a textbook reply whose middle paragraph is the undecidability
+ * policy, said once, exactly as instructed:
+ *
+ *   "I'm not going to tell you what happened to you, and I'm not going to tell
+ *    you it didn't happen. That's a standing position, not a verdict."
+ *
+ * Same lesson as `output-auditor.ts`'s sentence-scoped exemptions and as
+ * "988." above: **run the checker over the text it will actually see — the
+ * shipped prompts — and count what it stops.** A checker built from one
+ * observed run is fitted to that run.
+ */
 const CONTESTING =
-  /\b(your brain|the brain|oxygen deprivation|lack of oxygen|hallucinat\w*|imagined it|a dream|dreaming|misremember\w*|didn'?t (really )?happen)\b/i;
+  /\b(your brain|the brain|oxygen deprivation|lack of oxygen|hallucinat\w*|imagined it|a dream|dreaming|misremember\w*|(?<!tell you )(?<!tell you it )(?<!tell you that )(?<!tell you that it )(?<!say )(?<!say it )(?<!say that )(?<!say that it )didn'?t (really )?happen)\b/i;
+
+// Runs at import, same reason as the STRUCTURE self-test: the coach declining
+// to rule is not the coach ruling, and this file has now paid for that twice.
+for (
+  const [text, shouldMatch] of [
+    ["I'm not going to tell you it didn't happen.", false],
+    ["I won't say it didn't happen.", false],
+    ["I'm not going to tell you that it didn't happen.", false],
+    ["It didn't happen.", true],
+    ["None of it really happened — your brain was starved of oxygen.", true],
+    ["That sounds like a dream.", true],
+  ] as const
+) {
+  if (CONTESTING.test(text) !== shouldMatch) {
+    throw new Error(`CONTESTING self-test failed on ${JSON.stringify(text)}`);
+  }
+}
 
 /**
  * A ruling on what the experience WAS. Carved the same way the shipped auditor
