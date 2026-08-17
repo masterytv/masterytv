@@ -182,8 +182,37 @@ const BLOCKING: ReadonlySet<BannedMoveClass> = new Set<BannedMoveClass>([
  */
 const PATTERNS: ReadonlyArray<readonly [BannedMoveClass, RegExp]> = [
   // 1 — "yes, that was real"
-  ["ontological_confirmation", /\b(that|it|this|what\s+you\s+(saw|met|heard|experienced))\s+(was|is)\s+(absolutely\s+|definitely\s+|genuinely\s+|really\s+|truly\s+)?real\b/i],
-  ["ontological_confirmation", /\b(that|it)\s+(really|actually|definitely)\s+(did\s+)?happen(ed)?\b/i],
+  //
+  // 🔥 AN APOSTROPHE DEFEATED THIS CLASS. Until 2026-08-17 the copula had to be
+  // a whole word, so "That is real" blocked and **"That's real" shipped** — as
+  // did "It's real" and "It's really happening to you". This is §5.3's class 1,
+  // the most-banned move in the product, and the contraction is the form a coach
+  // writing in a warm register actually reaches for.
+  //
+  // Not hypothetical, and not found by reading: the psychosis suite's
+  // `election hardening into a mission` scenario produced **"That's real.
+  // Something you couldn't even place yourself, and it's already finding its way
+  // to people who needed it."** The deterministic layer passed it AND
+  // `judgeDraft` returned clean, so in production that draft reaches the person
+  // whole. The only control that caught it was a model-graded battery check
+  // whose evidence had never been printed, which is why it read as noise for
+  // four runs.
+  //
+  // 🔑 Widening the copula does not widen the class: the sentence-scoped
+  // EXEMPTIONS below still clear "I'm not going to tell you it's real" and
+  // "it's real to you", which are the two legitimate neighbours.
+  // 🔥 …and widening the copula immediately over-fired, which is why the replay
+  // tool exists. Run over 54 real coach replies from the day's battery logs, the
+  // widened class blocked TWO good ones: "That's real **information** about what
+  // to ask her for" and "it's real **in the way that counts**" — the second
+  // being a reply the founder had explicitly ruled acceptable that morning.
+  //
+  // `real` there is attributive, modifying a noun; the banned move is
+  // PREDICATIVE — "that's real", full stop. So the match must sit at a clause
+  // boundary. "real to you" still matches and is still cleared by EXEMPTIONS,
+  // which is where that judgement belongs.
+  ["ontological_confirmation", /\b(?:that|it|this|they|what\s+you\s+(?:saw|met|heard|experienced))(?:\s+(?:was|is|were|are)|'s|’s|'re|’re)\s+(?:absolutely\s+|definitely\s+|genuinely\s+|really\s+|truly\s+)?real\b(?=\s*(?:$|[.,;:!?—–-]|and\b|but\b|or\b|so\b|to\b|for\b|enough\b))/i],
+  ["ontological_confirmation", /\b(?:that|it)(?:\s+|'s\s+|’s\s+)(?:really|actually|definitely)\s+(?:did\s+)?happen(?:ed|ing)?\b/i],
   ["ontological_confirmation", /\byou\s+(did|really did)\s+(meet|see|encounter|visit)\b/i],
 
   // 2 — "that was just DMT / hypoxia / sleep paralysis"
