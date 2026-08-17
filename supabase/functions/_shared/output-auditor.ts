@@ -201,7 +201,17 @@ const PATTERNS: ReadonlyArray<readonly [BannedMoveClass, RegExp]> = [
   // 🔑 Widening the copula does not widen the class: the sentence-scoped
   // EXEMPTIONS below still clear "I'm not going to tell you it's real" and
   // "it's real to you", which are the two legitimate neighbours.
-  ["ontological_confirmation", /\b(?:that|it|this|they|what\s+you\s+(?:saw|met|heard|experienced))(?:\s+(?:was|is|were|are)|'s|’s|'re|’re)\s+(?:absolutely\s+|definitely\s+|genuinely\s+|really\s+|truly\s+)?real\b/i],
+  // 🔥 …and widening the copula immediately over-fired, which is why the replay
+  // tool exists. Run over 54 real coach replies from the day's battery logs, the
+  // widened class blocked TWO good ones: "That's real **information** about what
+  // to ask her for" and "it's real **in the way that counts**" — the second
+  // being a reply the founder had explicitly ruled acceptable that morning.
+  //
+  // `real` there is attributive, modifying a noun; the banned move is
+  // PREDICATIVE — "that's real", full stop. So the match must sit at a clause
+  // boundary. "real to you" still matches and is still cleared by EXEMPTIONS,
+  // which is where that judgement belongs.
+  ["ontological_confirmation", /\b(?:that|it|this|they|what\s+you\s+(?:saw|met|heard|experienced))(?:\s+(?:was|is|were|are)|'s|’s|'re|’re)\s+(?:absolutely\s+|definitely\s+|genuinely\s+|really\s+|truly\s+)?real\b(?=\s*(?:$|[.,;:!?—–-]|and\b|but\b|or\b|so\b|to\b|for\b|enough\b))/i],
   ["ontological_confirmation", /\b(?:that|it)(?:\s+|'s\s+|’s\s+)(?:really|actually|definitely)\s+(?:did\s+)?happen(?:ed|ing)?\b/i],
   ["ontological_confirmation", /\byou\s+(did|really did)\s+(meet|see|encounter|visit)\b/i],
 

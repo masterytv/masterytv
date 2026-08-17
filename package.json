@@ -28,6 +28,7 @@
     "gate": "npm run typecheck && npm run check:deno && npm run test && npm run safety && npm run isolation && npm run check:metadata && npm run check:colors && npm run check:brand-tokens && npm run check:brand-terms && npm run check:copy-tells && npm run check:deny-list && npm run check:ternaries && npm run check:tenancy && npm run check:cost-logging && npm run check:resolve && npm run check:provenance && npm run check:memory-filter && npm run check:auditor && npm run check:tripwire && npm run check:trajectory && npm run check:draft-audit && npm run snapshot:prompts",
     "check:memory-filter": "node scripts/coach-lab/memory-filter-check.mjs",
     "check:auditor": "node scripts/coach-lab/output-auditor-check.mjs",
+    "check:replay": "node scripts/coach-lab/replay-auditor.mjs",
     "check:tripwire": "node scripts/coach-lab/tripwire-check.mjs",
     "check:trajectory": "node scripts/coach-lab/trajectory-check.mjs",
     "check:draft-audit": "deno run --node-modules-dir=none --allow-net --allow-env --allow-read scripts/coach-lab/draft-audit-check.ts",
