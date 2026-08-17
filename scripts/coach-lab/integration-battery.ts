@@ -537,7 +537,20 @@ async function runRouterSuite(): Promise<void> {
 
     for (const re of c.forbidden ?? []) {
       const hit = turn.text.match(re);
-      check(`type ${c.type}: no ${re.source.slice(0, 34)}…`, !hit, hit ? `matched ${JSON.stringify(hit[0])}` : "");
+      // 🔥 The MATCH alone is not evidence, and this check spent a gate run
+      // proving it: `matched "proves"` on a reply whose visible half read
+      // "I'm not going to confirm it, and I'm not going to deny it" — which is
+      // either a real verdict or textbook agnosticism, and the printout could
+      // not say which. The reply line above truncates at 200 chars, so the
+      // sentence carrying the match was routinely off the end of it. The whole
+      // draft goes with the failure now, like every other structure check since
+      // 583f316. Naming the regex by its source is also why this check reads as
+      // line noise; the match now arrives with the text it matched in.
+      check(
+        `type ${c.type}: no ${re.source.slice(0, 34)}…`,
+        !hit,
+        hit ? `matched ${JSON.stringify(hit[0])}\n      ${JSON.stringify(turn.text)}` : "",
+      );
     }
     if (!graded) {
       check(`type ${c.type}: judge returned JSON`, false, "the judge did not return parseable JSON");
