@@ -968,7 +968,20 @@ Deno.serve(async (req: Request) => {
           tokens_out: outputTokens,
           cost_usd: costUsd,
           // PC5.5: per-brand cost attribution at write time.
-          metadata: { program },
+          //
+          // The cache split rides along because `tokens_in` alone cannot show
+          // it: a cache write and a cache read of the same prefix look
+          // identical there, and only the cost separates them. The first live
+          // check of this row had to solve for the cached count from cost_usd
+          // to answer "did caching actually happen", which is not a question
+          // anyone should have to do algebra for. Same two fields
+          // `logLlmCost` records, so both write paths read alike.
+          metadata: {
+            program,
+            ...(cacheWriteTokens || cacheReadTokens
+              ? { cache_write_tokens: cacheWriteTokens, cache_read_tokens: cacheReadTokens }
+              : {}),
+          },
         });
 
         // Safety net: never persist a blank coach turn. If the agentic loop ended
