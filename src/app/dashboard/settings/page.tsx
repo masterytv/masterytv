@@ -7,7 +7,7 @@ import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
-import { DECODED_TIERS, MESSAGE_LIMITS, isUpgrade } from "@/lib/decoded/billing/tiers";
+import { TIERS_BY_BRAND, MESSAGE_LIMITS_BY_BRAND, isUpgrade } from "@/lib/decoded/billing/tiers";
 import type { ReportTier } from "@/lib/decoded/report/prompts/types";
 import {
   Save,
@@ -425,9 +425,13 @@ function SettingsContent() {
   }
 
   const currentTier = (user?.decoded_tier ?? "free") as ReportTier;
-  const currentTierInfo = DECODED_TIERS.find(t => t.id === currentTier) ?? DECODED_TIERS[0];
+  // The plan surface follows the BRAND, not the tier: HEARD sells the same four
+  // prices for a different product, so it gets its own names, taglines, feature
+  // lines and volumes (tiers.ts). Everything else keeps Decoded's.
+  const tiers = TIERS_BY_BRAND[brand.id];
+  const currentTierInfo = tiers.find(t => t.id === currentTier) ?? tiers[0];
   const isPaid = currentTier !== "free";
-  const messageLimit = MESSAGE_LIMITS[currentTier];
+  const messageLimit = MESSAGE_LIMITS_BY_BRAND[brand.id][currentTier];
 
   return (
     <div className="overflow-y-auto h-full">
@@ -497,7 +501,7 @@ function SettingsContent() {
 
             {/* 4-tier comparison grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {DECODED_TIERS.map((tierInfo) => {
+              {tiers.map((tierInfo) => {
                 const isCurrent = tierInfo.id === currentTier;
                 const canUpgrade = isUpgrade(currentTier, tierInfo.id);
                 const isRecommended = tierInfo.recommended && canUpgrade;
