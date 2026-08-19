@@ -265,14 +265,28 @@ export function Sidebar({ open, onClose, assessmentCompleted = false, reportId =
             );
           })}
 
-          {/* Share — opens the share/invite modal */}
-          <button
-            onClick={() => { onShareClick?.(); onClose(); }}
-            className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-text-secondary hover:bg-surface-200 hover:text-text-primary transition-all"
-          >
-            <Share2 className="h-4.5 w-4.5 text-text-muted group-hover:text-text-secondary" />
-            Share
-          </button>
+          {/* Share — opens the share/invite modal, on the brands that HAVE one.
+              The modal itself is already `null` for money and heard
+              (DashboardLayoutClient), so this button was opening nothing on
+              both: dead on money, and worse than dead on HEARD, whose
+              population is defined by not being able to tell people
+              (INTEGRATION_EXPERIENCE §1.1 calls a social-share gate "the
+              injury, productized"). byBrand rather than a truthiness check on
+              the handler, because the handler is always passed — and because a
+              new brand should have to answer this question rather than inherit
+              an answer. Keep in step with the modal's own byBrand map. */}
+          {byBrand(
+            { masterytv: true, relatti: true, money: false, heard: false },
+            brand.id,
+          ) && (
+            <button
+              onClick={() => { onShareClick?.(); onClose(); }}
+              className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-text-secondary hover:bg-surface-200 hover:text-text-primary transition-all"
+            >
+              <Share2 className="h-4.5 w-4.5 text-text-muted group-hover:text-text-secondary" />
+              Share
+            </button>
+          )}
 
           {/* Admin — only visible to admin/superadmin */}
           {user?.role && ["admin", "superadmin"].includes(user.role) && (

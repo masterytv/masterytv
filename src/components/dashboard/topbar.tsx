@@ -55,7 +55,16 @@ export function Topbar({ userName, onMenuClick, userRole, onFeedbackClick }: Top
     : "?";
 
   return (
-    <header className="flex h-16 items-center justify-between bg-surface-50/80 backdrop-blur-xl px-4 lg:px-6">
+    // `relative z-30` is load-bearing, not decoration. `backdrop-blur-xl` sets
+    // backdrop-filter, which creates a STACKING CONTEXT, so the account
+    // dropdown's own z-50 only ever competed with this header's other children
+    // — never with <main>, which follows in DOM order and therefore painted on
+    // top of it. The dropdown rendered UNDER the chat composer as a result
+    // (founder, 2026-08-19). Raising the whole header fixes it at the level the
+    // problem actually lives at. 30 rather than 50 on purpose: it must stay
+    // below the mobile sidebar (z-50) and its scrim (z-40), which are supposed
+    // to cover the header.
+    <header className="relative z-30 flex h-16 items-center justify-between bg-surface-50/80 backdrop-blur-xl px-4 lg:px-6">
       {/* Left cluster: mobile menu + beta badge */}
       <div className="flex items-center gap-2">
         {onMenuClick && (
