@@ -32,6 +32,7 @@ import {
 import { resolvePack, programScope, type ProgramId } from "../_shared/packs/index.ts";
 import { resolveProgram } from "../_shared/resolve-program.ts";
 import { hasLiveConsent } from "../_shared/consent.ts";
+import { freeTierLimitFor } from "../_shared/message-limits.ts";
 import {
   resolveConversation,
   COACHING_DISCLAIMER,
@@ -195,7 +196,7 @@ Deno.serve(async (req: Request) => {
 
     // ── 2.5 Free tier message limit check (S5.9) ──
     // Sprint 0.4: Deep link messages from report CTAs get bonus allowance
-    const limitCheck = await checkMessageLimit(supabase, userId, corsHeaders, context);
+    const limitCheck = await checkMessageLimit(supabase, userId, corsHeaders, context, program);
     const { limitReached, upgradeResponse, remainingToday } = limitCheck;
     charged = limitCheck.charged === true;
     if (limitReached && upgradeResponse) {
@@ -1131,13 +1132,13 @@ Deno.serve(async (req: Request) => {
 
 // ─── FREE TIER LIMIT CHECK (S5.9) ──────────────────────────────────────
 
-const FREE_TIER_DAILY_LIMIT = 10;
-
 async function checkMessageLimit(
   supabase: ReturnType<typeof createSupabaseClient>,
   userId: string,
   headers: Record<string, string>,
   context?: { type?: string; section?: string; topic?: string; inviteId?: string },
+  /** The RESOLVED program (never the client's hint — forging it would buy messages). */
+  program?: string | null,
 ): Promise<{
   limitReached: boolean;
   upgradeResponse?: Response;
@@ -1164,6 +1165,8 @@ async function checkMessageLimit(
   }
 
   // Reset counter if new day
+  const dailyLimit = freeTierLimitFor(program);
+
   const today = new Date().toISOString().split("T")[0];
   let currentCount = user.daily_message_count ?? 0;
 
@@ -1197,7 +1200,7 @@ async function checkMessageLimit(
     // If bonus limit exceeded, fall through to normal limit check
   }
 
-  if (currentCount >= FREE_TIER_DAILY_LIMIT) {
+  if (currentCount >= dailyLimit) {
     // Time until the daily reset (UTC midnight).
     const now = new Date();
     const tomorrow = new Date(now);
@@ -1253,7 +1256,7 @@ async function checkMessageLimit(
     .then(() => {});
 
   // Messages left today after this one — drives the client's low-balance heads-up.
-  const remainingToday = Math.max(0, FREE_TIER_DAILY_LIMIT - (currentCount + 1));
+  const remainingToday = Math.max(0, dailyLimit - (currentCount + 1));
   return { limitReached: false, remainingToday, charged: true };
 }
 

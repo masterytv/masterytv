@@ -17,6 +17,7 @@
  */
 
 import { createSupabaseClient } from "./supabase.ts";
+import { FREE_TIER_DAILY_LIMIT as FREE_TIER_LIMITS } from "./message-limits.ts";
 import { callClaude, calculateCost } from "./anthropic.ts";
 import { assemblePrompt } from "./prompt-assembler.ts";
 import { resolveConversationProgram } from "./resolve-program.ts";
@@ -549,7 +550,14 @@ function embedMessageAsync(
 
 // ─── FREE TIER LIMIT (BATCH) ────────────────────────────────────────────
 
-const FREE_TIER_DAILY_LIMIT = 10;
+// The email/Telegram batch path checks the allowance at step 0.5, BEFORE the
+// program is resolved (the early return below literally reports `program: null`),
+// so it cannot key the limit on a vertical. It uses the shared default, which is
+// correct rather than merely convenient: HEARD has no email or Telegram surface
+// at all — INVITE_BRANDS.heard is null and the product is the web chat box — so
+// an integration user can never arrive down this path. Importing the default
+// instead of restating 5 keeps the two callers from drifting.
+const FREE_TIER_DAILY_LIMIT = FREE_TIER_LIMITS.general;
 
 async function checkBatchMessageLimit(
   supabase: ReturnType<typeof createSupabaseClient>,
