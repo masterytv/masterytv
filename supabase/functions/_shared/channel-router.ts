@@ -549,7 +549,7 @@ function embedMessageAsync(
 
 // ─── FREE TIER LIMIT (BATCH) ────────────────────────────────────────────
 
-const FREE_TIER_DAILY_LIMIT = 5;
+const FREE_TIER_DAILY_LIMIT = 10;
 
 async function checkBatchMessageLimit(
   supabase: ReturnType<typeof createSupabaseClient>,

@@ -50,6 +50,12 @@ function hoursUntilReset(): number {
 // avatar. Warm and continuity-first ("your conversation is saved"), and it never
 // speaks in the first person, so it can't read as the coach personally walking
 // out mid-conversation. Brand-aware CTA (free beta unlock for Relatti).
+// Mirrors FREE_TIER_DAILY_LIMIT in supabase/functions/coach/index.ts and
+// _shared/channel-router.ts. Stated in the copy on the founder's ask (2026-08-19):
+// a notice that says only "you're out" reads as bait and switch, so the notice
+// names the allowance, when it comes back, and the way past it.
+const FREE_TIER_DAILY_LIMIT = 10;
+
 function LimitNotice({ resetHours }: { resetHours: number }) {
   const brand = useBrand();
   const isRelatti = brand.id === "relatti";
@@ -60,11 +66,13 @@ function LimitNotice({ resetHours }: { resetHours: number }) {
         <Clock size={18} strokeWidth={1.75} />
       </div>
       <div className="chat-system-notice-body">
-        <p className="chat-system-notice-title">You&apos;ve used today&apos;s free messages</p>
+        <p className="chat-system-notice-title">
+          You&apos;ve used today&apos;s {FREE_TIER_DAILY_LIMIT} free messages
+        </p>
         <p className="chat-system-notice-text">
           {isRelatti
-            ? `Your conversation is saved — you can pick up right where you left off ${resetText}. Or keep going now, free while Relatti is in beta.`
-            : `Your conversation is saved — your free messages reset ${resetText}.`}
+            ? `Your conversation is saved. You can pick up right where you left off ${resetText}, or keep going now, free while Relatti is in beta.`
+            : `Your conversation is saved. You get ${FREE_TIER_DAILY_LIMIT} free messages a day, and yours reset ${resetText}. Come back then to finish this conversation, or upgrade now to keep going.`}
         </p>
         <a
           className="chat-system-notice-cta"

@@ -65,6 +65,9 @@ Deno.serve(async (req: Request) => {
   }
 
   let userId: string | undefined;
+  // Set once the free-tier counter has actually been incremented for this
+  // request, so the failure path below can give the slot back.
+  let charged = false;
 
   try {
     // ── 1. Authenticate ──
@@ -192,7 +195,9 @@ Deno.serve(async (req: Request) => {
 
     // ── 2.5 Free tier message limit check (S5.9) ──
     // Sprint 0.4: Deep link messages from report CTAs get bonus allowance
-    const { limitReached, upgradeResponse, remainingToday } = await checkMessageLimit(supabase, userId, corsHeaders, context);
+    const limitCheck = await checkMessageLimit(supabase, userId, corsHeaders, context);
+    const { limitReached, upgradeResponse, remainingToday } = limitCheck;
+    charged = limitCheck.charged === true;
     if (limitReached && upgradeResponse) {
       return upgradeResponse;
     }
@@ -1088,6 +1093,30 @@ Deno.serve(async (req: Request) => {
   } catch (error) {
     await logError(FUNCTION_NAME, error as Error, userId);
     console.error(`[${FUNCTION_NAME}]`, (error as Error).message);
+
+    // A message the coach never answered must not cost somebody an allowance
+    // slot. The charge has to happen up front — the stored count IS what the
+    // limit reads — so this is the only place that can undo it. Floored at
+    // zero, and best-effort: a refund that fails must not replace the real
+    // error with its own. (Found live 2026-08-19: two turns died on an
+    // Anthropic credit 400 and both were billed to the founder's daily 5.)
+    if (charged && userId) {
+      try {
+        const refundClient = createSupabaseClient();
+        const { data: charged_row } = await refundClient
+          .from("users")
+          .select("daily_message_count")
+          .eq("id", userId)
+          .single();
+        await refundClient
+          .from("users")
+          .update({ daily_message_count: Math.max(0, (charged_row?.daily_message_count ?? 1) - 1) })
+          .eq("id", userId);
+      } catch (refundError) {
+        console.error(`[${FUNCTION_NAME}] allowance refund failed:`, (refundError as Error).message);
+      }
+    }
+
     return errorResponse(
       "INTERNAL_ERROR",
       "Something went wrong. Please try again.",
@@ -1102,14 +1131,20 @@ Deno.serve(async (req: Request) => {
 
 // ─── FREE TIER LIMIT CHECK (S5.9) ──────────────────────────────────────
 
-const FREE_TIER_DAILY_LIMIT = 5;
+const FREE_TIER_DAILY_LIMIT = 10;
 
 async function checkMessageLimit(
   supabase: ReturnType<typeof createSupabaseClient>,
   userId: string,
   headers: Record<string, string>,
   context?: { type?: string; section?: string; topic?: string; inviteId?: string },
-): Promise<{ limitReached: boolean; upgradeResponse?: Response; remainingToday?: number | null }> {
+): Promise<{
+  limitReached: boolean;
+  upgradeResponse?: Response;
+  remainingToday?: number | null;
+  /** True only when this call incremented the counter (so a failure can refund it). */
+  charged?: boolean;
+}> {
   const { data: user } = await supabase
     .from("users")
     .select("subscription_tier, daily_message_count, daily_message_reset_at, is_admin, beta_access")
@@ -1219,6 +1254,6 @@ async function checkMessageLimit(
 
   // Messages left today after this one — drives the client's low-balance heads-up.
   const remainingToday = Math.max(0, FREE_TIER_DAILY_LIMIT - (currentCount + 1));
-  return { limitReached: false, remainingToday };
+  return { limitReached: false, remainingToday, charged: true };
 }
 
