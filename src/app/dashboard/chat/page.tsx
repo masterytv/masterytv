@@ -342,6 +342,30 @@ function ChatPageInner() {
   const [consentRequired, setConsentRequired] = useState(false);
   const [heldMessage, setHeldMessage] = useState<string | null>(null);
 
+  // I5.5 — the gate belongs AFTER the first exchange and BEFORE they type
+  // again, which is what ConsentGate's own contract and EXPERIENCE §5.2 both
+  // say. It used to appear only once the coach refused turn 2, so the person
+  // typed, watched their message vanish, and met a consent wall with no sign
+  // their words had survived (founder, 2026-08-19). Asking as soon as turn 1
+  // is answered means the composer is replaced before they write into it.
+  // The server's refusal stays exactly as it was: this cannot be the only
+  // thing standing between an unconsented person and turn 2.
+  const consentAsked = useRef(false);
+  const offerConsentGate = useCallback(async () => {
+    if (consentAsked.current) return;
+    if (resolveBrandClient().programSlug !== "integration") return;
+    consentAsked.current = true;
+    try {
+      const res = await fetch("/api/integration/consent");
+      if (!res.ok) return;
+      const { consented } = (await res.json()) as { consented?: boolean };
+      if (!consented) setConsentRequired(true);
+    } catch {
+      // Silent on purpose. A failed probe just means the backstop handles it,
+      // and an error bubble for a check they never asked for is noise.
+    }
+  }, []);
+
   const handleSendMessage = useCallback(
     async (message: string) => {
       // Optimistic update: show user message immediately
@@ -410,6 +434,10 @@ function ChatPageInner() {
               // PC1: tell the sidebar list to refresh — a new conversation may
               // have been created + auto-titled server-side.
               window.dispatchEvent(new Event("coach:conversations-changed"));
+              // I5.5 — they have now been answered, so this is the moment the
+              // consent screen is allowed to exist. No-op off the integration
+              // vertical and after the first time it resolves.
+              void offerConsentGate();
             },
             onDebugTrace: (trace) => {
               // Capture debug trace from the pipeline (admin debug mode only)
@@ -474,7 +502,7 @@ function ChatPageInner() {
         setMessages((prev) => [...prev, errorMessage]);
       }
     },
-    [conversationId, debugMode, isAdmin, engagementId, mode]
+    [conversationId, debugMode, isAdmin, engagementId, mode, offerConsentGate]
   );
 
   // ── Load active voice on mount (voice-enabled brands only) ──
