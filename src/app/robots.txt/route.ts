@@ -1,3 +1,4 @@
+import { AI_CRAWLERS } from "@/lib/platform/ai-crawlers";
 import { resolveBrand } from "@/lib/platform/brand";
 import { BRAND_ORIGINS } from "@/lib/platform/brand-metadata";
 
@@ -10,9 +11,11 @@ import { BRAND_ORIGINS } from "@/lib/platform/brand-metadata";
  * Disallow so preview deployments never enter the index and never compete
  * with the real domain as duplicate content.
  *
- * AI answer-engine crawlers (GPTBot, ClaudeBot, PerplexityBot) are allowed
- * explicitly — being citable by answer engines is part of the SEO/AEO
- * strategy, not an accident.
+ * AI crawlers (GPTBot, ClaudeBot, PerplexityBot, … — the list lives in
+ * ai-crawlers.ts) are disallowed everywhere. Founder decision 2026-10-27: this
+ * reverses the earlier AEO welcome, after crawler traffic helped push the
+ * Vercel Hobby team past its Active CPU limit. Middleware also answers them
+ * 403, but this file stays reachable so they can read the ask.
  */
 
 // Private/authed surfaces — never crawlable on any brand.
@@ -43,10 +46,10 @@ export async function GET(request: Request) {
         "Allow: /",
         ...DISALLOW.map((p) => `Disallow: ${p}`),
         "",
-        // Explicit welcome for AI answer-engine crawlers (AEO).
-        ...["GPTBot", "ClaudeBot", "PerplexityBot", "Google-Extended"].flatMap(
-          (bot) => [`User-agent: ${bot}`, "Allow: /", ""]
-        ),
+        // AI crawlers: off the whole site (see ai-crawlers.ts).
+        ...AI_CRAWLERS.map((bot) => `User-agent: ${bot}`),
+        "Disallow: /",
+        "",
         `Sitemap: ${BRAND_ORIGINS[resolveBrand(host).id]}/sitemap.xml`,
         "",
       ].join("\n")
@@ -54,6 +57,6 @@ export async function GET(request: Request) {
       "User-agent: *\nDisallow: /\n";
 
   return new Response(body, {
-    headers: { "Content-Type": "text/plain", "Cache-Control": "public, max-age=3600" },
+    headers: { "Content-Type": "text/plain", "Cache-Control": "public, max-age=3600, s-maxage=86400" },
   });
 }

@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import { brandPageMetadata } from "@/lib/platform/brand-metadata";
-import { createClient } from "@/lib/supabase/server";
 import LandingPage from "./landing";
 
 /**
  * Landing Page — Server Component wrapper
  *
- * Checks auth state to pass logged-in context to the client landing page.
- * Logged-out users see conversion page; logged-in users see welcome-back hero.
+ * Statically rendered: the logged-in/logged-out hero switch happens in the
+ * browser (LandingPage reads the Supabase session client-side), so masterytv.com
+ * is served pre-built from the CDN instead of running a server render plus an
+ * auth round-trip for every visitor and crawler (Vercel Active CPU, Oct 2026).
  *
  * SEO: Targets "personality test + coaching" positioning.
  */
@@ -76,27 +77,14 @@ const jsonLd = {
   },
 };
 
-export default async function HomePage() {
-  // Check auth state for logged-in/logged-out hero switch
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const isLoggedIn = !!user;
-  const userName =
-    user?.user_metadata?.display_name ||
-    user?.user_metadata?.full_name ||
-    user?.email?.split("@")[0] ||
-    "there";
-
+export default function HomePage() {
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <LandingPage isLoggedIn={isLoggedIn} userName={userName} />
+      <LandingPage />
     </>
   );
 }
