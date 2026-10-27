@@ -183,6 +183,15 @@ export async function GET(req: Request) {
         </div>
       </div>
     ),
-    { width: 1200, height: 630 },
+    {
+      width: 1200,
+      height: 630,
+      // next/og's default Cache-Control (max-age=1y, no s-maxage) only reaches
+      // browsers: Vercel's CDN ignores max-age, so every crawler and chat-app
+      // preview re-rendered the card through satori. Same params, same PNG, so
+      // let the CDN keep it. Vercel's CDN cache is per deployment, so a brand
+      // or copy change ships with the next deploy.
+      headers: { "Vercel-CDN-Cache-Control": "public, max-age=31536000, immutable" },
+    },
   );
 }

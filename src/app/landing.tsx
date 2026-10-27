@@ -4,7 +4,8 @@
  * LandingPage — Unified marketing page for MasteryTV
  *
  * Blends personality assessment (Decoded) + AI coaching into one story.
- * Hero switches between logged-out conversion and logged-in welcome-back.
+ * Hero switches between logged-out conversion and logged-in welcome-back
+ * (decided in the browser, so the page stays statically rendered).
  *
  * Sections: Hero → Social Proof → Feature Grid → How It Works →
  *           Differentiator → Testimonial Stories → Final CTA → Footer
@@ -14,6 +15,7 @@
  */
 
 import { useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
@@ -154,14 +156,36 @@ const PRIVACY_FEATURES = [
    Main Component
    ════════════════════════════════════════════ */
 
-interface LandingPageProps {
-  isLoggedIn: boolean;
-  userName: string;
-}
-
-export default function LandingPage({ isLoggedIn, userName }: LandingPageProps) {
+export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userName, setUserName] = useState("there");
+
+  // Welcome-back hero for signed-in visitors. Read in the browser so the page
+  // itself stays static (see page.tsx). getSession() reads the local session
+  // without a network call; it only picks which hero to show, and every
+  // protected route still checks the session on the server.
+  useEffect(() => {
+    let active = true;
+    createClient()
+      .auth.getSession()
+      .then(({ data: { session } }) => {
+        const user = session?.user;
+        if (!active || !user) return;
+        setIsLoggedIn(true);
+        setUserName(
+          user.user_metadata?.display_name ||
+            user.user_metadata?.full_name ||
+            user.email?.split("@")[0] ||
+            "there"
+        );
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // Nav scroll detection
   useEffect(() => {
