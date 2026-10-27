@@ -27,6 +27,13 @@
 /** Bump when the disclosures below change materially. Stored on every row. */
 export const INTEGRATION_CONSENT_VERSION = "2026-08-13";
 
+/**
+ * The `program` every consent row in this vertical is stamped with. Named here
+ * so the write (buildConsentRow) and the read (the GET route) cannot drift onto
+ * two different strings and silently stop matching each other.
+ */
+export const INTEGRATION_PROGRAM = "integration";
+
 export interface ConsentDisclosure {
   /** Stable key, stored in `coaching_consents.disclosures` so a row says what was shown. */
   key: string;
@@ -107,7 +114,7 @@ export function buildConsentRow(userId: string): {
 } {
   return {
     user_id: userId,
-    program: "integration",
+    program: INTEGRATION_PROGRAM,
     version: INTEGRATION_CONSENT_VERSION,
     // Only ever written from a screen where the attestation was checked; the
     // column exists so the row can never be silent about it.

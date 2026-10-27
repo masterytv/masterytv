@@ -43,10 +43,15 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // Refresh the session — this is the critical call
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Refresh the session — this is the critical call. Skipped when the request
+  // carries no Supabase auth cookie (logged-out visitors and every crawler):
+  // there is no session to refresh, so getUser() could only answer "no user",
+  // and on Vercel Hobby that per-request work adds up against Active CPU.
+  // Chunked cookies (sb-<ref>-auth-token.0) and the PKCE verifier both match.
+  const hasAuthCookie = request.cookies
+    .getAll()
+    .some(({ name }) => name.startsWith("sb-") && name.includes("-auth-token"));
+  const user = hasAuthCookie ? (await supabase.auth.getUser()).data.user : null;
 
   // Every redirect below MUST carry the cookies accumulated on
   // supabaseResponse (the just-refreshed auth session + the persisted brand

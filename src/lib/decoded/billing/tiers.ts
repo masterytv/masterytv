@@ -17,6 +17,7 @@
  */
 
 import type { ReportTier } from '@/lib/decoded/report/prompts/types';
+import type { BrandId } from '@/lib/platform/brand';
 
 // ─── Tier Metadata ────────────────────────────────────
 
@@ -122,6 +123,113 @@ export const MESSAGE_LIMITS: Record<ReportTier, { count: number; window: 'day' |
   insight: { count: 50, window: 'week', label: '50/week' },
   growth: { count: 300, window: 'month', label: '300/month' },
   mastery: { count: Infinity, window: 'month', label: 'Unlimited' },
+};
+
+// ─── HEARD (integration vertical) ────────────────────
+//
+// Same four prices, different product, so different words and different volume
+// (founder, 2026-08-19). The tiers above sell a REPORT — Big Five radars,
+// archetypes, compatibility. HEARD has none of those: its module set is CORE
+// only and its assessment battery is empty, so the whole product is the
+// conversation. The lists below say that plainly instead of listing surfaces
+// this vertical does not have.
+//
+// ⚠️ The volume ladder is NOT monotonic and that is as specified, not a typo:
+// Insight's 20/day is roughly 600 a month, so it carries MORE messages than
+// Growth's 300/month while costing $40 less. Raised here so whoever reads it
+// next does not "fix" it silently.
+//
+// Every line is scoped integration text, so `check:deny-list` applies: no
+// therapy/counselling/clinical/treat/diagnose vocabulary, no "emotional
+// support", no healing claim. And BRAND.md §14.6: no em dashes, no negation
+// pivot, no AI vocabulary.
+
+export const HEARD_TIERS: DecodedTierInfo[] = [
+  {
+    id: 'free',
+    name: 'Free',
+    tagline: 'A place to say it',
+    price: '$0',
+    priceSubtext: 'forever',
+    features: [
+      'Start without making an account',
+      '10 messages a day',
+      'Accounts from other people, matched to yours',
+      'Your conversation saved between visits',
+    ],
+  },
+  {
+    id: 'insight',
+    name: 'Insight',
+    tagline: 'Room to keep going',
+    price: '$29',
+    priceSubtext: '/year',
+    features: [
+      'Everything in Free',
+      '20 messages a day',
+      'Long sessions that do not stop you mid thought',
+    ],
+  },
+  {
+    id: 'growth',
+    name: 'Growth',
+    tagline: 'For the longer work',
+    price: '$69',
+    priceSubtext: '/year',
+    features: [
+      'Everything in Insight',
+      '300 messages a month',
+      'Room to come back to it over months',
+    ],
+    recommended: true,
+  },
+  {
+    id: 'mastery',
+    name: 'Mastery',
+    tagline: 'No ceiling',
+    price: '$349',
+    priceSubtext: '/year or $99/mo',
+    features: [
+      'Everything in Growth',
+      'Unlimited messages',
+      'Every conversation kept for as long as you want it',
+    ],
+  },
+];
+
+export const HEARD_MESSAGE_LIMITS: Record<ReportTier, { count: number; window: 'day' | 'week' | 'month'; label: string }> = {
+  free: { count: 10, window: 'day', label: '10/day' },
+  insight: { count: 20, window: 'day', label: '20/day' },
+  growth: { count: 300, window: 'month', label: '300/month' },
+  mastery: { count: Infinity, window: 'month', label: 'Unlimited' },
+};
+
+// ─── Per-brand selection ─────────────────────────────
+//
+// Record<BrandId, …> rather than a ternary or a default branch, per the tenancy
+// rule: adding a brand makes these COMPILE ERRORS until somebody decides which
+// plan surface it gets, instead of silently inheriting Decoded's.
+//
+// 🔑 Only the FREE row of these tables is enforced anywhere. The coach's
+// checkMessageLimit exempts every paid tier outright (`subscription_tier !==
+// "free"` returns early), so the paid numbers are a promise no code keeps —
+// generously, since users get more than advertised rather than less. Two
+// separate columns are also in play: this page reads `users.decoded_tier` while
+// the coach enforces on `users.subscription_tier`. Both worth closing before
+// anyone is actually billed.
+
+export const TIERS_BY_BRAND: Record<BrandId, DecodedTierInfo[]> = {
+  masterytv: DECODED_TIERS,
+  relatti: DECODED_TIERS,
+  money: DECODED_TIERS,
+  heard: HEARD_TIERS,
+};
+
+export const MESSAGE_LIMITS_BY_BRAND: Record<BrandId, Record<ReportTier, { count: number; window: 'day' | 'week' | 'month'; label: string }>> = {
+  masterytv: MESSAGE_LIMITS,
+  relatti: MESSAGE_LIMITS,
+  money: MESSAGE_LIMITS,
+  heard: HEARD_MESSAGE_LIMITS,
 };
 
 // ─── Tier Comparison ─────────────────────────────────

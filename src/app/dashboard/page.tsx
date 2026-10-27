@@ -296,7 +296,19 @@ export default async function DashboardPage({
   // cards, which is the "experience as the protagonist" failure the whole
   // vertical is designed against. Send them to the conversation instead.
   if (brandId === "heard") {
-    redirect("/dashboard/chat");
+    // Carry an EXPLICIT ?brand= through the redirect. Without this the hop
+    // silently undoes itself on any host that is not HEARD's own: the param is
+    // the only reason brandId resolved to heard, dropping it means
+    // /dashboard/chat re-resolves by host, and staging.relatti.com hands them
+    // the RELATIONSHIP coach instead (founder, 2026-08-19). A redirect that
+    // loses the state that caused it is a bug on its own terms, DNS or no DNS.
+    // Only propagated when it was explicitly given — on youheard.org the host
+    // already answers and the URL stays clean.
+    redirect(
+      isBrandId(params.brand)
+        ? `/dashboard/chat?brand=${encodeURIComponent(params.brand)}`
+        : "/dashboard/chat",
+    );
   }
 
   return (

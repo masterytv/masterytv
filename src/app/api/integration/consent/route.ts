@@ -1,6 +1,46 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { buildConsentRow, INTEGRATION_CONSENT_VERSION } from "@/lib/platform/integration-consent";
+import { buildConsentRow, INTEGRATION_CONSENT_VERSION, INTEGRATION_PROGRAM } from "@/lib/platform/integration-consent";
+
+/**
+ * GET /api/integration/consent — does this person already have a live consent?
+ *
+ * Exists so the gate can be offered at the moment I5.5 actually specifies:
+ * after the first exchange, before they type again. Without it the client had
+ * no way to know, so the gate could only appear once the coach REFUSED turn 2 —
+ * which took their message off the screen and read as having lost it (founder,
+ * 2026-08-19). The server refusal stays as the fail-closed backstop; this only
+ * lets the client get there first.
+ *
+ * Read-only and says nothing about versions or copy: whether a row exists is
+ * the entire question, exactly as `_shared/consent.ts` frames it.
+ */
+export async function GET() {
+  const supabase = await createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+  }
+
+  const { data, error } = await supabase
+    .from("coaching_consents")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("program", INTEGRATION_PROGRAM)
+    .is("revoked_at", null)
+    .limit(1);
+
+  // A failed read reports "not consented", matching hasLiveConsent's fail-closed
+  // stance. The cost is one avoidable consent screen; the cost of guessing the
+  // other way is a turn that should have been gated and was not.
+  if (error) {
+    console.error("[integration/consent] read failed:", error.message);
+    return NextResponse.json({ consented: false });
+  }
+
+  return NextResponse.json({ consented: (data?.length ?? 0) > 0 });
+}
 
 /**
  * POST /api/integration/consent — I5.5.
