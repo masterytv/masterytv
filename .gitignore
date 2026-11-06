@@ -54,3 +54,8 @@ test-coach.mjs
 
 # Migrated Antigravity session history (kept local, not tracked)
 docs/history/
+
+# graphify local state (outputs in graphify-out/ are committed)
+graphify-out/cache/
+graphify-out/.graphify_python
+graphify-out/.graphify_root
